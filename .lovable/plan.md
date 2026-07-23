@@ -1,127 +1,113 @@
-## What I understand
 
-You are testing the real installed iPhone app from Xcode, not the web preview. The expected behavior is:
+# Android Responsive Refactor — Root Cause & Systemic Fix
 
-1. You log in once.
-2. When you close/kill/reopen the app, it must not return to onboarding, the experience flow, or “Skip to Login”.
-3. If a valid logged-in session exists, the app should go straight to the app behind a Face ID / Touch ID unlock screen.
-4. Face ID / Touch ID should not depend on a hidden settings toggle.
-5. The Privacy & Security screen should still show biometric status/test controls clearly.
-6. The native iPhone build should not have oversized/broken fonts.
+## Why Android keeps breaking (root cause)
 
-## Root problem to fix
+Every onboarding / setup screen re-implements its own scroll + footer layout. The current pattern (repeated in ~20 files) is:
 
-This needs to be treated as three connected native-app failures, not as a UI-only issue:
-
-- Native auth session is not being restored early enough or reliably enough before routing decides where to send you.
-- Native plugins for Face ID / Touch ID, app lifecycle, and native storage must be verified and registered in the iOS app, not assumed.
-- Mobile font sizing must be locked down for WKWebView/iOS so Safari-style text inflation does not enlarge the UI.
-
-## Plan forward
-
-### 1. Replace fragile session mirroring with a native-aware auth storage adapter
-
-Build a single auth storage layer used directly by the auth client:
-
-- On installed native app: store auth session keys in Capacitor Preferences.
-- On web preview/browser: keep using localStorage.
-- Ensure auth storage is ready before React routes render.
-- Remove race-prone behavior where the app hydrates localStorage after routing has already started.
-- Keep explicit sign-out behavior so only real sign-out clears the native session.
-
-Result: reopening the iPhone app should restore the session before the splash/onboarding logic can send you to `/reality-hook`.
-
-### 2. Add an auth-ready gate before all navigation decisions
-
-Add a small startup gate that blocks routing until auth restoration is complete.
-
-- Splash, onboarding, auth page, and native redirect logic must wait for auth readiness.
-- If authenticated: send to `/home` immediately.
-- If not authenticated: show onboarding/login flow.
-- Data queries that need a user should only run after auth is ready.
-
-Result: no more “logged in but sent to experience/skip login” race.
-
-### 3. Make biometric unlock automatic for native logged-in users
-
-Keep Face ID / Touch ID as automatic native behavior:
-
-- If installed native app and session exists: lock screen appears immediately.
-- Prompt Face ID / Touch ID automatically.
-- Re-lock when the app backgrounds and prompt again on resume.
-- If biometrics are unavailable, show the exact status and allow passcode fallback where supported.
-- Provide a clear “Sign out” recovery option so nobody gets stuck.
-
-Result: no dependency on finding a toggle before biometrics work.
-
-### 4. Verify and harden iOS native plugin registration
-
-Make iOS registration explicit and verifiable:
-
-- Confirm `NSFaceIDUsageDescription` exists in `Info.plist`.
-- Confirm `BiometricAuthNative`, `PreferencesPlugin`, and `AppPlugin` are present in the generated native config.
-- Keep a manual AppDelegate/storyboard fallback so plugin registration does not depend only on generated config.
-- Confirm `npm run cap:sync:ios` produces bundled web assets in `ios/App/App/public`.
-
-Result: JavaScript calls actually reach native Face ID / Touch ID and native storage.
-
-### 5. Fix Privacy & Security visibility
-
-Make the biometric section visible and understandable:
-
-- Show “Face ID / Touch ID unlock” in Privacy & Security on native builds.
-- On web preview, show that it is available only in the installed iPhone app.
-- Include a “Test” button on native builds to trigger the biometric prompt.
-- Do not hide the section silently if the device reports unavailable.
-
-Result: you can see whether the app detects native biometric capability.
-
-### 6. Fix oversized fonts in the iPhone build
-
-Add iOS/WKWebView-safe typography constraints:
-
-- Disable iOS text auto-sizing with `-webkit-text-size-adjust: 100%`.
-- Audit global responsive font rules and mobile containers for oversized text.
-- Ensure onboarding/auth/profile screens use bounded mobile font sizes.
-- Verify on iPhone-sized viewport and native-like constraints.
-
-Result: Xcode-installed app should match the intended mobile UI sizing.
-
-### 7. Validation before asking you to retest
-
-I will only ask you to spend time testing after I verify locally that:
-
-- TypeScript compile passes.
-- `npm run cap:sync:ios` completes successfully.
-- iOS generated config includes plugin class registration.
-- iOS public bundle exists and contains the biometric/session code.
-- Source checks show no startup path clears the session except explicit sign-out/delete-account.
-- Mobile font-size rules are in place.
-
-## What you should expect after the fix
-
-After pulling the fix and installing from Xcode:
-
-1. Fresh install: login once.
-2. Kill app.
-3. Reopen app.
-4. App should restore your session.
-5. Face ID / Touch ID prompt should appear.
-6. After successful Face ID / Touch ID, app opens directly to the logged-in interface.
-7. It should not show the experience flow or Skip to Login unless you actually signed out.
-
-## Exact final test command after implementation
-
-When I say it is ready, use:
-
-```bash
-git pull
-npm install
-npm run cap:sync:ios
+```tsx
+<div className="phone-container min-h-dvh flex flex-col px-5 pt-14 mobile-bottom-safe">
+  <header/>
+  <div className="flex flex-col flex-1"> ...content... </div>
+  <div className="ob-bottom flex gap-3"> ...CTA... </div>
+</div>
 ```
 
-Then open Xcode, install on the physical iPhone, login once, kill/reopen.
+Combined with these fighting CSS rules in `index.css`:
 
-## Important note
+- `.phone-container` sets `height`, `min-height`, `max-height` all to `var(--bbdo-viewport-height, 100dvh)` — a fixed viewport lock.
+- `.mobile-bottom-safe` adds bottom padding, but the Android override zeroes it.
+- `.ob-bottom` is `position: relative !important` with `margin-top: auto` on Android — but on iOS it's a different mode.
+- Tailwind `min-h-dvh` on the same element competes with the fixed `max-height`.
+- Framer-motion wrappers create transformed containing blocks that break any absolute/fixed footer child.
+- `--bbdo-viewport-height` is JS-computed at startup and stales when the Android system bars resize.
 
-If Face ID still does not appear after this, the next required signal is not another guess: we will add a native diagnostics screen that prints the device result from `checkBiometry()` inside the app, including whether iOS reports `biometryNotEnrolled`, `biometryNotAvailable`, `passcodeNotSet`, or a missing native plugin. That will identify the exact device/native reason in one run.
+Result: on some Android devices the flex content sizes past the "locked" viewport, gets clipped, and the CTA visually overlaps the last card. Every one-off fix (fixed → sticky → absolute → relative) shifts the bug to a different screen.
+
+## The single fix
+
+Stop patching screens. Introduce **one** responsive layout primitive, replace all screen-level layout containers with it, and delete the competing CSS.
+
+### 1. New primitive: `<AppScreen>` (and `<AppScreenFooter>`)
+
+`src/components/layout/AppScreen.tsx` — replaces the `phone-container / ob-lock / mobile-bottom-safe / ob-bottom` combinations.
+
+Behavior (identical on iOS + Android, no platform branches):
+
+- Uses `min-h-[100svh]` (small viewport unit — stable across Android bar show/hide) with `flex flex-col`.
+- Max width `430px`, centered, no fixed height / max-height.
+- The **page itself is the scroll container** via `flex-1 overflow-y-auto overscroll-contain`.
+- Footer slot rendered as a sibling in normal flow — always after content, guaranteed no overlap.
+- Reads safe-area insets directly via `env(safe-area-inset-*)` on padding — no JS viewport measurement, no `--bbdo-native-bottom-guard` variable.
+- Accepts `scrollable` (default true), `padded` (default true), and `footer` props.
+
+### 2. Delete the competing CSS
+
+In `src/index.css` remove/simplify:
+
+- Fixed `height` / `max-height` on `.phone-container` and `.ob-lock`.
+- All `html.bb-native.bb-android` overrides for `.phone-container`, `.ob-lock`, `.ob-bottom`, `.mobile-bottom-safe`.
+- The `!important` red-CTA global (`.ob-cta:not(...)`).
+- The `--bbdo-viewport-height` / `--bbdo-native-bottom-guard` / `--bbdo-native-top-guard` variables and the JS that writes them in `startupDiagnostics.ts`.
+
+Keep the shared tokens (`--bbdo-cream`, `--bbdo-red`, `--bbdo-blue`, etc.) untouched.
+
+### 3. Migrate screens
+
+Replace the top-level container in these screen groups (all currently duplicate the same broken pattern):
+
+- `src/pages/onboarding/*` — RealityHook, TensionScreen, BreakPattern, HopeScreen, InsightScreen, CommitmentScreen, DayOneScreen, ProjectionPreview, PunchFramework, ScoreInterpretation, TrajectoryScreen, TransformationStory, AuthorityStatement, StartAssessment.
+- `src/pages/setup/*` — Purpose, BasicDetails, BodyStats, ClinicalData, LifestyleQuestions, DeepProfiling, HealthQuestions, HealthScore.
+- `src/pages/Auth.tsx`, `src/pages/Splash.tsx`, `src/pages/LanguageSelect.tsx`, `src/pages/Tour.tsx`.
+
+Each screen becomes:
+
+```tsx
+<AppScreen footer={<CTA/>}>
+  <Header/>
+  <Content/>
+</AppScreen>
+```
+
+Content uses Tailwind flex utilities (`flex flex-col gap-*`, `flex-1`, `w-full`). No fixed pixel widths/heights, no absolute-positioned footers, no motion wrappers on the outer container.
+
+### 4. Remove framer-motion wrappers that create containing blocks
+
+Where `motion.div` wraps the entire screen or footer, replace with plain `div`. Keep motion only on individual cards / buttons where it's a leaf.
+
+### 5. Tab pages (Home, Diet, Exercise, etc.)
+
+They already use `pb-nav` for bottom-nav clearance. Convert to `<AppScreen scrollable padded={false} footer={<BottomNav/>}>` in a follow-up (out of scope for this pass to keep diff bounded, but the primitive supports it).
+
+## Technical details
+
+Files created:
+
+- `src/components/layout/AppScreen.tsx`
+- `src/components/layout/AppScreenFooter.tsx` (optional convenience)
+
+Files modified:
+
+- `src/index.css` — remove Android overrides, simplify `.phone-container`, drop viewport-height JS variables, keep tokens.
+- `src/lib/startupDiagnostics.ts` — drop the JS viewport-height writer; keep only what's still needed (native class flags).
+- ~25 screen files — swap outer container to `<AppScreen>`.
+
+Files untouched:
+
+- iOS Capacitor config, native Android / iOS folders, Supabase, business logic, services, hooks.
+
+## Validation
+
+- Playwright at 320 / 360 / 390 / 412 dp widths, portrait; spot-check landscape.
+- For each key screen (RealityHook, Purpose, BasicDetails, ClinicalData, LifestyleQuestions, DeepProfiling, ScoreInterpretation, Auth): screenshot + assert no overlap between last content card and footer.
+- Typecheck.
+
+## Non-goals
+
+- No device-specific CSS.
+- No changes to iOS visual behavior beyond removing the competing overrides (iOS already works because it doesn't hit them).
+- No redesign — same visuals, same tokens, same components inside screens.
+
+## Rollout
+
+Single PR. After merge: `npm run build && npx cap sync android` and reinstall APK. No further per-screen tweaks should be required for new Android devices.
