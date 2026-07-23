@@ -151,16 +151,22 @@
     line-height: 1.5;
     min-height: 100%;
   }
+  /* Legacy variables kept as zero fallbacks so any residual references
+     (e.g. .pb-nav) resolve without JS side-effects. Safe-area insets are
+     now consumed directly via env(safe-area-inset-*) — no JS measurement. */
   html.bb-native { --bbdo-native-bottom-guard: 0px; --bbdo-onboarding-bottom-guard: 0px; --bbdo-native-top-guard: 0px; }
-  html.bb-native.bb-android { --bbdo-native-bottom-guard: 0px; --bbdo-onboarding-bottom-guard: 0px; --bbdo-native-top-guard: 8px; }
   html.bb-native,
   html.bb-native body,
   html.bb-native #root {
     -webkit-text-size-adjust: none;
     text-size-adjust: none;
     font-size: 16px;
-    height: var(--bbdo-viewport-height, 100dvh);
-    min-height: var(--bbdo-viewport-height, 100dvh);
+    /* 100svh (small viewport) is stable across Android system-bar show/hide.
+       Using it as both height AND min-height keeps the WebView bound to the
+       visible area regardless of manufacturer / device size. */
+    height: 100svh;
+    min-height: 100svh;
+    max-height: 100svh;
   }
   html.bb-native body,
   html.bb-native #root { overflow: hidden; }
