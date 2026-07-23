@@ -331,7 +331,7 @@ export default function Tour() {
                     <div className="w-10 h-10 rounded-xl text-white flex items-center justify-center overflow-hidden shrink-0" style={{ backgroundImage: pl.gradient }}>
                       <pl.Icon className="w-5 h-5" strokeWidth={1.75} />
                     </div>
-                    <span className="w-full text-center text-[9px] leading-tight font-semibold tracking-tight text-foreground/80 break-words">{pl.name.split(" ")[0]}</span>
+                    <span className="no-break w-full text-center text-[9px] leading-tight font-semibold tracking-tight text-foreground/80">{pl.name.split(" ")[0]}</span>
                   </div>
                 ))}
               </div>
