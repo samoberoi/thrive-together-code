@@ -450,108 +450,87 @@
 
   .text-gradient-green, .text-gradient-blue, .text-gradient-lime { color: var(--bbdo-ink); }
 
-  /* Layout */
-  .app-container  { width: 100%; min-height: 100dvh; position: relative; background: var(--bbdo-cream); }
+  /* ══════════════════════════════════════════════════════════════════
+     Layout primitives — single responsive system used by every screen.
+     No device-specific rules, no per-platform overrides for layout.
+     ══════════════════════════════════════════════════════════════════ */
+
+  .app-container  { width: 100%; min-height: 100svh; position: relative; background: var(--bbdo-cream); }
+
+  /* Screen shell: a mobile-first column that fills the viewport on native
+     (where html/body are locked) and expands naturally on web. The screen
+     itself is the scroll container, so any footer using `mt-auto` is
+     guaranteed to sit after content in normal flow — no overlap possible. */
   .phone-container {
     width: 100%;
     max-width: 430px;
-    height: var(--bbdo-viewport-height, 100dvh);
-    min-height: var(--bbdo-viewport-height, 100dvh);
-    max-height: var(--bbdo-viewport-height, 100dvh);
     margin: 0 auto;
+    display: flex;
+    flex-direction: column;
     position: relative;
+    background: var(--bbdo-cream);
+    min-height: 100svh;
     overflow-x: hidden;
+  }
+  html.bb-native .phone-container {
+    /* Native WebView: html/body are height-locked, so the screen must be
+       exactly viewport-sized and own the scroll. `!important` defeats any
+       stray `min-h-dvh` / `min-h-screen` utility on the same element. */
+    height: 100svh !important;
+    min-height: 100svh !important;
+    max-height: 100svh !important;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: contain;
-    background: var(--bbdo-cream);
-    display: flex;
-    flex-direction: column;
   }
 
-  html.bb-native.bb-android .phone-container {
-    scroll-padding-bottom: calc(env(safe-area-inset-bottom) + var(--bbdo-native-bottom-guard, 0px) + 6rem);
-  }
-
-  html.bb-native.bb-android .phone-container.mobile-bottom-safe {
-    padding-bottom: 0 !important;
-    scroll-padding-bottom: calc(env(safe-area-inset-bottom) + var(--bbdo-native-bottom-guard, 0px) + 6rem);
-  }
-
-  html.bb-native.bb-android .phone-container.mobile-bottom-safe > .flex-1,
-  html.bb-native.bb-android .phone-container.mobile-bottom-safe > [class*="flex-1"] {
-    min-height: 0;
-  }
-
+  /* Universal bottom-safe padding — used by any screen that ends with a
+     footer / CTA row that must clear the system gesture area. */
   .mobile-bottom-safe {
-    padding-bottom: calc(env(safe-area-inset-bottom) + var(--bbdo-native-bottom-guard, 0px) + 1rem) !important;
+    padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);
   }
 
-  /* Onboarding */
-  .ob-screen { position: relative; background: var(--bbdo-cream); min-height: 100dvh; }
-
-  /* Onboarding screen container — keep the WebView body locked and make the
-     screen itself the scroller. This is critical on Android WebViews where
-     document/body scrolling can fail on devices with tall system bars. */
+  /* Onboarding shell — same behavior as .phone-container, kept as an
+     alias because existing markup references it. */
+  .ob-screen { position: relative; background: var(--bbdo-cream); min-height: 100svh; }
   .ob-lock,
   .ob-lock.phone-container {
-    height: var(--bbdo-viewport-height, 100dvh) !important;
-    min-height: var(--bbdo-viewport-height, 100dvh);
-    max-height: var(--bbdo-viewport-height, 100dvh) !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
+    width: 100%;
+    max-width: 430px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 100svh;
+    overflow-x: hidden;
+    background: var(--bbdo-cream);
+  }
+  html.bb-native .ob-lock,
+  html.bb-native .ob-lock.phone-container {
+    height: 100svh !important;
+    min-height: 100svh !important;
+    max-height: 100svh !important;
+    overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: contain;
     touch-action: pan-y;
-    scroll-padding-bottom: calc(6rem + env(safe-area-inset-bottom) + var(--bbdo-native-bottom-guard, 0px));
-  }
-  /* Android onboarding layout: keep the page itself as the scroller and keep
-     the CTA rail in normal document flow. No fixed/sticky/absolute footer here:
-     Android WebView + transformed route/motion wrappers can anchor floating
-     descendants to the wrong box, and long screens then get covered by CTAs. */
-  html.bb-native.bb-android .ob-lock > .flex-1 {
-    min-height: 100%;
-    padding-top: calc(env(safe-area-inset-top) + var(--bbdo-native-top-guard, 0px) + 1.75rem) !important;
-    padding-bottom: 0 !important;
-  }
-  html.bb-native.bb-android .ob-content {
-    padding-top: calc(1.75rem + env(safe-area-inset-top) + var(--bbdo-native-top-guard, 0px));
-    padding-bottom: 0;
-    min-height: 100%;
-  }
-  /* CTA rail: normal flow only. `mt-auto` still pushes it to the bottom when a
-     screen is short, but on long screens the user scrolls to the CTA instead of
-     the CTA floating over form cards. */
-  html.bb-native.bb-android .ob-bottom {
-    position: relative !important;
-    left: auto !important;
-    right: auto !important;
-    bottom: auto !important;
-    z-index: 60;
-    width: 100%;
-    max-width: 100%;
-    margin-top: auto;
-    padding-top: 0.75rem;
-    padding-bottom: calc(env(safe-area-inset-bottom) + var(--bbdo-native-bottom-guard, 0px) + 0.75rem);
-    background: var(--bbdo-cream);
-    border-top: 1px solid rgba(0,0,0,0.04);
-    transform: none !important;
-    will-change: auto !important;
   }
 
   .ob-bg { position: absolute; inset: 0; z-index: 0; opacity: 0.14; }
-
   .ob-bg img { width: 100%; height: 100%; object-fit: cover; }
   .ob-bg::after {
     content: ""; position: absolute; inset: 0;
     background: linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.85) 55%, rgba(255,255,255,1) 100%);
   }
-  .ob-content { @apply relative z-10 flex flex-col; min-height: 100%; padding: calc(2rem + env(safe-area-inset-top) + var(--bbdo-native-top-guard, 0px)) 1.25rem calc(1rem + env(safe-area-inset-bottom) + var(--bbdo-native-bottom-guard, 0px)); }
+  .ob-content {
+    @apply relative z-10 flex flex-col;
+    min-height: 100%;
+    padding: calc(2rem + env(safe-area-inset-top)) 1.25rem calc(1rem + env(safe-area-inset-bottom));
+  }
   @media (max-width: 380px) {
-    .ob-content { padding-top: calc(1.5rem + env(safe-area-inset-top) + var(--bbdo-native-top-guard, 0px)); padding-left: 1rem; padding-right: 1rem; padding-bottom: calc(1rem + env(safe-area-inset-bottom) + var(--bbdo-native-bottom-guard, 0px)); }
+    .ob-content { padding-top: calc(1.5rem + env(safe-area-inset-top)); padding-left: 1rem; padding-right: 1rem; }
   }
   @media (max-height: 700px) {
-    .ob-content { padding-top: calc(1rem + env(safe-area-inset-top) + var(--bbdo-native-top-guard, 0px)); }
+    .ob-content { padding-top: calc(1rem + env(safe-area-inset-top)); }
     .ob-title { font-size: clamp(1.35rem, 5.4vw, 2rem); }
     .ob-stack { gap: 0.5rem; }
   }
@@ -561,7 +540,14 @@
   .ob-stack { @apply flex flex-col gap-2.5; }
   .ob-frost { @apply sub-card; }
   .ob-icon { @apply flex items-center justify-center flex-shrink-0; width: 2.5rem; height: 2.5rem; border-radius: 9999px; background: var(--bbdo-blue-soft); color: var(--bbdo-blue); }
-  .ob-bottom { @apply mt-auto pt-5 w-full shrink-0; }
+
+  /* CTA rail — normal document flow, pinned to the bottom of the flex
+     column via `mt-auto`. Padding-bottom honors the OS gesture area on
+     both iOS and Android without any platform branch. */
+  .ob-bottom {
+    @apply mt-auto pt-5 w-full shrink-0;
+    padding-bottom: calc(env(safe-area-inset-bottom) + 0.75rem);
+  }
   .ob-cta {
     @apply w-full text-center font-bold text-white flex items-center justify-center gap-2;
     min-height: 52px; padding: 0.9rem 1.25rem;
