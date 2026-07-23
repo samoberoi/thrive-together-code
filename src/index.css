@@ -500,9 +500,9 @@
     scroll-padding-bottom: calc(6rem + env(safe-area-inset-bottom) + var(--bbdo-native-bottom-guard, 0px));
   }
   /* Android onboarding layout: keep the page itself as the scroller and keep
-     the CTA rail inside normal document flow. Sticky (not fixed/absolute) is
-     intentional: Android WebView + transformed route/motion wrappers otherwise
-     makes fixed descendants anchor to the wrong box and overlap content. */
+     the CTA rail in normal document flow. No fixed/sticky/absolute footer here:
+     Android WebView + transformed route/motion wrappers can anchor floating
+     descendants to the wrong box, and long screens then get covered by CTAs. */
   html.bb-native.bb-android .ob-lock > .flex-1 {
     min-height: 100%;
     padding-top: calc(env(safe-area-inset-top) + var(--bbdo-native-top-guard, 0px) + 1.75rem) !important;
@@ -513,11 +513,14 @@
     padding-bottom: 0;
     min-height: 100%;
   }
-  /* CTA rail: sticky participates in layout, so the last card cannot sit
-     underneath it. It still stays pinned to the bottom while the page scrolls. */
+  /* CTA rail: normal flow only. `mt-auto` still pushes it to the bottom when a
+     screen is short, but on long screens the user scrolls to the CTA instead of
+     the CTA floating over form cards. */
   html.bb-native.bb-android .ob-bottom {
-    position: sticky !important;
-    bottom: 0;
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
     z-index: 60;
     width: 100%;
     max-width: 100%;
