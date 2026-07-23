@@ -198,6 +198,7 @@
       scroll-behavior: auto !important;
     }
   }
+}
 
 @layer utilities {
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -463,12 +464,12 @@
   }
 
   html.bb-native.bb-android .phone-container {
-    scroll-padding-bottom: calc(var(--bbdo-native-bottom-guard) + 7rem);
+    scroll-padding-bottom: calc(env(safe-area-inset-bottom) + var(--bbdo-native-bottom-guard, 0px) + 6rem);
   }
 
   html.bb-native.bb-android .phone-container.mobile-bottom-safe {
-    padding-bottom: calc(env(safe-area-inset-bottom) + var(--bbdo-native-bottom-guard, 0px) + 8.5rem) !important;
-    scroll-padding-bottom: calc(env(safe-area-inset-bottom) + var(--bbdo-native-bottom-guard, 0px) + 9rem);
+    padding-bottom: 0 !important;
+    scroll-padding-bottom: calc(env(safe-area-inset-bottom) + var(--bbdo-native-bottom-guard, 0px) + 6rem);
   }
 
   html.bb-native.bb-android .phone-container.mobile-bottom-safe > .flex-1,
@@ -498,36 +499,38 @@
     touch-action: pan-y;
     scroll-padding-bottom: calc(6rem + env(safe-area-inset-bottom) + var(--bbdo-native-bottom-guard, 0px));
   }
-  /* Android onboarding layout: fill the screen, keep the CTA anchored just
-     above the system nav bar via mt-auto (no artificial padding pushing it
-     up), and let content scroll naturally when it overflows. */
+  /* Android onboarding layout: keep the page itself as the scroller and keep
+     the CTA rail in normal document flow. No fixed/sticky/absolute footer here:
+     Android WebView + transformed route/motion wrappers can anchor floating
+     descendants to the wrong box, and long screens then get covered by CTAs. */
   html.bb-native.bb-android .ob-lock > .flex-1 {
     min-height: 100%;
     padding-top: calc(env(safe-area-inset-top) + var(--bbdo-native-top-guard, 0px) + 1.75rem) !important;
-    padding-bottom: calc(env(safe-area-inset-bottom) + var(--bbdo-native-bottom-guard, 0px) + 7rem) !important;
+    padding-bottom: 0 !important;
   }
   html.bb-native.bb-android .ob-content {
     padding-top: calc(1.75rem + env(safe-area-inset-top) + var(--bbdo-native-top-guard, 0px));
-    padding-bottom: calc(env(safe-area-inset-bottom) + var(--bbdo-native-bottom-guard, 0px) + 7rem);
+    padding-bottom: 0;
+    min-height: 100%;
   }
-  /* CTA rail: use fixed positioning so transformed ancestors (framer-motion
-     wrappers) can't hijack the containing block and float the CTA mid-screen.
-     Solid cream background — no transparent fade — so content never bleeds
-     through the button rail. */
+  /* CTA rail: normal flow only. `mt-auto` still pushes it to the bottom when a
+     screen is short, but on long screens the user scrolls to the CTA instead of
+     the CTA floating over form cards. */
   html.bb-native.bb-android .ob-bottom {
-    position: fixed;
-    left: 0;
-    right: 0;
-    margin-inline: auto;
-    bottom: 0;
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
     z-index: 60;
-    width: min(100vw, 430px);
+    width: 100%;
     max-width: 100%;
-    margin-top: 0;
-    padding: 0.75rem 1.25rem calc(env(safe-area-inset-bottom) + var(--bbdo-native-bottom-guard, 0px) + 0.75rem);
+    margin-top: auto;
+    padding-top: 0.75rem;
+    padding-bottom: calc(env(safe-area-inset-bottom) + var(--bbdo-native-bottom-guard, 0px) + 0.75rem);
     background: var(--bbdo-cream);
     border-top: 1px solid rgba(0,0,0,0.04);
-  }
+    transform: none !important;
+    will-change: auto !important;
   }
 
   .ob-bg { position: absolute; inset: 0; z-index: 0; opacity: 0.14; }
@@ -750,7 +753,8 @@
 .gradient-blue, .gradient-green, .gradient-lime { background: var(--bbdo-blue) !important; }
 .gradient-red, .gradient-danger { background: var(--bbdo-red) !important; }
 .fab:not(.fab-white):not(.fab-red) { background: var(--bbdo-blue); }
-.ob-cta:not(.ob-cta-ghost):not(.ob-cta-blue) { background: var(--bbdo-red) !important; }
+.ob-cta.gradient-blue { background: var(--bbdo-blue) !important; color: #fff !important; }
+.ob-cta:not(.ob-cta-ghost):not(.ob-cta-blue):not(.gradient-blue) { background: var(--bbdo-red) !important; }
 .ob-cta.ob-cta-ghost { background: transparent !important; color: var(--bbdo-ink) !important; border: 1px solid rgba(0,0,0,0.12) !important; box-shadow: none !important; }
 .ob-cta.ob-cta-blue { background: var(--bbdo-blue) !important; color: #fff !important; }
 
