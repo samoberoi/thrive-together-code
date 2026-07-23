@@ -59,29 +59,9 @@ export function installStartupDiagnostics() {
   if (win.__bbStartupDiagnosticsInstalled) return;
   win.__bbStartupDiagnosticsInstalled = true;
 
-  const syncViewportHeight = () => {
-    try {
-      const layoutHeight = Math.max(
-        window.innerHeight || 0,
-        document.documentElement.clientHeight || 0,
-        window.visualViewport?.height || 0,
-      );
-      const visualBottomInset = window.visualViewport
-        ? Math.max(0, layoutHeight - window.visualViewport.height - window.visualViewport.offsetTop)
-        : 0;
-
-      document.documentElement.style.setProperty("--bbdo-viewport-height", `${Math.max(1, Math.floor(layoutHeight))}px`);
-      document.documentElement.style.setProperty("--bbdo-native-bottom-guard", `${Math.round(visualBottomInset)}px`);
-    } catch {
-      /* viewport syncing must never block startup */
-    }
-  };
-
-  syncViewportHeight();
-  window.addEventListener("resize", syncViewportHeight, { passive: true });
-  window.addEventListener("orientationchange", syncViewportHeight, { passive: true });
-  window.visualViewport?.addEventListener("resize", syncViewportHeight, { passive: true });
-  window.visualViewport?.addEventListener("scroll", syncViewportHeight, { passive: true });
+  /* Viewport sizing is handled entirely in CSS via 100svh + env(safe-area-inset-*).
+     No JS measurement — that used to cause stale --bbdo-viewport-height values
+     on Android when the system bars toggled. */
 
   try {
     const platform = Capacitor.getPlatform();
