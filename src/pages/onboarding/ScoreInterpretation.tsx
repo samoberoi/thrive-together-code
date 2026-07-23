@@ -27,7 +27,7 @@ export default function ScoreInterpretation() {
   return (
     <div className="phone-container ob-lock min-h-dvh flex flex-col px-6 pt-14 mobile-bottom-safe bg-background relative">
       <SoundToggle />
-      <div className="absolute inset-0 z-0" style={{ background: `radial-gradient(ellipse at top, ${ambientGlow}, transparent 60%)` }} />
+      <div className="absolute inset-0 z-0 pointer-events-none" style={{ background: `radial-gradient(ellipse at top, ${ambientGlow}, transparent 60%)` }} />
       <div className="relative z-10 flex flex-col flex-1">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <div className="flex items-center gap-2 mb-3 leading-none">
