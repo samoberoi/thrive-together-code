@@ -326,7 +326,7 @@ export default function LogFAB(_props: { packageKey?: string | null }) {
                   <span className={`w-11 h-11 rounded-xl ${action.color} flex items-center justify-center`}>
                     <Icon className="w-5 h-5 text-white" strokeWidth={1.7} />
                   </span>
-                  <span className="text-[11px] font-semibold text-foreground text-center leading-none">
+                  <span className="no-break text-[11px] font-semibold text-foreground text-center leading-tight">
                     {action.label}
                   </span>
                 </motion.button>
@@ -351,10 +351,10 @@ export default function LogFAB(_props: { packageKey?: string | null }) {
               >
                 <Dumbbell className="w-5 h-5 text-white" strokeWidth={1.7} />
               </span>
-              <span className="text-[11px] font-semibold text-foreground text-center leading-none inline-flex items-center gap-1">
+              <span className="no-break text-[11px] font-semibold text-foreground text-center leading-tight flex flex-col items-center gap-1">
                 Exercise
                 <span
-                    className="text-[9px] font-black px-1.5 py-0.5 rounded-md"
+                    className="text-[9px] font-black px-1.5 py-0.5 rounded-md whitespace-nowrap"
                   style={{
                     background:
                       exerciseDone
@@ -386,10 +386,10 @@ export default function LogFAB(_props: { packageKey?: string | null }) {
               >
                 <Wind className="w-5 h-5 text-white" strokeWidth={1.7} />
               </span>
-              <span className="text-[11px] font-semibold text-foreground text-center leading-none inline-flex items-center gap-1">
+              <span className="no-break text-[11px] font-semibold text-foreground text-center leading-tight flex flex-col items-center gap-1">
                 Breath Protocol
                 <span
-                  className="text-[9px] font-black px-1.5 py-0.5 rounded-md"
+                  className="text-[9px] font-black px-1.5 py-0.5 rounded-md whitespace-nowrap"
                   style={{
                     background: breathDone ? "#10B98122" : "rgba(234,106,94,0.14)",
                     color: breathDone ? "#10B981" : "var(--bbdo-red, #EA6A5E)",
@@ -415,10 +415,10 @@ export default function LogFAB(_props: { packageKey?: string | null }) {
               >
                 <Dumbbell className="w-5 h-5 text-white" strokeWidth={1.7} />
               </span>
-              <span className="text-[11px] font-semibold text-foreground text-center leading-none inline-flex items-center gap-1">
-                Soleus Push-Ups
+              <span className="no-break text-[11px] font-semibold text-foreground text-center leading-tight flex flex-col items-center gap-1">
+                Soleus Push‑Ups
                 <span
-                  className="text-[9px] font-black px-1.5 py-0.5 rounded-md"
+                  className="text-[9px] font-black px-1.5 py-0.5 rounded-md whitespace-nowrap"
                   style={{
                     background: soleusDone ? "#10B98122" : "rgba(36,140,203,0.14)",
                     color: soleusDone ? "#10B981" : "var(--bbdo-blue)",
