@@ -210,6 +210,19 @@
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   .no-scrollbar::-webkit-scrollbar { display: none; }
 
+  /* ═══ Responsive text: prevent mid-word breaks in tight grid cells ═══
+     Apply to any label/value that sits in a narrow flex/grid child.
+     Keeps whole words together and lets them wrap on natural spaces. */
+  .no-break {
+    overflow-wrap: normal;
+    word-break: keep-all;
+    -webkit-hyphens: none;
+    hyphens: none;
+  }
+  /* Give every flex/grid text child a real min-width so clamp() and
+     shrink-to-fit actually work — the #1 cause of mid-word breaking. */
+  .no-break, .fit-cell { min-width: 0; }
+
   /* ═══ Global pill/circle shape overrides ═══ */
   button:not(.no-pill):not([data-shape="square"]):not(.chip):not(.fab):not(.top-icon-btn):not(.nav-pill) {
     border-radius: 9999px;
