@@ -198,6 +198,7 @@
       scroll-behavior: auto !important;
     }
   }
+}
 
 @layer utilities {
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -463,12 +464,12 @@
   }
 
   html.bb-native.bb-android .phone-container {
-    scroll-padding-bottom: calc(var(--bbdo-native-bottom-guard) + 7rem);
+    scroll-padding-bottom: calc(env(safe-area-inset-bottom) + var(--bbdo-native-bottom-guard, 0px) + 6rem);
   }
 
   html.bb-native.bb-android .phone-container.mobile-bottom-safe {
-    padding-bottom: calc(env(safe-area-inset-bottom) + var(--bbdo-native-bottom-guard, 0px) + 8.5rem) !important;
-    scroll-padding-bottom: calc(env(safe-area-inset-bottom) + var(--bbdo-native-bottom-guard, 0px) + 9rem);
+    padding-bottom: 0 !important;
+    scroll-padding-bottom: calc(env(safe-area-inset-bottom) + var(--bbdo-native-bottom-guard, 0px) + 6rem);
   }
 
   html.bb-native.bb-android .phone-container.mobile-bottom-safe > .flex-1,
@@ -498,36 +499,35 @@
     touch-action: pan-y;
     scroll-padding-bottom: calc(6rem + env(safe-area-inset-bottom) + var(--bbdo-native-bottom-guard, 0px));
   }
-  /* Android onboarding layout: fill the screen, keep the CTA anchored just
-     above the system nav bar via mt-auto (no artificial padding pushing it
-     up), and let content scroll naturally when it overflows. */
+  /* Android onboarding layout: keep the page itself as the scroller and keep
+     the CTA rail inside normal document flow. Sticky (not fixed/absolute) is
+     intentional: Android WebView + transformed route/motion wrappers otherwise
+     makes fixed descendants anchor to the wrong box and overlap content. */
   html.bb-native.bb-android .ob-lock > .flex-1 {
     min-height: 100%;
     padding-top: calc(env(safe-area-inset-top) + var(--bbdo-native-top-guard, 0px) + 1.75rem) !important;
-    padding-bottom: calc(env(safe-area-inset-bottom) + var(--bbdo-native-bottom-guard, 0px) + 7rem) !important;
+    padding-bottom: 0 !important;
   }
   html.bb-native.bb-android .ob-content {
     padding-top: calc(1.75rem + env(safe-area-inset-top) + var(--bbdo-native-top-guard, 0px));
-    padding-bottom: calc(env(safe-area-inset-bottom) + var(--bbdo-native-bottom-guard, 0px) + 7rem);
+    padding-bottom: 0;
+    min-height: 100%;
   }
-  /* CTA rail: use fixed positioning so transformed ancestors (framer-motion
-     wrappers) can't hijack the containing block and float the CTA mid-screen.
-     Solid cream background — no transparent fade — so content never bleeds
-     through the button rail. */
+  /* CTA rail: sticky participates in layout, so the last card cannot sit
+     underneath it. It still stays pinned to the bottom while the page scrolls. */
   html.bb-native.bb-android .ob-bottom {
-    position: fixed;
-    left: 0;
-    right: 0;
-    margin-inline: auto;
+    position: sticky !important;
     bottom: 0;
     z-index: 60;
-    width: min(100vw, 430px);
+    width: 100%;
     max-width: 100%;
-    margin-top: 0;
-    padding: 0.75rem 1.25rem calc(env(safe-area-inset-bottom) + var(--bbdo-native-bottom-guard, 0px) + 0.75rem);
+    margin-top: auto;
+    padding-top: 0.75rem;
+    padding-bottom: calc(env(safe-area-inset-bottom) + var(--bbdo-native-bottom-guard, 0px) + 0.75rem);
     background: var(--bbdo-cream);
     border-top: 1px solid rgba(0,0,0,0.04);
-  }
+    transform: none !important;
+    will-change: auto !important;
   }
 
   .ob-bg { position: absolute; inset: 0; z-index: 0; opacity: 0.14; }
