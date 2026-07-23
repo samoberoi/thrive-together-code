@@ -58,7 +58,7 @@ export default function TrajectoryScreen() {
             Two possible <span className="text-white/95">futures.</span>
           </h1>
           <p className="text-[12px] mt-2 text-white/70 leading-snug">
-            Where you're headed — and where you could be over the next 18 months.
+            From where you are to where you could be over the next 18 months.
           </p>
         </HeroCard>
 
