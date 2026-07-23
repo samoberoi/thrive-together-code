@@ -753,7 +753,8 @@
 .gradient-blue, .gradient-green, .gradient-lime { background: var(--bbdo-blue) !important; }
 .gradient-red, .gradient-danger { background: var(--bbdo-red) !important; }
 .fab:not(.fab-white):not(.fab-red) { background: var(--bbdo-blue); }
-.ob-cta:not(.ob-cta-ghost):not(.ob-cta-blue) { background: var(--bbdo-red) !important; }
+.ob-cta.gradient-blue { background: var(--bbdo-blue) !important; color: #fff !important; }
+.ob-cta:not(.ob-cta-ghost):not(.ob-cta-blue):not(.gradient-blue) { background: var(--bbdo-red) !important; }
 .ob-cta.ob-cta-ghost { background: transparent !important; color: var(--bbdo-ink) !important; border: 1px solid rgba(0,0,0,0.12) !important; box-shadow: none !important; }
 .ob-cta.ob-cta-blue { background: var(--bbdo-blue) !important; color: #fff !important; }
 
