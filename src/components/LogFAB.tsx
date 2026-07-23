@@ -444,7 +444,7 @@ export default function LogFAB(_props: { packageKey?: string | null }) {
               >
                 <Timer className="w-5 h-5 text-white" strokeWidth={1.7} />
               </span>
-              <span className="text-[11px] font-semibold text-foreground text-center leading-none">
+              <span className="no-break text-[11px] font-semibold text-foreground text-center leading-tight">
                 Fasting
               </span>
             </motion.button>
@@ -464,7 +464,7 @@ export default function LogFAB(_props: { packageKey?: string | null }) {
               >
                 <Pill className="w-5 h-5 text-white" strokeWidth={1.7} />
               </span>
-              <span className="text-[11px] font-semibold text-foreground text-center leading-none">
+              <span className="no-break text-[11px] font-semibold text-foreground text-center leading-tight">
                 Supplements
               </span>
             </motion.button>
