@@ -5193,6 +5193,10 @@ export type Database = {
           newly_awarded: number
         }[]
       }
+      bbdo_normalize_diet_preference: {
+        Args: { _diet: string }
+        Returns: string
+      }
       book_yoga_month: {
         Args: {
           _duration_days?: number
