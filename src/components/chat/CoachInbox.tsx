@@ -43,18 +43,30 @@ export default function CoachInbox({ coachId, openPatientId }: CoachInboxProps) 
 
   // Auto-open conversation for a specific patient
   useEffect(() => {
-    if (!openPatientId || loading || conversations.length === 0) return;
+    if (!openPatientId || loading) return;
     const existing = conversations.find((c) => c.patient_id === openPatientId);
     if (existing && activeConvo?.id !== existing.id) {
       openConversation(existing);
     } else if (!existing) {
-      // Create conversation if none exists
+      // Create conversation if none exists, then jump straight into it so the
+      // coach can send the very first message without landing on the empty inbox.
       (async () => {
         const { getOrCreateConversation } = await import("@/lib/chatService");
         const convo = await getOrCreateConversation(openPatientId, coachId);
-        if (convo) {
-          await loadConversations();
-        }
+        if (!convo) return;
+        await loadConversations();
+        const { data: patient } = await supabase
+          .from("profiles")
+          .select("name, avatar_url")
+          .eq("user_id", openPatientId)
+          .maybeSingle();
+        const seeded: ConvoWithMeta = {
+          ...(convo as unknown as ChatConversation),
+          patient_name: (patient as any)?.name ?? null,
+          patient_avatar: (patient as any)?.avatar_url ?? null,
+          last_message: null,
+        };
+        await openConversation(seeded);
       })();
     }
   }, [openPatientId, loading, conversations.length]);
