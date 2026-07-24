@@ -60,6 +60,23 @@ export interface CoachRating {
 export async function fetchAssignedCoach(userId: string): Promise<Coach | null> {
   const coachSelect = "id, name, phone, bio, description, specialization, coach_type, years_experience, total_consultations, avg_rating, total_ratings, avatar_url, languages, qualification, city, is_active, working_hours_start, working_hours_end, working_timezone";
 
+  const byNameFallback = async (): Promise<Coach | null> => {
+    const { data: profile } = await supabase
+      .from("profiles" as any)
+      .select("coach_name")
+      .eq("user_id", userId)
+      .maybeSingle();
+    const coachName = (profile as any)?.coach_name as string | undefined;
+    if (!coachName) return null;
+    const { data: byName } = await supabase
+      .from("coaches" as any)
+      .select(coachSelect)
+      .ilike("name", coachName.trim())
+      .eq("is_active", true)
+      .maybeSingle();
+    return (byName as unknown as Coach) ?? null;
+  };
+
   // Get active assignment
   const { data: assignment } = await supabase
     .from("coach_assignments" as any)
@@ -68,41 +85,26 @@ export async function fetchAssignedCoach(userId: string): Promise<Coach | null> 
     .eq("is_active", true)
     .maybeSingle();
 
-  let coachId: string | null = (assignment as any)?.coach_id ?? null;
+  const coachId: string | null = (assignment as any)?.coach_id ?? null;
 
-  // Fallback: derive coach from profile.coach_name if assignment row is missing.
   if (!coachId) {
-    const { data: profile } = await supabase
-      .from("profiles" as any)
-      .select("coach_name")
-      .eq("user_id", userId)
-      .maybeSingle();
-    const coachName = (profile as any)?.coach_name as string | undefined;
-    if (coachName) {
-      const { data: byName } = await supabase
-        .from("coaches" as any)
-        .select(coachSelect)
-        .eq("name", coachName)
-        .eq("is_active", true)
-        .maybeSingle();
-      if (byName) return byName as unknown as Coach;
-    }
-    return null;
+    return byNameFallback();
   }
 
   const { data: coach, error: cErr } = await supabase
     .from("coaches" as any)
     .select(coachSelect)
     .eq("id", coachId)
-    .single();
+    .maybeSingle();
 
-  if (cErr) {
-    console.error("Failed to fetch coach:", cErr);
-    return null;
+  if (cErr || !coach) {
+    console.warn("Coach lookup by id failed, falling back to name:", cErr);
+    return byNameFallback();
   }
 
   return coach as unknown as Coach;
 }
+
 
 
 /** Auto-assign a coach based on subscription plan */
