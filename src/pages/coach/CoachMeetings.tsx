@@ -46,8 +46,16 @@ export default function CoachMeetings() {
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [user]);
 
-  const upcoming = useMemo(() => meetings.filter((m) => m.status === "scheduled" && new Date(m.scheduled_at) > new Date(Date.now() - 60 * 60 * 1000)), [meetings]);
-  const past = useMemo(() => meetings.filter((m) => !upcoming.includes(m)), [meetings, upcoming]);
+  // All scheduled meetings show as "Upcoming" (even if the start time has just passed but the
+  // coach hasn't marked it complete yet). History = everything already completed/cancelled/no-show.
+  const upcoming = useMemo(
+    () =>
+      meetings
+        .filter((m) => m.status === "scheduled")
+        .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()),
+    [meetings],
+  );
+  const past = useMemo(() => meetings.filter((m) => m.status !== "scheduled"), [meetings]);
 
   const markStatus = async (m: CoachMeeting, status: "completed" | "cancelled" | "no_show") => {
     try { await updateMeetingStatus(m.id, status); toast({ title: `Marked ${status.replace("_", " ")}` }); load(); }
