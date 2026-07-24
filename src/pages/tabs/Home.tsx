@@ -616,6 +616,25 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
       fetchProfile(authUser.id).then(async (p) => {
         setDbProfile(p ?? null);
         if (p?.coach_name) setCoachName(p.coach_name);
+        // Best-effort: load coach avatar for the greeting chip
+        try {
+          const { data: asgn } = await supabase
+            .from("coach_assignments")
+            .select("coach_id")
+            .eq("user_id", authUser.id)
+            .eq("is_active", true)
+            .maybeSingle();
+          const coachId = (asgn as any)?.coach_id;
+          if (coachId) {
+            const { data: c } = await supabase
+              .from("coaches")
+              .select("name, avatar_url")
+              .eq("id", coachId)
+              .maybeSingle();
+            if ((c as any)?.name) setCoachName((c as any).name);
+            if ((c as any)?.avatar_url) setCoachAvatar((c as any).avatar_url);
+          }
+        } catch { /* ignore */ }
         if (p?.initial_health_score != null) {
           setInitialScore(p.initial_health_score);
         } else if (healthScore) {
