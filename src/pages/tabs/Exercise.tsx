@@ -32,8 +32,6 @@ import NativeYouTubePlayer from "@/components/exercises/NativeYouTubePlayer";
 import { isNativeAndroidApp, isNativeIOSApp, isYoutubePlayerMessage, youtubePlayerProxyUrl } from "@/lib/youtubeEmbed";
 import { accumulateWatched, loadWatched, markCompleted, recordProgress, saveDuration } from "@/lib/videoProgressStore";
 import { useCoachAssignedItems } from "@/hooks/useCoachAssignedItems";
-import { EmptyState as SharedEmptyState } from "@/components/shared";
-import { UserRound } from "lucide-react";
 
 const FALLBACK_SHORT_VIDEO_SEC = 120;
 
