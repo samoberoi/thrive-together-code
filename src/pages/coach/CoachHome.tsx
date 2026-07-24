@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import {
   Users, Star, Activity, AlertTriangle, TrendingUp, TrendingDown, Minus,
   Heart, UserCheck, Clock, ChevronRight, Loader2, Bell,
-  CalendarClock, Plus, Package, Send, CheckCircle2, Search,
+  CalendarClock, Plus, Package, Send, CheckCircle2, Search, Percent,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,11 +12,13 @@ import { createNotification } from "@/lib/notificationService";
 import { toast } from "sonner";
 import ScheduleMeetingDialog from "@/components/coach/ScheduleMeetingDialog";
 import PatientDailySummaryDialog from "@/components/coach/PatientDailySummaryDialog";
+import CoachCommissionDialog from "@/components/coach/CoachCommissionDialog";
 import CoachActivityNudgeDialog, {
   ACTIVITY_META,
   type ActivityKey,
   type PendingPatient,
 } from "@/components/coach/CoachActivityNudgeDialog";
+
 
 interface PatientSummary {
   user_id: string;
