@@ -19,6 +19,9 @@ import { createNotification } from "@/lib/notificationService";
 import { toast } from "sonner";
 import { fetchUserResults } from "@/lib/labResultsService";
 import { inferConditionsFromLabs } from "@/lib/labInferConditions";
+import AllergyAndSubPrefs from "@/components/diet/AllergyAndSubPrefs";
+import { loadDietProfile, saveDietProfile } from "@/lib/dietProfileService";
+
 
 const Field = ({ label, icon: Icon, value, onChange, placeholder, type = "text", readOnly, hint }: {
   label: string; icon: React.ElementType; value: string;
@@ -309,8 +312,14 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
   const [clinical, setClinical] = useState<Record<string, any>>({});
   const [deepProfiling, setDeepProfiling] = useState<Record<string, any>>({});
 
+  // Diet preferences + allergies (loaded from user_diet_profiles)
+  const [dietPrefs, setDietPrefs] = useState<string[]>([]);
+  const [subPreferences, setSubPreferences] = useState<string[]>([]);
+  const [allergenFoodIds, setAllergenFoodIds] = useState<string[]>([]);
+
   useEffect(() => {
     if (!effectiveUserId) return;
+
     fetchProfile(effectiveUserId).then((profile) => {
       if (!profile) return;
       if (profile.phone) setPhone(profile.phone);
@@ -360,6 +369,25 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
         return next;
       });
     }).catch(() => { /* ignore — lab pull is best-effort */ });
+
+    // Load diet preferences + allergies so coach/user can edit allergens.
+    loadDietProfile(effectiveUserId).then((dp) => {
+      if (!dp) return;
+      const arr = ((dp as any).diet_preferences as string[] | null) || [];
+      const normalize = (p?: string | null) => {
+        const v = (p || "").toLowerCase().replace(/[-\s]/g, "_");
+        if (!v) return null;
+        if (v === "vegetarian") return "veg";
+        if (v === "nonveg" || v === "non_vegetarian") return "non_veg";
+        return v;
+      };
+      const fromArr = arr.map(normalize).filter(Boolean) as string[];
+      const single = normalize(dp.diet_preference);
+      const finalPrefs = fromArr.length ? fromArr : single ? [single] : [];
+      setDietPrefs(finalPrefs);
+      setSubPreferences((dp as any).sub_preferences ?? []);
+      setAllergenFoodIds((dp as any).allergen_food_ids ?? []);
+    }).catch(() => { /* best-effort */ });
   }, [effectiveUserId]);
 
 
@@ -654,6 +682,14 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
       deep_profiling: deepProfiling,
       assessment: assessment as any,
     } as any);
+
+    // Persist diet prefs + allergies (may fail silently if row missing — best-effort)
+    await saveDietProfile(effectiveUserId, {
+      diet_preference: dietPrefs[0] ?? undefined,
+      diet_preferences: dietPrefs,
+      sub_preferences: subPreferences,
+      allergen_food_ids: allergenFoodIds,
+    });
 
     // Set initial score if not yet set
     if (!currentProfile?.initial_health_score && currentProfile?.initial_health_score !== 0) {
@@ -1284,6 +1320,34 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
             <ToggleChip label="Stress Level" value={deepProfiling.stressLevel ?? "moderate"} onChange={(v) => setDeepProfiling({ ...deepProfiling, stressLevel: v })} options={[{ id: "low", label: "Low" }, { id: "moderate", label: "Moderate" }, { id: "high", label: "High" }]} />
           </motion.div>
         )}
+
+        {/* Diet & Allergies */}
+        <motion.div className="liquid-glass rounded-2xl p-5 space-y-3" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28 }}>
+          <h3 className="text-foreground font-bold text-sm flex items-start gap-2 leading-tight break-words">
+            <Utensils className="w-4 h-4 shrink-0 text-primary" strokeWidth={1.8} />
+            Diet & Allergies
+          </h3>
+          <ToggleChip
+            label="Diet Preference"
+            value={dietPrefs[0] ?? ""}
+            onChange={(v) => setDietPrefs(v ? [v] : [])}
+            options={[
+              { id: "veg", label: "Vegetarian" },
+              { id: "non_veg", label: "Non-Veg" },
+              { id: "vegan", label: "Vegan" },
+              { id: "eggitarian", label: "Eggitarian" },
+              { id: "jain", label: "Jain" },
+            ]}
+          />
+          <AllergyAndSubPrefs
+            dietPrefs={dietPrefs}
+            subPreferences={subPreferences}
+            allergenFoodIds={allergenFoodIds}
+            onSubChange={setSubPreferences}
+            onAllergensChange={setAllergenFoodIds}
+          />
+        </motion.div>
+
         <motion.button
           onClick={requestSave}
           disabled={saving}

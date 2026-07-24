@@ -201,7 +201,7 @@ export default function CoachInbox({ coachId, openPatientId }: CoachInboxProps) 
   // Chat view
   if (activeConvo) {
     return (
-      <div className="flex flex-col h-[calc(100dvh-5rem)] md:h-[calc(100dvh-2rem)]">
+      <div className="fixed inset-0 z-[60] flex flex-col bg-background" style={{ paddingTop: "env(safe-area-inset-top)" }}>
         {/* Header */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-border/50">
           <button onClick={() => setActiveConvo(null)} className="p-1.5 rounded-xl hover:bg-accent transition-colors">
