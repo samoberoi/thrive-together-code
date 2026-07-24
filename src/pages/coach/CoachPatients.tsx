@@ -1009,7 +1009,7 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
                         ? "bg-warning/15 text-warning"
                         : "bg-muted/40 text-foreground";
                   return (
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 gap-2">
                       <div className={`rounded-xl p-2.5 text-center ${tone(scoreDanger, scoreWarn)}`}>
                         <p className="text-muted-foreground text-[9px] font-medium mb-0.5">Health</p>
                         <p className={`stat-number text-sm ${scoreDanger ? "text-destructive" : "text-foreground"}`}>{score ?? "—"}</p>
@@ -1030,18 +1030,8 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
                           </p>
                         )}
                       </div>
-                      <div className={`rounded-xl p-2.5 text-center ${tone(glucoseDanger, glucoseWarn)}`}>
-                        <p className="text-muted-foreground text-[9px] font-medium mb-0.5">Sugar</p>
-                        <p className={`stat-number text-sm ${glucoseDanger ? "text-destructive" : "text-foreground"}`}>
-                          {glucose ?? "—"}<span className="text-[8px] text-muted-foreground font-normal"> mg/dL</span>
-                        </p>
-                        {glucoseDelta != null && (
-                          <p className={`text-[9px] font-bold ${glucoseDelta < 0 ? "text-emerald-400" : glucoseDelta > 0 ? "text-red-400" : "text-muted-foreground"}`}>
-                            {glucoseDelta < 0 ? `▼ ${glucoseDelta}` : glucoseDelta > 0 ? `▲ +${glucoseDelta}` : "—"}
-                          </p>
-                        )}
-                      </div>
                     </div>
+
                   );
                 })()}
 
