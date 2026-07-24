@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import {
   Star, Award, Briefcase, Clock, LogOut, Loader2, Mail, Phone, MapPin,
   CreditCard, GraduationCap, Languages, Calendar, Percent, Building2,
-  Shield, User, Edit3, Save, X, Heart, Camera, Upload, FileText, Eye
+  Shield, User, Edit3, Save, X, Heart, Camera, Upload, FileText, Eye, Compass
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
