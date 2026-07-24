@@ -85,6 +85,8 @@ function normalizePref(p: string | null | undefined): DietKey | null {
 
 export default function QuickFoodReference({ onClose, embedded = false }: { onClose?: () => void; embedded?: boolean }) {
   const { user } = useAuth();
+  const { subPreferences, allergenFoodIds } = useUserDietProfile(user?.id);
+
   const confirm = useConfirm();
   const { types: dietTypeRows } = useDietTypes();
   const DIET_CHIPS = useMemo(
