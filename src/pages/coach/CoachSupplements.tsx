@@ -767,36 +767,8 @@ export default function CoachSupplements() {
                   </div>
                 )}
 
-                {/* ─── Adding supplements to existing plan ─── */}
-                {plan && isAdding && (
-                  <div className="mt-4 space-y-3">
-                    <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                      <Plus className="w-3.5 h-3.5 text-primary" /> Add More Supplements
-                    </h4>
-                    {renderRuleSelector(new Set(items.map((i) => i.supplement_id)))}
-                    <div className="flex items-center justify-between pt-2">
-                      <span className="text-[11px] text-muted-foreground">{selectedRules.size} supplements selected</span>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleAddToExistingPlan(patient.user_id, plan.id)}
-                          disabled={selectedRules.size === 0}
-                          className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-50"
-                        >
-                          <Check className="w-3.5 h-3.5 inline mr-1" /> Add ({selectedRules.size})
-                        </button>
-                        <button
-                          onClick={() => { setAddingToPatient(null); setSelectedRules(new Set()); setRuleDurations({}); }}
-                          className="px-3 py-2 rounded-xl bg-muted text-muted-foreground text-sm"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* ─── New assignment flow ─── */}
-                {!plan && !isAssigning && (
+                {/* Assign trigger for patients without a plan */}
+                {!plan && (
                   <div className="mt-4">
                     <button
                       onClick={() => { setAssigningPatient(patient.user_id); setSelectedRules(new Set()); setRuleDurations({}); }}
@@ -804,34 +776,6 @@ export default function CoachSupplements() {
                     >
                       <Pill className="w-4 h-4" /> Assign Supplement Plan
                     </button>
-                  </div>
-                )}
-
-                {isAssigning && (
-                  <div className="mt-4 space-y-3">
-                    <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                      <Pill className="w-3.5 h-3.5 text-primary" /> Select Condition Protocols to Assign
-                    </h4>
-                    <p className="text-[10px] text-muted-foreground">Check supplements and adjust duration per item.</p>
-                    {renderRuleSelector()}
-                    <div className="flex items-center justify-between pt-2">
-                      <span className="text-[11px] text-muted-foreground">{selectedRules.size} supplements selected</span>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleAssignPlan(patient.user_id)}
-                          disabled={selectedRules.size === 0}
-                          className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-50"
-                        >
-                          <Check className="w-3.5 h-3.5 inline mr-1" /> Assign Plan ({selectedRules.size})
-                        </button>
-                        <button
-                          onClick={() => { setAssigningPatient(null); setSelectedRules(new Set()); setRuleDurations({}); }}
-                          className="px-3 py-2 rounded-xl bg-muted text-muted-foreground text-sm"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
                   </div>
                 )}
                 </>
