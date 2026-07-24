@@ -376,13 +376,18 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
     try { return localStorage.getItem("bbdo:hideUpgradeCTA") === "1"; } catch { return false; }
   });
   const [coachName, setCoachName] = useState<string | null>(null);
+  const [coachAvatar, setCoachAvatar] = useState<string | null>(null);
   const [coachDialogOpen, setCoachDialogOpen] = useState(false);
   const [coachDialogCoachId, setCoachDialogCoachId] = useState<string | null>(null);
   const openCoachDialog = (coachId?: string | null) => {
     setCoachDialogCoachId(coachId ?? null);
     setCoachDialogOpen(true);
   };
-  const [nextMeeting, setNextMeeting] = useState<{ scheduled_at: string; duration_min: number | null; meeting_type: string; agenda: string | null; coach_id: string; coach_phone?: string | null; coach_name?: string | null } | null>(null);
+  const openCoachChat = () => {
+    window.dispatchEvent(new CustomEvent<string>("nav:set-tab", { detail: "consult" }));
+    window.dispatchEvent(new CustomEvent("nav:open-coach-chat"));
+  };
+  const [nextMeeting, setNextMeeting] = useState<{ scheduled_at: string; duration_min: number | null; meeting_type: string; agenda: string | null; coach_id: string; coach_phone?: string | null; coach_name?: string | null; coach_avatar?: string | null } | null>(null);
   const [hasAnyMeeting, setHasAnyMeeting] = useState<boolean>(false);
   const [hasCompletedMeeting, setHasCompletedMeeting] = useState<boolean>(false);
   const [glucoseData, setGlucoseData] = useState<{ v: number }[]>([]);
@@ -567,10 +572,12 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
           const m = ups[0] as any;
           const { data: coach } = await supabase
             .from("coaches")
-            .select("phone, name")
+            .select("phone, name, avatar_url")
             .eq("id", m.coach_id)
             .maybeSingle();
-          setNextMeeting({ ...m, coach_phone: coach?.phone ?? null, coach_name: coach?.name ?? null });
+          setNextMeeting({ ...m, coach_phone: coach?.phone ?? null, coach_name: coach?.name ?? null, coach_avatar: (coach as any)?.avatar_url ?? null });
+          if (coach?.name) setCoachName(coach.name);
+          if ((coach as any)?.avatar_url) setCoachAvatar((coach as any).avatar_url);
           setHasAnyMeeting(true);
         } else {
           setNextMeeting(null);
@@ -609,6 +616,25 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
       fetchProfile(authUser.id).then(async (p) => {
         setDbProfile(p ?? null);
         if (p?.coach_name) setCoachName(p.coach_name);
+        // Best-effort: load coach avatar for the greeting chip
+        try {
+          const { data: asgn } = await supabase
+            .from("coach_assignments")
+            .select("coach_id")
+            .eq("user_id", authUser.id)
+            .eq("is_active", true)
+            .maybeSingle();
+          const coachId = (asgn as any)?.coach_id;
+          if (coachId) {
+            const { data: c } = await supabase
+              .from("coaches")
+              .select("name, avatar_url")
+              .eq("id", coachId)
+              .maybeSingle();
+            if ((c as any)?.name) setCoachName((c as any).name);
+            if ((c as any)?.avatar_url) setCoachAvatar((c as any).avatar_url);
+          }
+        } catch { /* ignore */ }
         if (p?.initial_health_score != null) {
           setInitialScore(p.initial_health_score);
         } else if (healthScore) {
@@ -1274,36 +1300,41 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
 
   return (
     <div className="flex flex-col gap-6 px-5 md:px-8 xl:px-10 pt-3 md:pt-6 pb-6">
-      {/* Hero greeting — when a coach is assigned, feature the coach's name as the
-          tap-through to the chat. Foundation users (no coach) keep the first name. */}
+      {/* Hero greeting — always user's first name. Coach appears as a small chip below. */}
       <motion.div
-        className="pt-1 pb-2"
+        className="pt-1 pb-1"
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
       >
         <h1 className="text-[30px] sm:text-[34px] leading-[1.1] font-semibold tracking-[-0.03em] text-foreground no-break">
-          {greeting || "Good morning"},{" "}
-          {coachName ? (
-            <button
-              type="button"
-              onClick={() => {
-                window.dispatchEvent(new CustomEvent<string>("nav:set-tab", { detail: "consult" }));
-                window.dispatchEvent(new CustomEvent("nav:open-coach-chat"));
-              }}
-              className="underline decoration-primary/40 decoration-[3px] underline-offset-[6px] hover:decoration-primary transition-colors"
-            >
-              {coachName}
-            </button>
-          ) : (
-            firstName
-          )}{" "}
-          <span className="inline-block">👋</span>
+          {greeting || "Good morning"}, {firstName} <span className="inline-block">👋</span>
         </h1>
         {coachName && (
-          <p className="text-sm text-muted-foreground mt-1.5">Your coach — tap the name to open the chat</p>
+          <button
+            type="button"
+            onClick={openCoachChat}
+            className="mt-3 inline-flex items-center gap-2.5 pl-1 pr-3 py-1 rounded-full liquid-glass ring-1 ring-primary/15 hover:ring-primary/30 transition-all active:scale-[0.98]"
+            aria-label={`Message your coach ${coachName}`}
+          >
+            {coachAvatar ? (
+              <img
+                src={coachAvatar}
+                alt={coachName}
+                className="w-7 h-7 rounded-full object-cover ring-1 ring-border"
+              />
+            ) : (
+              <span className="w-7 h-7 rounded-full bg-primary/15 text-primary text-[12px] font-black flex items-center justify-center">
+                {coachName.trim().charAt(0).toUpperCase()}
+              </span>
+            )}
+            <span className="text-[12px] font-semibold text-foreground/85 leading-none">
+              <span className="text-muted-foreground font-medium">Your coach · </span>{coachName}
+            </span>
+          </button>
         )}
       </motion.div>
+
 
       {/* BBDO Global Streak */}
       <GlobalStreakCard />
@@ -1385,66 +1416,76 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
         </motion.div>
       )}
 
-      {/* ─── Next Coach Meeting (when scheduled) ─── */}
+      {/* ─── Next Coach Meeting (when scheduled) — WhatsApp video call card ─── */}
       {packageKey && packageKey !== "foundation" && nextMeeting && (() => {
         const d = new Date(nextMeeting.scheduled_at);
+        const callable = isMeetingCallable(nextMeeting.scheduled_at, nextMeeting.duration_min ?? 30);
+        const hasPhone = !!nextMeeting.coach_phone;
+        const canJoin = callable && hasPhone;
+        const joinHref = canJoin
+          ? whatsappCallUrl(nextMeeting.coach_phone!, `Hi ${nextMeeting.coach_name ?? "Coach"}, joining our scheduled call now.`)
+          : undefined;
+        const initial = (nextMeeting.coach_name || "C").trim().charAt(0).toUpperCase();
+        const meetingLabel = nextMeeting.meeting_type.replace(/_/g, " ");
         return (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-            className="rounded-3xl p-5 text-white shadow-card relative overflow-hidden"
-            style={{ background: "var(--bbdo-gradient)" }}
+            className="relative rounded-3xl p-5 liquid-glass ring-1 ring-emerald-500/25 overflow-hidden"
           >
-            <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-white/10 blur-2xl pointer-events-none" />
+            <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-emerald-500/10 blur-2xl pointer-events-none" />
             <div className="relative flex items-start gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center shrink-0">
-                <Calendar className="w-5 h-5 text-white" strokeWidth={1.6} />
-              </div>
+              {nextMeeting.coach_avatar ? (
+                <img
+                  src={nextMeeting.coach_avatar}
+                  alt={nextMeeting.coach_name ?? "Coach"}
+                  className="w-12 h-12 rounded-2xl object-cover shrink-0 ring-1 ring-border"
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-lg font-black flex items-center justify-center shrink-0">
+                  {initial}
+                </div>
+              )}
               <div className="flex-1 min-w-0">
-                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/80">
-                  Upcoming · {nextMeeting.meeting_type.replace("_", " ")}
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-600 dark:text-emerald-400 capitalize">
+                  Upcoming · {meetingLabel}
                 </p>
-                <h3 className="text-lg font-black mt-1 leading-tight">
+                <h3 className="text-base font-black mt-1 leading-tight text-foreground no-break">
                   {d.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })} · {d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
                 </h3>
                 {nextMeeting.coach_name && (
-                  <button
-                    type="button"
-                    onClick={() => openCoachDialog(nextMeeting.coach_id)}
-                    className="mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur text-white text-[11px] font-bold transition-colors"
-                  >
-                    with {nextMeeting.coach_name}
-                  </button>
+                  <p className="text-xs text-muted-foreground mt-0.5">with {nextMeeting.coach_name}</p>
                 )}
                 {nextMeeting.agenda && (
-                  <p className="text-xs text-white/85 mt-1.5 line-clamp-2">{nextMeeting.agenda}</p>
+                  <p className="text-xs text-foreground/70 mt-1.5 line-clamp-2">{nextMeeting.agenda}</p>
                 )}
-                {(() => {
-                  const callable = isMeetingCallable(nextMeeting.scheduled_at, nextMeeting.duration_min ?? 30);
-                  if (callable && nextMeeting.coach_phone) {
-                    return (
-                      <a
-                        href={whatsappCallUrl(nextMeeting.coach_phone, `Hi ${nextMeeting.coach_name ?? "Coach"}, joining our scheduled call now.`)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 mt-3 px-4 py-2 rounded-xl bg-success text-white font-bold text-xs shadow-lift"
-                      >
-                        <Phone className="w-3.5 h-3.5" /> Call Now on WhatsApp
-                      </a>
-                    );
-                  }
-                  return (
-                    <p className="text-[11px] text-white/70 mt-3 font-semibold">
-                      Call Now button will appear at the start time · WhatsApp video call
-                    </p>
-                  );
-                })()}
               </div>
             </div>
+
+            {/* WhatsApp video call CTA — disabled until meeting is callable */}
+            <a
+              href={joinHref}
+              target="_blank"
+              rel="noreferrer"
+              aria-disabled={!canJoin}
+              onClick={(e) => { if (!canJoin) e.preventDefault(); }}
+              className={`relative mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-sm transition-all ${
+                canJoin
+                  ? "bg-[#25D366] hover:bg-[#20bd5a] text-white shadow-lift active:scale-[0.99]"
+                  : "bg-muted text-muted-foreground cursor-not-allowed opacity-70"
+              }`}
+            >
+              {/* WhatsApp glyph */}
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+                <path d="M20.52 3.48A11.86 11.86 0 0 0 12.05 0C5.5 0 .2 5.3.2 11.85c0 2.09.55 4.13 1.6 5.93L0 24l6.4-1.68a11.83 11.83 0 0 0 5.65 1.44h.01c6.55 0 11.85-5.3 11.85-11.85 0-3.17-1.23-6.14-3.39-8.43ZM12.06 21.3h-.01a9.44 9.44 0 0 1-4.82-1.32l-.35-.21-3.8 1 .99-3.7-.23-.38a9.45 9.45 0 0 1-1.45-5.04c0-5.23 4.26-9.49 9.5-9.49 2.53 0 4.91.99 6.7 2.78a9.42 9.42 0 0 1 2.77 6.71c0 5.24-4.26 9.5-9.5 9.5Zm5.2-7.11c-.28-.14-1.68-.83-1.94-.93-.26-.09-.45-.14-.63.14-.19.28-.72.93-.88 1.12-.16.19-.32.21-.6.07-.28-.14-1.2-.44-2.28-1.41-.84-.75-1.41-1.68-1.58-1.96-.16-.28-.02-.44.12-.58.13-.13.28-.32.42-.48.14-.16.19-.28.28-.47.09-.19.05-.35-.02-.49-.07-.14-.63-1.52-.87-2.08-.23-.55-.46-.47-.63-.48h-.54c-.19 0-.49.07-.75.35-.26.28-.98.96-.98 2.35 0 1.39 1.01 2.74 1.15 2.93.14.19 1.99 3.04 4.83 4.26.68.29 1.2.46 1.61.59.68.22 1.29.19 1.78.11.54-.08 1.68-.69 1.92-1.35.24-.66.24-1.22.17-1.35-.07-.13-.26-.21-.54-.35Z" />
+              </svg>
+              {canJoin ? "Join WhatsApp Video Call" : "WhatsApp video link opens at start time"}
+            </a>
           </motion.div>
         );
       })()}
+
 
       {/* ─── Daily activity heart (hero) — single source of truth for today's habits ─── */}
       {(() => {
