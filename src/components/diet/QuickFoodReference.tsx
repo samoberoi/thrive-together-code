@@ -16,6 +16,9 @@ import {
   type ActiveCondition, type FoodRuleHit, type ConditionRuleRow, type ConditionKey,
   deriveActiveConditions, fetchConditionRules, buildFoodRuleMap, fetchFoodConditions,
 } from "@/lib/foodConditionRules";
+import { useUserDietProfile, isFoodBlockedByDietProfile } from "@/hooks/useUserDietProfile";
+
+
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 

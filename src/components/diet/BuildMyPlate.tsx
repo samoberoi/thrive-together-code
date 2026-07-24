@@ -15,6 +15,9 @@ import {
   type FoodFilter, type FoodItem, type DietType,
   giLabel, giClass, avgOf, sugarSpikeRisk, portionFactor, portionLabel, scaleCalories, scaleMacro,
 } from "./dietTypes";
+import { useUserDietProfile, isFoodBlockedByDietProfile } from "@/hooks/useUserDietProfile";
+
+
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
