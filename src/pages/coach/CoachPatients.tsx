@@ -32,6 +32,8 @@ interface Patient {
   clinical: any;
   deep_profiling: any;
   assessment: any;
+  plan_name: string | null;
+  plan_expires_at: string | null;
 }
 
 interface HealthLogEntry {
