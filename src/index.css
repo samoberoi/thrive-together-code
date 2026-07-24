@@ -1007,3 +1007,85 @@
   }
 }
 
+
+/* ═══════════════════════════════════════════════════════════════════════
+   RESPONSIVE FOUNDATION v1 — Phase 1 tokens
+   Fluid type, spacing scale, safe-area & nav-clear tokens, platform hooks.
+   Additive: existing utilities keep working.
+   ═══════════════════════════════════════════════════════════════════════ */
+@layer base {
+  :root {
+    /* Safe-area proxies (px). Layout primitives read these via env() directly;
+       these vars exist so JS can also observe them if needed. */
+    --sat: env(safe-area-inset-top);
+    --sab: env(safe-area-inset-bottom);
+    --sal: env(safe-area-inset-left);
+    --sar: env(safe-area-inset-right);
+
+    /* Keyboard height — updated by src/lib/platform.ts on visualViewport resize. */
+    --kb-h: 0px;
+
+    /* Bottom-nav height — updated by <AppBottomBar> at runtime.
+       Screens without a bottom bar get a sensible fallback (0px). */
+    --nav-h: 0px;
+    --nav-clear: calc(var(--nav-h) + env(safe-area-inset-bottom));
+
+    /* Fluid typography — one scale, adapts from 320dp to tablet. */
+    --fs-caption: clamp(11px, 0.72vw + 9px, 13px);
+    --fs-body:    clamp(14px, 0.8vw + 12px, 16px);
+    --fs-subhead: clamp(16px, 1.1vw + 13px, 20px);
+    --fs-heading: clamp(20px, 2.2vw + 14px, 30px);
+    --fs-display: clamp(28px, 4vw + 16px, 44px);
+
+    /* Spacing scale — 4/8/12/16/20/24/32/40. */
+    --sp-1: 4px;
+    --sp-2: 8px;
+    --sp-3: 12px;
+    --sp-4: 16px;
+    --sp-5: 20px;
+    --sp-6: 24px;
+    --sp-7: 32px;
+    --sp-8: 40px;
+
+    /* Standard tap target (Apple HIG / Material). */
+    --tap-min: 48px;
+  }
+}
+
+@layer utilities {
+  /* Content clearance for the fixed bottom nav + keyboard.
+     Use on any scroll container that isn't inside <AppScrollArea>. */
+  .pb-nav-clear { padding-bottom: calc(var(--nav-clear) + var(--kb-h, 0px)); }
+
+  /* Lift a fixed composer/CTA above keyboard + home indicator. */
+  .b-kb-safe { bottom: calc(var(--kb-h, 0px) + env(safe-area-inset-bottom)); }
+
+  /* Container-query enabled wrapper — child grids can use @container. */
+  .cq { container-type: inline-size; }
+
+  /* Prevent letter-by-letter vertical wrapping on constrained chips. */
+  .no-break { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+
+  /* Universal min tap-target. */
+  .tap-target { min-width: var(--tap-min); min-height: var(--tap-min); display: inline-flex; align-items: center; justify-content: center; }
+}
+
+/* Platform-native touches — same tokens, subtly different weight/tracking. */
+html.bb-ios body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Montserrat', 'Helvetica Neue', system-ui, sans-serif;
+  letter-spacing: -0.005em;
+}
+html.bb-android body {
+  font-family: 'Roboto', 'Montserrat', system-ui, -apple-system, sans-serif;
+}
+/* Material-style ripple utility — apply .press-ripple on Android pressables. */
+html.bb-android .press-ripple { position: relative; overflow: hidden; }
+html.bb-android .press-ripple::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit;
+  background: currentColor; opacity: 0; transition: opacity 120ms ease-out;
+  pointer-events: none;
+}
+html.bb-android .press-ripple:active::after { opacity: 0.08; }
+
+/* When keyboard is open, hide fixed bottom nav bars marked as hide-on-kb. */
+html.kb-open .kb-hide { display: none !important; }
