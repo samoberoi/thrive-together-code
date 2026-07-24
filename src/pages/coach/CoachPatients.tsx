@@ -774,12 +774,95 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
     red: patients.filter(p => patientStatuses[p.user_id]?.status === "red").length,
   };
 
+  // Renewals due in next 30 days
+  const now = Date.now();
+  const in30d = now + 30 * 24 * 60 * 60 * 1000;
+  const upcomingRenewals = patients.filter((p) => {
+    if (!p.plan_expires_at) return false;
+    const t = Date.parse(p.plan_expires_at);
+    return Number.isFinite(t) && t >= now && t <= in30d;
+  });
+
+  // Patients by package
+  const byPackage = new Map<string, number>();
+  patients.forEach((p) => {
+    if (!p.plan_name) return;
+    byPackage.set(p.plan_name, (byPackage.get(p.plan_name) ?? 0) + 1);
+  });
+  const packageEntries = Array.from(byPackage.entries()).sort((a, b) => b[1] - a[1]);
+
+  const fmtDate = (iso: string | null) => {
+    if (!iso) return null;
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return null;
+    return d.toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" });
+  };
+  const daysUntil = (iso: string) => Math.ceil((Date.parse(iso) - now) / (24 * 60 * 60 * 1000));
+
   return (
     <div className="flex flex-col gap-5 px-5 pt-14 pb-4">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-xl sm:text-2xl font-black text-foreground">My Patients</h1>
         <p className="text-muted-foreground text-sm">{patients.length} active patient{patients.length !== 1 ? "s" : ""}</p>
       </motion.div>
+
+      {/* KPI: totals + upcoming renewals (conditional) */}
+      {patients.length > 0 && (
+        <motion.div className="grid grid-cols-2 gap-3" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }}>
+          <div className="liquid-glass rounded-2xl p-4">
+            <p className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wide">Patients</p>
+            <p className="stat-number text-2xl text-foreground mt-1">{patients.length}</p>
+            <p className="text-muted-foreground text-[10px] mt-0.5">Active</p>
+          </div>
+          {upcomingRenewals.length > 0 ? (
+            <div className="rounded-2xl p-4 bg-warning/10 border border-warning/30">
+              <p className="text-warning text-[10px] font-semibold uppercase tracking-wide">Upcoming Renewals</p>
+              <p className="stat-number text-2xl text-warning mt-1">{upcomingRenewals.length}</p>
+              <p className="text-muted-foreground text-[10px] mt-0.5">Next 30 days</p>
+            </div>
+          ) : (
+            <div className="liquid-glass rounded-2xl p-4">
+              <p className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wide">On Track</p>
+              <p className="stat-number text-2xl text-emerald-400 mt-1">{statusCounts.green}</p>
+              <p className="text-muted-foreground text-[10px] mt-0.5">Healthy patients</p>
+            </div>
+          )}
+        </motion.div>
+      )}
+
+      {/* Patients by package */}
+      {packageEntries.length > 0 && (
+        <motion.div className="liquid-glass rounded-2xl p-4" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.04 }}>
+          <p className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wide mb-2">Patients by package</p>
+          <div className="flex flex-wrap gap-2">
+            {packageEntries.map(([name, count]) => (
+              <span key={name} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold no-break">
+                {name}
+                <span className="text-[10px] font-black bg-primary/20 rounded-full px-1.5 py-0.5">{count}</span>
+              </span>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
+      {/* Upcoming renewals detail (only when there are any) */}
+      {upcomingRenewals.length > 0 && (
+        <motion.div className="rounded-2xl p-4 bg-warning/5 border border-warning/20" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+          <p className="text-warning text-[10px] font-semibold uppercase tracking-wide mb-2">Renewal reminders</p>
+          <div className="flex flex-col gap-1.5">
+            {upcomingRenewals.slice(0, 5).map((p) => (
+              <button
+                key={p.user_id}
+                onClick={() => openPatient(p)}
+                className="flex items-center justify-between text-left"
+              >
+                <span className="text-foreground text-sm font-semibold truncate">{p.name ?? "Unknown"}</span>
+                <span className="text-warning text-[11px] font-bold ml-2 no-break">in {daysUntil(p.plan_expires_at!)}d</span>
+              </button>
+            ))}
+          </div>
+        </motion.div>
+      )}
 
       {/* Status Filter */}
       {patients.length > 0 && (
