@@ -271,7 +271,11 @@ export default function CoachInbox({ coachId, openPatientId }: CoachInboxProps) 
         </div>
 
         {/* Input */}
-        <div className="border-t border-border/50 px-3 py-2 flex items-center gap-2">
+        <div
+          className="border-t border-border/50 px-3 py-2 flex items-center gap-2"
+          style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 8px + var(--kb-h, 0px))" }}
+        >
+
           <input
             ref={inputRef}
             type="text"
