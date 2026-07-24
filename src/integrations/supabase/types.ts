@@ -787,6 +787,48 @@ export type Database = {
           },
         ]
       }
+      coach_video_assignments: {
+        Row: {
+          coach_id: string
+          created_at: string
+          id: string
+          item_key: string
+          module: string
+          patient_user_id: string
+        }
+        Insert: {
+          coach_id: string
+          created_at?: string
+          id?: string
+          item_key: string
+          module: string
+          patient_user_id: string
+        }
+        Update: {
+          coach_id?: string
+          created_at?: string
+          id?: string
+          item_key?: string
+          module?: string
+          patient_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coach_video_assignments_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_video_assignments_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "coaches_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coaches: {
         Row: {
           aadhaar_card: string | null
