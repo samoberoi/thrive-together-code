@@ -22,7 +22,7 @@ type View = "protocols" | "patients";
 
 export default function CoachFasting() {
   const { user } = useAuth();
-  const [view, setView] = useState<View>("protocols");
+  const [view, setView] = useState<View>("patients");
   const [patients, setPatients] = useState<any[]>([]);
   const [subscriptions, setSubscriptions] = useState<Record<string, { plan_id: string | null; started_at: string | null; expires_at: string | null }>>({});
   const [protocols, setProtocols] = useState<FastingProtocol[]>([]);
