@@ -608,17 +608,20 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
         ? parseInt(age)
         : undefined;
 
-    // Update localStorage with recomputed score
-    saveUser({
-      profile: { name, age: effectiveAge, gender, email: trimmedEmail || undefined } as any,
-      bodyMetrics: bodyMetrics as any,
-      lifestyle: lifestyleData as any,
-      clinical: clinicalData as any,
-      deepProfiling: deepProfiling,
-      assessment,
-    });
+    // Update localStorage only when the signed-in user is editing themselves
+    if (!coachMode) {
+      saveUser({
+        profile: { name, age: effectiveAge, gender, email: trimmedEmail || undefined } as any,
+        bodyMetrics: bodyMetrics as any,
+        lifestyle: lifestyleData as any,
+        clinical: clinicalData as any,
+        deepProfiling: deepProfiling,
+        assessment,
+      });
+    }
 
-    const currentProfile = await fetchProfile(user.id);
+    const currentProfile = await fetchProfile(effectiveUserId);
+
     const previousScore = currentProfile?.assessment?.healthScore ?? null;
     const initialScore = currentProfile?.initial_health_score ?? previousScore ?? assessment.healthScore;
     const newScore = assessment.healthScore;
