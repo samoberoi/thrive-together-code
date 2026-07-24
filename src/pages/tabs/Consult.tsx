@@ -82,6 +82,13 @@ export default function Consult() {
       .then(({ data }) => setPlanId((data as any)?.plan_id ?? null));
   }, [user]);
 
+  // Allow the Home greeting (and other surfaces) to jump straight into the coach chat.
+  useEffect(() => {
+    const openChat = () => setShowChat(true);
+    window.addEventListener("nav:open-coach-chat", openChat);
+    return () => window.removeEventListener("nav:open-coach-chat", openChat);
+  }, []);
+
   const handleRate = async (rating: number) => {
     if (!user || !coach) return;
     setMyRating(rating);
