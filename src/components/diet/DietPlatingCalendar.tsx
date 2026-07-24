@@ -178,6 +178,8 @@ export default function DietPlatingCalendar() {
     );
   }
 
+  if (!planStart) return null;
+
   return (
     <div className="liquid-glass rounded-3xl p-5 space-y-4">
       <div className="flex items-center justify-between gap-2">
@@ -221,7 +223,7 @@ export default function DietPlatingCalendar() {
       <div className="flex gap-1.5 overflow-x-auto pb-2 -mx-1 px-1">
         {Array.from({ length: 30 }).map((_, i) => {
           const active = i === activeDay;
-          const today = i === dayIndexForToday(planStart!);
+          const today = i === dayIndexForToday(planStart);
           return (
             <button
               key={i}
