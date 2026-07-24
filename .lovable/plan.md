@@ -1,113 +1,44 @@
+## Scope
 
-# Android Responsive Refactor — Root Cause & Systemic Fix
+Ship the visual/UX gap between end-user and coach surfaces, plus the concrete fixes called out on the Home screen and coach inbox. No new CSS tokens — reuse the existing `liquid-glass`, `.no-break`, `stat-number`, `RoleTopBar`, `ob-cta`, `EmptyState` primitives already shared with Apple/Android.
 
-## Why Android keeps breaking (root cause)
+## End-user Home (`src/pages/tabs/Home.tsx`)
 
-Every onboarding / setup screen re-implements its own scroll + footer layout. The current pattern (repeated in ~20 files) is:
+1. **Reorder blocks** so the header reads:
+   - Greeting (H1)
+   - Weekly Consistency Streak (`GlobalStreakCard`)
+   - Then the "Immediate medical supervision recommended" alert (currently rendered first)
+   - Then the coach-meeting card, Yoga class, etc.
+2. **Greeting swap:** when a coach exists, render `Good afternoon, <CoachName> 👋` and make the name a tap target that navigates to Messages → coach chat (dispatch the same event the messages tab uses today). Fall back to first name when no coach is assigned (Foundation tier).
+3. **Meeting card:** currently the "coming in shortly" banner shows even after the coach schedules a meeting because `nextMeeting` only accepts rows with `scheduled_at >= now - 1h`. Broaden the query and status filter so a `scheduled` meeting (any future time, or in-progress within `duration_min`) always resolves to the "Next Coach Meeting" hero card with real date/time, coach name, and agenda. The empty-state banner only shows when zero scheduled meetings exist.
 
-```tsx
-<div className="phone-container min-h-dvh flex flex-col px-5 pt-14 mobile-bottom-safe">
-  <header/>
-  <div className="flex flex-col flex-1"> ...content... </div>
-  <div className="ob-bottom flex gap-3"> ...CTA... </div>
-</div>
-```
+## Coach Home (`src/pages/coach/CoachHome.tsx`)
 
-Combined with these fighting CSS rules in `index.css`:
+Apply the end-user visual grammar (no new tokens):
 
-- `.phone-container` sets `height`, `min-height`, `max-height` all to `var(--bbdo-viewport-height, 100dvh)` — a fixed viewport lock.
-- `.mobile-bottom-safe` adds bottom padding, but the Android override zeroes it.
-- `.ob-bottom` is `position: relative !important` with `margin-top: auto` on Android — but on iOS it's a different mode.
-- Tailwind `min-h-dvh` on the same element competes with the fixed `max-height`.
-- Framer-motion wrappers create transformed containing blocks that break any absolute/fixed footer child.
-- `--bbdo-viewport-height` is JS-computed at startup and stales when the Android system bars resize.
+- Hero greeting: same `text-[30px] font-semibold tracking-[-0.03em]` treatment as user Home.
+- Section cards wrapped in `liquid-glass rounded-3xl p-5`, headings promoted to `text-base font-black`, `Meetings require scheduling` gets an icon chip identical to user meeting card, and the "4 pending" pill becomes a compact `text-[10px] uppercase tracking-[0.16em]` badge inside the header row (no vertical wrap).
+- Patient rows: standard 12px radius, avatar 40px, `Schedule` CTA styled as `ob-cta-blue` pill matching size across rows.
 
-Result: on some Android devices the flex content sizes past the "locked" viewport, gets clipped, and the CTA visually overlaps the last card. Every one-off fix (fixed → sticky → absolute → relative) shifts the bug to a different screen.
+## Coach Patients (`src/pages/coach/CoachPatients.tsx`)
 
-## The single fix
+- Log-history tab strip (Diabetes / BP / Weight / Fasting / Supps): wrap each chip with `.no-break` + `min-width:0` and switch the row to a horizontally-scrollable `snap-x` strip (already `overflow-x-auto`; add `whitespace-nowrap` and `shrink-0` on tab buttons). Fixes chips spilling off the card.
+- Patient summary card metric tiles: apply `.no-break` on labels ("Health", "Weight", "Sugar") and units to prevent mid-word wraps on Nord widths.
 
-Stop patching screens. Introduce **one** responsive layout primitive, replace all screen-level layout containers with it, and delete the competing CSS.
+## Coach Inbox (`src/components/chat/CoachInbox.tsx`)
 
-### 1. New primitive: `<AppScreen>` (and `<AppScreenFooter>`)
+- When `openPatientId` triggers `getOrCreateConversation`, reload conversations **and** immediately open the newly created convo so the chat view (with input box + send button) renders even at zero messages. Today it only calls `loadConversations()` and drops the user on the empty inbox.
+- Empty-state inside an open conversation: keep the "No messages yet" illustration but the composer at the bottom is already present — this fix just makes sure we land inside the conversation, not the inbox list, so users can send the first message.
 
-`src/components/layout/AppScreen.tsx` — replaces the `phone-container / ob-lock / mobile-bottom-safe / ob-bottom` combinations.
+## Out of scope
 
-Behavior (identical on iOS + Android, no platform branches):
+- No global CSS changes (per user directive).
+- No changes to package-2/3 gating logic — visual polish only across those tiers reuses the same Home component.
+- Coach profile page, meetings tab internals, and supplements/lab-tests coach screens are not touched in this pass; they will be a follow-up if the user wants the same polish extended.
 
-- Uses `min-h-[100svh]` (small viewport unit — stable across Android bar show/hide) with `flex flex-col`.
-- Max width `430px`, centered, no fixed height / max-height.
-- The **page itself is the scroll container** via `flex-1 overflow-y-auto overscroll-contain`.
-- Footer slot rendered as a sibling in normal flow — always after content, guaranteed no overlap.
-- Reads safe-area insets directly via `env(safe-area-inset-*)` on padding — no JS viewport measurement, no `--bbdo-native-bottom-guard` variable.
-- Accepts `scrollable` (default true), `padded` (default true), and `footer` props.
+## Verification
 
-### 2. Delete the competing CSS
-
-In `src/index.css` remove/simplify:
-
-- Fixed `height` / `max-height` on `.phone-container` and `.ob-lock`.
-- All `html.bb-native.bb-android` overrides for `.phone-container`, `.ob-lock`, `.ob-bottom`, `.mobile-bottom-safe`.
-- The `!important` red-CTA global (`.ob-cta:not(...)`).
-- The `--bbdo-viewport-height` / `--bbdo-native-bottom-guard` / `--bbdo-native-top-guard` variables and the JS that writes them in `startupDiagnostics.ts`.
-
-Keep the shared tokens (`--bbdo-cream`, `--bbdo-red`, `--bbdo-blue`, etc.) untouched.
-
-### 3. Migrate screens
-
-Replace the top-level container in these screen groups (all currently duplicate the same broken pattern):
-
-- `src/pages/onboarding/*` — RealityHook, TensionScreen, BreakPattern, HopeScreen, InsightScreen, CommitmentScreen, DayOneScreen, ProjectionPreview, PunchFramework, ScoreInterpretation, TrajectoryScreen, TransformationStory, AuthorityStatement, StartAssessment.
-- `src/pages/setup/*` — Purpose, BasicDetails, BodyStats, ClinicalData, LifestyleQuestions, DeepProfiling, HealthQuestions, HealthScore.
-- `src/pages/Auth.tsx`, `src/pages/Splash.tsx`, `src/pages/LanguageSelect.tsx`, `src/pages/Tour.tsx`.
-
-Each screen becomes:
-
-```tsx
-<AppScreen footer={<CTA/>}>
-  <Header/>
-  <Content/>
-</AppScreen>
-```
-
-Content uses Tailwind flex utilities (`flex flex-col gap-*`, `flex-1`, `w-full`). No fixed pixel widths/heights, no absolute-positioned footers, no motion wrappers on the outer container.
-
-### 4. Remove framer-motion wrappers that create containing blocks
-
-Where `motion.div` wraps the entire screen or footer, replace with plain `div`. Keep motion only on individual cards / buttons where it's a leaf.
-
-### 5. Tab pages (Home, Diet, Exercise, etc.)
-
-They already use `pb-nav` for bottom-nav clearance. Convert to `<AppScreen scrollable padded={false} footer={<BottomNav/>}>` in a follow-up (out of scope for this pass to keep diff bounded, but the primitive supports it).
-
-## Technical details
-
-Files created:
-
-- `src/components/layout/AppScreen.tsx`
-- `src/components/layout/AppScreenFooter.tsx` (optional convenience)
-
-Files modified:
-
-- `src/index.css` — remove Android overrides, simplify `.phone-container`, drop viewport-height JS variables, keep tokens.
-- `src/lib/startupDiagnostics.ts` — drop the JS viewport-height writer; keep only what's still needed (native class flags).
-- ~25 screen files — swap outer container to `<AppScreen>`.
-
-Files untouched:
-
-- iOS Capacitor config, native Android / iOS folders, Supabase, business logic, services, hooks.
-
-## Validation
-
-- Playwright at 320 / 360 / 390 / 412 dp widths, portrait; spot-check landscape.
-- For each key screen (RealityHook, Purpose, BasicDetails, ClinicalData, LifestyleQuestions, DeepProfiling, ScoreInterpretation, Auth): screenshot + assert no overlap between last content card and footer.
-- Typecheck.
-
-## Non-goals
-
-- No device-specific CSS.
-- No changes to iOS visual behavior beyond removing the competing overrides (iOS already works because it doesn't hit them).
-- No redesign — same visuals, same tokens, same components inside screens.
-
-## Rollout
-
-Single PR. After merge: `npm run build && npx cap sync android` and reinstall APK. No further per-screen tweaks should be required for new Android devices.
+- Playwright: load `/` as a paid user with a scheduled meeting → confirm hero shows date/time; alert appears **after** streak card; greeting shows coach name.
+- Load `/coach` → confirm greeting matches user Home density, "Meetings require scheduling" header aligned, pending badge inline.
+- Coach Patients → open a patient → tab strip scrolls without chip clipping.
+- Coach Patients → tap chat on a patient with no history → lands directly inside the chat view with composer, can send first message.
