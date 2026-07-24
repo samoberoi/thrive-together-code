@@ -125,7 +125,7 @@ export default function PatientChat({ coach, onBack }: PatientChatProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col bg-[#FCFCFD]" style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}>
+    <div className="fixed inset-0 z-[60] flex flex-col bg-[#FCFCFD]" style={{ paddingTop: "env(safe-area-inset-top)" }}>
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white/85 backdrop-blur-xl border-b border-border/60">
         <div className="max-w-3xl mx-auto flex items-center gap-3 px-3 md:px-4 py-3">
