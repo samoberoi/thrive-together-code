@@ -127,7 +127,7 @@ export default function CoachFasting() {
 
       {/* Tab switcher */}
       <div className="flex gap-2">
-        {(["protocols", "patients"] as View[]).map((v) => (
+        {(["patients", "protocols"] as View[]).map((v) => (
           <button
             key={v}
             onClick={() => setView(v)}
@@ -136,8 +136,8 @@ export default function CoachFasting() {
             }`}
           >
             <span className="inline-flex items-center gap-1.5">
-              {v === "protocols" ? <FileText className="w-4 h-4" /> : <Users className="w-4 h-4" />}
-              {v === "protocols" ? "Protocols" : `Patients (${patients.length})`}
+              {v === "patients" ? <Users className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
+              {v === "patients" ? `Patients (${patients.length})` : "Protocols"}
             </span>
           </button>
         ))}
