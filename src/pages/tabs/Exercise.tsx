@@ -455,6 +455,19 @@ export default function ExerciseTab({ packageKey }: Props) {
     return <div className="p-6 text-sm text-muted-foreground">Loading exercises…</div>;
   }
 
+  if (isCoachManaged && !assignmentsLoading && assignedItems && assignedItems.length === 0) {
+    return (
+      <div className="theme-exercise px-4 md:px-6 pt-6 pb-10">
+        <EmptyState
+          icon={Dumbbell}
+          title="Awaiting your coach's plan"
+          description="Your coach hasn't assigned any exercises yet. You'll see them here as soon as your plan is ready."
+        />
+      </div>
+    );
+  }
+
+
   return (
     <div className="theme-exercise px-4 md:px-6 pt-3 md:pt-8 pb-10 space-y-4">
       {/* HERO — BBDO Soleus Push-Ups (matches yoga hero look & feel) */}
