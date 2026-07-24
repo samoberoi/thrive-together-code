@@ -10,6 +10,11 @@ interface Props {
   commissionPercent: number;
   commissionName: string;
   payoutFrequency: string;
+  totalAssigned?: number;
+  totalPaying?: number;
+  totalMonthlyRevenue?: number;
+  monthlyCommission?: number;
+  rows?: PackageBreakdown[];
 }
 
 interface PackageBreakdown {
@@ -28,14 +33,28 @@ export default function CoachCommissionDialog({
   commissionPercent,
   commissionName,
   payoutFrequency,
+  totalAssigned: providedTotalAssigned,
+  totalPaying: providedTotalPaying,
+  totalMonthlyRevenue: providedTotalMonthlyRevenue,
+  monthlyCommission: providedMonthlyCommission,
+  rows: providedRows,
 }: Props) {
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<PackageBreakdown[]>([]);
+  const [totalAssigned, setTotalAssigned] = useState(0);
   const [totalUsers, setTotalUsers] = useState(0);
   const [totalMonthlyRevenue, setTotalMonthlyRevenue] = useState(0);
 
   useEffect(() => {
     if (!open || !coachId) return;
+    if (providedRows) {
+      setRows(providedRows);
+      setTotalAssigned(providedTotalAssigned ?? 0);
+      setTotalUsers(providedTotalPaying ?? 0);
+      setTotalMonthlyRevenue(providedTotalMonthlyRevenue ?? 0);
+      setLoading(false);
+      return;
+    }
     (async () => {
       setLoading(true);
       const { data: assignments } = await supabase
@@ -44,6 +63,7 @@ export default function CoachCommissionDialog({
         .eq("coach_id", coachId)
         .eq("is_active", true);
       const ids = ((assignments as any[]) ?? []).map((a) => a.user_id);
+      setTotalAssigned(ids.length);
       if (ids.length === 0) {
         setRows([]); setTotalUsers(0); setTotalMonthlyRevenue(0); setLoading(false); return;
       }
@@ -78,9 +98,9 @@ export default function CoachCommissionDialog({
       setTotalMonthlyRevenue(revenue);
       setLoading(false);
     })();
-  }, [open, coachId]);
+  }, [open, coachId, providedRows, providedTotalAssigned, providedTotalMonthlyRevenue, providedTotalPaying]);
 
-  const monthlyCommission = totalMonthlyRevenue * (commissionPercent / 100);
+  const monthlyCommission = providedMonthlyCommission ?? (totalMonthlyRevenue * (commissionPercent / 100));
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
@@ -110,7 +130,12 @@ export default function CoachCommissionDialog({
             </div>
 
             {/* Users & revenue */}
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
+              <div className="liquid-glass rounded-2xl p-3 text-center">
+                <Users className="w-4 h-4 text-primary mx-auto mb-1" />
+                <p className="stat-number text-xl text-foreground">{totalAssigned}</p>
+                <p className="text-[10px] text-muted-foreground font-medium">Assigned</p>
+              </div>
               <div className="liquid-glass rounded-2xl p-3 text-center">
                 <Users className="w-4 h-4 text-primary mx-auto mb-1" />
                 <p className="stat-number text-xl text-foreground">{totalUsers}</p>
