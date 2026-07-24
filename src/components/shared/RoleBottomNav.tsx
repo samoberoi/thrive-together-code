@@ -21,17 +21,17 @@ interface Props<TId extends string> {
 
 /**
  * Shared mobile bottom-dock for Coach / Admin / Partner.
- * Mirrors the user-role BottomNav visual system exactly:
- *   • white rounded-full pill container with subtle border + shadow
- *   • active tab renders as a black pill with icon + label
+ * Matches the end-user BottomNav visual system:
+ *   • flat rectangular bar pinned to the bottom edge (no rounded pill, no floating)
+ *   • full phone width, subtle top border + soft shadow
+ *   • icon-only tabs, active tab tinted with brand ink
  *   • overflow tabs collapse into a "More" button that opens a bottom drawer
- * User role keeps its richer `components/BottomNav.tsx` for the FAB.
  */
 export default function RoleBottomNav<TId extends string>({
   items,
   active,
   onSelect,
-  primarySlots = 4,
+  primarySlots = 5,
   extra,
 }: Props<TId>) {
   const [expanded, setExpanded] = useState(false);
@@ -57,29 +57,17 @@ export default function RoleBottomNav<TId extends string>({
         key={item.id}
         onClick={() => onSelect(item.id)}
         aria-label={item.label}
-        whileTap={{ scale: 0.96 }}
-        transition={{ duration: 0.12, ease: [0.22, 1, 0.36, 1] }}
-        className={`relative flex items-center justify-center gap-1.5 h-11 rounded-full transition-colors ${
-          isActive ? "flex-1 min-w-0 px-3" : "flex-none w-11"
-        }`}
+        whileTap={{ scale: 0.9 }}
+        transition={{ duration: 0.14, ease: [0.22, 1, 0.36, 1] }}
+        className="relative flex-1 flex items-center justify-center h-11 rounded-full transition-colors"
         style={
           isActive
             ? { background: "var(--bbdo-ink)", color: "#fff" }
-            : { color: "var(--bbdo-ink-soft)" }
+            : { background: "transparent", color: "var(--bbdo-ink-soft)" }
         }
       >
         <Icon className="w-5 h-5" strokeWidth={isActive ? 2 : 1.7} />
-        {isActive && (
-          <motion.span
-            initial={{ opacity: 0, width: 0 }}
-            animate={{ opacity: 1, width: "auto" }}
-            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-            className="text-[13px] font-semibold whitespace-nowrap overflow-hidden text-ellipsis"
-          >
-            {item.label}
-          </motion.span>
-        )}
-        <AttentionBadge count={item.badge ?? 0} className="absolute right-1 top-0.5" />
+        <AttentionBadge count={item.badge ?? 0} className="absolute right-1 top-1" />
       </motion.button>
     );
   };
@@ -104,7 +92,7 @@ export default function RoleBottomNav<TId extends string>({
         }
       >
         <Icon className="w-5 h-5" strokeWidth={1.7} />
-        <span className="text-[11px] font-semibold leading-none text-center">{item.label}</span>
+        <span className="text-[11px] font-semibold leading-none text-center no-break">{item.label}</span>
         <AttentionBadge count={item.badge ?? 0} className="absolute right-1.5 top-1.5" />
       </motion.button>
     );
@@ -125,34 +113,35 @@ export default function RoleBottomNav<TId extends string>({
         </DrawerContent>
       </Drawer>
 
-      <div className="fixed bottom-4 left-4 right-4 z-50 md:hidden flex items-center gap-2">
+      {/* Flat full-width dock — matches end-user BottomNav */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
         <div
-          className="flex-1 min-w-0 rounded-[999px] px-1.5 py-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))]"
+          className="flex items-center gap-0.5 px-2 pt-1.5"
           style={{
+            paddingBottom:
+              "calc(max(0.375rem, env(safe-area-inset-bottom)) + var(--bbdo-native-bottom-guard, 0px))",
             background: "#ffffff",
-            border: "1px solid var(--bbdo-line)",
-            boxShadow: "0 10px 32px -12px rgba(15,26,61,0.18)",
+            borderTop: "1px solid var(--bbdo-line)",
+            boxShadow: "0 -6px 20px -12px rgba(15,26,61,0.18)",
           }}
         >
-          <div className="flex items-stretch gap-1">
-            {primary.map(renderDockTab)}
-            {hasOverflow && (
-              <motion.button
-                key="more"
-                onClick={() => setExpanded(true)}
-                aria-label="More sections"
-                whileTap={{ scale: 0.96 }}
-                transition={{ duration: 0.12, ease: [0.22, 1, 0.36, 1] }}
-                className="relative flex-none w-11 flex items-center justify-center h-11 rounded-full"
-                style={{ color: "var(--bbdo-ink-soft)" }}
-              >
-                <MoreHorizontal className="w-5 h-5" strokeWidth={1.8} />
-                <AttentionBadge count={overflowUnread} className="absolute right-1 top-0.5" />
-              </motion.button>
-            )}
-          </div>
+          {primary.map(renderDockTab)}
+          {hasOverflow && (
+            <motion.button
+              key="more"
+              onClick={() => setExpanded(true)}
+              aria-label="More sections"
+              whileTap={{ scale: 0.9 }}
+              transition={{ duration: 0.14, ease: [0.22, 1, 0.36, 1] }}
+              className="relative flex-1 h-11 flex items-center justify-center rounded-full"
+              style={{ color: "var(--bbdo-ink-soft)" }}
+            >
+              <MoreHorizontal className="w-5 h-5" strokeWidth={1.9} />
+              <AttentionBadge count={overflowUnread} className="absolute right-1 top-1" />
+            </motion.button>
+          )}
+          {extra}
         </div>
-        {extra}
       </div>
     </>
   );

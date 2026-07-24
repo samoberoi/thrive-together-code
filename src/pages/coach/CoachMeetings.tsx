@@ -46,8 +46,16 @@ export default function CoachMeetings() {
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [user]);
 
-  const upcoming = useMemo(() => meetings.filter((m) => m.status === "scheduled" && new Date(m.scheduled_at) > new Date(Date.now() - 60 * 60 * 1000)), [meetings]);
-  const past = useMemo(() => meetings.filter((m) => !upcoming.includes(m)), [meetings, upcoming]);
+  // All scheduled meetings show as "Upcoming" (even if the start time has just passed but the
+  // coach hasn't marked it complete yet). History = everything already completed/cancelled/no-show.
+  const upcoming = useMemo(
+    () =>
+      meetings
+        .filter((m) => m.status === "scheduled")
+        .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()),
+    [meetings],
+  );
+  const past = useMemo(() => meetings.filter((m) => m.status !== "scheduled"), [meetings]);
 
   const markStatus = async (m: CoachMeeting, status: "completed" | "cancelled" | "no_show") => {
     try { await updateMeetingStatus(m.id, status); toast({ title: `Marked ${status.replace("_", " ")}` }); load(); }
@@ -69,17 +77,27 @@ export default function CoachMeetings() {
         </button>
       </motion.div>
 
-      {/* Pick a patient quick row */}
+      {/* Quick-schedule: vertical list of patients (chips overflow horizontally on small phones) */}
       {patientList.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-          {patientList.map((p) => (
-            <button key={p.user_id}
-              onClick={() => { setPresetPatient(p); setDlgOpen(true); }}
-              className="liquid-glass rounded-2xl px-3 py-2 text-xs whitespace-nowrap hover:bg-primary/5">
-              <Users className="w-3.5 h-3.5 inline mr-1.5 text-primary" />
-              {p.name ?? "—"}
-            </button>
-          ))}
+        <div className="flex flex-col gap-1.5">
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground no-break">
+            Quick schedule
+          </p>
+          <div className="flex flex-col gap-1.5">
+            {patientList.map((p) => (
+              <button
+                key={p.user_id}
+                onClick={() => { setPresetPatient(p); setDlgOpen(true); }}
+                className="liquid-glass rounded-2xl px-3 py-2.5 text-sm flex items-center gap-2 hover:bg-primary/5 text-left"
+              >
+                <Users className="w-4 h-4 text-primary shrink-0" />
+                <span className="flex-1 min-w-0 truncate no-break text-foreground font-medium">
+                  {p.name ?? "—"}
+                </span>
+                <Plus className="w-4 h-4 text-primary shrink-0" />
+              </button>
+            ))}
+          </div>
         </div>
       )}
 

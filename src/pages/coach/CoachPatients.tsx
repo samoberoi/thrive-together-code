@@ -746,7 +746,7 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
 
       {/* Status Filter */}
       {patients.length > 0 && (
-        <motion.div className="flex gap-2" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+        <motion.div className="flex gap-2 flex-wrap" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
           {([
             { key: "all" as const, label: "All", color: "text-foreground", bg: "bg-muted" },
             { key: "red" as const, label: "Needs Attention", color: "text-red-400", bg: "bg-red-500/15" },
@@ -758,7 +758,7 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
             <button
               key={f.key}
               onClick={() => setStatusFilter(f.key)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-colors whitespace-nowrap no-break ${
                 statusFilter === f.key ? `${f.bg} ${f.color} ring-1 ring-current` : "bg-muted/50 text-muted-foreground hover:bg-muted"
               } ${isDangerChip ? "danger-flash" : ""}`}
             >
