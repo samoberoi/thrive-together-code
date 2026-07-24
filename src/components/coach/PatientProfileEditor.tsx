@@ -8,6 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import AllergyAndSubPrefs from "@/components/diet/AllergyAndSubPrefs";
+import { loadDietProfile, saveDietProfile } from "@/lib/dietProfileService";
+import { useDietTypes } from "@/hooks/useDietTypes";
+
 
 interface Props {
   open: boolean;
