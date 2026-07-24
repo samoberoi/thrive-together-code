@@ -140,7 +140,7 @@ export default function CoachDashboard() {
     fasting: <CoachFasting />,
     supplements: <CoachSupplements />,
     labtests: <CoachLabTests />,
-    profile: <CoachProfile onSignOut={handleSignOut} />,
+    profile: <CoachProfile onSignOut={handleSignOut} onReplayTour={handleReplayTour} />,
   };
 
   return (
