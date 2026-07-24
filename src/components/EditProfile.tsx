@@ -636,27 +636,46 @@ export default function EditProfile({ onBack }: EditProfileProps) {
       } as any);
     }
 
-    if (ok && previousScore !== null) {
-      const scoreDelta = newScore - previousScore;
+    if (ok) {
+      // Load coach assignment once (used for score-decline alert + BMI push)
+      const { data: assignment } = await supabase
+        .from("coach_assignments" as any)
+        .select("coach_id, coaches:coach_id ( user_id, name )")
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .maybeSingle();
+      const coachRow: any = (assignment as any)?.coaches ?? null;
+      const coachUserId: string | null = coachRow?.user_id ?? null;
+      const patientFirstName = (name || currentProfile?.name || "Your patient").split(" ")[0];
 
-      // If score declined, create an alert for the coach
-      if (scoreDelta < 0) {
-        const { data: assignment } = await supabase
-          .from("coach_assignments" as any)
-          .select("coach_id")
-          .eq("user_id", user.id)
-          .eq("is_active", true)
-          .maybeSingle();
+      const scoreDelta = previousScore !== null ? newScore - previousScore : 0;
 
-        if (assignment) {
-          await supabase.from("health_score_alerts" as any).insert({
-            user_id: user.id,
-            coach_id: (assignment as any).coach_id,
-            previous_score: previousScore,
-            new_score: newScore,
-            score_delta: scoreDelta,
-            alert_type: scoreDelta <= -5 ? "critical_decline" : "decline",
-          } as any);
+      // If score declined, create an alert for the coach (DB trigger emits push)
+      if (previousScore !== null && scoreDelta < 0 && assignment) {
+        await supabase.from("health_score_alerts" as any).insert({
+          user_id: user.id,
+          coach_id: (assignment as any).coach_id,
+          previous_score: previousScore,
+          new_score: newScore,
+          score_delta: scoreDelta,
+          alert_type: scoreDelta <= -5 ? "critical_decline" : "decline",
+        } as any);
+      }
+
+      // Additional attention alerts to coach (BMI risk thresholds) -> push
+      if (coachUserId) {
+        const risks: string[] = [];
+        if (bmi && bmi >= 35) risks.push(`BMI ${bmi} (obese class II+)`);
+        else if (bmi && bmi >= 30) risks.push(`BMI ${bmi} (obese)`);
+        if (risks.length > 0) {
+          await createNotification({
+            user_id: coachUserId,
+            title: `⚠️ ${patientFirstName} needs attention`,
+            body: risks.join(" • ") + ". Tap to review.",
+            type: "health_alert",
+            icon: "⚠️",
+            action_url: "/coach?tab=patients",
+          });
         }
       }
 
