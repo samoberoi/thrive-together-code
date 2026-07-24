@@ -207,13 +207,6 @@ export default function CoachDashboard() {
         <div className="px-4 pb-6" style={{ borderTop: "1px solid hsl(var(--border))", paddingTop: "12px" }}>
           <CoachCommissionCard />
           <button
-            onClick={handleReplayTour}
-            className="flex items-center gap-3 px-4 py-2.5 rounded-2xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors w-full mb-1"
-          >
-            <Compass className="w-5 h-5 shrink-0" strokeWidth={1.5} />
-            <span className="font-medium text-sm">Take the tour again</span>
-          </button>
-          <button
             onClick={handleSignOut}
             className="flex items-center gap-3 px-4 py-2.5 rounded-2xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors w-full"
           >
