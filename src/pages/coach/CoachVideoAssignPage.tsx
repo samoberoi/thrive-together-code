@@ -38,22 +38,50 @@ export default function CoachVideoAssignPage({ module }: Props) {
     if (!user) return;
     (async () => {
       setLoading(true);
-      const { data: coach } = await supabase
-        .from("coaches" as any)
-        .select("id")
-        .eq("user_id", user.id)
-        .single();
-      const cid = (coach as any)?.id ?? null;
+
+      // Resolve coach row: prefer user_id, fall back to phone match + self-heal.
+      const resolveCoach = async (): Promise<string | null> => {
+        const { data: byUser } = await supabase
+          .from("coaches" as any)
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("is_active", true)
+          .maybeSingle();
+        if ((byUser as any)?.id) return (byUser as any).id;
+
+        // Try phone from the auth user (Supabase phone or bbd.app email prefix).
+        const rawPhone: string | undefined =
+          (user as any)?.phone ||
+          (user.email && user.email.endsWith("@bbd.app") ? user.email.split("@")[0] : undefined);
+        if (!rawPhone) return null;
+
+        // Attempt to self-heal by linking, then re-query.
+        try {
+          await supabase.rpc("link_coach_to_user" as any, { _user_id: user.id, _phone: rawPhone });
+        } catch {}
+        const { data: byUser2 } = await supabase
+          .from("coaches" as any)
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("is_active", true)
+          .maybeSingle();
+        return (byUser2 as any)?.id ?? null;
+      };
+
+      const cid = await resolveCoach();
       setCoachId(cid);
       if (!cid) {
+        console.warn("[CoachVideoAssignPage] Could not resolve coach id for user", user.id);
+        setPatients([]);
         setLoading(false);
         return;
       }
-      const { data: assignments } = await supabase
+      const { data: assignments, error: aErr } = await supabase
         .from("coach_assignments" as any)
         .select("user_id")
         .eq("coach_id", cid)
         .eq("is_active", true);
+      if (aErr) console.warn("[CoachVideoAssignPage] assignments query error", aErr);
       const ids = ((assignments as any[]) ?? []).map((a) => a.user_id);
       if (ids.length === 0) {
         setPatients([]);
@@ -64,12 +92,17 @@ export default function CoachVideoAssignPage({ module }: Props) {
         .from("profiles" as any)
         .select("user_id, name, avatar_url, package_key")
         .in("user_id", ids);
-      const list: Patient[] = ((profiles as any[]) ?? []).map((p) => ({
-        user_id: p.user_id,
-        name: p.name || "Patient",
-        package_key: p.package_key ?? null,
-        avatar_url: p.avatar_url ?? null,
-      }));
+      const profileById = new Map<string, any>();
+      ((profiles as any[]) ?? []).forEach((p) => profileById.set(p.user_id, p));
+      const list: Patient[] = ids.map((uid) => {
+        const p = profileById.get(uid);
+        return {
+          user_id: uid,
+          name: p?.name || "Patient",
+          package_key: p?.package_key ?? null,
+          avatar_url: p?.avatar_url ?? null,
+        };
+      });
       list.sort((a, b) => a.name.localeCompare(b.name));
       setPatients(list);
 
@@ -87,6 +120,7 @@ export default function CoachVideoAssignPage({ module }: Props) {
       setLoading(false);
     })();
   }, [user, module]);
+
 
   // Load assignable catalogue
   useEffect(() => {
