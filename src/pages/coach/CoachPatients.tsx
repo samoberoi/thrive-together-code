@@ -915,7 +915,7 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
           <p className="text-muted-foreground text-sm">No patients in this category</p>
         </motion.div>
       ) : (
-        <div className="grid grid-cols-[repeat(2,minmax(0,1fr))] gap-2 w-full">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
           {filteredPatients.map((p, i) => {
             const ps = patientStatuses[p.user_id];
             const sc = ps ? statusColors[ps.status] : statusColors.yellow;
