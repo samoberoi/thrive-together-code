@@ -19,6 +19,9 @@ import { createNotification } from "@/lib/notificationService";
 import { toast } from "sonner";
 import { fetchUserResults } from "@/lib/labResultsService";
 import { inferConditionsFromLabs } from "@/lib/labInferConditions";
+import AllergyAndSubPrefs from "@/components/diet/AllergyAndSubPrefs";
+import { loadDietProfile, saveDietProfile } from "@/lib/dietProfileService";
+
 
 const Field = ({ label, icon: Icon, value, onChange, placeholder, type = "text", readOnly, hint }: {
   label: string; icon: React.ElementType; value: string;
