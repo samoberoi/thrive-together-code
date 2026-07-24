@@ -683,6 +683,14 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
       assessment: assessment as any,
     } as any);
 
+    // Persist diet prefs + allergies (may fail silently if row missing — best-effort)
+    await saveDietProfile(effectiveUserId, {
+      diet_preference: dietPrefs[0] ?? undefined,
+      diet_preferences: dietPrefs,
+      sub_preferences: subPreferences,
+      allergen_food_ids: allergenFoodIds,
+    });
+
     // Set initial score if not yet set
     if (!currentProfile?.initial_health_score && currentProfile?.initial_health_score !== 0) {
       await updateProfile(effectiveUserId, {
