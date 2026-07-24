@@ -80,7 +80,7 @@ export default function PatientProfileEditor({ open, onClose, patientUserId, pat
           bmi < 18.5 ? "underweight" : bmi < 25 ? "normal" : bmi < 30 ? "overweight" : "obese";
       }
     }
-    const { error } = await supabase.from("profiles").update(patch).eq("user_id", patientUserId);
+    const { error } = await supabase.from("profiles").update(patch as any).eq("user_id", patientUserId);
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success("Profile updated");
