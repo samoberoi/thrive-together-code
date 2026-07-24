@@ -1300,36 +1300,41 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
 
   return (
     <div className="flex flex-col gap-6 px-5 md:px-8 xl:px-10 pt-3 md:pt-6 pb-6">
-      {/* Hero greeting — when a coach is assigned, feature the coach's name as the
-          tap-through to the chat. Foundation users (no coach) keep the first name. */}
+      {/* Hero greeting — always user's first name. Coach appears as a small chip below. */}
       <motion.div
-        className="pt-1 pb-2"
+        className="pt-1 pb-1"
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
       >
         <h1 className="text-[30px] sm:text-[34px] leading-[1.1] font-semibold tracking-[-0.03em] text-foreground no-break">
-          {greeting || "Good morning"},{" "}
-          {coachName ? (
-            <button
-              type="button"
-              onClick={() => {
-                window.dispatchEvent(new CustomEvent<string>("nav:set-tab", { detail: "consult" }));
-                window.dispatchEvent(new CustomEvent("nav:open-coach-chat"));
-              }}
-              className="underline decoration-primary/40 decoration-[3px] underline-offset-[6px] hover:decoration-primary transition-colors"
-            >
-              {coachName}
-            </button>
-          ) : (
-            firstName
-          )}{" "}
-          <span className="inline-block">👋</span>
+          {greeting || "Good morning"}, {firstName} <span className="inline-block">👋</span>
         </h1>
         {coachName && (
-          <p className="text-sm text-muted-foreground mt-1.5">Your coach — tap the name to open the chat</p>
+          <button
+            type="button"
+            onClick={openCoachChat}
+            className="mt-3 inline-flex items-center gap-2.5 pl-1 pr-3 py-1 rounded-full liquid-glass ring-1 ring-primary/15 hover:ring-primary/30 transition-all active:scale-[0.98]"
+            aria-label={`Message your coach ${coachName}`}
+          >
+            {coachAvatar ? (
+              <img
+                src={coachAvatar}
+                alt={coachName}
+                className="w-7 h-7 rounded-full object-cover ring-1 ring-border"
+              />
+            ) : (
+              <span className="w-7 h-7 rounded-full bg-primary/15 text-primary text-[12px] font-black flex items-center justify-center">
+                {coachName.trim().charAt(0).toUpperCase()}
+              </span>
+            )}
+            <span className="text-[12px] font-semibold text-foreground/85 leading-none">
+              <span className="text-muted-foreground font-medium">Your coach · </span>{coachName}
+            </span>
+          </button>
         )}
       </motion.div>
+
 
       {/* BBDO Global Streak */}
       <GlobalStreakCard />
