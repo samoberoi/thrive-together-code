@@ -6,7 +6,6 @@ import SoundToggle from "@/components/SoundToggle";
 import CoachCommissionCard from "@/components/CoachCommissionCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { resolveCurrentCoach } from "@/lib/coachService";
 import CoachHome from "./coach/CoachHome";
 import CoachPatients from "./coach/CoachPatients";
