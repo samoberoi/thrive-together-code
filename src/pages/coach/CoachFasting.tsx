@@ -22,7 +22,7 @@ type View = "protocols" | "patients";
 
 export default function CoachFasting() {
   const { user } = useAuth();
-  const [view, setView] = useState<View>("protocols");
+  const [view, setView] = useState<View>("patients");
   const [patients, setPatients] = useState<any[]>([]);
   const [subscriptions, setSubscriptions] = useState<Record<string, { plan_id: string | null; started_at: string | null; expires_at: string | null }>>({});
   const [protocols, setProtocols] = useState<FastingProtocol[]>([]);
@@ -127,7 +127,7 @@ export default function CoachFasting() {
 
       {/* Tab switcher */}
       <div className="flex gap-2">
-        {(["protocols", "patients"] as View[]).map((v) => (
+        {(["patients", "protocols"] as View[]).map((v) => (
           <button
             key={v}
             onClick={() => setView(v)}
@@ -136,8 +136,8 @@ export default function CoachFasting() {
             }`}
           >
             <span className="inline-flex items-center gap-1.5">
-              {v === "protocols" ? <FileText className="w-4 h-4" /> : <Users className="w-4 h-4" />}
-              {v === "protocols" ? "Protocols" : `Patients (${patients.length})`}
+              {v === "patients" ? <Users className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
+              {v === "patients" ? `Patients (${patients.length})` : "Protocols"}
             </span>
           </button>
         ))}
@@ -214,6 +214,26 @@ export default function CoachFasting() {
       {/* Patients View — compact rows with search; expand for detail */}
       {view === "patients" && (
         <div className="space-y-3">
+          {(() => {
+            const assignedCount = patients.filter((p: any) => !!patientProtocols[p.user_id]).length;
+            const unassignedCount = patients.length - assignedCount;
+            return (
+              <div className="grid grid-cols-3 gap-2">
+                <div className="liquid-glass rounded-2xl p-3 text-center">
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Total</div>
+                  <div className="text-2xl font-black text-foreground mt-1">{patients.length}</div>
+                </div>
+                <div className="rounded-2xl p-3 text-center border border-emerald-500/30 bg-emerald-500/10">
+                  <div className="text-[10px] uppercase tracking-wide text-emerald-600 dark:text-emerald-400 font-semibold">Assigned</div>
+                  <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{assignedCount}</div>
+                </div>
+                <div className="rounded-2xl p-3 text-center border border-destructive/30 bg-destructive/10">
+                  <div className="text-[10px] uppercase tracking-wide text-destructive font-semibold">Unassigned</div>
+                  <div className="text-2xl font-black text-destructive mt-1">{unassignedCount}</div>
+                </div>
+              </div>
+            );
+          })()}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input placeholder={`Search ${patients.length} patient${patients.length === 1 ? "" : "s"}…`} value={patientSearch} onChange={(e) => setPatientSearch(e.target.value)} className="pl-9 h-11 rounded-2xl" />
@@ -240,7 +260,7 @@ export default function CoachFasting() {
                 ? (missedCount > 2 ? { text: "⚠️ At Risk", cls: "bg-destructive/15 text-destructive border-destructive/20" }
                   : symptomCount > 0 ? { text: "🔶 Attention", cls: "bg-amber-500/15 text-amber-500 border-amber-500/20" }
                   : { text: "✅ On Track", cls: "bg-primary/15 text-primary border-primary/20" })
-                : { text: "Unassigned", cls: "border-muted-foreground/30 text-muted-foreground" };
+                : { text: "Unassigned", cls: "bg-destructive/15 text-destructive border-destructive/30" };
 
               return (
                 <motion.div key={patient.user_id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="liquid-glass rounded-3xl">
@@ -348,39 +368,47 @@ export default function CoachFasting() {
                       ) : (
                         <div>
                           {isAssigning && assignForm ? (
-                            <div className="flex flex-wrap gap-2 items-end">
-                              <Select
-                                value={assignForm.protocolId}
-                                onValueChange={(val) => setAssignForm({ ...assignForm, protocolId: val })}
-                              >
-                                <SelectTrigger className="rounded-xl flex-1 min-w-[180px] bg-background border-border">
-                                  <SelectValue placeholder="Select protocol" />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-xl">
-                                  {protocols.filter((p) => p.is_active).map((p) => (
-                                    <SelectItem key={p.id} value={p.id} className="rounded-lg">{p.protocol_name}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <input
-                                type="date"
-                                className="rounded-xl border border-input bg-background px-3 py-2 text-sm"
-                                value={assignForm.startDate}
-                                onChange={(e) => setAssignForm({ ...assignForm, startDate: e.target.value })}
-                              />
-                              <button
-                                onClick={handleAssign}
-                                disabled={!assignForm.protocolId}
-                                className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-50"
-                              >
-                                Assign
-                              </button>
-                              <button
-                                onClick={() => setAssignForm(null)}
-                                className="px-3 py-2 rounded-xl bg-accent text-muted-foreground text-sm"
-                              >
-                                Cancel
-                              </button>
+                            <div className="flex flex-col gap-3 rounded-2xl bg-muted/40 p-3">
+                              <div className="space-y-1.5">
+                                <label className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Protocol</label>
+                                <Select
+                                  value={assignForm.protocolId}
+                                  onValueChange={(val) => setAssignForm({ ...assignForm, protocolId: val })}
+                                >
+                                  <SelectTrigger className="rounded-xl w-full bg-background border-border h-11">
+                                    <SelectValue placeholder="Select protocol" />
+                                  </SelectTrigger>
+                                  <SelectContent className="rounded-xl">
+                                    {protocols.filter((p) => p.is_active).map((p) => (
+                                      <SelectItem key={p.id} value={p.id} className="rounded-lg">{p.protocol_name}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-1.5">
+                                <label className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Start date</label>
+                                <input
+                                  type="date"
+                                  className="rounded-xl border border-input bg-background px-3 h-11 text-sm w-full"
+                                  value={assignForm.startDate}
+                                  onChange={(e) => setAssignForm({ ...assignForm, startDate: e.target.value })}
+                                />
+                              </div>
+                              <div className="flex flex-col gap-2 pt-1">
+                                <button
+                                  onClick={handleAssign}
+                                  disabled={!assignForm.protocolId}
+                                  className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-50"
+                                >
+                                  Assign Protocol
+                                </button>
+                                <button
+                                  onClick={() => setAssignForm(null)}
+                                  className="w-full h-10 rounded-xl bg-accent text-muted-foreground text-sm font-medium"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
                             </div>
                           ) : (
                             <button
@@ -389,7 +417,7 @@ export default function CoachFasting() {
                                 protocolId: "",
                                 startDate: new Date().toISOString().split("T")[0],
                               })}
-                              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 text-primary text-sm font-semibold hover:bg-primary/20 transition-colors"
+                              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary/10 text-primary text-sm font-semibold hover:bg-primary/20 transition-colors"
                             >
                               <Calendar className="w-4 h-4" /> Assign Fasting Protocol
                             </button>
