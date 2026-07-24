@@ -450,6 +450,60 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
               {needsScheduling.length} pending
             </span>
           </div>
+          <div className="space-y-2">
+            {needsScheduling.slice(0, 6).map((p) => {
+              const fmt = (d: string | null) =>
+                d ? new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : null;
+              const joined = fmt(p.assigned_at);
+              const started = fmt(p.planStarted);
+              const expires = fmt(p.planExpires);
+              const daysLeft = p.planExpires
+                ? Math.max(0, Math.ceil((new Date(p.planExpires).getTime() - Date.now()) / 86400000))
+                : null;
+              return (
+                <button
+                  key={p.user_id}
+                  onClick={() => setScheduleFor(p)}
+                  className="w-full flex items-start gap-3 p-3 rounded-2xl bg-card/70 hover:bg-card transition text-left"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    {p.avatar_url ? (
+                      <img src={p.avatar_url} alt="" className="w-10 h-10 rounded-xl object-cover" />
+                    ) : (
+                      <span className="text-primary font-bold text-sm">{(p.name ?? "?")[0].toUpperCase()}</span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-foreground font-semibold text-sm truncate">{p.name ?? "Patient"}</p>
+                      {p.planName && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-md">
+                          <Package className="w-2.5 h-2.5" strokeWidth={2} /> {p.planName}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-muted-foreground text-[11px] mt-0.5">Awaiting onboarding meeting</p>
+                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-[10px] text-muted-foreground">
+                      {joined && <span>Joined <span className="text-foreground font-semibold">{joined}</span></span>}
+                      {started && <span>Started <span className="text-foreground font-semibold">{started}</span></span>}
+                      {expires && (
+                        <span>
+                          Ends <span className="text-foreground font-semibold">{expires}</span>
+                          {daysLeft !== null && <span className="text-primary font-bold"> · {daysLeft}d left</span>}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <span className="gradient-blue text-primary-foreground rounded-xl px-3 py-1.5 text-xs font-bold flex items-center gap-1 shrink-0">
+                    <Plus className="w-3.5 h-3.5" /> Schedule
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
+
 
       {/* Patient Tracking */}
       {patients.length > 0 && (
