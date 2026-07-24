@@ -320,7 +320,7 @@ export default function Dashboard() {
     exercise: <ExerciseTab packageKey={packageKey} />,
     fasting: <UserFasting packageKey={packageKey} />,
     supplements: <UserSupplements simpleMode={packageKey === "foundation"} />,
-    videos: <Videos />,
+    videos: <Videos packageKey={packageKey} />,
     community: <Community />,
     consult: <Consult />,
     labs: <LabTestsTab foundationMode={packageKey === "foundation"} />,
