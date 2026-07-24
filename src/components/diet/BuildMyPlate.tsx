@@ -88,7 +88,9 @@ function servingText(servings: number) {
 
 export default function BuildMyPlate({ onClose, onSaved }: { onClose: () => void; onSaved?: () => void | Promise<void> }) {
   const { user } = useAuth();
+  const { subPreferences, allergenFoodIds } = useUserDietProfile(user?.id);
   const confirm = useConfirm();
+
   const [filters, setFilters] = useState<FoodFilter[]>([]);
   const [items, setItems] = useState<FoodItem[]>([]);
   const [loading, setLoading] = useState(true);

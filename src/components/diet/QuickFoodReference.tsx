@@ -358,7 +358,9 @@ export default function QuickFoodReference({ onClose, embedded = false }: { onCl
 
   const visibleItems = useMemo(() => {
     let list = items.filter(dietMatches);
+    list = list.filter((it) => !isFoodBlockedByDietProfile(it as any, subPreferences, allergenFoodIds));
     if (!isGlobalSort) list = list.filter((it) => it.filter_id === activeFilter);
+
     // Preset filters (cross-category)
     if (preset === "best") {
       list = list.filter((it) => it.recommendation === "encourage" || it.recommendation === "moderate");
