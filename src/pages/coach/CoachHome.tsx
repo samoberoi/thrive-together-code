@@ -105,6 +105,10 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
   const [summaryPatient, setSummaryPatient] = useState<PatientSummary | null>(null);
   const [activityDialog, setActivityDialog] = useState<ActivityKey | null>(null);
   const [search, setSearch] = useState("");
+  const [commissionOpen, setCommissionOpen] = useState(false);
+  const [commissionInfo, setCommissionInfo] = useState<{ percent: number; name: string; frequency: string } | null>(null);
+  const [monthlyCommission, setMonthlyCommission] = useState<number | null>(null);
+
 
   useEffect(() => {
     if (!user) return;
