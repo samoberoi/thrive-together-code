@@ -77,13 +77,12 @@ export async function ensureUserProgress(
   }
 
   const level = levels.find((l) => l.level_number === progress!.current_level) ?? levels[0] ?? null;
-  // Daily target adapts to current profile (activity / BMI / age). Levels still
-  // represent the user's progression milestone, but the day-to-day target
-  // reflects what's realistic for them right now.
+  // Coach override wins over any auto calculation.
+  const coachOverride = progress?.custom_daily_step_goal ?? null;
   const recommended = cfg ? computeRecommendedSteps(cfg, profile) : (level?.target_daily_steps ?? 5000);
   const levelTarget = level?.target_daily_steps ?? (cfg?.base_daily_steps ?? 5000);
-  // Use the recommended target, but never exceed what their current level demands.
-  const targetSteps = Math.max(500, Math.min(levelTarget, recommended));
+  const autoTarget = Math.max(500, Math.min(levelTarget, recommended));
+  const targetSteps = coachOverride && coachOverride > 0 ? coachOverride : autoTarget;
   return { progress: progress!, level, targetSteps };
 }
 
