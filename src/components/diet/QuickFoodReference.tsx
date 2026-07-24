@@ -418,7 +418,7 @@ export default function QuickFoodReference({ onClose, embedded = false }: { onCl
         });
     }
     return sorted;
-  }, [items, activeFilter, diet, search, sort, preset, effectiveSort, isGlobalSort, ruleMap, hideSkipped]);
+  }, [items, activeFilter, diet, search, sort, preset, effectiveSort, isGlobalSort, ruleMap, hideSkipped, subPreferences, allergenFoodIds]);
 
   // Categories present in the current preset result (before sub-category filter).
   const presetCategories = useMemo(() => {
