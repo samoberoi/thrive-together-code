@@ -254,10 +254,19 @@ function MedicationListEditor({ medications, onChange }: { medications: Medicine
 
 interface EditProfileProps {
   onBack: () => void;
+  /** When editing another user (coach mode), pass their user_id */
+  targetUserId?: string;
+  /** Display name for header when in coach mode */
+  targetName?: string;
+  /** True when a coach is editing a patient */
+  coachMode?: boolean;
+  /** Called after a successful save */
+  onSaved?: () => void;
 }
 
-export default function EditProfile({ onBack }: EditProfileProps) {
+export default function EditProfile({ onBack, targetUserId, targetName, coachMode = false, onSaved }: EditProfileProps) {
   const { user } = useAuth();
+  const effectiveUserId = targetUserId ?? user?.id ?? null;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
@@ -265,8 +274,11 @@ export default function EditProfile({ onBack }: EditProfileProps) {
   const [uploading, setUploading] = useState(false);
   const [detecting, setDetecting] = useState(false);
   const [photoMenuOpen, setPhotoMenuOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const stored = getUser();
+  // In coach mode, don't seed from the coach's own localStorage — start empty
+  // and populate purely from the target patient's backend profile.
+  const stored = coachMode ? ({ profile: {}, bodyMetrics: {} } as any) : getUser();
 
   const [name, setName] = useState(stored.profile.name ?? "");
   const [age, setAge] = useState(stored.profile.age?.toString() ?? "");
@@ -290,6 +302,7 @@ export default function EditProfile({ onBack }: EditProfileProps) {
   const [maritalStatus, setMaritalStatus] = useState("");
   const [anniversaryDate, setAnniversaryDate] = useState("");
   const [spouseName, setSpouseName] = useState("");
+
 
   // Lifestyle, clinical, deep profiling from backend
   const [lifestyle, setLifestyle] = useState<Record<string, any>>({});
