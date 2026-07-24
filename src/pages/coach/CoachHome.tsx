@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import {
   Users, Star, Activity, AlertTriangle, TrendingUp, TrendingDown, Minus,
   Heart, UserCheck, Clock, ChevronRight, Loader2, Bell,
-  CalendarClock, Plus, Package, Send, CheckCircle2, Search,
+  CalendarClock, Plus, Package, Send, CheckCircle2, Search, Percent,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,11 +12,13 @@ import { createNotification } from "@/lib/notificationService";
 import { toast } from "sonner";
 import ScheduleMeetingDialog from "@/components/coach/ScheduleMeetingDialog";
 import PatientDailySummaryDialog from "@/components/coach/PatientDailySummaryDialog";
+import CoachCommissionDialog from "@/components/coach/CoachCommissionDialog";
 import CoachActivityNudgeDialog, {
   ACTIVITY_META,
   type ActivityKey,
   type PendingPatient,
 } from "@/components/coach/CoachActivityNudgeDialog";
+
 
 interface PatientSummary {
   user_id: string;
@@ -103,6 +105,10 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
   const [summaryPatient, setSummaryPatient] = useState<PatientSummary | null>(null);
   const [activityDialog, setActivityDialog] = useState<ActivityKey | null>(null);
   const [search, setSearch] = useState("");
+  const [commissionOpen, setCommissionOpen] = useState(false);
+  const [commissionInfo, setCommissionInfo] = useState<{ percent: number; name: string; frequency: string } | null>(null);
+  const [monthlyCommission, setMonthlyCommission] = useState<number | null>(null);
+
 
   useEffect(() => {
     if (!user) return;
@@ -309,6 +315,47 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
     setCompletedSessions(((handledMeetings as any[]) ?? []).filter((m) => m.status === "completed").length);
     setNeedsScheduling(enriched.filter((p) => !handledIds.has(p.user_id)));
 
+    // Commission model + monthly commission estimate
+    const modelId = (coachData as any).commission_model_id;
+    let model: any = null;
+    if (modelId) {
+      const { data: m } = await supabase
+        .from("commission_models" as any)
+        .select("name, percent, payout_frequency")
+        .eq("id", modelId)
+        .maybeSingle();
+      model = m;
+    }
+    if (!model) {
+      const { data: m } = await supabase
+        .from("commission_models" as any)
+        .select("name, percent, payout_frequency")
+        .eq("is_default", true).eq("is_active", true).maybeSingle();
+      model = m;
+    }
+    if (model) {
+      const percent = Number(model.percent) || 0;
+      setCommissionInfo({ percent, name: model.name, frequency: model.payout_frequency || "monthly" });
+      const { data: subs } = await supabase
+        .from("subscriptions" as any)
+        .select("user_id, plan_price, duration_months, status")
+        .in("user_id", patientIds)
+        .eq("status", "active");
+      const byUser = new Map<string, any>();
+      ((subs as any[]) ?? []).forEach((s) => {
+        const prev = byUser.get(s.user_id);
+        if (!prev || (Number(s.plan_price) || 0) > (Number(prev.plan_price) || 0)) byUser.set(s.user_id, s);
+      });
+      let revenue = 0;
+      byUser.forEach((s) => {
+        const months = Math.max(1, Number(s.duration_months) || 1);
+        revenue += (Number(s.plan_price) || 0) / months;
+      });
+      setMonthlyCommission(revenue * (percent / 100));
+    }
+
+
+
     setLoading(false);
   };
 
@@ -404,8 +451,8 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
         </motion.div>
       )}
 
-      {/* Dashboard — Patients / Rating / Sessions */}
-      <motion.div className="grid grid-cols-3 gap-3" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+      {/* Dashboard — Patients / Commission / Rating / Sessions (2×2) */}
+      <motion.div className="grid grid-cols-2 gap-3" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
         <button
           onClick={onViewPatient}
           className="liquid-glass rounded-2xl p-4 text-center hover:bg-accent/40 transition-colors"
@@ -413,6 +460,20 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
           <Users className="w-5 h-5 text-primary mx-auto mb-1.5" strokeWidth={1.8} />
           <p className="stat-number text-2xl text-foreground">{patients.length}</p>
           <p className="text-muted-foreground text-[10px] font-medium no-break">Patients →</p>
+        </button>
+        <button
+          onClick={() => setCommissionOpen(true)}
+          disabled={!commissionInfo}
+          className="liquid-glass rounded-2xl p-4 text-center hover:bg-accent/40 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          title="Estimated monthly commission — tap to see breakdown"
+        >
+          <Percent className="w-5 h-5 text-primary mx-auto mb-1.5" strokeWidth={1.8} />
+          <p className="stat-number text-2xl text-foreground">
+            {monthlyCommission != null
+              ? new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0, notation: monthlyCommission >= 100000 ? "compact" : "standard" }).format(monthlyCommission)
+              : "—"}
+          </p>
+          <p className="text-muted-foreground text-[10px] font-medium no-break">Commission {commissionInfo?.frequency ?? "monthly"} →</p>
         </button>
         <div className="liquid-glass rounded-2xl p-4 text-center">
           <Star className="w-5 h-5 text-warning mx-auto mb-1.5 fill-warning" />
@@ -431,6 +492,7 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
           <p className="text-muted-foreground text-[10px] font-medium no-break">Sessions →</p>
         </button>
       </motion.div>
+
 
       {/* Meetings to Schedule — surfaced right below the KPI grid */}
       {needsScheduling.length > 0 && (
@@ -505,33 +567,33 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
       )}
 
 
-      {/* Patient Tracking */}
+      {/* Patient Tracking — compact single row */}
       {patients.length > 0 && (
-        <motion.div className="liquid-glass rounded-3xl p-5" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}>
-          <div className="flex items-center gap-2 mb-3">
-            <UserCheck className="w-5 h-5 text-primary" strokeWidth={1.8} />
-            <span className="text-foreground font-bold">Patient Tracking</span>
-            <span className="ml-auto text-[11px] text-muted-foreground font-medium">Today</span>
+        <motion.div className="liquid-glass rounded-3xl p-4" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}>
+          <div className="flex items-center gap-2 mb-2.5">
+            <UserCheck className="w-4 h-4 text-primary" strokeWidth={1.8} />
+            <span className="text-foreground font-bold text-sm">Patient Tracking</span>
+            <span className="ml-auto text-[10px] text-muted-foreground font-medium">Today</span>
           </div>
-          <div className="grid grid-cols-3 gap-2">
-            <div className="bg-muted rounded-xl p-3 text-center">
-              <p className="text-2xl font-black text-foreground">{patients.length}</p>
-              <p className="text-[10px] text-muted-foreground font-medium">Total</p>
+          <div className="flex items-stretch rounded-xl overflow-hidden border border-border/50 divide-x divide-border/50">
+            <div className="flex-1 bg-muted/50 px-2 py-2 flex flex-col items-center justify-center">
+              <p className="text-lg font-black text-foreground leading-none">{patients.length}</p>
+              <p className="text-[9px] text-muted-foreground font-medium mt-0.5 no-break">Total</p>
             </div>
-            <div className="bg-success/10 rounded-xl p-3 text-center">
-              <p className="text-2xl font-black text-success">{onTrackCount}</p>
-              <p className="text-[10px] text-muted-foreground font-medium">On Track</p>
+            <div className="flex-1 bg-success/10 px-2 py-2 flex flex-col items-center justify-center">
+              <p className="text-lg font-black text-success leading-none">{onTrackCount}</p>
+              <p className="text-[9px] text-muted-foreground font-medium mt-0.5 no-break">On Track</p>
             </div>
-            <div className="bg-destructive/10 rounded-xl p-3 text-center">
-              <p className="text-2xl font-black text-destructive">{offTrackPatients.length}</p>
-              <p className="text-[10px] text-muted-foreground font-medium">Off Track</p>
+            <div className="flex-1 bg-destructive/10 px-2 py-2 flex flex-col items-center justify-center">
+              <p className="text-lg font-black text-destructive leading-none">{offTrackPatients.length}</p>
+              <p className="text-[9px] text-muted-foreground font-medium mt-0.5 no-break">Off Track</p>
             </div>
           </div>
           {offTrackPatients.length > 0 && (
             <button
               onClick={nudgeAllOffTrack}
               disabled={nudgingAll}
-              className="mt-3 w-full gradient-blue text-primary-foreground rounded-xl py-2.5 text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-60"
+              className="mt-2.5 w-full gradient-blue text-primary-foreground rounded-xl py-2 text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-60"
             >
               {nudgingAll ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
               Nudge all {offTrackPatients.length} off-track
@@ -540,17 +602,18 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
         </motion.div>
       )}
 
-      {/* Activity Tracking */}
+      {/* Activity Tracking — compact */}
       {patients.length > 0 && (
-        <motion.div className="liquid-glass rounded-3xl p-5" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.14 }}>
-          <div className="flex items-center gap-2 mb-3">
-            <CheckCircle2 className="w-5 h-5 text-primary" strokeWidth={1.8} />
-            <span className="text-foreground font-bold">Activity Tracking</span>
-            <span className="ml-auto text-[11px] text-muted-foreground font-medium">
-              Tap to nudge pending
+        <motion.div className="liquid-glass rounded-3xl p-4" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.14 }}>
+          <div className="flex items-center gap-2 mb-2.5">
+            <CheckCircle2 className="w-4 h-4 text-primary" strokeWidth={1.8} />
+            <span className="text-foreground font-bold text-sm">Activity Tracking</span>
+            <span className="ml-auto text-[10px] text-muted-foreground font-medium">
+              Tap to nudge
             </span>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+
             {ALL_ACTIVITIES.map((k) => {
               const s = activityStats.get(k)!;
               const meta = ACTIVITY_META[k];
@@ -789,6 +852,16 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
           doneCount={activeActivityStats.done}
           totalApplicable={activeActivityStats.applicable}
           coachName={coach?.name ?? null}
+        />
+      )}
+      {coach && commissionInfo && (
+        <CoachCommissionDialog
+          open={commissionOpen}
+          onClose={() => setCommissionOpen(false)}
+          coachId={coach.id}
+          commissionPercent={commissionInfo.percent}
+          commissionName={commissionInfo.name}
+          payoutFrequency={commissionInfo.frequency}
         />
       )}
     </div>
