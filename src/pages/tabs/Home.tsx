@@ -552,12 +552,15 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
       fetchActiveSubscription(authUser.id).then(setSubscription);
       // Load coach meetings to drive "awaiting meeting" / upcoming meeting UI
       (async () => {
+        // Show the nearest scheduled meeting — include meetings within the last 24h
+        // so a session scheduled "for today" still surfaces here after the start time,
+        // and any future-scheduled meeting always takes priority over the empty-state banner.
         const { data: ups } = await supabase
           .from("coach_meetings")
           .select("scheduled_at, duration_min, meeting_type, agenda, status, coach_id")
           .eq("user_id", authUser.id)
           .eq("status", "scheduled")
-          .gte("scheduled_at", new Date(Date.now() - 60 * 60 * 1000).toISOString())
+          .gte("scheduled_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
           .order("scheduled_at", { ascending: true })
           .limit(1);
         if (ups && ups.length > 0) {
