@@ -178,6 +178,8 @@ export default function DietPlatingCalendar() {
     );
   }
 
+  if (!planStart) return null;
+
   return (
     <div className="liquid-glass rounded-3xl p-5 space-y-4">
       <div className="flex items-center justify-between gap-2">
@@ -221,7 +223,7 @@ export default function DietPlatingCalendar() {
       <div className="flex gap-1.5 overflow-x-auto pb-2 -mx-1 px-1">
         {Array.from({ length: 30 }).map((_, i) => {
           const active = i === activeDay;
-          const today = i === dayIndexForToday(planStart!);
+          const today = i === dayIndexForToday(planStart);
           return (
             <button
               key={i}
@@ -301,54 +303,56 @@ export default function DietPlatingCalendar() {
       {/* Choose foods sheet */}
       {pickerFor && (
         <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-0 sm:p-4"
           onClick={() => setPickerFor(null)}
         >
           <div
-            className="w-full max-w-md liquid-glass rounded-3xl p-5 space-y-3 max-h-[85vh] flex flex-col"
+            className="w-full max-w-md h-[92svh] sm:h-auto sm:max-h-[85svh] liquid-glass rounded-t-3xl sm:rounded-3xl flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
-                  {slotLabel[pickerFor.meal_slot]}
-                </p>
-                <p className="text-foreground font-bold mt-1">Pick your foods</p>
-                <p className="text-[11px] text-muted-foreground">Choose 2–6 items · approved only</p>
+            <div className="shrink-0 p-5 pb-3 space-y-3 border-b border-border/60">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
+                    {slotLabel[pickerFor.meal_slot]}
+                  </p>
+                  <p className="text-foreground font-bold mt-1">Pick your foods</p>
+                  <p className="text-[11px] text-muted-foreground">Choose 2–6 items · approved only</p>
+                </div>
+                <button
+                  onClick={() => setPickerFor(null)}
+                  className="w-8 h-8 rounded-full bg-muted/60 flex items-center justify-center"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
-              <button
-                onClick={() => setPickerFor(null)}
-                className="w-8 h-8 rounded-full bg-muted/60 flex items-center justify-center"
-              >
-                <X className="w-4 h-4" />
-              </button>
+
+              <div className="relative">
+                <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  value={foodSearch}
+                  onChange={(e) => setFoodSearch(e.target.value)}
+                  placeholder="Search foods…"
+                  className="w-full pl-9 pr-3 py-2 rounded-xl bg-muted/40 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                />
+              </div>
+
+              {picked.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto pr-1">
+                  {picked.map((n) => (
+                    <button
+                      key={n}
+                      onClick={() => togglePick(n)}
+                      className="text-[11px] font-semibold text-primary-foreground bg-primary rounded-full px-2.5 py-1 inline-flex items-center gap-1"
+                    >
+                      {n} <X className="w-3 h-3" />
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
-            <div className="relative">
-              <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                value={foodSearch}
-                onChange={(e) => setFoodSearch(e.target.value)}
-                placeholder="Search foods…"
-                className="w-full pl-9 pr-3 py-2 rounded-xl bg-muted/40 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
-              />
-            </div>
-
-            {picked.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {picked.map((n) => (
-                  <button
-                    key={n}
-                    onClick={() => togglePick(n)}
-                    className="text-[11px] font-semibold text-primary-foreground bg-primary rounded-full px-2.5 py-1 inline-flex items-center gap-1"
-                  >
-                    {n} <X className="w-3 h-3" />
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <div className="flex-1 overflow-y-auto -mx-1 px-1 space-y-3">
+            <div className="flex-1 min-h-0 overflow-y-auto px-5 py-3 space-y-3">
               {Object.entries(filteredFoods).length === 0 && (
                 <p className="text-xs text-muted-foreground text-center py-6">No foods match.</p>
               )}
@@ -378,14 +382,22 @@ export default function DietPlatingCalendar() {
               ))}
             </div>
 
-            <button
-              onClick={savePicker}
-              disabled={picked.length < 1 || savingPicker}
-              className="gradient-blue text-primary-foreground rounded-xl px-4 py-2.5 text-sm font-bold inline-flex items-center justify-center gap-1.5 disabled:opacity-60"
-            >
-              {savingPicker ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-              Save meal ({picked.length})
-            </button>
+            <div className="shrink-0 border-t border-border/60 bg-background/80 px-5 pt-3 pb-[max(16px,env(safe-area-inset-bottom))] grid grid-cols-[0.8fr_1.2fr] gap-2">
+              <button
+                onClick={() => setPickerFor(null)}
+                className="rounded-xl px-4 py-3 text-sm font-bold text-foreground bg-muted hover:bg-muted/70"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={savePicker}
+                disabled={picked.length < 1 || savingPicker}
+                className="gradient-blue text-primary-foreground rounded-xl px-4 py-3 text-sm font-bold inline-flex items-center justify-center gap-1.5 disabled:opacity-60"
+              >
+                {savingPicker ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                Save meal ({picked.length})
+              </button>
+            </div>
           </div>
         </div>
       )}
