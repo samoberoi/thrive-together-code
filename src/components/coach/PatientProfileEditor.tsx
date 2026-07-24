@@ -19,10 +19,8 @@ export default function PatientProfileEditor({ open, onClose, patientUserId, pat
   if (!open) return null;
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent
-        className="p-0 gap-0 max-w-[560px] w-full sm:w-[560px] h-[92vh] max-h-[92vh] overflow-hidden"
-        hideDefaultCloseButton
-      >
+      <DialogContent className="p-0 gap-0 max-w-[560px] w-full sm:w-[560px] h-[92vh] max-h-[92vh] overflow-hidden">
+
         <EditProfile
           coachMode
           targetUserId={patientUserId}
