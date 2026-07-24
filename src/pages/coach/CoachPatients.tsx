@@ -444,7 +444,20 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
               </div>
             </div>
           </div>
+          {selectedPatient.phone && (
+            <a
+              href={`https://wa.me/91${String(selectedPatient.phone).replace(/\D/g, "")}?text=${encodeURIComponent(`Hi ${selectedPatient.name ?? ""}, this is your BBDO coach.`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold text-white"
+              style={{ background: "linear-gradient(135deg, #25D366 0%, #128C7E 100%)" }}
+            >
+              <MessageCircle className="w-4 h-4" strokeWidth={2.2} />
+              Click here to chat
+            </a>
+          )}
         </motion.div>
+
 
         {/* Coach actions */}
         {coachId && (
