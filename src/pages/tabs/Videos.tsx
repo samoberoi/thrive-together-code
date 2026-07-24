@@ -18,6 +18,8 @@ import { useDailyYogaMinutes } from "@/hooks/useAppSettings";
 import BreathProtocolDrawer from "@/components/BreathProtocolDrawer";
 import { useBreathSessionsToday } from "@/hooks/useBreathSessionsToday";
 import { BREATH_PROTOCOL_VIDEO } from "@/lib/breathProtocol";
+import { useCoachAssignedItems } from "@/hooks/useCoachAssignedItems";
+import { EmptyState } from "@/components/shared";
 
 const VIDEO_ICON_MAP: Record<string, LucideIcon> = {
   Activity,
@@ -40,7 +42,13 @@ function VideoFlatIcon({ name, className = "w-4 h-4" }: { name?: string | null; 
   return <Icon className={className} strokeWidth={1.75} />;
 }
 
-export default function Videos() {
+interface VideosProps {
+  packageKey?: string | null;
+}
+
+export default function Videos({ packageKey }: VideosProps = {}) {
+  const isCoachManaged = packageKey === "active" || packageKey === "intensive";
+  const { items: assignedItems, loading: assignmentsLoading } = useCoachAssignedItems("yoga", isCoachManaged);
   const [group, setGroup] = useState<(typeof videoGroups)[number]["id"]>("all");
   const [tag, setTag] = useState<(typeof videoTagFilters)[number]["id"]>("all");
   const [query, setQuery] = useState("");
@@ -52,10 +60,17 @@ export default function Videos() {
   const { getStatus, watched } = useVideoProgress();
 
   const allResolved = useMemo(
-    () => [...videos.map(resolveVideo), ...customVideos].filter(
-      (v) => !disabledIds.has(v.id) && v.youtubeId && v.youtubeId !== BREATH_PROTOCOL_VIDEO.youtubeId,
-    ),
-    [resolveVideo, customVideos, disabledIds],
+    () => {
+      const assignedSet = isCoachManaged && assignedItems ? new Set(assignedItems) : null;
+      return [...videos.map(resolveVideo), ...customVideos].filter(
+        (v) =>
+          !disabledIds.has(v.id) &&
+          v.youtubeId &&
+          v.youtubeId !== BREATH_PROTOCOL_VIDEO.youtubeId &&
+          (assignedSet ? assignedSet.has(v.id) : true),
+      );
+    },
+    [resolveVideo, customVideos, disabledIds, isCoachManaged, assignedItems],
   );
 
   // Prefetch durations for everything once
