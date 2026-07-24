@@ -627,7 +627,7 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
     const newScore = assessment.healthScore;
 
     // Update backend after capturing previous score state
-    const ok = await updateProfile(user.id, {
+    const ok = await updateProfile(effectiveUserId, {
       name,
       age: effectiveAge ?? null,
       gender: gender || null,
@@ -657,7 +657,7 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
 
     // Set initial score if not yet set
     if (!currentProfile?.initial_health_score && currentProfile?.initial_health_score !== 0) {
-      await updateProfile(user.id, {
+      await updateProfile(effectiveUserId, {
         initial_health_score: previousScore ?? newScore,
         initial_assessment_date: currentProfile?.created_at ?? new Date().toISOString(),
       } as any);
@@ -668,7 +668,7 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
       const { data: assignment } = await supabase
         .from("coach_assignments" as any)
         .select("coach_id, coaches:coach_id ( user_id, name )")
-        .eq("user_id", user.id)
+        .eq("user_id", effectiveUserId)
         .eq("is_active", true)
         .maybeSingle();
       const coachRow: any = (assignment as any)?.coaches ?? null;
@@ -680,7 +680,7 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
       // If score declined, create an alert for the coach (DB trigger emits push)
       if (previousScore !== null && scoreDelta < 0 && assignment) {
         await supabase.from("health_score_alerts" as any).insert({
-          user_id: user.id,
+          user_id: effectiveUserId,
           coach_id: (assignment as any).coach_id,
           previous_score: previousScore,
           new_score: newScore,
@@ -715,14 +715,14 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
 
         await Promise.all([
           supabase.from("compliments" as any).insert({
-            user_id: user.id,
+            user_id: effectiveUserId,
             compliment_type: "health_score",
             message,
             emoji: "🚀",
             metric_value: metricValue,
           } as any),
           createNotification({
-            user_id: user.id,
+            user_id: effectiveUserId,
             title: "🚀 Health Score Up!",
             body: message,
             type: "compliment",
@@ -730,7 +730,7 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
             action_url: "/home?tab=profile",
           }),
           createNotification({
-            user_id: user.id,
+            user_id: effectiveUserId,
             title: "📣 Share your win!",
             body: `Your health score improved by ${metricValue}. Tap to inspire the community 🎉`,
             type: "achievement_share",
