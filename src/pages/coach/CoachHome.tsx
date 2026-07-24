@@ -132,6 +132,9 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
       .eq("coach_id", (coachData as any).id)
       .eq("is_active", true);
 
+    // Always compute commission — even for coaches with 0 patients we still show 0 with the model %
+    await computeCommission(coachData, ((assignments as any[]) ?? []).map((a) => a.user_id));
+
     if (!assignments || assignments.length === 0) {
       setPatients([]); setAlerts([]); setNeedsScheduling([]);
       setLoading(false); return;
