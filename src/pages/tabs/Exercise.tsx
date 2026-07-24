@@ -31,6 +31,7 @@ import { SOLEUS_PROTOCOL_VIDEO } from "@/lib/soleusProtocol";
 import NativeYouTubePlayer from "@/components/exercises/NativeYouTubePlayer";
 import { isNativeAndroidApp, isNativeIOSApp, isYoutubePlayerMessage, youtubePlayerProxyUrl } from "@/lib/youtubeEmbed";
 import { accumulateWatched, loadWatched, markCompleted, recordProgress, saveDuration } from "@/lib/videoProgressStore";
+import { useCoachAssignedItems } from "@/hooks/useCoachAssignedItems";
 
 const FALLBACK_SHORT_VIDEO_SEC = 120;
 
@@ -257,6 +258,8 @@ function WatchModal({
 export default function ExerciseTab({ packageKey }: Props) {
   const { user } = useAuth();
   const userTier = tierForPackageKey(packageKey);
+  const isCoachManaged = packageKey === "active" || packageKey === "intensive";
+  const { items: assignedItems, loading: assignmentsLoading } = useCoachAssignedItems("exercise", isCoachManaged);
 
   const [categories, setCategories] = useState<ExerciseCategory[]>([]);
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -372,12 +375,14 @@ export default function ExerciseTab({ packageKey }: Props) {
   }, [visibleTiers, activeTier]);
 
   const filtered = useMemo(() => {
+    const assignedSet = isCoachManaged && assignedItems ? new Set(assignedItems) : null;
     return exercises
       .filter((e) => visibleTiers.includes(e.tier as ExerciseTier))
+      .filter((e) => (assignedSet ? assignedSet.has(e.id) : true))
       .filter((e) => (activeTier === "all" ? true : e.tier === activeTier))
       .filter((e) => (activeCat === "all" ? true : e.category_id === activeCat))
       .sort((a, b) => (a.tier - b.tier) || (a.sort_order - b.sort_order));
-  }, [exercises, activeTier, activeCat, visibleTiers]);
+  }, [exercises, activeTier, activeCat, visibleTiers, isCoachManaged, assignedItems]);
 
   // Daily goal is admin-configured MINUTES of exercise watch time.
   const todayProgress = useMemo(
@@ -449,6 +454,19 @@ export default function ExerciseTab({ packageKey }: Props) {
   if (loading) {
     return <div className="p-6 text-sm text-muted-foreground">Loading exercises…</div>;
   }
+
+  if (isCoachManaged && !assignmentsLoading && assignedItems && assignedItems.length === 0) {
+    return (
+      <div className="theme-exercise px-4 md:px-6 pt-6 pb-10">
+        <EmptyState
+          icon={Dumbbell}
+          title="Awaiting your coach's plan"
+          description="Your coach hasn't assigned any exercises yet. You'll see them here as soon as your plan is ready."
+        />
+      </div>
+    );
+  }
+
 
   return (
     <div className="theme-exercise px-4 md:px-6 pt-3 md:pt-8 pb-10 space-y-4">

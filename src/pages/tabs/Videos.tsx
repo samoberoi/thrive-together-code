@@ -18,6 +18,8 @@ import { useDailyYogaMinutes } from "@/hooks/useAppSettings";
 import BreathProtocolDrawer from "@/components/BreathProtocolDrawer";
 import { useBreathSessionsToday } from "@/hooks/useBreathSessionsToday";
 import { BREATH_PROTOCOL_VIDEO } from "@/lib/breathProtocol";
+import { useCoachAssignedItems } from "@/hooks/useCoachAssignedItems";
+import { EmptyState } from "@/components/shared";
 
 const VIDEO_ICON_MAP: Record<string, LucideIcon> = {
   Activity,
@@ -40,7 +42,13 @@ function VideoFlatIcon({ name, className = "w-4 h-4" }: { name?: string | null; 
   return <Icon className={className} strokeWidth={1.75} />;
 }
 
-export default function Videos() {
+interface VideosProps {
+  packageKey?: string | null;
+}
+
+export default function Videos({ packageKey }: VideosProps = {}) {
+  const isCoachManaged = packageKey === "active" || packageKey === "intensive";
+  const { items: assignedItems, loading: assignmentsLoading } = useCoachAssignedItems("yoga", isCoachManaged);
   const [group, setGroup] = useState<(typeof videoGroups)[number]["id"]>("all");
   const [tag, setTag] = useState<(typeof videoTagFilters)[number]["id"]>("all");
   const [query, setQuery] = useState("");
@@ -52,10 +60,17 @@ export default function Videos() {
   const { getStatus, watched } = useVideoProgress();
 
   const allResolved = useMemo(
-    () => [...videos.map(resolveVideo), ...customVideos].filter(
-      (v) => !disabledIds.has(v.id) && v.youtubeId && v.youtubeId !== BREATH_PROTOCOL_VIDEO.youtubeId,
-    ),
-    [resolveVideo, customVideos, disabledIds],
+    () => {
+      const assignedSet = isCoachManaged && assignedItems ? new Set(assignedItems) : null;
+      return [...videos.map(resolveVideo), ...customVideos].filter(
+        (v) =>
+          !disabledIds.has(v.id) &&
+          v.youtubeId &&
+          v.youtubeId !== BREATH_PROTOCOL_VIDEO.youtubeId &&
+          (assignedSet ? assignedSet.has(v.id) : true),
+      );
+    },
+    [resolveVideo, customVideos, disabledIds, isCoachManaged, assignedItems],
   );
 
   // Prefetch durations for everything once
@@ -117,8 +132,21 @@ export default function Videos() {
   const yogaRemaining = Math.max(0, Math.round((yogaGoalMin - yogaMinutesToday) * 10) / 10);
   const thumbnailsReady = !(thumbnailsLoading || metadataLoading);
 
+  if (isCoachManaged && !assignmentsLoading && assignedItems && assignedItems.length === 0) {
+    return (
+      <div className="px-5 pt-6 pb-10">
+        <EmptyState
+          icon={Flower2}
+          title="Awaiting your coach's plan"
+          description="Your coach hasn't assigned any yoga videos yet. You'll see them here as soon as your plan is ready."
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4 pt-4 md:pt-6 pb-6">
+
       {/* HERO — BBDO Daily Breath Protocol (big, prominent) */}
       <div className="mx-5">
         <motion.button
