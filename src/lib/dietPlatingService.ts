@@ -5,7 +5,7 @@ export interface DietPlating {
   user_id: string;
   plan_start_date: string;
   day_index: number;
-  meal_slot: "breakfast" | "lunch" | "snack" | "dinner";
+  meal_slot: "first_meal" | "mid_bite" | "last_meal" | "breakfast" | "lunch" | "snack" | "dinner";
   plate_data: { title?: string; items?: string[] } | any;
   calories: number | null;
 }
@@ -90,14 +90,21 @@ export async function fetchApprovedFoods(diet: string): Promise<ApprovedFood[]> 
 }
 
 export async function fetchCurrentDietPreference(userId: string): Promise<string> {
-  const { data } = await supabase
-    .from("user_diet_profiles")
-    .select("diet_preference, diet_preferences")
-    .eq("user_id", userId)
-    .maybeSingle();
+  const [{ data }, { data: profile }] = await Promise.all([
+    supabase
+      .from("user_diet_profiles")
+      .select("diet_preference, diet_preferences")
+      .eq("user_id", userId)
+      .maybeSingle(),
+    supabase
+      .from("profiles")
+      .select("lifestyle")
+      .eq("user_id", userId)
+      .maybeSingle(),
+  ]);
   const row = data as any;
   const prefs = (row?.diet_preferences as string[] | null | undefined)?.map(normalizeDietPreference).filter(Boolean) ?? [];
-  return prefs[0] || normalizeDietPreference(row?.diet_preference) || "mixed";
+  return prefs[0] || normalizeDietPreference(row?.diet_preference) || normalizeDietPreference((profile as any)?.lifestyle?.diet) || "mixed";
 }
 
 export function dayIndexForToday(planStartDate: string) {
