@@ -92,7 +92,7 @@ function DocUploadBox({ label, docUrl, uploading, onUpload, onView }: {
 
 /* ── Main Component ──────────────────────────────────────────────────── */
 
-export default function CoachProfile({ onSignOut }: { onSignOut: () => void }) {
+export default function CoachProfile({ onSignOut, onReplayTour }: { onSignOut: () => void; onReplayTour?: () => void }) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [coach, setCoach] = useState<Coach | null>(null);
