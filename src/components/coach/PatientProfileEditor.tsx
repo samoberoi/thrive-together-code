@@ -97,12 +97,25 @@ export default function PatientProfileEditor({ open, onClose, patientUserId, pat
       }
     }
     const { error } = await supabase.from("profiles").update(patch as any).eq("user_id", patientUserId);
+    if (!error) {
+      const dietOk = await saveDietProfile(patientUserId, {
+        diet_preference: dietPrefs[0] ?? null,
+        diet_preferences: dietPrefs,
+        sub_preferences: subPreferences,
+        allergen_food_ids: allergenFoodIds,
+      });
+      if (!dietOk) {
+        setSaving(false);
+        return toast.error("Saved profile, but couldn't save diet & allergies.");
+      }
+    }
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success("Profile updated");
     onSaved?.();
     onClose();
   };
+
 
   const arrToCsv = (v: any): string => (Array.isArray(v) ? v.join(", ") : v ?? "");
   const csvToArr = (v: string) =>
