@@ -786,6 +786,71 @@ export default function CoachSupplements() {
           })()}
         </div>
       )}
+
+      {/* Assign / Add supplements bottom sheet */}
+      {(() => {
+        const activeUserId = assigningPatient ?? addingToPatient;
+        const isAdd = !!addingToPatient;
+        const activePatient = activeUserId ? patients.find((p: any) => p.user_id === activeUserId) : null;
+        const activePlan = activeUserId ? patientPlans[activeUserId] : null;
+        const activeItems = activeUserId ? (patientItems[activeUserId] ?? []) : [];
+        const existingSuppIds = isAdd ? new Set(activeItems.map((i) => i.supplement_id)) : undefined;
+        const open = !!activeUserId;
+
+        const close = () => {
+          setAssigningPatient(null);
+          setAddingToPatient(null);
+          setSelectedRules(new Set());
+          setRuleDurations({});
+        };
+
+        return (
+          <Sheet open={open} onOpenChange={(o) => { if (!o) close(); }}>
+            <SheetContent side="bottom" className="h-[92vh] p-0 flex flex-col rounded-t-3xl">
+              <SheetHeader className="px-5 pt-5 pb-3 border-b border-border/40 shrink-0">
+                <SheetTitle className="flex items-center gap-2 text-base">
+                  <Pill className="w-5 h-5 text-primary" />
+                  {isAdd ? "Add More Supplements" : "Assign Supplement Plan"}
+                </SheetTitle>
+                <SheetDescription className="text-xs">
+                  {activePatient?.name ? <span className="font-semibold text-foreground">{activePatient.name}</span> : "Patient"}
+                  {" · "}Pick condition protocols and adjust duration per item.
+                </SheetDescription>
+              </SheetHeader>
+
+              <div className="flex-1 overflow-y-auto px-5 py-4">
+                {open && renderRuleSelector(existingSuppIds)}
+              </div>
+
+              <div className="shrink-0 border-t border-border/40 bg-background/95 backdrop-blur px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex items-center justify-between gap-3">
+                <span className="text-xs font-semibold text-muted-foreground">
+                  {selectedRules.size} selected
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={close}
+                    className="px-4 py-2.5 rounded-xl bg-muted text-muted-foreground text-sm font-semibold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (!activeUserId) return;
+                      if (isAdd && activePlan) handleAddToExistingPlan(activeUserId, activePlan.id);
+                      else handleAssignPlan(activeUserId);
+                    }}
+                    disabled={selectedRules.size === 0}
+                    className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-50 inline-flex items-center gap-1.5"
+                  >
+                    <Check className="w-4 h-4" />
+                    {isAdd ? `Add (${selectedRules.size})` : `Assign (${selectedRules.size})`}
+                  </button>
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+        );
+      })()}
     </div>
   );
 }
