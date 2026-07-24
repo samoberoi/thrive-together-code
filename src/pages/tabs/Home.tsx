@@ -376,13 +376,18 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
     try { return localStorage.getItem("bbdo:hideUpgradeCTA") === "1"; } catch { return false; }
   });
   const [coachName, setCoachName] = useState<string | null>(null);
+  const [coachAvatar, setCoachAvatar] = useState<string | null>(null);
   const [coachDialogOpen, setCoachDialogOpen] = useState(false);
   const [coachDialogCoachId, setCoachDialogCoachId] = useState<string | null>(null);
   const openCoachDialog = (coachId?: string | null) => {
     setCoachDialogCoachId(coachId ?? null);
     setCoachDialogOpen(true);
   };
-  const [nextMeeting, setNextMeeting] = useState<{ scheduled_at: string; duration_min: number | null; meeting_type: string; agenda: string | null; coach_id: string; coach_phone?: string | null; coach_name?: string | null } | null>(null);
+  const openCoachChat = () => {
+    window.dispatchEvent(new CustomEvent<string>("nav:set-tab", { detail: "consult" }));
+    window.dispatchEvent(new CustomEvent("nav:open-coach-chat"));
+  };
+  const [nextMeeting, setNextMeeting] = useState<{ scheduled_at: string; duration_min: number | null; meeting_type: string; agenda: string | null; coach_id: string; coach_phone?: string | null; coach_name?: string | null; coach_avatar?: string | null } | null>(null);
   const [hasAnyMeeting, setHasAnyMeeting] = useState<boolean>(false);
   const [hasCompletedMeeting, setHasCompletedMeeting] = useState<boolean>(false);
   const [glucoseData, setGlucoseData] = useState<{ v: number }[]>([]);
