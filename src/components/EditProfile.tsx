@@ -364,10 +364,10 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
 
 
   const uploadAvatarBlob = async (blob: Blob, ext: string) => {
-    if (!user) return;
+    if (!effectiveUserId) return;
     setUploading(true);
     try {
-      const path = `${user.id}/avatar.${ext}`;
+      const path = `${effectiveUserId}/avatar.${ext}`;
       const { error: uploadError } = await supabase.storage
         .from("avatars")
         .upload(path, blob, { upsert: true, contentType: blob.type || `image/${ext}` });
@@ -375,8 +375,8 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
       const { data } = supabase.storage.from("avatars").getPublicUrl(path);
       const url = `${data.publicUrl}?t=${Date.now()}`;
       setAvatarUrl(url);
-      saveUser({ avatarUrl: url });
-      await updateProfile(user.id, { avatar_url: url });
+      if (!coachMode) saveUser({ avatarUrl: url });
+      await updateProfile(effectiveUserId, { avatar_url: url });
       toast.success("Photo updated!");
     } catch (err: any) {
       console.error(err);
@@ -385,6 +385,7 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
       setUploading(false);
     }
   };
+
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
