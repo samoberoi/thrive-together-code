@@ -1320,6 +1320,34 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
             <ToggleChip label="Stress Level" value={deepProfiling.stressLevel ?? "moderate"} onChange={(v) => setDeepProfiling({ ...deepProfiling, stressLevel: v })} options={[{ id: "low", label: "Low" }, { id: "moderate", label: "Moderate" }, { id: "high", label: "High" }]} />
           </motion.div>
         )}
+
+        {/* Diet & Allergies */}
+        <motion.div className="liquid-glass rounded-2xl p-5 space-y-3" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28 }}>
+          <h3 className="text-foreground font-bold text-sm flex items-start gap-2 leading-tight break-words">
+            <Utensils className="w-4 h-4 shrink-0 text-primary" strokeWidth={1.8} />
+            Diet & Allergies
+          </h3>
+          <ToggleChip
+            label="Diet Preference"
+            value={dietPrefs[0] ?? ""}
+            onChange={(v) => setDietPrefs(v ? [v] : [])}
+            options={[
+              { id: "veg", label: "Vegetarian" },
+              { id: "non_veg", label: "Non-Veg" },
+              { id: "vegan", label: "Vegan" },
+              { id: "eggitarian", label: "Eggitarian" },
+              { id: "jain", label: "Jain" },
+            ]}
+          />
+          <AllergyAndSubPrefs
+            dietPrefs={dietPrefs}
+            subPreferences={subPreferences}
+            allergenFoodIds={allergenFoodIds}
+            onSubChange={setSubPreferences}
+            onAllergensChange={setAllergenFoodIds}
+          />
+        </motion.div>
+
         <motion.button
           onClick={requestSave}
           disabled={saving}
