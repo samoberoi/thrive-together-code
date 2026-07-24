@@ -400,7 +400,14 @@ export default function Dashboard() {
 
       {/* ─── Main content ─── */}
       <div className="flex-1 flex flex-col min-w-0">
-        <main className="admin-shell flex-1 overflow-y-auto overflow-x-hidden pb-nav md:pb-0">
+        <main
+          className="admin-shell flex-1 overflow-y-auto overflow-x-hidden md:pb-0"
+          style={{
+            paddingBottom:
+              "calc(var(--kb-h, 0px) + var(--nav-clear, calc(env(safe-area-inset-bottom) + 5.25rem)))",
+            WebkitOverflowScrolling: "touch",
+          }}
+        >
           {/* Mobile top header — inside the scroll area so it scrolls away with the page */}
           <div className="md:hidden flex items-center justify-between px-5 pt-[max(env(safe-area-inset-top),0.75rem)] pb-2">
             <img src={bbdoLogo} alt="BBDO" className="h-11 w-auto object-contain" />
