@@ -272,7 +272,7 @@ function CreatePostSheet({
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <motion.div
         className="relative w-full max-w-lg bg-card rounded-t-3xl p-5 max-h-[88dvh] overflow-y-auto"
-        style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 6rem)" }}
+        style={{ paddingBottom: "calc(var(--kb-h, 0px) + var(--nav-clear, calc(env(safe-area-inset-bottom, 0px) + 6rem)))" }}
         initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
         transition={{ duration: 0.22, ease: EASE }}
       >

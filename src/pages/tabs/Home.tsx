@@ -1977,7 +1977,7 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
       {timePickerFor && (
         <div
           className="fixed inset-0 z-50 bg-black/60 flex items-end sm:items-center justify-center px-4 pt-4"
-          style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 6rem)" }}
+          style={{ paddingBottom: "var(--nav-clear, calc(env(safe-area-inset-bottom, 0px) + 6rem))" }}
           onClick={() => setTimePickerFor(null)}
         >
           <div className="bg-background rounded-2xl p-5 w-full max-w-sm shadow-lift" onClick={(e) => e.stopPropagation()}>
