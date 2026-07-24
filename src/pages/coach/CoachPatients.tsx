@@ -171,14 +171,31 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
 
     if (assignments && assignments.length > 0) {
       const patientIds = (assignments as any[]).map((a) => a.user_id);
-      const { data: profiles } = await supabase
-        .from("profiles" as any)
-        .select("user_id, name, phone, avatar_url, age, gender, weight, bmi, bmi_category, height, clinical, deep_profiling, assessment, initial_health_score")
-        .in("user_id", patientIds);
+      const [{ data: profiles }, { data: subs }] = await Promise.all([
+        supabase
+          .from("profiles" as any)
+          .select("user_id, name, phone, avatar_url, age, gender, weight, bmi, bmi_category, height, clinical, deep_profiling, assessment, initial_health_score")
+          .in("user_id", patientIds),
+        supabase
+          .from("subscriptions" as any)
+          .select("user_id, plan_name, expires_at, started_at, status")
+          .in("user_id", patientIds)
+          .eq("status", "active"),
+      ]);
+
+      // Pick most-recent active sub per user
+      const subByUser = new Map<string, { plan_name: string | null; expires_at: string | null }>();
+      ((subs as any[]) ?? []).forEach((s) => {
+        const prev = subByUser.get(s.user_id);
+        if (!prev || (s.started_at ?? "") > ((prev as any).started_at ?? "")) {
+          subByUser.set(s.user_id, { plan_name: s.plan_name ?? null, expires_at: s.expires_at ?? null, ...(s as any) });
+        }
+      });
 
       const merged = (assignments as any[]).map((a) => {
         const p = (profiles as any[])?.find((pr) => pr.user_id === a.user_id);
-        return { ...a, ...p };
+        const s = subByUser.get(a.user_id);
+        return { ...a, ...p, plan_name: s?.plan_name ?? null, plan_expires_at: s?.expires_at ?? null };
       });
       setPatients(merged);
 
