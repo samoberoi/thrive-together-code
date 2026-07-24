@@ -377,11 +377,18 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
   const activeActivityStats = activityDialog ? activityStats.get(activityDialog) : null;
 
   return (
-    <div className="flex flex-col gap-5 px-5 pt-14 pb-4">
-      {/* Greeting */}
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <p className="text-muted-foreground text-sm">Good to see you 👋</p>
-        <h1 className="text-xl sm:text-2xl font-black text-foreground">{coach?.name ?? "Coach"}</h1>
+    <div className="flex flex-col gap-5 px-5 pt-6 pb-4">
+      {/* Greeting — matched to end-user Home grammar */}
+      <motion.div
+        className="pt-1"
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <p className="text-[11px] tracking-[0.18em] uppercase font-bold text-primary">Coach Portal</p>
+        <h1 className="text-[30px] sm:text-[34px] leading-[1.1] font-semibold tracking-[-0.03em] text-foreground mt-1 no-break">
+          Good to see you, {coach?.name ?? "Coach"} <span className="inline-block">👋</span>
+        </h1>
       </motion.div>
 
       {/* Coach Card */}
@@ -393,10 +400,10 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
               alt={coach.name}
               className="w-14 h-14 rounded-2xl object-cover flex-shrink-0"
             />
-            <div className="flex-1">
-              <h3 className="text-foreground font-black text-base">{coach.name}</h3>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-foreground font-black text-base no-break">{coach.name}</h3>
               <p className="text-muted-foreground text-xs mt-0.5">{coach.specialization}</p>
-              <span className="inline-block text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20 mt-1.5">
+              <span className="inline-block text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20 mt-1.5 no-break">
                 {coachTypeLabel(coach.coach_type)}
               </span>
             </div>
@@ -407,13 +414,18 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
       {/* Meetings to Schedule */}
       {needsScheduling.length > 0 && (
         <motion.div
-          className="rounded-3xl p-5 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20"
+          className="liquid-glass rounded-3xl p-5 ring-1 ring-primary/15"
           initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}
         >
-          <div className="flex items-center gap-2 mb-3">
-            <CalendarClock className="w-5 h-5 text-primary" strokeWidth={1.8} />
-            <span className="text-foreground font-bold">Meetings require scheduling</span>
-            <span className="ml-auto text-[10px] font-bold text-primary bg-primary/15 px-2 py-0.5 rounded-full">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+              <CalendarClock className="w-5 h-5 text-primary" strokeWidth={1.6} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">Action needed</p>
+              <h3 className="text-base font-black text-foreground leading-tight mt-0.5 no-break">Meetings require scheduling</h3>
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-[0.12em] text-primary bg-primary/10 px-2.5 py-1 rounded-full whitespace-nowrap no-break">
               {needsScheduling.length} pending
             </span>
           </div>
