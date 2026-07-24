@@ -10,6 +10,14 @@ export interface DietPlating {
   calories: number | null;
 }
 
+export function normalizeDietPreference(value: string | null | undefined): string {
+  const v = (value || "").toLowerCase().trim().replace(/[-\s]/g, "_");
+  if (!v) return "mixed";
+  if (v === "vegetarian") return "veg";
+  if (v === "nonveg" || v === "non_vegetarian" || v === "nonvegetarian") return "non_veg";
+  return v;
+}
+
 export async function fetchPlatingForUser(userId: string) {
   const { data, error } = await supabase
     .from("diet_platings")
@@ -24,7 +32,7 @@ export async function fetchPlatingForUser(userId: string) {
 
 export async function regeneratePlating(userId: string, diet?: string) {
   const args: any = { _user_id: userId };
-  if (diet) args._diet = diet;
+  if (diet) args._diet = normalizeDietPreference(diet);
   const { data, error } = await supabase.rpc("generate_diet_plating" as any, args);
   if (error) throw error;
   return data as number;
@@ -57,9 +65,10 @@ export interface ApprovedFood {
 }
 
 export async function fetchApprovedFoods(diet: string): Promise<ApprovedFood[]> {
-  const dietTypes = diet.includes("vegan")
+  const normalized = normalizeDietPreference(diet);
+  const dietTypes = normalized === "vegan"
     ? ["vegan"]
-    : diet.includes("veg") && !diet.includes("non")
+    : normalized === "veg" || normalized === "jain" || normalized === "eggitarian"
     ? ["vegan", "veg"]
     : ["vegan", "veg", "non_veg"];
   const { data, error } = await (supabase as any)
@@ -83,10 +92,12 @@ export async function fetchApprovedFoods(diet: string): Promise<ApprovedFood[]> 
 export async function fetchCurrentDietPreference(userId: string): Promise<string> {
   const { data } = await supabase
     .from("user_diet_profiles")
-    .select("diet_preference")
+    .select("diet_preference, diet_preferences")
     .eq("user_id", userId)
     .maybeSingle();
-  return ((data as any)?.diet_preference ?? "mixed") as string;
+  const row = data as any;
+  const prefs = (row?.diet_preferences as string[] | null | undefined)?.map(normalizeDietPreference).filter(Boolean) ?? [];
+  return prefs[0] || normalizeDietPreference(row?.diet_preference) || "mixed";
 }
 
 export function dayIndexForToday(planStartDate: string) {
