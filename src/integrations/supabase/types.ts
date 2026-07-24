@@ -5193,6 +5193,7 @@ export type Database = {
           newly_awarded: number
         }[]
       }
+      bbdo_food_filter_id: { Args: { _names: string[] }; Returns: string }
       bbdo_normalize_diet_preference: {
         Args: { _diet: string }
         Returns: string
