@@ -773,7 +773,10 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
         <button onClick={onBack} className="w-9 h-9 shrink-0 rounded-full liquid-glass flex items-center justify-center">
           <ArrowLeft className="w-4 h-4 text-foreground" strokeWidth={1.8} />
         </button>
-        <h2 className="min-w-0 text-lg font-black text-foreground leading-tight break-words">Edit Profile</h2>
+        <h2 className="min-w-0 text-lg font-black text-foreground leading-tight break-words">
+          {coachMode ? `Edit — ${targetName || "Patient"}` : "Edit Profile"}
+        </h2>
+
       </div>
 
       <div className="flex-1 overflow-y-auto px-5 py-6 space-y-6">
