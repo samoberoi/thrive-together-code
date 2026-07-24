@@ -1285,7 +1285,7 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
           </motion.div>
         )}
         <motion.button
-          onClick={handleSave}
+          onClick={requestSave}
           disabled={saving}
           className="w-full gradient-blue text-primary-foreground font-bold py-4 rounded-2xl glow-blue flex items-center justify-center gap-2 disabled:opacity-50"
           initial={{ opacity: 0, y: 10 }}
@@ -1296,12 +1296,39 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
           {saving ? (
             <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
           ) : (
-            <><Save className="w-4 h-4" strokeWidth={2} /> Save Profile</>
+            <><Save className="w-4 h-4" strokeWidth={2} /> {coachMode ? "Save changes" : "Save Profile"}</>
           )}
         </motion.button>
 
         <div className="h-8" />
       </div>
+
+      {/* Coach override confirmation */}
+      {coachMode && confirmOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-foreground/40 backdrop-blur-sm p-4" onClick={() => setConfirmOpen(false)}>
+          <div className="w-full max-w-sm bg-background rounded-2xl p-5 shadow-2xl ring-1 ring-border/60" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-foreground font-black text-base">Save changes?</h3>
+            <p className="text-muted-foreground text-sm mt-1">
+              You're overriding {targetName || "the patient"}'s profile. Continue?
+            </p>
+            <div className="mt-4 flex gap-2">
+              <button
+                className="flex-1 py-3 rounded-xl bg-muted text-foreground text-sm font-bold"
+                onClick={() => setConfirmOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="flex-1 py-3 rounded-xl bg-[var(--bbdo-red)] text-white text-sm font-black"
+                onClick={() => { void handleSave(); }}
+              >
+                Yes, save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+
   );
 }
