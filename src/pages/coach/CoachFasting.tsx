@@ -218,20 +218,31 @@ export default function CoachFasting() {
             const assignedCount = patients.filter((p: any) => !!patientProtocols[p.user_id]).length;
             const unassignedCount = patients.length - assignedCount;
             return (
-              <div className="grid grid-cols-3 gap-2">
-                <div className="liquid-glass rounded-2xl p-3 text-center">
-                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Total</div>
-                  <div className="text-2xl font-black text-foreground mt-1">{patients.length}</div>
+              <div className="liquid-glass rounded-2xl p-4">
+                <div className="flex items-baseline justify-between mb-2 gap-3">
+                  <div className="flex items-baseline gap-2 min-w-0">
+                    <span className="text-2xl font-black text-foreground leading-none">{patients.length}</span>
+                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold no-break">Total patients</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-[11px] font-bold shrink-0">
+                    <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 no-break">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> {assignedCount} assigned
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-destructive no-break">
+                      <span className="w-1.5 h-1.5 rounded-full bg-destructive" /> {unassignedCount} unassigned
+                    </span>
+                  </div>
                 </div>
-                <div className="rounded-2xl p-3 text-center border border-emerald-500/30 bg-emerald-500/10">
-                  <div className="text-[10px] uppercase tracking-wide text-emerald-600 dark:text-emerald-400 font-semibold">Assigned</div>
-                  <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{assignedCount}</div>
-                </div>
-                <div className="rounded-2xl p-3 text-center border border-destructive/30 bg-destructive/10">
-                  <div className="text-[10px] uppercase tracking-wide text-destructive font-semibold">Unassigned</div>
-                  <div className="text-2xl font-black text-destructive mt-1">{unassignedCount}</div>
+                <div className="flex h-2 rounded-full overflow-hidden bg-muted">
+                  {patients.length > 0 && (
+                    <>
+                      <div className="bg-emerald-500" style={{ width: `${(assignedCount / patients.length) * 100}%` }} />
+                      <div className="bg-destructive" style={{ width: `${(unassignedCount / patients.length) * 100}%` }} />
+                    </>
+                  )}
                 </div>
               </div>
+
             );
           })()}
           <div className="relative">
