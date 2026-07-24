@@ -23,7 +23,7 @@ import { useAttentionCounts } from "@/hooks/useAttentionCounts";
 import AttentionBadge from "@/components/attention/AttentionBadge";
 import { RoleBottomNav, RoleTopBar, type RoleNavItem } from "@/components/shared";
 
-export type CoachTab = "home" | "patients" | "meetings" | "requests" | "messages" | "fasting" | "supplements" | "labtests" | "profile";
+export type CoachTab = "home" | "patients" | "meetings" | "requests" | "messages" | "fasting" | "supplements" | "move" | "labtests" | "profile";
 
 const navItems: { id: CoachTab; icon: React.ElementType; label: string }[] = [
   { id: "home", icon: Home, label: "Home" },
@@ -33,6 +33,7 @@ const navItems: { id: CoachTab; icon: React.ElementType; label: string }[] = [
   { id: "messages", icon: MessageCircle, label: "Messages" },
   { id: "fasting", icon: Timer, label: "Fasting" },
   { id: "supplements", icon: Pill, label: "Supplements" },
+  { id: "move", icon: Activity, label: "Move" },
   { id: "labtests", icon: FlaskConical, label: "Lab Tests" },
 ];
 
