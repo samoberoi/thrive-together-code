@@ -6,6 +6,7 @@ import { AppIcon, AppIconName } from "@/components/ui/AppIcon";
 import { useLanguage } from "@/contexts/LanguageContext";
 import AttentionBadge from "@/components/attention/AttentionBadge";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { AppBottomBar } from "@/components/layout/AppBottomBar";
 
 const ICON_FOR: Record<Tab, AppIconName> = {
   home: "home",
@@ -174,8 +175,9 @@ export default function BottomNav({
         </DrawerContent>
       </Drawer>
 
-      {/* Flat full-width dock — slim height, icons use all phone width */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
+      {/* Flat full-width dock — publishes its own height into --nav-h via AppBottomBar,
+          auto-hides when the on-screen keyboard is open. */}
+      <AppBottomBar className="md:hidden" style={{ padding: 0 }}>
         <div
           className="flex items-center gap-0.5 px-2 pt-1.5"
           style={{
@@ -225,7 +227,8 @@ export default function BottomNav({
             </motion.button>
           )}
         </div>
-      </div>
+      </AppBottomBar>
+
 
 
     </>
