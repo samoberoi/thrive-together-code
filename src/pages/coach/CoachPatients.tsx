@@ -928,12 +928,13 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
               <motion.button
                 key={p.user_id}
                 onClick={() => openPatient(p)}
-                className="liquid-glass rounded-2xl p-2.5 text-left w-full hover:bg-primary/5 transition-colors min-w-0"
+                className="liquid-glass rounded-2xl p-3 text-left w-full hover:bg-primary/5 transition-colors min-w-0"
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.05 * i }}
               >
-                <div className="flex items-start gap-2 mb-2 min-w-0">
+                {/* Row 1: avatar + name + status + actions — always single line */}
+                <div className="flex items-center gap-2 mb-2 min-w-0">
                   <div className="relative w-10 h-10 flex-shrink-0">
                     <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center overflow-hidden">
                       {p.avatar_url ? (
@@ -947,49 +948,48 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
                     <div className={`absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-background ${sc.dot}`} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <p className="text-foreground font-bold text-sm truncate">{p.name ?? "Unknown"}</p>
-                      {ps && (
-                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${sc.bg} ${sc.text}`}>
-                          {ps.label}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                      {p.age && <span className="text-muted-foreground text-xs">{p.age}y</span>}
-                      {p.gender && <span className="text-muted-foreground text-xs">• {p.gender}</span>}
+                    <p className="text-foreground font-bold text-sm truncate">{p.name ?? "Unknown"}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
+                      {p.age && <span className="text-muted-foreground text-[11px] shrink-0">{p.age}y</span>}
+                      {p.gender && <span className="text-muted-foreground text-[11px] shrink-0">· {p.gender}</span>}
                       {p.plan_name && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary no-break">
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-primary/10 text-primary truncate">
                           {p.plan_name}
                         </span>
                       )}
-                      {p.plan_expires_at && (() => {
-                        const d = daysUntil(p.plan_expires_at);
-                        const isSoon = d >= 0 && d <= 30;
-                        const isExpired = d < 0;
-                        return (
-                          <span className={`text-[10px] font-semibold no-break ${
-                            isExpired ? "text-destructive" : isSoon ? "text-warning" : "text-muted-foreground"
-                          }`}>
-                            {isExpired ? "expired " : "exp "}{fmtDate(p.plan_expires_at)}
-                          </span>
-                        );
-                      })()}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    {onChatWithPatient && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); onChatWithPatient(p.user_id); }}
-                        className="p-2 rounded-xl bg-primary/10 hover:bg-primary/20 transition-colors"
-                        title="Chat with patient"
-                      >
-                        <MessageCircle className="w-4 h-4 text-primary" strokeWidth={2} />
-                      </button>
-                    )}
-                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                  </div>
+                  {ps && (
+                    <span className={`text-[10px] font-bold px-2 py-1 rounded-full shrink-0 whitespace-nowrap ${sc.bg} ${sc.text}`}>
+                      {ps.label}
+                    </span>
+                  )}
+                  {onChatWithPatient && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onChatWithPatient(p.user_id); }}
+                      className="p-2 rounded-xl bg-primary/10 hover:bg-primary/20 transition-colors shrink-0"
+                      title="Chat with patient"
+                    >
+                      <MessageCircle className="w-4 h-4 text-primary" strokeWidth={2} />
+                    </button>
+                  )}
+                  <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
                 </div>
+
+                {/* Row 2: expiry (if any) */}
+                {p.plan_expires_at && (() => {
+                  const d = daysUntil(p.plan_expires_at);
+                  const isSoon = d >= 0 && d <= 30;
+                  const isExpired = d < 0;
+                  return (
+                    <p className={`text-[11px] font-semibold mb-2 whitespace-nowrap ${
+                      isExpired ? "text-destructive" : isSoon ? "text-warning" : "text-muted-foreground"
+                    }`}>
+                      {isExpired ? "expired " : "expires "}{fmtDate(p.plan_expires_at)}
+                    </p>
+                  );
+                })()}
+
 
                 {/* 3 Key Metrics */}
                 {(() => {
