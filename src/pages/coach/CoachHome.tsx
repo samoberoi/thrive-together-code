@@ -2,12 +2,12 @@ import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   Users, Star, Activity, AlertTriangle, TrendingUp, TrendingDown, Minus,
-  Heart, UserCheck, Clock, ChevronRight, Loader2, Bell,
+  Heart, UserCheck, Loader2, Bell,
   CalendarClock, Plus, Package, Send, CheckCircle2, Search, Percent,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { coachTypeLabel, type Coach } from "@/lib/coachService";
+import { coachTypeLabel, resolveCurrentCoach, type Coach } from "@/lib/coachService";
 import { createNotification } from "@/lib/notificationService";
 import { toast } from "sonner";
 import ScheduleMeetingDialog from "@/components/coach/ScheduleMeetingDialog";
@@ -136,8 +136,7 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
     if (!user) return;
     setLoading(true);
 
-    const { data: coachData } = await supabase
-      .from("coaches" as any).select("*").eq("user_id", user.id).single();
+    const coachData = await resolveCurrentCoach(user);
 
     if (!coachData) { setLoading(false); return; }
     setCoach(coachData as unknown as Coach);
@@ -366,7 +365,7 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
       return;
     }
 
-    // Fallback keeps the card visible if the backend calculation is temporarily unavailable.
+    // Fallback keeps the card meaningful if the backend calculation is temporarily unavailable.
     const modelId = (coachData as any).commission_model_id;
     let model: any = null;
     if (modelId) {
@@ -387,15 +386,39 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
       model = m;
     }
     const percent = Number(model?.percent) || 8;
+    let revenue = 0;
+    const grouped = new Map<string, CommissionBreakdownRow>();
+    if (patientIds.length > 0) {
+      const { data: subs } = await supabase
+        .from("subscriptions" as any)
+        .select("user_id, plan_name, plan_price, duration_months, status, started_at")
+        .in("user_id", patientIds)
+        .eq("status", "active")
+        .order("started_at", { ascending: false });
+      const byUser = new Map<string, any>();
+      ((subs as any[]) ?? []).forEach((sub) => {
+        const previous = byUser.get(sub.user_id);
+        if (!previous || Number(sub.plan_price ?? 0) > Number(previous.plan_price ?? 0)) byUser.set(sub.user_id, sub);
+      });
+      byUser.forEach((sub) => {
+        const monthly = Number(sub.plan_price ?? 0) / Math.max(1, Number(sub.duration_months ?? 1));
+        revenue += monthly;
+        const key = sub.plan_name || "Unnamed plan";
+        const current = grouped.get(key) ?? { plan_name: key, count: 0, monthly_revenue: 0 };
+        current.count += 1;
+        current.monthly_revenue += monthly;
+        grouped.set(key, current);
+      });
+    }
     setCommissionInfo({
       percent,
       name: model?.name || "Standard",
       frequency: model?.payout_frequency || "monthly",
       totalAssigned: patientIds.length,
-      totalPaying: 0,
-      totalMonthlyRevenue: 0,
-      monthlyCommission: 0,
-      rows: [],
+      totalPaying: Array.from(grouped.values()).reduce((sum, row) => sum + row.count, 0),
+      totalMonthlyRevenue: revenue,
+      monthlyCommission: revenue * (percent / 100),
+      rows: Array.from(grouped.values()).sort((a, b) => b.monthly_revenue - a.monthly_revenue),
     });
   };
 
@@ -464,7 +487,7 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
   const activeActivityStats = activityDialog ? activityStats.get(activityDialog) : null;
 
   return (
-    <div className="flex flex-col gap-4 px-5 pt-4 pb-4">
+    <div className="flex flex-col gap-3 px-4 sm:px-5 pt-3 pb-4">
       {/* Coach hero — avatar, name, specialization + coach-type chip.
           No redundant "Good to see you" line; the name IS the greeting. */}
       {coach && (
@@ -492,26 +515,26 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
       )}
 
       {/* Dashboard — Patients / Commission / Rating / Sessions (2×2, always) */}
-      <motion.div className="grid grid-cols-[repeat(2,minmax(0,1fr))] gap-2" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+      <motion.div className="grid grid-cols-[repeat(2,minmax(0,1fr))] gap-2 w-full" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
         <button
           onClick={onViewPatient}
-          className="liquid-glass rounded-2xl p-2.5 hover:bg-accent/40 transition-colors min-w-0 min-h-[74px] flex items-center gap-2 text-left"
+          className="liquid-glass rounded-2xl p-2 hover:bg-accent/40 transition-colors min-w-0 h-[66px] flex items-center gap-2 text-left"
         >
           <Users className="w-5 h-5 text-primary shrink-0" strokeWidth={1.8} />
           <div className="min-w-0">
-            <p className="stat-number text-xl text-foreground leading-none">{patients.length}</p>
+            <p className="stat-number text-lg text-foreground leading-none">{patients.length}</p>
             <p className="text-muted-foreground text-[10px] font-medium mt-1 truncate">Patients</p>
           </div>
         </button>
         <button
           onClick={() => commissionInfo && setCommissionOpen(true)}
           disabled={!commissionInfo}
-          className="liquid-glass rounded-2xl p-2.5 hover:bg-accent/40 transition-colors disabled:opacity-60 disabled:cursor-not-allowed min-w-0 min-h-[74px] flex items-center gap-2 text-left"
+          className="liquid-glass rounded-2xl p-2 hover:bg-accent/40 transition-colors disabled:opacity-60 disabled:cursor-not-allowed min-w-0 h-[66px] flex items-center gap-2 text-left"
           title="Estimated monthly commission — tap to see breakdown"
         >
           <Percent className="w-5 h-5 text-primary shrink-0" strokeWidth={1.8} />
           <div className="min-w-0">
-            <p className="stat-number text-lg text-foreground leading-none truncate">
+            <p className="stat-number text-base text-foreground leading-none truncate">
               {commissionInfo
               ? new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0, notation: commissionInfo.monthlyCommission >= 100000 ? "compact" : "standard" }).format(commissionInfo.monthlyCommission)
               : "—"}
@@ -521,10 +544,10 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
             </p>
           </div>
         </button>
-        <div className="liquid-glass rounded-2xl p-2.5 min-w-0 min-h-[74px] flex items-center gap-2 text-left">
+        <div className="liquid-glass rounded-2xl p-2 min-w-0 h-[66px] flex items-center gap-2 text-left">
           <Star className="w-5 h-5 text-warning fill-warning shrink-0" />
           <div className="min-w-0">
-            <p className="stat-number text-xl text-foreground leading-none">{Number(coach?.avg_rating ?? 0).toFixed(1)}</p>
+            <p className="stat-number text-lg text-foreground leading-none">{Number(coach?.avg_rating ?? 0).toFixed(1)}</p>
             <p className="text-muted-foreground text-[10px] font-medium mt-1 truncate">
               Rating{coach?.total_ratings ? ` · ${coach.total_ratings}` : ""}
             </p>
@@ -532,12 +555,12 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
         </div>
         <button
           onClick={() => setSchedulePickerOpen(true)}
-          className="liquid-glass rounded-2xl p-2.5 hover:bg-accent/40 transition-colors min-w-0 min-h-[74px] flex items-center gap-2 text-left"
+          className="liquid-glass rounded-2xl p-2 hover:bg-accent/40 transition-colors min-w-0 h-[66px] flex items-center gap-2 text-left"
           title="Sessions completed — tap to schedule a new meeting"
         >
           <Activity className="w-5 h-5 text-success shrink-0" strokeWidth={1.8} />
           <div className="min-w-0">
-            <p className="stat-number text-xl text-foreground leading-none">{completedSessions}</p>
+            <p className="stat-number text-lg text-foreground leading-none">{completedSessions}</p>
             <p className="text-muted-foreground text-[10px] font-medium mt-1 truncate">Sessions</p>
           </div>
         </button>
@@ -662,7 +685,7 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
               Tap to nudge
             </span>
           </div>
-          <div className="grid grid-cols-[repeat(2,minmax(0,1fr))] min-[520px]:grid-cols-[repeat(4,minmax(0,1fr))] gap-1.5">
+          <div className="grid grid-cols-[repeat(2,minmax(0,1fr))] min-[520px]:grid-cols-[repeat(4,minmax(0,1fr))] gap-1.5 w-full">
 
             {ALL_ACTIVITIES.map((k) => {
               const s = activityStats.get(k)!;
@@ -798,7 +821,7 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
             <p className="text-muted-foreground text-sm">No patients match "{search}"</p>
           </div>
         ) : (
-          <div className="grid grid-cols-[repeat(2,minmax(0,1fr))] gap-2 max-h-[70vh] overflow-y-auto -mx-1 px-1">
+          <div className="grid grid-cols-[repeat(2,minmax(0,1fr))] gap-2 max-h-[70vh] overflow-y-auto -mx-1 px-1 w-full">
             {filteredPatients.map((p) => {
               const t = trend(p);
               return (
