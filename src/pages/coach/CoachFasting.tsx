@@ -260,7 +260,7 @@ export default function CoachFasting() {
                 ? (missedCount > 2 ? { text: "⚠️ At Risk", cls: "bg-destructive/15 text-destructive border-destructive/20" }
                   : symptomCount > 0 ? { text: "🔶 Attention", cls: "bg-amber-500/15 text-amber-500 border-amber-500/20" }
                   : { text: "✅ On Track", cls: "bg-primary/15 text-primary border-primary/20" })
-                : { text: "Unassigned", cls: "border-muted-foreground/30 text-muted-foreground" };
+                : { text: "Unassigned", cls: "bg-destructive/15 text-destructive border-destructive/30" };
 
               return (
                 <motion.div key={patient.user_id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="liquid-glass rounded-3xl">
