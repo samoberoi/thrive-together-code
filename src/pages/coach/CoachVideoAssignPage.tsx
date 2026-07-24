@@ -107,7 +107,7 @@ export default function CoachVideoAssignPage({ module }: Props) {
           const overrides = await fetchVideoMetadataOverrides();
           const disabled = new Set(
             Object.entries(overrides)
-              .filter(([, v]: any) => v?.is_disabled)
+              .filter(([, v]: any) => v?.is_enabled === false)
               .map(([k]) => k),
           );
           const base: AssignableItem[] = staticYogaVideos
@@ -122,7 +122,7 @@ export default function CoachVideoAssignPage({ module }: Props) {
             });
           // Include custom uploaded videos
           const customs: AssignableItem[] = Object.entries(overrides)
-            .filter(([, v]: any) => v?.is_custom && !v?.is_disabled)
+            .filter(([, v]: any) => v?.is_custom && v?.is_enabled !== false)
             .map(([k, v]: any) => ({
               key: k,
               title: v.name || "Custom video",
