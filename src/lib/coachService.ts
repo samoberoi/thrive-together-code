@@ -58,24 +58,41 @@ export interface CoachRating {
 
 /** Fetch the user's currently assigned coach */
 export async function fetchAssignedCoach(userId: string): Promise<Coach | null> {
+  const coachSelect = "id, name, phone, bio, description, specialization, coach_type, years_experience, total_consultations, avg_rating, total_ratings, avatar_url, languages, qualification, city, is_active, working_hours_start, working_hours_end, working_timezone";
+
   // Get active assignment
-  const { data: assignment, error: aErr } = await supabase
+  const { data: assignment } = await supabase
     .from("coach_assignments" as any)
     .select("coach_id")
     .eq("user_id", userId)
     .eq("is_active", true)
     .maybeSingle();
 
-  if (aErr || !assignment) {
-    console.error("No coach assignment found:", aErr);
+  let coachId: string | null = (assignment as any)?.coach_id ?? null;
+
+  // Fallback: derive coach from profile.coach_name if assignment row is missing.
+  if (!coachId) {
+    const { data: profile } = await supabase
+      .from("profiles" as any)
+      .select("coach_name")
+      .eq("user_id", userId)
+      .maybeSingle();
+    const coachName = (profile as any)?.coach_name as string | undefined;
+    if (coachName) {
+      const { data: byName } = await supabase
+        .from("coaches" as any)
+        .select(coachSelect)
+        .eq("name", coachName)
+        .eq("is_active", true)
+        .maybeSingle();
+      if (byName) return byName as unknown as Coach;
+    }
     return null;
   }
 
-  const coachId = (assignment as any).coach_id;
-
   const { data: coach, error: cErr } = await supabase
     .from("coaches" as any)
-    .select("id, name, phone, bio, description, specialization, coach_type, years_experience, total_consultations, avg_rating, total_ratings, avatar_url, languages, qualification, city, is_active, working_hours_start, working_hours_end, working_timezone")
+    .select(coachSelect)
     .eq("id", coachId)
     .single();
 
@@ -86,6 +103,7 @@ export async function fetchAssignedCoach(userId: string): Promise<Coach | null> 
 
   return coach as unknown as Coach;
 }
+
 
 /** Auto-assign a coach based on subscription plan */
 export async function autoAssignCoach(userId: string, planId: string): Promise<string | null> {
