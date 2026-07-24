@@ -377,41 +377,62 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
   const activeActivityStats = activityDialog ? activityStats.get(activityDialog) : null;
 
   return (
-    <div className="flex flex-col gap-5 px-5 pt-6 pb-4">
-      {/* Greeting — matched to end-user Home grammar */}
-      <motion.div
-        className="pt-1"
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-      >
-        <p className="text-[11px] tracking-[0.18em] uppercase font-bold text-primary">Coach Portal</p>
-        <h1 className="text-[30px] sm:text-[34px] leading-[1.1] font-semibold tracking-[-0.03em] text-foreground mt-1 no-break">
-          Good to see you, {coach?.name ?? "Coach"} <span className="inline-block">👋</span>
-        </h1>
-      </motion.div>
-
-      {/* Coach Card */}
+    <div className="flex flex-col gap-4 px-5 pt-4 pb-4">
+      {/* Coach hero — avatar, name, specialization + coach-type chip.
+          No redundant "Good to see you" line; the name IS the greeting. */}
       {coach && (
-        <motion.div className="liquid-glass rounded-3xl p-5" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-          <div className="flex items-start gap-4">
-            <img
-              src={coach.avatar_url || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=120&h=120&fit=crop&crop=face"}
-              alt={coach.name}
-              className="w-14 h-14 rounded-2xl object-cover flex-shrink-0"
-            />
-            <div className="flex-1 min-w-0">
-              <h3 className="text-foreground font-black text-base no-break">{coach.name}</h3>
-              <p className="text-muted-foreground text-xs mt-0.5">{coach.specialization}</p>
-              <span className="inline-block text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20 mt-1.5 no-break">
-                {coachTypeLabel(coach.coach_type)}
-              </span>
-            </div>
+        <motion.div
+          className="flex items-center gap-4 pt-1"
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <img
+            src={coach.avatar_url || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=120&h=120&fit=crop&crop=face"}
+            alt={coach.name}
+            className="w-14 h-14 rounded-2xl object-cover flex-shrink-0 ring-1 ring-border"
+          />
+          <div className="flex-1 min-w-0">
+            <h1 className="text-[22px] sm:text-2xl leading-tight font-black tracking-[-0.02em] text-foreground no-break truncate">
+              {coach.name}
+            </h1>
+            <p className="text-muted-foreground text-xs mt-0.5 truncate">{coach.specialization}</p>
+            <span className="inline-block text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20 mt-1.5 no-break">
+              {coachTypeLabel(coach.coach_type)}
+            </span>
           </div>
         </motion.div>
       )}
 
-      {/* Meetings to Schedule */}
+      {/* Dashboard — Patients / Rating / Sessions */}
+      <motion.div className="grid grid-cols-3 gap-3" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+        <button
+          onClick={onViewPatient}
+          className="liquid-glass rounded-2xl p-4 text-center hover:bg-accent/40 transition-colors"
+        >
+          <Users className="w-5 h-5 text-primary mx-auto mb-1.5" strokeWidth={1.8} />
+          <p className="stat-number text-2xl text-foreground">{patients.length}</p>
+          <p className="text-muted-foreground text-[10px] font-medium no-break">Patients →</p>
+        </button>
+        <div className="liquid-glass rounded-2xl p-4 text-center">
+          <Star className="w-5 h-5 text-warning mx-auto mb-1.5 fill-warning" />
+          <p className="stat-number text-2xl text-foreground">{Number(coach?.avg_rating ?? 0).toFixed(1)}</p>
+          <p className="text-muted-foreground text-[10px] font-medium no-break">
+            Rating{coach?.total_ratings ? ` · ${coach.total_ratings}` : ""}
+          </p>
+        </div>
+        <button
+          onClick={() => setSchedulePickerOpen(true)}
+          className="liquid-glass rounded-2xl p-4 text-center hover:bg-accent/40 transition-colors"
+          title="Sessions completed — tap to schedule a new meeting"
+        >
+          <Activity className="w-5 h-5 text-success mx-auto mb-1.5" strokeWidth={1.8} />
+          <p className="stat-number text-2xl text-foreground">{completedSessions}</p>
+          <p className="text-muted-foreground text-[10px] font-medium no-break">Sessions →</p>
+        </button>
+      </motion.div>
+
+      {/* Meetings to Schedule — surfaced right below the KPI grid */}
       {needsScheduling.length > 0 && (
         <motion.div
           className="liquid-glass rounded-3xl p-5 ring-1 ring-primary/15"
@@ -429,87 +450,6 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
               {needsScheduling.length} pending
             </span>
           </div>
-          <div className="space-y-2">
-            {needsScheduling.slice(0, 6).map((p) => {
-              const fmt = (d: string | null) =>
-                d ? new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : null;
-              const joined = fmt(p.assigned_at);
-              const started = fmt(p.planStarted);
-              const expires = fmt(p.planExpires);
-              const daysLeft = p.planExpires
-                ? Math.max(0, Math.ceil((new Date(p.planExpires).getTime() - Date.now()) / 86400000))
-                : null;
-              return (
-                <button
-                  key={p.user_id}
-                  onClick={() => setScheduleFor(p)}
-                  className="w-full flex items-start gap-3 p-3 rounded-2xl bg-card/70 hover:bg-card transition text-left"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                    {p.avatar_url ? (
-                      <img src={p.avatar_url} alt="" className="w-10 h-10 rounded-xl object-cover" />
-                    ) : (
-                      <span className="text-primary font-bold text-sm">{(p.name ?? "?")[0].toUpperCase()}</span>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-foreground font-semibold text-sm truncate">{p.name ?? "Patient"}</p>
-                      {p.planName && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-md">
-                          <Package className="w-2.5 h-2.5" strokeWidth={2} /> {p.planName}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-muted-foreground text-[11px] mt-0.5">Awaiting onboarding meeting</p>
-                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-[10px] text-muted-foreground">
-                      {joined && <span>Joined <span className="text-foreground font-semibold">{joined}</span></span>}
-                      {started && <span>Started <span className="text-foreground font-semibold">{started}</span></span>}
-                      {expires && (
-                        <span>
-                          Ends <span className="text-foreground font-semibold">{expires}</span>
-                          {daysLeft !== null && <span className="text-primary font-bold"> · {daysLeft}d left</span>}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <span className="gradient-blue text-primary-foreground rounded-xl px-3 py-1.5 text-xs font-bold flex items-center gap-1 shrink-0">
-                    <Plus className="w-3.5 h-3.5" /> Schedule
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </motion.div>
-      )}
-
-      {/* Stats Grid */}
-      <motion.div className="grid grid-cols-3 gap-3" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-        <button
-          onClick={onViewPatient}
-          className="liquid-glass rounded-2xl p-4 text-center hover:bg-accent/40 transition-colors"
-        >
-          <Users className="w-5 h-5 text-primary mx-auto mb-1.5" strokeWidth={1.8} />
-          <p className="stat-number text-2xl text-foreground">{patients.length}</p>
-          <p className="text-muted-foreground text-[10px] font-medium">Patients →</p>
-        </button>
-        <div className="liquid-glass rounded-2xl p-4 text-center">
-          <Star className="w-5 h-5 text-warning mx-auto mb-1.5 fill-warning" />
-          <p className="stat-number text-2xl text-foreground">{Number(coach?.avg_rating ?? 0).toFixed(1)}</p>
-          <p className="text-muted-foreground text-[10px] font-medium">
-            Rating{coach?.total_ratings ? ` · ${coach.total_ratings}` : ""}
-          </p>
-        </div>
-        <button
-          onClick={() => setSchedulePickerOpen(true)}
-          className="liquid-glass rounded-2xl p-4 text-center hover:bg-accent/40 transition-colors"
-          title="Sessions completed — tap to schedule a new meeting"
-        >
-          <Activity className="w-5 h-5 text-success mx-auto mb-1.5" strokeWidth={1.8} />
-          <p className="stat-number text-2xl text-foreground">{completedSessions}</p>
-          <p className="text-muted-foreground text-[10px] font-medium">Sessions →</p>
-        </button>
-      </motion.div>
 
       {/* Patient Tracking */}
       {patients.length > 0 && (
