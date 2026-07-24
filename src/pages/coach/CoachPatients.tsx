@@ -928,7 +928,7 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
               <motion.button
                 key={p.user_id}
                 onClick={() => openPatient(p)}
-                className="liquid-glass rounded-3xl p-5 text-left w-full hover:bg-primary/5 transition-colors"
+                className="liquid-glass rounded-2xl p-3 text-left w-full hover:bg-primary/5 transition-colors min-w-0"
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.05 * i }}
