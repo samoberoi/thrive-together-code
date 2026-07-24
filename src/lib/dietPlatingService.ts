@@ -104,7 +104,9 @@ export async function fetchCurrentDietPreference(userId: string): Promise<string
   ]);
   const row = data as any;
   const prefs = (row?.diet_preferences as string[] | null | undefined)?.map(normalizeDietPreference).filter(Boolean) ?? [];
-  return prefs[0] || normalizeDietPreference(row?.diet_preference) || normalizeDietPreference((profile as any)?.lifestyle?.diet) || "mixed";
+  const single = row?.diet_preference ? normalizeDietPreference(row.diet_preference) : "";
+  const profileDiet = (profile as any)?.lifestyle?.diet ? normalizeDietPreference((profile as any).lifestyle.diet) : "";
+  return prefs[0] || single || profileDiet || "mixed";
 }
 
 export function dayIndexForToday(planStartDate: string) {
