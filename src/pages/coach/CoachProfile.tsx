@@ -463,10 +463,23 @@ export default function CoachProfile({ onSignOut, onReplayTour }: { onSignOut: (
         <InfoRow icon={CreditCard} label="IFSC Code" value={coach.bank_ifsc} />
       </SectionCard>
 
+      {/* Take the tour again */}
+      {onReplayTour && (
+        <motion.button
+          onClick={onReplayTour}
+          className="rounded-2xl p-3.5 flex items-center justify-center gap-2 text-primary font-semibold border border-primary/25 bg-primary/5 hover:bg-primary/10 transition-colors w-full"
+          initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.32 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <Compass className="w-5 h-5" strokeWidth={1.8} />
+          Take the tour again
+        </motion.button>
+      )}
+
       {/* Sign out */}
       <motion.button
         onClick={onSignOut}
-        className="rounded-3xl p-4 flex items-center justify-center gap-2 text-destructive font-bold mb-6 border border-destructive/40 bg-destructive/5 hover:bg-destructive/10 transition-colors w-full"
+        className="rounded-3xl p-4 flex items-center justify-center gap-2 text-destructive font-bold mb-6 mt-3 border border-destructive/40 bg-destructive/5 hover:bg-destructive/10 transition-colors w-full"
         initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
         whileTap={{ scale: 0.98 }}
       >
