@@ -3,6 +3,8 @@ import { motion } from "framer-motion";
 import { MoreHorizontal } from "lucide-react";
 import AttentionBadge from "@/components/attention/AttentionBadge";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { AppBottomBar } from "@/components/layout/AppBottomBar";
+
 
 export interface RoleNavItem<TId extends string = string> {
   id: TId;
