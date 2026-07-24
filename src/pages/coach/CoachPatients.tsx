@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveCurrentCoach } from "@/lib/coachService";
 import { calculateSupplementStreak } from "@/lib/supplementBadgeService";
 import ScheduleMeetingDialog from "@/components/coach/ScheduleMeetingDialog";
 import RecommendTestsDialog from "@/components/coach/RecommendTestsDialog";
@@ -158,8 +159,7 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
     if (!user) return;
     setLoading(true);
 
-    const { data: coachData } = await supabase
-      .from("coaches" as any).select("id").eq("user_id", user.id).single();
+    const coachData = await resolveCurrentCoach(user, "id");
     if (!coachData) { setLoading(false); return; }
     setCoachId((coachData as any).id);
 
@@ -915,7 +915,7 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
           <p className="text-muted-foreground text-sm">No patients in this category</p>
         </motion.div>
       ) : (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-[repeat(2,minmax(0,1fr))] gap-2 w-full">
           {filteredPatients.map((p, i) => {
             const ps = patientStatuses[p.user_id];
             const sc = ps ? statusColors[ps.status] : statusColors.yellow;
@@ -928,12 +928,12 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
               <motion.button
                 key={p.user_id}
                 onClick={() => openPatient(p)}
-                className="liquid-glass rounded-2xl p-3 text-left w-full hover:bg-primary/5 transition-colors min-w-0"
+                className="liquid-glass rounded-2xl p-2.5 text-left w-full hover:bg-primary/5 transition-colors min-w-0"
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.05 * i }}
               >
-                <div className="flex items-center gap-3 mb-3">
+                <div className="flex items-start gap-2 mb-2 min-w-0">
                   <div className="relative w-10 h-10 flex-shrink-0">
                     <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center overflow-hidden">
                       {p.avatar_url ? (
@@ -947,10 +947,10 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
                     <div className={`absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-background ${sc.dot}`} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 min-w-0">
                       <p className="text-foreground font-bold text-sm truncate">{p.name ?? "Unknown"}</p>
                       {ps && (
-                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${sc.bg} ${sc.text}`}>
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${sc.bg} ${sc.text}`}>
                           {ps.label}
                         </span>
                       )}

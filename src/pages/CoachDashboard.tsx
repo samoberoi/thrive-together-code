@@ -7,6 +7,7 @@ import CoachCommissionCard from "@/components/CoachCommissionCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveCurrentCoach } from "@/lib/coachService";
 import CoachHome from "./coach/CoachHome";
 import CoachPatients from "./coach/CoachPatients";
 import CoachProfile from "./coach/CoachProfile";
@@ -61,11 +62,7 @@ export default function CoachDashboard() {
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const { data } = await supabase
-        .from("coaches" as any)
-        .select("id, name, tour_completed_at, avatar_url")
-        .eq("user_id", user.id)
-        .single();
+      const data = await resolveCurrentCoach(user, "id, name, tour_completed_at, avatar_url");
       if (data) {
         const d = data as any;
         const tourDone = !!d.tour_completed_at;
