@@ -56,6 +56,43 @@ export interface CoachRating {
   created_at: string;
 }
 
+export async function resolveCurrentCoach(user: any, select = "*"): Promise<Coach | null> {
+  if (!user?.id) return null;
+
+  const rawPhone: string | undefined =
+    user.phone ||
+    (user.email && user.email.endsWith("@bbd.app") ? user.email.split("@")[0] : undefined);
+
+  if (rawPhone) {
+    try {
+      await supabase.rpc("link_coach_to_user" as any, { _user_id: user.id, _phone: rawPhone });
+    } catch {}
+  }
+
+  const { data: coachRows } = await supabase
+    .from("coaches" as any)
+    .select(select)
+    .eq("user_id", user.id)
+    .eq("is_active", true);
+
+  const rows = ((coachRows as any[]) ?? []) as Coach[];
+  if (rows.length <= 1) return rows[0] ?? null;
+
+  const coachIds = rows.map((row: any) => row.id).filter(Boolean);
+  const { data: assignmentRows } = await supabase
+    .from("coach_assignments" as any)
+    .select("coach_id")
+    .in("coach_id", coachIds)
+    .eq("is_active", true);
+
+  const counts = new Map<string, number>();
+  ((assignmentRows as any[]) ?? []).forEach((row) => {
+    counts.set(row.coach_id, (counts.get(row.coach_id) ?? 0) + 1);
+  });
+
+  return rows.sort((a: any, b: any) => (counts.get(b.id) ?? 0) - (counts.get(a.id) ?? 0))[0] ?? null;
+}
+
 /** Fetch the user's currently assigned coach */
 export async function fetchAssignedCoach(userId: string): Promise<Coach | null> {
   const coachSelect = "id, name, phone, bio, description, specialization, coach_type, years_experience, total_consultations, avg_rating, total_ratings, avatar_url, languages, qualification, city, is_active, working_hours_start, working_hours_end, working_timezone";
