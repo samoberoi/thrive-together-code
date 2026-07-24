@@ -942,9 +942,26 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 mt-0.5">
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                       {p.age && <span className="text-muted-foreground text-xs">{p.age}y</span>}
                       {p.gender && <span className="text-muted-foreground text-xs">• {p.gender}</span>}
+                      {p.plan_name && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary no-break">
+                          {p.plan_name}
+                        </span>
+                      )}
+                      {p.plan_expires_at && (() => {
+                        const d = daysUntil(p.plan_expires_at);
+                        const isSoon = d >= 0 && d <= 30;
+                        const isExpired = d < 0;
+                        return (
+                          <span className={`text-[10px] font-semibold no-break ${
+                            isExpired ? "text-destructive" : isSoon ? "text-warning" : "text-muted-foreground"
+                          }`}>
+                            {isExpired ? "expired " : "exp "}{fmtDate(p.plan_expires_at)}
+                          </span>
+                        );
+                      })()}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
