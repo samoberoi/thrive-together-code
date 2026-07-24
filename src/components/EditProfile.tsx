@@ -744,16 +744,22 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
 
     setSaving(false);
     if (ok) {
-      const delta = newScore - initialScore;
-      const deltaStr = delta > 0 ? `+${delta}` : `${delta}`;
-      const emoji = delta > 0 ? "📈" : delta < 0 ? "📉" : "➡️";
-      toast.success(`${emoji} Health score: ${newScore} (${deltaStr} from start)`);
+      if (coachMode) {
+        toast.success("Patient profile updated");
+      } else {
+        const delta = newScore - initialScore;
+        const deltaStr = delta > 0 ? `+${delta}` : `${delta}`;
+        const emoji = delta > 0 ? "📈" : delta < 0 ? "📉" : "➡️";
+        toast.success(`${emoji} Health score: ${newScore} (${deltaStr} from start)`);
+      }
       window.dispatchEvent(new CustomEvent("health-log-saved"));
+      onSaved?.();
       onBack();
     } else {
       toast.error("Failed to save profile");
     }
   };
+
 
   const genders = ["Male", "Female", "Other"];
   const maritalOptions = ["Single", "Married", "Divorced", "Widowed"];
