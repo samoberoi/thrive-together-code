@@ -132,8 +132,21 @@ export default function Videos({ packageKey }: VideosProps = {}) {
   const yogaRemaining = Math.max(0, Math.round((yogaGoalMin - yogaMinutesToday) * 10) / 10);
   const thumbnailsReady = !(thumbnailsLoading || metadataLoading);
 
+  if (isCoachManaged && !assignmentsLoading && assignedItems && assignedItems.length === 0) {
+    return (
+      <div className="px-5 pt-6 pb-10">
+        <EmptyState
+          icon={Flower2}
+          title="Awaiting your coach's plan"
+          description="Your coach hasn't assigned any yoga videos yet. You'll see them here as soon as your plan is ready."
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4 pt-4 md:pt-6 pb-6">
+
       {/* HERO — BBDO Daily Breath Protocol (big, prominent) */}
       <div className="mx-5">
         <motion.button
