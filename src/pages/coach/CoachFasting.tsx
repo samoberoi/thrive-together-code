@@ -214,6 +214,26 @@ export default function CoachFasting() {
       {/* Patients View — compact rows with search; expand for detail */}
       {view === "patients" && (
         <div className="space-y-3">
+          {(() => {
+            const assignedCount = patients.filter((p: any) => !!patientProtocols[p.user_id]).length;
+            const unassignedCount = patients.length - assignedCount;
+            return (
+              <div className="grid grid-cols-3 gap-2">
+                <div className="liquid-glass rounded-2xl p-3 text-center">
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Total</div>
+                  <div className="text-2xl font-black text-foreground mt-1">{patients.length}</div>
+                </div>
+                <div className="rounded-2xl p-3 text-center border border-emerald-500/30 bg-emerald-500/10">
+                  <div className="text-[10px] uppercase tracking-wide text-emerald-600 dark:text-emerald-400 font-semibold">Assigned</div>
+                  <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{assignedCount}</div>
+                </div>
+                <div className="rounded-2xl p-3 text-center border border-destructive/30 bg-destructive/10">
+                  <div className="text-[10px] uppercase tracking-wide text-destructive font-semibold">Unassigned</div>
+                  <div className="text-2xl font-black text-destructive mt-1">{unassignedCount}</div>
+                </div>
+              </div>
+            );
+          })()}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input placeholder={`Search ${patients.length} patient${patients.length === 1 ? "" : "s"}…`} value={patientSearch} onChange={(e) => setPatientSearch(e.target.value)} className="pl-9 h-11 rounded-2xl" />
