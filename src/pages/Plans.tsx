@@ -108,7 +108,10 @@ export default function Plans() {
   }
 
   return (
-    <div className="phone-container min-h-dvh flex flex-col px-6 pt-14 pb-10 overflow-y-auto bg-background">
+    <div
+      className="phone-container min-h-dvh flex flex-col px-6 pt-14 overflow-y-auto bg-background"
+      style={{ paddingBottom: "calc(var(--kb-h, 0px) + var(--nav-clear, calc(env(safe-area-inset-bottom, 0px) + 2.5rem)))" }}
+    >
       <SoundToggle />
       <button
         onClick={() => navigate(-1)}
