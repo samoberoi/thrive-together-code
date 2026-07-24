@@ -290,7 +290,7 @@ export default function CoachSupplements() {
         </div>
       </div>
 
-      <div className="space-y-2 max-h-80 overflow-y-auto">
+      <div className="space-y-2">
       {visibleGroups.length === 0 && (
         <div className="text-center text-xs text-muted-foreground py-6">No supplements match your filters.</div>
       )}
