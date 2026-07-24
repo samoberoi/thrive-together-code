@@ -368,39 +368,47 @@ export default function CoachFasting() {
                       ) : (
                         <div>
                           {isAssigning && assignForm ? (
-                            <div className="flex flex-wrap gap-2 items-end">
-                              <Select
-                                value={assignForm.protocolId}
-                                onValueChange={(val) => setAssignForm({ ...assignForm, protocolId: val })}
-                              >
-                                <SelectTrigger className="rounded-xl flex-1 min-w-[180px] bg-background border-border">
-                                  <SelectValue placeholder="Select protocol" />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-xl">
-                                  {protocols.filter((p) => p.is_active).map((p) => (
-                                    <SelectItem key={p.id} value={p.id} className="rounded-lg">{p.protocol_name}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <input
-                                type="date"
-                                className="rounded-xl border border-input bg-background px-3 py-2 text-sm"
-                                value={assignForm.startDate}
-                                onChange={(e) => setAssignForm({ ...assignForm, startDate: e.target.value })}
-                              />
-                              <button
-                                onClick={handleAssign}
-                                disabled={!assignForm.protocolId}
-                                className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-50"
-                              >
-                                Assign
-                              </button>
-                              <button
-                                onClick={() => setAssignForm(null)}
-                                className="px-3 py-2 rounded-xl bg-accent text-muted-foreground text-sm"
-                              >
-                                Cancel
-                              </button>
+                            <div className="flex flex-col gap-3 rounded-2xl bg-muted/40 p-3">
+                              <div className="space-y-1.5">
+                                <label className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Protocol</label>
+                                <Select
+                                  value={assignForm.protocolId}
+                                  onValueChange={(val) => setAssignForm({ ...assignForm, protocolId: val })}
+                                >
+                                  <SelectTrigger className="rounded-xl w-full bg-background border-border h-11">
+                                    <SelectValue placeholder="Select protocol" />
+                                  </SelectTrigger>
+                                  <SelectContent className="rounded-xl">
+                                    {protocols.filter((p) => p.is_active).map((p) => (
+                                      <SelectItem key={p.id} value={p.id} className="rounded-lg">{p.protocol_name}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-1.5">
+                                <label className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Start date</label>
+                                <input
+                                  type="date"
+                                  className="rounded-xl border border-input bg-background px-3 h-11 text-sm w-full"
+                                  value={assignForm.startDate}
+                                  onChange={(e) => setAssignForm({ ...assignForm, startDate: e.target.value })}
+                                />
+                              </div>
+                              <div className="flex flex-col gap-2 pt-1">
+                                <button
+                                  onClick={handleAssign}
+                                  disabled={!assignForm.protocolId}
+                                  className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-50"
+                                >
+                                  Assign Protocol
+                                </button>
+                                <button
+                                  onClick={() => setAssignForm(null)}
+                                  className="w-full h-10 rounded-xl bg-accent text-muted-foreground text-sm font-medium"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
                             </div>
                           ) : (
                             <button
@@ -409,7 +417,7 @@ export default function CoachFasting() {
                                 protocolId: "",
                                 startDate: new Date().toISOString().split("T")[0],
                               })}
-                              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 text-primary text-sm font-semibold hover:bg-primary/20 transition-colors"
+                              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary/10 text-primary text-sm font-semibold hover:bg-primary/20 transition-colors"
                             >
                               <Calendar className="w-4 h-4" /> Assign Fasting Protocol
                             </button>
