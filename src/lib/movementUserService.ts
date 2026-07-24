@@ -18,6 +18,10 @@ export type UserMovementProgress = {
   longest_streak_weeks: number;
   total_weeks_completed: number;
   total_weeks_missed: number;
+  custom_daily_step_goal?: number | null;
+  custom_goal_set_by?: string | null;
+  custom_goal_note?: string | null;
+  custom_goal_updated_at?: string | null;
 };
 
 export type UserMovementBadge = {
