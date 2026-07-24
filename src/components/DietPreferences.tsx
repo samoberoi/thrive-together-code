@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, Check, Leaf, Salad, Drumstick, Sprout, EggFried, Loader2, Sparkles, UtensilsCrossed } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { useDietTypes } from "@/hooks/useDietTypes";
+import { loadDietProfile, saveDietProfile } from "@/lib/dietProfileService";
+import AllergyAndSubPrefs from "@/components/diet/AllergyAndSubPrefs";
 
 type DietPref = string;
 
@@ -16,12 +17,7 @@ const ICON_FOR_SLUG: Record<string, any> = {
   eggitarian: EggFried,
 };
 
-const COMMON_ALLERGIES = [
-  "Peanuts", "Tree nuts", "Dairy", "Eggs", "Soy", "Wheat / Gluten",
-  "Fish", "Shellfish", "Sesame", "Mustard",
-];
-
-function normalizePref(p: string): DietPref | null {
+function normalizePref(p: string | null | undefined): DietPref | null {
   const v = (p || "").toLowerCase().replace(/[-\s]/g, "_");
   if (!v) return null;
   if (v === "vegetarian") return "veg";
@@ -39,45 +35,44 @@ export default function DietPreferences({ onBack }: { onBack: () => void }) {
     icon: ICON_FOR_SLUG[dt.slug] || UtensilsCrossed,
   }));
   const [prefs, setPrefs] = useState<DietPref[]>([]);
-  const [allergies, setAllergies] = useState<string[]>([]);
+  const [subPreferences, setSubPreferences] = useState<string[]>([]);
+  const [allergenFoodIds, setAllergenFoodIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("user_diet_profiles").select("*").eq("user_id", user.id).maybeSingle()
-      .then(({ data }) => {
-        if (data) {
-          const arr = ((data as any).diet_preferences as string[] | null) || [];
-          const fromArr = arr.map(normalizePref).filter(Boolean) as DietPref[];
-          const single = normalizePref(data.diet_preference);
-          const finalPrefs = single && fromArr.length > 0 && !fromArr.includes(single) ? [single] : (fromArr.length ? fromArr : single ? [single] : []);
-          setPrefs(finalPrefs);
-          setAllergies(data.allergies || []);
-        }
-        setLoading(false);
-      });
+    loadDietProfile(user.id).then((data) => {
+      if (data) {
+        const arr = ((data as any).diet_preferences as string[] | null) || [];
+        const fromArr = arr.map(normalizePref).filter(Boolean) as DietPref[];
+        const single = normalizePref(data.diet_preference);
+        const finalPrefs = single && fromArr.length > 0 && !fromArr.includes(single) ? [single] : (fromArr.length ? fromArr : single ? [single] : []);
+        setPrefs(finalPrefs);
+        setSubPreferences((data as any).sub_preferences ?? []);
+        setAllergenFoodIds((data as any).allergen_food_ids ?? []);
+      }
+      setLoading(false);
+    });
   }, [user]);
 
   const togglePref = (p: DietPref) => {
     setPrefs((prev) => prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]);
   };
-  const toggleAllergy = (a: string) =>
-    setAllergies((prev) => prev.includes(a) ? prev.filter((x) => x !== a) : [...prev, a]);
 
   const save = async () => {
     if (!user) return;
     setSaving(true);
-    const canonical = prefs[0] || "veg"; // legacy single col fallback
-    const { error } = await supabase.from("user_diet_profiles").upsert({
-      user_id: user.id,
+    const canonical = prefs[0] || "veg";
+    const ok = await saveDietProfile(user.id, {
       diet_preference: canonical,
       diet_preferences: prefs,
-      allergies,
-    } as any, { onConflict: "user_id" });
+      sub_preferences: subPreferences,
+      allergen_food_ids: allergenFoodIds,
+    });
     setSaving(false);
-    if (error) {
-      toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
+    if (!ok) {
+      toast({ title: "Couldn't save", description: "Please try again.", variant: "destructive" });
       return;
     }
     toast({ title: "Saved", description: prefs.length ? "Your diet preferences are updated." : "We'll show you everything." });
@@ -140,22 +135,17 @@ export default function DietPreferences({ onBack }: { onBack: () => void }) {
               Skip — show me everything
             </button>
 
-            <p className="text-xs font-bold tracking-wider uppercase text-muted-foreground mt-7 mb-3 leading-tight break-words">Allergies / avoid</p>
-            <div className="flex flex-wrap gap-1.5">
-              {COMMON_ALLERGIES.map((a) => {
-                const active = allergies.includes(a);
-                return (
-                  <button
-                    key={a}
-                    onClick={() => toggleAllergy(a)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-bold leading-tight break-words transition-colors ${active ? "bg-[var(--bbdo-blue)] text-white" : "bg-muted text-muted-foreground"}`}
-                  >
-                    {a}
-                  </button>
-                );
-              })}
+            <div className="mt-7">
+              <AllergyAndSubPrefs
+                dietPrefs={prefs}
+                subPreferences={subPreferences}
+                allergenFoodIds={allergenFoodIds}
+                onSubChange={setSubPreferences}
+                onAllergensChange={setAllergenFoodIds}
+              />
             </div>
-            <p className="text-[11px] text-muted-foreground mt-3 leading-relaxed">
+
+            <p className="text-[11px] text-muted-foreground mt-4 leading-relaxed">
               We personalise your food library, plate builder and meal suggestions based on this.
             </p>
           </>

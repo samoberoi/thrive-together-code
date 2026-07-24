@@ -8,6 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import AllergyAndSubPrefs from "@/components/diet/AllergyAndSubPrefs";
+import { loadDietProfile, saveDietProfile } from "@/lib/dietProfileService";
+import { useDietTypes } from "@/hooks/useDietTypes";
+
 
 interface Props {
   open: boolean;
@@ -23,21 +27,33 @@ export default function PatientProfileEditor({ open, onClose, patientUserId, pat
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [row, setRow] = useState<Row>({});
+  const { types: dietTypes } = useDietTypes();
+  const [dietPrefs, setDietPrefs] = useState<string[]>([]);
+  const [subPreferences, setSubPreferences] = useState<string[]>([]);
+  const [allergenFoodIds, setAllergenFoodIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (!open) return;
     (async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", patientUserId)
-        .maybeSingle();
+      const [{ data, error }, dietProfile] = await Promise.all([
+        supabase.from("profiles").select("*").eq("user_id", patientUserId).maybeSingle(),
+        loadDietProfile(patientUserId),
+      ]);
       if (error) toast.error(error.message);
       setRow((data as any) ?? {});
+      if (dietProfile) {
+        const arr = (dietProfile.diet_preferences as string[] | null) || [];
+        setDietPrefs(arr.length ? arr : dietProfile.diet_preference ? [dietProfile.diet_preference] : []);
+        setSubPreferences((dietProfile as any).sub_preferences ?? []);
+        setAllergenFoodIds((dietProfile as any).allergen_food_ids ?? []);
+      } else {
+        setDietPrefs([]); setSubPreferences([]); setAllergenFoodIds([]);
+      }
       setLoading(false);
     })();
   }, [open, patientUserId]);
+
 
   const setField = (k: string, v: any) => setRow((r) => ({ ...r, [k]: v }));
   const setJson = (parent: string, k: string, v: any) =>
@@ -81,12 +97,25 @@ export default function PatientProfileEditor({ open, onClose, patientUserId, pat
       }
     }
     const { error } = await supabase.from("profiles").update(patch as any).eq("user_id", patientUserId);
+    if (!error) {
+      const dietOk = await saveDietProfile(patientUserId, {
+        diet_preference: dietPrefs[0] ?? null,
+        diet_preferences: dietPrefs,
+        sub_preferences: subPreferences,
+        allergen_food_ids: allergenFoodIds,
+      });
+      if (!dietOk) {
+        setSaving(false);
+        return toast.error("Saved profile, but couldn't save diet & allergies.");
+      }
+    }
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success("Profile updated");
     onSaved?.();
     onClose();
   };
+
 
   const arrToCsv = (v: any): string => (Array.isArray(v) ? v.join(", ") : v ?? "");
   const csvToArr = (v: string) =>
@@ -240,6 +269,46 @@ export default function PatientProfileEditor({ open, onClose, patientUserId, pat
                 </div>
               </div>
             </section>
+
+            {/* Diet & allergies (managed via user_diet_profiles) */}
+            <section className="space-y-3">
+              <h4 className="text-sm font-bold text-foreground">Diet & allergies</h4>
+              <div>
+                <Label className="mb-2 block">Diet preferences</Label>
+                <div className="flex flex-wrap gap-2">
+                  {dietTypes.map((dt) => {
+                    const active = dietPrefs.includes(dt.slug);
+                    return (
+                      <button
+                        key={dt.slug}
+                        type="button"
+                        onClick={() =>
+                          setDietPrefs((prev) =>
+                            prev.includes(dt.slug) ? prev.filter((x) => x !== dt.slug) : [...prev, dt.slug],
+                          )
+                        }
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${
+                          active
+                            ? "bg-[var(--bbdo-blue)] text-white border-[var(--bbdo-blue)]"
+                            : "bg-muted text-muted-foreground border-transparent"
+                        }`}
+                      >
+                        {dt.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <AllergyAndSubPrefs
+                dietPrefs={dietPrefs}
+                subPreferences={subPreferences}
+                allergenFoodIds={allergenFoodIds}
+                onSubChange={setSubPreferences}
+                onAllergensChange={setAllergenFoodIds}
+              />
+            </section>
+
+
 
             {/* Address */}
             <section className="space-y-3">

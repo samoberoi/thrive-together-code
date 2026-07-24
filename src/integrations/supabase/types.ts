@@ -2220,6 +2220,7 @@ export type Database = {
           image_url: string | null
           is_active: boolean
           is_dairy_free: boolean
+          is_gluten_free: boolean | null
           is_jain_friendly: boolean
           name: string
           notes: string | null
@@ -2253,6 +2254,7 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean
           is_dairy_free?: boolean
+          is_gluten_free?: boolean | null
           is_jain_friendly?: boolean
           name: string
           notes?: string | null
@@ -2286,6 +2288,7 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean
           is_dairy_free?: boolean
+          is_gluten_free?: boolean | null
           is_jain_friendly?: boolean
           name?: string
           notes?: string | null
@@ -4055,32 +4058,38 @@ export type Database = {
       }
       user_diet_profiles: {
         Row: {
+          allergen_food_ids: string[]
           allergies: string[] | null
           condition_ids: string[] | null
           created_at: string
           diet_preference: string
           diet_preferences: string[]
           id: string
+          sub_preferences: string[]
           updated_at: string
           user_id: string
         }
         Insert: {
+          allergen_food_ids?: string[]
           allergies?: string[] | null
           condition_ids?: string[] | null
           created_at?: string
           diet_preference?: string
           diet_preferences?: string[]
           id?: string
+          sub_preferences?: string[]
           updated_at?: string
           user_id: string
         }
         Update: {
+          allergen_food_ids?: string[]
           allergies?: string[] | null
           condition_ids?: string[] | null
           created_at?: string
           diet_preference?: string
           diet_preferences?: string[]
           id?: string
+          sub_preferences?: string[]
           updated_at?: string
           user_id?: string
         }

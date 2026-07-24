@@ -16,6 +16,9 @@ import {
   type ActiveCondition, type FoodRuleHit, type ConditionRuleRow, type ConditionKey,
   deriveActiveConditions, fetchConditionRules, buildFoodRuleMap, fetchFoodConditions,
 } from "@/lib/foodConditionRules";
+import { useUserDietProfile, isFoodBlockedByDietProfile } from "@/hooks/useUserDietProfile";
+
+
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -82,6 +85,8 @@ function normalizePref(p: string | null | undefined): DietKey | null {
 
 export default function QuickFoodReference({ onClose, embedded = false }: { onClose?: () => void; embedded?: boolean }) {
   const { user } = useAuth();
+  const { subPreferences, allergenFoodIds } = useUserDietProfile(user?.id);
+
   const confirm = useConfirm();
   const { types: dietTypeRows } = useDietTypes();
   const DIET_CHIPS = useMemo(
@@ -353,7 +358,9 @@ export default function QuickFoodReference({ onClose, embedded = false }: { onCl
 
   const visibleItems = useMemo(() => {
     let list = items.filter(dietMatches);
+    list = list.filter((it) => !isFoodBlockedByDietProfile(it as any, subPreferences, allergenFoodIds));
     if (!isGlobalSort) list = list.filter((it) => it.filter_id === activeFilter);
+
     // Preset filters (cross-category)
     if (preset === "best") {
       list = list.filter((it) => it.recommendation === "encourage" || it.recommendation === "moderate");
@@ -411,7 +418,7 @@ export default function QuickFoodReference({ onClose, embedded = false }: { onCl
         });
     }
     return sorted;
-  }, [items, activeFilter, diet, search, sort, preset, effectiveSort, isGlobalSort, ruleMap, hideSkipped]);
+  }, [items, activeFilter, diet, search, sort, preset, effectiveSort, isGlobalSort, ruleMap, hideSkipped, subPreferences, allergenFoodIds]);
 
   // Categories present in the current preset result (before sub-category filter).
   const presetCategories = useMemo(() => {
