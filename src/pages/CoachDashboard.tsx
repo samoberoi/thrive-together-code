@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Home, Users, LogOut, Compass, Timer, Pill, MessageCircle, FlaskConical, Calendar, MessageSquareWarning } from "lucide-react";
+import { Home, Users, LogOut, Timer, Pill, MessageCircle, FlaskConical, Calendar, MessageSquareWarning } from "lucide-react";
 import NotificationCenter from "@/components/NotificationCenter";
 import SoundToggle from "@/components/SoundToggle";
 import CoachCommissionCard from "@/components/CoachCommissionCard";
@@ -140,7 +140,7 @@ export default function CoachDashboard() {
     fasting: <CoachFasting />,
     supplements: <CoachSupplements />,
     labtests: <CoachLabTests />,
-    profile: <CoachProfile onSignOut={handleSignOut} />,
+    profile: <CoachProfile onSignOut={handleSignOut} onReplayTour={handleReplayTour} />,
   };
 
   return (
@@ -207,13 +207,6 @@ export default function CoachDashboard() {
         <div className="px-4 pb-6" style={{ borderTop: "1px solid hsl(var(--border))", paddingTop: "12px" }}>
           <CoachCommissionCard />
           <button
-            onClick={handleReplayTour}
-            className="flex items-center gap-3 px-4 py-2.5 rounded-2xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors w-full mb-1"
-          >
-            <Compass className="w-5 h-5 shrink-0" strokeWidth={1.5} />
-            <span className="font-medium text-sm">Take the tour again</span>
-          </button>
-          <button
             onClick={handleSignOut}
             className="flex items-center gap-3 px-4 py-2.5 rounded-2xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors w-full"
           >
@@ -262,7 +255,7 @@ export default function CoachDashboard() {
           </div>
         </main>
 
-        {/* Mobile bottom dock — consistent with all roles */}
+        {/* Mobile bottom dock — consistent with end-user role (no FAB for coach) */}
         <RoleBottomNav<CoachTab>
           active={activeTab}
           onSelect={(tab) => {
@@ -275,21 +268,6 @@ export default function CoachDashboard() {
             label: n.label,
             badge: tabAttentionCounts[n.id] ?? 0,
           }))}
-          extra={
-            <motion.button
-              onClick={handleReplayTour}
-              aria-label="Take the tour again"
-              whileTap={{ scale: 0.96 }}
-              className="shrink-0 w-14 h-14 rounded-full flex items-center justify-center"
-              style={{
-                background: "var(--bbdo-blue)",
-                color: "#fff",
-                boxShadow: "0 6px 16px -6px rgba(15,26,61,0.22)",
-              }}
-            >
-              <Compass className="w-6 h-6" strokeWidth={2} />
-            </motion.button>
-          }
         />
       </div>
     </div>
