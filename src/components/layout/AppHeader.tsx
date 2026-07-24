@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
  * AppHeader — sticky/fixed header that always respects the top safe area
  * (notch, Dynamic Island, status bar). Use as the first child of AppScreen.
  */
-export interface AppHeaderProps extends React.HTMLAttributes<HTMLElement> {
+export interface AppHeaderProps extends Omit<React.HTMLAttributes<HTMLElement>, "title"> {
   /** Use `sticky` (default) so the header scrolls with content until it pins. */
   sticky?: boolean;
   /** Add subtle background/blur (default true) so content underneath is legible. */
