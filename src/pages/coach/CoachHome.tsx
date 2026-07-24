@@ -318,7 +318,13 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
     setCompletedSessions(((handledMeetings as any[]) ?? []).filter((m) => m.status === "completed").length);
     setNeedsScheduling(enriched.filter((p) => !handledIds.has(p.user_id)));
 
-    // Commission model + monthly commission estimate
+
+
+
+    setLoading(false);
+  };
+
+  const computeCommission = async (coachData: any, patientIds: string[]) => {
     const modelId = (coachData as any).commission_model_id;
     let model: any = null;
     if (modelId) {
@@ -336,30 +342,31 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
         .eq("is_default", true).eq("is_active", true).maybeSingle();
       model = m;
     }
-    if (model) {
-      const percent = Number(model.percent) || 0;
-      setCommissionInfo({ percent, name: model.name, frequency: model.payout_frequency || "monthly" });
-      const { data: subs } = await supabase
-        .from("subscriptions" as any)
-        .select("user_id, plan_price, duration_months, status")
-        .in("user_id", patientIds)
-        .eq("status", "active");
-      const byUser = new Map<string, any>();
-      ((subs as any[]) ?? []).forEach((s) => {
-        const prev = byUser.get(s.user_id);
-        if (!prev || (Number(s.plan_price) || 0) > (Number(prev.plan_price) || 0)) byUser.set(s.user_id, s);
-      });
-      let revenue = 0;
-      byUser.forEach((s) => {
-        const months = Math.max(1, Number(s.duration_months) || 1);
-        revenue += (Number(s.plan_price) || 0) / months;
-      });
-      setMonthlyCommission(revenue * (percent / 100));
+    if (!model) return;
+    const percent = Number(model.percent) || 0;
+    setCommissionInfo({ percent, name: model.name, frequency: model.payout_frequency || "monthly" });
+
+    if (patientIds.length === 0) {
+      setMonthlyCommission(0);
+      return;
     }
 
-
-
-    setLoading(false);
+    const { data: subs } = await supabase
+      .from("subscriptions" as any)
+      .select("user_id, plan_price, duration_months, status")
+      .in("user_id", patientIds)
+      .eq("status", "active");
+    const byUser = new Map<string, any>();
+    ((subs as any[]) ?? []).forEach((s) => {
+      const prev = byUser.get(s.user_id);
+      if (!prev || (Number(s.plan_price) || 0) > (Number(prev.plan_price) || 0)) byUser.set(s.user_id, s);
+    });
+    let revenue = 0;
+    byUser.forEach((s) => {
+      const months = Math.max(1, Number(s.duration_months) || 1);
+      revenue += (Number(s.plan_price) || 0) / months;
+    });
+    setMonthlyCommission(revenue * (percent / 100));
   };
 
   // Derived stats
