@@ -572,10 +572,12 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
           const m = ups[0] as any;
           const { data: coach } = await supabase
             .from("coaches")
-            .select("phone, name")
+            .select("phone, name, avatar_url")
             .eq("id", m.coach_id)
             .maybeSingle();
-          setNextMeeting({ ...m, coach_phone: coach?.phone ?? null, coach_name: coach?.name ?? null });
+          setNextMeeting({ ...m, coach_phone: coach?.phone ?? null, coach_name: coach?.name ?? null, coach_avatar: (coach as any)?.avatar_url ?? null });
+          if (coach?.name) setCoachName(coach.name);
+          if ((coach as any)?.avatar_url) setCoachAvatar((coach as any).avatar_url);
           setHasAnyMeeting(true);
         } else {
           setNextMeeting(null);
