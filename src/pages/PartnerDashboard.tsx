@@ -981,7 +981,7 @@ export default function PartnerDashboard() {
           notificationCount={attentionCounts.notifications}
         />
 
-        <main className="admin-shell flex-1 overflow-y-auto overflow-x-hidden pb-28 md:pb-0">
+        <main className="admin-shell flex-1 overflow-y-auto overflow-x-hidden pb-[calc(var(--nav-clear,5rem)+1rem)] md:pb-0">
           <div className="w-full max-w-4xl mx-auto">
             <AnimatePresence initial={false} mode="wait">
               <motion.div
