@@ -312,8 +312,14 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
   const [clinical, setClinical] = useState<Record<string, any>>({});
   const [deepProfiling, setDeepProfiling] = useState<Record<string, any>>({});
 
+  // Diet preferences + allergies (loaded from user_diet_profiles)
+  const [dietPrefs, setDietPrefs] = useState<string[]>([]);
+  const [subPreferences, setSubPreferences] = useState<string[]>([]);
+  const [allergenFoodIds, setAllergenFoodIds] = useState<string[]>([]);
+
   useEffect(() => {
     if (!effectiveUserId) return;
+
     fetchProfile(effectiveUserId).then((profile) => {
       if (!profile) return;
       if (profile.phone) setPhone(profile.phone);
