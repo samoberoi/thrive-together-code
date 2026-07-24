@@ -27,21 +27,33 @@ export default function PatientProfileEditor({ open, onClose, patientUserId, pat
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [row, setRow] = useState<Row>({});
+  const { types: dietTypes } = useDietTypes();
+  const [dietPrefs, setDietPrefs] = useState<string[]>([]);
+  const [subPreferences, setSubPreferences] = useState<string[]>([]);
+  const [allergenFoodIds, setAllergenFoodIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (!open) return;
     (async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", patientUserId)
-        .maybeSingle();
+      const [{ data, error }, dietProfile] = await Promise.all([
+        supabase.from("profiles").select("*").eq("user_id", patientUserId).maybeSingle(),
+        loadDietProfile(patientUserId),
+      ]);
       if (error) toast.error(error.message);
       setRow((data as any) ?? {});
+      if (dietProfile) {
+        const arr = (dietProfile.diet_preferences as string[] | null) || [];
+        setDietPrefs(arr.length ? arr : dietProfile.diet_preference ? [dietProfile.diet_preference] : []);
+        setSubPreferences((dietProfile as any).sub_preferences ?? []);
+        setAllergenFoodIds((dietProfile as any).allergen_food_ids ?? []);
+      } else {
+        setDietPrefs([]); setSubPreferences([]); setAllergenFoodIds([]);
+      }
       setLoading(false);
     })();
   }, [open, patientUserId]);
+
 
   const setField = (k: string, v: any) => setRow((r) => ({ ...r, [k]: v }));
   const setJson = (parent: string, k: string, v: any) =>
