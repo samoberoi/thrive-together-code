@@ -4,7 +4,7 @@ import {
   Users, ArrowLeft, Clock, Activity, Droplets, Heart, Phone,
   Weight, FileText, Loader2, ChevronRight, Flame, Trophy,
   Shield, ShieldAlert, ShieldCheck, TrendingDown, TrendingUp, Minus,
-  Pill, Timer, MessageCircle, Calendar, FlaskConical, CheckCircle2
+  Pill, Timer, MessageCircle, Calendar, FlaskConical, CheckCircle2, Pencil
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,7 @@ import ScheduleMeetingDialog from "@/components/coach/ScheduleMeetingDialog";
 import RecommendTestsDialog from "@/components/coach/RecommendTestsDialog";
 import RecommendSupplementsDialog from "@/components/coach/RecommendSupplementsDialog";
 import PatientVitalsCard from "@/components/coach/PatientVitalsCard";
+import PatientProfileEditor from "@/components/coach/PatientProfileEditor";
 
 type LogTab = "diabetes" | "bp" | "weight" | "fasting" | "supps";
 
