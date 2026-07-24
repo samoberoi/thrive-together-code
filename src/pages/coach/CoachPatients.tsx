@@ -4,7 +4,7 @@ import {
   Users, ArrowLeft, Clock, Activity, Droplets, Heart, Phone,
   Weight, FileText, Loader2, ChevronRight, Flame, Trophy,
   Shield, ShieldAlert, ShieldCheck, TrendingDown, TrendingUp, Minus,
-  Pill, Timer, MessageCircle, Calendar, FlaskConical, CheckCircle2
+  Pill, Timer, MessageCircle, Calendar, FlaskConical, CheckCircle2, Pencil
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,7 @@ import ScheduleMeetingDialog from "@/components/coach/ScheduleMeetingDialog";
 import RecommendTestsDialog from "@/components/coach/RecommendTestsDialog";
 import RecommendSupplementsDialog from "@/components/coach/RecommendSupplementsDialog";
 import PatientVitalsCard from "@/components/coach/PatientVitalsCard";
+import PatientProfileEditor from "@/components/coach/PatientProfileEditor";
 
 type LogTab = "diabetes" | "bp" | "weight" | "fasting" | "supps";
 
@@ -144,6 +145,7 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
   const [suppTrackingLogs, setSuppTrackingLogs] = useState<any[]>([]);
   const [coachId, setCoachId] = useState<string | null>(null);
   const [actionDlg, setActionDlg] = useState<null | "meeting" | "tests" | "supps">(null);
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -360,7 +362,23 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
             <div className={`w-2 h-2 rounded-full ${sc.dot} animate-pulse`} />
             <span className={`text-xs font-bold ${sc.text}`}>{patientStatus.label}</span>
           </div>
+          <button
+            onClick={() => setEditProfileOpen(true)}
+            className="liquid-glass rounded-xl p-2"
+            aria-label="Edit patient profile"
+            title="Edit profile"
+          >
+            <Pencil className="w-4 h-4 text-foreground" strokeWidth={1.8} />
+          </button>
         </motion.div>
+
+        <PatientProfileEditor
+          open={editProfileOpen}
+          onClose={() => setEditProfileOpen(false)}
+          patientUserId={selectedPatient.user_id}
+          patientName={selectedPatient.name ?? "Patient"}
+          onSaved={() => { loadPatients(); openPatient(selectedPatient); }}
+        />
 
         {/* Patient Info Card */}
         <motion.div className="liquid-glass rounded-3xl p-5" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>

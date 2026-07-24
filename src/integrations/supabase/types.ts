@@ -4267,6 +4267,10 @@ export type Database = {
           assigned_at: string
           current_level: number
           current_streak_weeks: number
+          custom_daily_step_goal: number | null
+          custom_goal_note: string | null
+          custom_goal_set_by: string | null
+          custom_goal_updated_at: string | null
           id: string
           longest_streak_weeks: number
           total_weeks_completed: number
@@ -4279,6 +4283,10 @@ export type Database = {
           assigned_at?: string
           current_level?: number
           current_streak_weeks?: number
+          custom_daily_step_goal?: number | null
+          custom_goal_note?: string | null
+          custom_goal_set_by?: string | null
+          custom_goal_updated_at?: string | null
           id?: string
           longest_streak_weeks?: number
           total_weeks_completed?: number
@@ -4291,6 +4299,10 @@ export type Database = {
           assigned_at?: string
           current_level?: number
           current_streak_weeks?: number
+          custom_daily_step_goal?: number | null
+          custom_goal_note?: string | null
+          custom_goal_set_by?: string | null
+          custom_goal_updated_at?: string | null
           id?: string
           longest_streak_weeks?: number
           total_weeks_completed?: number
