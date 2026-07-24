@@ -520,8 +520,19 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
     );
   };
 
+  const requestSave = () => {
+    if (coachMode) {
+      setConfirmOpen(true);
+      return;
+    }
+    void handleSave();
+  };
+
   const handleSave = async () => {
-    if (!user) return;
+    if (!effectiveUserId) return;
+    setConfirmOpen(false);
+    setSaving(true);
+
     setSaving(true);
 
     // Recompute health score with current data
