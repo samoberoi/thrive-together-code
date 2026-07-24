@@ -2,12 +2,12 @@ import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   Users, Star, Activity, AlertTriangle, TrendingUp, TrendingDown, Minus,
-  Heart, UserCheck, Clock, ChevronRight, Loader2, Bell,
+  Heart, UserCheck, Loader2, Bell,
   CalendarClock, Plus, Package, Send, CheckCircle2, Search, Percent,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { coachTypeLabel, type Coach } from "@/lib/coachService";
+import { coachTypeLabel, resolveCurrentCoach, type Coach } from "@/lib/coachService";
 import { createNotification } from "@/lib/notificationService";
 import { toast } from "sonner";
 import ScheduleMeetingDialog from "@/components/coach/ScheduleMeetingDialog";
@@ -53,6 +53,23 @@ interface Alert {
   type: "danger" | "warning";
   message: string;
   metric: string;
+}
+
+interface CommissionBreakdownRow {
+  plan_name: string;
+  count: number;
+  monthly_revenue: number;
+}
+
+interface CommissionSummary {
+  percent: number;
+  name: string;
+  frequency: string;
+  totalAssigned: number;
+  totalPaying: number;
+  totalMonthlyRevenue: number;
+  monthlyCommission: number;
+  rows: CommissionBreakdownRow[];
 }
 
 function evaluateAlerts(patients: PatientSummary[]): Alert[] {
@@ -106,8 +123,7 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
   const [activityDialog, setActivityDialog] = useState<ActivityKey | null>(null);
   const [search, setSearch] = useState("");
   const [commissionOpen, setCommissionOpen] = useState(false);
-  const [commissionInfo, setCommissionInfo] = useState<{ percent: number; name: string; frequency: string } | null>(null);
-  const [monthlyCommission, setMonthlyCommission] = useState<number | null>(null);
+  const [commissionInfo, setCommissionInfo] = useState<CommissionSummary | null>(null);
 
 
   useEffect(() => {
@@ -120,8 +136,7 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
     if (!user) return;
     setLoading(true);
 
-    const { data: coachData } = await supabase
-      .from("coaches" as any).select("*").eq("user_id", user.id).single();
+    const coachData = await resolveCurrentCoach(user);
 
     if (!coachData) { setLoading(false); return; }
     setCoach(coachData as unknown as Coach);
@@ -325,6 +340,32 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
   };
 
   const computeCommission = async (coachData: any, patientIds: string[]) => {
+    const { data, error } = await (supabase as any).rpc("get_coach_commission_summary", {
+      _coach_id: coachData.id,
+    });
+
+    if (!error && Array.isArray(data) && data.length > 0) {
+      const first = data[0] as any;
+      setCommissionInfo({
+        percent: Number(first.commission_percent) || 0,
+        name: first.commission_name || "Standard",
+        frequency: first.payout_frequency || "monthly",
+        totalAssigned: Number(first.total_assigned) || patientIds.length,
+        totalPaying: Number(first.total_paying) || 0,
+        totalMonthlyRevenue: Number(first.total_monthly_revenue) || 0,
+        monthlyCommission: Number(first.monthly_commission) || 0,
+        rows: data
+          .filter((r: any) => r.plan_name)
+          .map((r: any) => ({
+            plan_name: r.plan_name,
+            count: Number(r.plan_users) || 0,
+            monthly_revenue: Number(r.plan_monthly_revenue) || 0,
+          })),
+      });
+      return;
+    }
+
+    // Fallback keeps the card meaningful if the backend calculation is temporarily unavailable.
     const modelId = (coachData as any).commission_model_id;
     let model: any = null;
     if (modelId) {
@@ -339,34 +380,46 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
       const { data: m } = await supabase
         .from("commission_models" as any)
         .select("name, percent, payout_frequency")
-        .eq("is_default", true).eq("is_active", true).maybeSingle();
+        .eq("is_default", true)
+        .eq("is_active", true)
+        .maybeSingle();
       model = m;
     }
-    if (!model) return;
-    const percent = Number(model.percent) || 0;
-    setCommissionInfo({ percent, name: model.name, frequency: model.payout_frequency || "monthly" });
-
-    if (patientIds.length === 0) {
-      setMonthlyCommission(0);
-      return;
-    }
-
-    const { data: subs } = await supabase
-      .from("subscriptions" as any)
-      .select("user_id, plan_price, duration_months, status")
-      .in("user_id", patientIds)
-      .eq("status", "active");
-    const byUser = new Map<string, any>();
-    ((subs as any[]) ?? []).forEach((s) => {
-      const prev = byUser.get(s.user_id);
-      if (!prev || (Number(s.plan_price) || 0) > (Number(prev.plan_price) || 0)) byUser.set(s.user_id, s);
-    });
+    const percent = Number(model?.percent) || 8;
     let revenue = 0;
-    byUser.forEach((s) => {
-      const months = Math.max(1, Number(s.duration_months) || 1);
-      revenue += (Number(s.plan_price) || 0) / months;
+    const grouped = new Map<string, CommissionBreakdownRow>();
+    if (patientIds.length > 0) {
+      const { data: subs } = await supabase
+        .from("subscriptions" as any)
+        .select("user_id, plan_name, plan_price, duration_months, status, started_at")
+        .in("user_id", patientIds)
+        .eq("status", "active")
+        .order("started_at", { ascending: false });
+      const byUser = new Map<string, any>();
+      ((subs as any[]) ?? []).forEach((sub) => {
+        const previous = byUser.get(sub.user_id);
+        if (!previous || Number(sub.plan_price ?? 0) > Number(previous.plan_price ?? 0)) byUser.set(sub.user_id, sub);
+      });
+      byUser.forEach((sub) => {
+        const monthly = Number(sub.plan_price ?? 0) / Math.max(1, Number(sub.duration_months ?? 1));
+        revenue += monthly;
+        const key = sub.plan_name || "Unnamed plan";
+        const current = grouped.get(key) ?? { plan_name: key, count: 0, monthly_revenue: 0 };
+        current.count += 1;
+        current.monthly_revenue += monthly;
+        grouped.set(key, current);
+      });
+    }
+    setCommissionInfo({
+      percent,
+      name: model?.name || "Standard",
+      frequency: model?.payout_frequency || "monthly",
+      totalAssigned: patientIds.length,
+      totalPaying: Array.from(grouped.values()).reduce((sum, row) => sum + row.count, 0),
+      totalMonthlyRevenue: revenue,
+      monthlyCommission: revenue * (percent / 100),
+      rows: Array.from(grouped.values()).sort((a, b) => b.monthly_revenue - a.monthly_revenue),
     });
-    setMonthlyCommission(revenue * (percent / 100));
   };
 
   // Derived stats
@@ -434,7 +487,7 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
   const activeActivityStats = activityDialog ? activityStats.get(activityDialog) : null;
 
   return (
-    <div className="flex flex-col gap-4 px-5 pt-4 pb-4">
+    <div className="flex flex-col gap-3 px-4 sm:px-5 pt-3 pb-4">
       {/* Coach hero — avatar, name, specialization + coach-type chip.
           No redundant "Good to see you" line; the name IS the greeting. */}
       {coach && (
@@ -462,46 +515,54 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
       )}
 
       {/* Dashboard — Patients / Commission / Rating / Sessions (2×2, always) */}
-      <motion.div className="grid grid-cols-2 gap-3" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+      <motion.div className="grid grid-cols-[repeat(2,minmax(0,1fr))] gap-2 w-full" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
         <button
           onClick={onViewPatient}
-          className="liquid-glass rounded-2xl p-3 text-center hover:bg-accent/40 transition-colors min-w-0"
+          className="liquid-glass rounded-2xl p-2 hover:bg-accent/40 transition-colors min-w-0 h-[66px] flex items-center gap-2 text-left"
         >
-          <Users className="w-5 h-5 text-primary mx-auto mb-1" strokeWidth={1.8} />
-          <p className="stat-number text-2xl text-foreground leading-none">{patients.length}</p>
-          <p className="text-muted-foreground text-[10px] font-medium mt-1 truncate">Patients</p>
+          <Users className="w-5 h-5 text-primary shrink-0" strokeWidth={1.8} />
+          <div className="min-w-0">
+            <p className="stat-number text-lg text-foreground leading-none">{patients.length}</p>
+            <p className="text-muted-foreground text-[10px] font-medium mt-1 truncate">Patients</p>
+          </div>
         </button>
         <button
           onClick={() => commissionInfo && setCommissionOpen(true)}
           disabled={!commissionInfo}
-          className="liquid-glass rounded-2xl p-3 text-center hover:bg-accent/40 transition-colors disabled:opacity-60 disabled:cursor-not-allowed min-w-0"
+          className="liquid-glass rounded-2xl p-2 hover:bg-accent/40 transition-colors disabled:opacity-60 disabled:cursor-not-allowed min-w-0 h-[66px] flex items-center gap-2 text-left"
           title="Estimated monthly commission — tap to see breakdown"
         >
-          <Percent className="w-5 h-5 text-primary mx-auto mb-1" strokeWidth={1.8} />
-          <p className="stat-number text-2xl text-foreground leading-none truncate">
-            {monthlyCommission != null
-              ? new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0, notation: monthlyCommission >= 100000 ? "compact" : "standard" }).format(monthlyCommission)
+          <Percent className="w-5 h-5 text-primary shrink-0" strokeWidth={1.8} />
+          <div className="min-w-0">
+            <p className="stat-number text-base text-foreground leading-none truncate">
+              {commissionInfo
+              ? new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0, notation: commissionInfo.monthlyCommission >= 100000 ? "compact" : "standard" }).format(commissionInfo.monthlyCommission)
               : "—"}
-          </p>
-          <p className="text-muted-foreground text-[10px] font-medium mt-1 truncate">
-            Commission{commissionInfo ? ` · ${commissionInfo.percent}%` : ""}
-          </p>
+            </p>
+            <p className="text-muted-foreground text-[10px] font-medium mt-1 truncate">
+              Commission{commissionInfo ? ` · ${commissionInfo.percent}%` : ""}
+            </p>
+          </div>
         </button>
-        <div className="liquid-glass rounded-2xl p-3 text-center min-w-0">
-          <Star className="w-5 h-5 text-warning mx-auto mb-1 fill-warning" />
-          <p className="stat-number text-2xl text-foreground leading-none">{Number(coach?.avg_rating ?? 0).toFixed(1)}</p>
-          <p className="text-muted-foreground text-[10px] font-medium mt-1 truncate">
-            Rating{coach?.total_ratings ? ` · ${coach.total_ratings}` : ""}
-          </p>
+        <div className="liquid-glass rounded-2xl p-2 min-w-0 h-[66px] flex items-center gap-2 text-left">
+          <Star className="w-5 h-5 text-warning fill-warning shrink-0" />
+          <div className="min-w-0">
+            <p className="stat-number text-lg text-foreground leading-none">{Number(coach?.avg_rating ?? 0).toFixed(1)}</p>
+            <p className="text-muted-foreground text-[10px] font-medium mt-1 truncate">
+              Rating{coach?.total_ratings ? ` · ${coach.total_ratings}` : ""}
+            </p>
+          </div>
         </div>
         <button
           onClick={() => setSchedulePickerOpen(true)}
-          className="liquid-glass rounded-2xl p-3 text-center hover:bg-accent/40 transition-colors min-w-0"
+          className="liquid-glass rounded-2xl p-2 hover:bg-accent/40 transition-colors min-w-0 h-[66px] flex items-center gap-2 text-left"
           title="Sessions completed — tap to schedule a new meeting"
         >
-          <Activity className="w-5 h-5 text-success mx-auto mb-1" strokeWidth={1.8} />
-          <p className="stat-number text-2xl text-foreground leading-none">{completedSessions}</p>
-          <p className="text-muted-foreground text-[10px] font-medium mt-1 truncate">Sessions</p>
+          <Activity className="w-5 h-5 text-success shrink-0" strokeWidth={1.8} />
+          <div className="min-w-0">
+            <p className="stat-number text-lg text-foreground leading-none">{completedSessions}</p>
+            <p className="text-muted-foreground text-[10px] font-medium mt-1 truncate">Sessions</p>
+          </div>
         </button>
       </motion.div>
 
@@ -624,7 +685,7 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
               Tap to nudge
             </span>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+          <div className="grid grid-cols-[repeat(2,minmax(0,1fr))] min-[520px]:grid-cols-[repeat(4,minmax(0,1fr))] gap-1.5 w-full">
 
             {ALL_ACTIVITIES.map((k) => {
               const s = activityStats.get(k)!;
@@ -637,7 +698,7 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
                   key={k}
                   onClick={() => !noneApplicable && setActivityDialog(k)}
                   disabled={noneApplicable}
-                  className={`rounded-2xl p-3 text-left transition ${
+                  className={`rounded-2xl p-2.5 text-left transition min-w-0 ${
                     noneApplicable
                       ? "bg-muted/30 opacity-50 cursor-not-allowed"
                       : allDone
@@ -655,10 +716,10 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
                       {noneApplicable ? "N/A" : `${pct}%`}
                     </span>
                   </div>
-                  <p className="text-foreground text-lg font-black leading-none">
+                  <p className="text-foreground text-base font-black leading-none">
                     {s.done}<span className="text-xs text-muted-foreground font-medium">/{s.applicable || 0}</span>
                   </p>
-                  <p className="text-muted-foreground text-[10px] font-medium mt-1">{meta.label}</p>
+                  <p className="text-muted-foreground text-[10px] font-medium mt-1 truncate">{meta.label}</p>
                   {!noneApplicable && s.pending.length > 0 && (
                     <p className="text-[10px] font-semibold text-primary mt-0.5">
                       {s.pending.length} pending →
@@ -760,18 +821,19 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
             <p className="text-muted-foreground text-sm">No patients match "{search}"</p>
           </div>
         ) : (
-          <div className="flex flex-col gap-3 max-h-[70vh] overflow-y-auto -mx-1 px-1">
+          <div className="grid grid-cols-[repeat(2,minmax(0,1fr))] gap-2 max-h-[70vh] overflow-y-auto -mx-1 px-1 w-full">
             {filteredPatients.map((p) => {
               const t = trend(p);
               return (
                 <button
                   key={p.user_id}
                   onClick={() => setSummaryPatient(p)}
-                  className="flex items-center gap-3 py-3 border-b border-border/30 last:border-0 text-left w-full hover:opacity-90"
+                  className="liquid-glass rounded-2xl p-2.5 text-left w-full hover:bg-accent/40 transition-colors min-w-0"
                 >
-                  <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 overflow-hidden relative">
+                  <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 overflow-hidden relative">
                     {p.avatar_url ? (
-                      <img src={p.avatar_url} alt="" className="w-11 h-11 rounded-xl object-cover" />
+                      <img src={p.avatar_url} alt="" className="w-9 h-9 rounded-xl object-cover" />
                     ) : (
                       <span className="text-primary font-bold text-sm">{(p.name ?? "?")[0].toUpperCase()}</span>
                     )}
@@ -783,7 +845,7 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
                     />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 min-w-0">
                       <p className="text-foreground font-semibold text-sm truncate">{p.name ?? "Unknown"}</p>
                       {t && (
                         <span className={`inline-flex items-center gap-0.5 text-[10px] font-bold ${t.color}`}>
@@ -791,7 +853,7 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                       <span className="text-[10px] font-bold text-muted-foreground">
                         {p.doneCount}/{p.applicableCount} today
                       </span>
@@ -807,14 +869,7 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
                       )}
                     </div>
                   </div>
-                  <div className="text-right flex-shrink-0">
-                    {p.weight && <p className="text-foreground text-xs font-bold">{p.weight} kg</p>}
-                    <p className="text-muted-foreground text-[10px]">
-                      <Clock className="w-3 h-3 inline mr-0.5" />
-                      {new Date(p.assigned_at).toLocaleDateString("en-IN", { month: "short", day: "numeric" })}
-                    </p>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
                 </button>
               );
             })}
@@ -874,6 +929,11 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
           commissionPercent={commissionInfo.percent}
           commissionName={commissionInfo.name}
           payoutFrequency={commissionInfo.frequency}
+          totalAssigned={commissionInfo.totalAssigned}
+          totalPaying={commissionInfo.totalPaying}
+          totalMonthlyRevenue={commissionInfo.totalMonthlyRevenue}
+          monthlyCommission={commissionInfo.monthlyCommission}
+          rows={commissionInfo.rows}
         />
       )}
     </div>

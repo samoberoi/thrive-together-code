@@ -5249,6 +5249,10 @@ export type Database = {
           enabled_count: number
         }[]
       }
+      can_coach_view_assigned_user: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       cancel_event_registration: {
         Args: { _event_id: string }
         Returns: {
@@ -5333,6 +5337,21 @@ export type Database = {
       generate_diet_plating: {
         Args: { _diet?: string; _user_id: string }
         Returns: number
+      }
+      get_coach_commission_summary: {
+        Args: { _coach_id: string }
+        Returns: {
+          commission_name: string
+          commission_percent: number
+          monthly_commission: number
+          payout_frequency: string
+          plan_monthly_revenue: number
+          plan_name: string
+          plan_users: number
+          total_assigned: number
+          total_monthly_revenue: number
+          total_paying: number
+        }[]
       }
       get_daily_exercise_goal: { Args: never; Returns: number }
       get_daily_yoga_minutes: { Args: never; Returns: number }
