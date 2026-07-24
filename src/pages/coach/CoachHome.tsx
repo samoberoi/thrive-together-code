@@ -854,6 +854,16 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
           coachName={coach?.name ?? null}
         />
       )}
+      {coach && commissionInfo && (
+        <CoachCommissionDialog
+          open={commissionOpen}
+          onClose={() => setCommissionOpen(false)}
+          coachId={coach.id}
+          commissionPercent={commissionInfo.percent}
+          commissionName={commissionInfo.name}
+          payoutFrequency={commissionInfo.frequency}
+        />
+      )}
     </div>
   );
 }
