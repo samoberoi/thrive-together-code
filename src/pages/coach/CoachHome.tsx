@@ -461,45 +461,47 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
         </motion.div>
       )}
 
-      {/* Dashboard — Patients / Commission / Rating / Sessions (2×2) */}
+      {/* Dashboard — Patients / Commission / Rating / Sessions (2×2, always) */}
       <motion.div className="grid grid-cols-2 gap-3" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
         <button
           onClick={onViewPatient}
-          className="liquid-glass rounded-2xl p-4 text-center hover:bg-accent/40 transition-colors"
+          className="liquid-glass rounded-2xl p-3 text-center hover:bg-accent/40 transition-colors min-w-0"
         >
-          <Users className="w-5 h-5 text-primary mx-auto mb-1.5" strokeWidth={1.8} />
-          <p className="stat-number text-2xl text-foreground">{patients.length}</p>
-          <p className="text-muted-foreground text-[10px] font-medium no-break">Patients →</p>
+          <Users className="w-5 h-5 text-primary mx-auto mb-1" strokeWidth={1.8} />
+          <p className="stat-number text-2xl text-foreground leading-none">{patients.length}</p>
+          <p className="text-muted-foreground text-[10px] font-medium mt-1 truncate">Patients</p>
         </button>
         <button
-          onClick={() => setCommissionOpen(true)}
+          onClick={() => commissionInfo && setCommissionOpen(true)}
           disabled={!commissionInfo}
-          className="liquid-glass rounded-2xl p-4 text-center hover:bg-accent/40 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          className="liquid-glass rounded-2xl p-3 text-center hover:bg-accent/40 transition-colors disabled:opacity-60 disabled:cursor-not-allowed min-w-0"
           title="Estimated monthly commission — tap to see breakdown"
         >
-          <Percent className="w-5 h-5 text-primary mx-auto mb-1.5" strokeWidth={1.8} />
-          <p className="stat-number text-2xl text-foreground">
+          <Percent className="w-5 h-5 text-primary mx-auto mb-1" strokeWidth={1.8} />
+          <p className="stat-number text-2xl text-foreground leading-none truncate">
             {monthlyCommission != null
               ? new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0, notation: monthlyCommission >= 100000 ? "compact" : "standard" }).format(monthlyCommission)
               : "—"}
           </p>
-          <p className="text-muted-foreground text-[10px] font-medium no-break">Commission {commissionInfo?.frequency ?? "monthly"} →</p>
+          <p className="text-muted-foreground text-[10px] font-medium mt-1 truncate">
+            Commission{commissionInfo ? ` · ${commissionInfo.percent}%` : ""}
+          </p>
         </button>
-        <div className="liquid-glass rounded-2xl p-4 text-center">
-          <Star className="w-5 h-5 text-warning mx-auto mb-1.5 fill-warning" />
-          <p className="stat-number text-2xl text-foreground">{Number(coach?.avg_rating ?? 0).toFixed(1)}</p>
-          <p className="text-muted-foreground text-[10px] font-medium no-break">
+        <div className="liquid-glass rounded-2xl p-3 text-center min-w-0">
+          <Star className="w-5 h-5 text-warning mx-auto mb-1 fill-warning" />
+          <p className="stat-number text-2xl text-foreground leading-none">{Number(coach?.avg_rating ?? 0).toFixed(1)}</p>
+          <p className="text-muted-foreground text-[10px] font-medium mt-1 truncate">
             Rating{coach?.total_ratings ? ` · ${coach.total_ratings}` : ""}
           </p>
         </div>
         <button
           onClick={() => setSchedulePickerOpen(true)}
-          className="liquid-glass rounded-2xl p-4 text-center hover:bg-accent/40 transition-colors"
+          className="liquid-glass rounded-2xl p-3 text-center hover:bg-accent/40 transition-colors min-w-0"
           title="Sessions completed — tap to schedule a new meeting"
         >
-          <Activity className="w-5 h-5 text-success mx-auto mb-1.5" strokeWidth={1.8} />
-          <p className="stat-number text-2xl text-foreground">{completedSessions}</p>
-          <p className="text-muted-foreground text-[10px] font-medium no-break">Sessions →</p>
+          <Activity className="w-5 h-5 text-success mx-auto mb-1" strokeWidth={1.8} />
+          <p className="stat-number text-2xl text-foreground leading-none">{completedSessions}</p>
+          <p className="text-muted-foreground text-[10px] font-medium mt-1 truncate">Sessions</p>
         </button>
       </motion.div>
 
