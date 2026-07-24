@@ -270,6 +270,46 @@ export default function PatientProfileEditor({ open, onClose, patientUserId, pat
               </div>
             </section>
 
+            {/* Diet & allergies (managed via user_diet_profiles) */}
+            <section className="space-y-3">
+              <h4 className="text-sm font-bold text-foreground">Diet & allergies</h4>
+              <div>
+                <Label className="mb-2 block">Diet preferences</Label>
+                <div className="flex flex-wrap gap-2">
+                  {dietTypes.map((dt) => {
+                    const active = dietPrefs.includes(dt.slug);
+                    return (
+                      <button
+                        key={dt.slug}
+                        type="button"
+                        onClick={() =>
+                          setDietPrefs((prev) =>
+                            prev.includes(dt.slug) ? prev.filter((x) => x !== dt.slug) : [...prev, dt.slug],
+                          )
+                        }
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${
+                          active
+                            ? "bg-[var(--bbdo-blue)] text-white border-[var(--bbdo-blue)]"
+                            : "bg-muted text-muted-foreground border-transparent"
+                        }`}
+                      >
+                        {dt.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <AllergyAndSubPrefs
+                dietPrefs={dietPrefs}
+                subPreferences={subPreferences}
+                allergenFoodIds={allergenFoodIds}
+                onSubChange={setSubPreferences}
+                onAllergensChange={setAllergenFoodIds}
+              />
+            </section>
+
+
+
             {/* Address */}
             <section className="space-y-3">
               <h4 className="text-sm font-bold text-foreground">Address</h4>
