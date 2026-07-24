@@ -145,6 +145,7 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
   const [suppTrackingLogs, setSuppTrackingLogs] = useState<any[]>([]);
   const [coachId, setCoachId] = useState<string | null>(null);
   const [actionDlg, setActionDlg] = useState<null | "meeting" | "tests" | "supps">(null);
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
