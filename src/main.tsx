@@ -12,6 +12,7 @@ import {
   installNativePersistenceMirror,
 } from "@/lib/nativePersistence";
 import { bindAudioUnlock } from "@/lib/soundEngine";
+import { installPlatformAdapter } from "@/lib/platform";
 
 // Global typography — Montserrat
 import "@fontsource/montserrat/400.css";
@@ -21,7 +22,8 @@ import "@fontsource/montserrat/700.css";
 import "@fontsource/montserrat/800.css";
 
 async function bootstrap() {
-  installStartupDiagnostics();
+    installStartupDiagnostics();
+    installPlatformAdapter();
   try {
     logStartupEvent("bootstrap started");
     if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY) {
