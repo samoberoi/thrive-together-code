@@ -663,7 +663,8 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
       } as any);
     }
 
-    if (ok) {
+    if (ok && !coachMode) {
+
       // Load coach assignment once (used for score-decline alert + BMI push)
       const { data: assignment } = await supabase
         .from("coach_assignments" as any)
