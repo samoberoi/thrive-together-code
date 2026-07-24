@@ -15,6 +15,7 @@ import CoachFasting from "./coach/CoachFasting";
 import CoachSupplements from "./coach/CoachSupplements";
 import CoachLabTests from "./coach/CoachLabTests";
 import CoachMeetings from "./coach/CoachMeetings";
+import CoachMove from "./coach/CoachMove";
 import CoachConsultationRequests from "./coach/CoachConsultationRequests";
 import CoachInbox from "@/components/chat/CoachInbox";
 import NotificationsPanel from "@/components/NotificationsPanel";
