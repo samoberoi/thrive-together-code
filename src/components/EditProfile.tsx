@@ -369,6 +369,25 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
         return next;
       });
     }).catch(() => { /* ignore — lab pull is best-effort */ });
+
+    // Load diet preferences + allergies so coach/user can edit allergens.
+    loadDietProfile(effectiveUserId).then((dp) => {
+      if (!dp) return;
+      const arr = ((dp as any).diet_preferences as string[] | null) || [];
+      const normalize = (p?: string | null) => {
+        const v = (p || "").toLowerCase().replace(/[-\s]/g, "_");
+        if (!v) return null;
+        if (v === "vegetarian") return "veg";
+        if (v === "nonveg" || v === "non_vegetarian") return "non_veg";
+        return v;
+      };
+      const fromArr = arr.map(normalize).filter(Boolean) as string[];
+      const single = normalize(dp.diet_preference);
+      const finalPrefs = fromArr.length ? fromArr : single ? [single] : [];
+      setDietPrefs(finalPrefs);
+      setSubPreferences((dp as any).sub_preferences ?? []);
+      setAllergenFoodIds((dp as any).allergen_food_ids ?? []);
+    }).catch(() => { /* best-effort */ });
   }, [effectiveUserId]);
 
 
