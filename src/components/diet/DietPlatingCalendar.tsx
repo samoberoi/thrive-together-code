@@ -9,6 +9,7 @@ import {
   updatePlate,
   fetchApprovedFoods,
   fetchCurrentDietPreference,
+  normalizeDietPreference,
   type DietPlating,
   type ApprovedFood,
 } from "@/lib/dietPlatingService";
@@ -23,10 +24,10 @@ const slotLabel: Record<string, string> = {
 const slotOrder = ["first_meal", "mid_bite", "last_meal"];
 
 const DIET_FILTERS = [
+  { key: "non_veg", label: "Non-veg" },
   { key: "mixed", label: "Mixed" },
   { key: "veg", label: "Veg" },
   { key: "vegan", label: "Vegan" },
-  { key: "non-veg", label: "Non-veg" },
 ] as const;
 
 export default function DietPlatingCalendar() {
@@ -52,7 +53,7 @@ export default function DietPlatingCalendar() {
       fetchCurrentDietPreference(user.id),
     ]);
     setPlatings(list);
-    setDiet(pref);
+    setDiet(normalizeDietPreference(pref));
     if (list.length) setActiveDay(dayIndexForToday(list[0].plan_start_date));
     setLoading(false);
   };
@@ -71,13 +72,21 @@ export default function DietPlatingCalendar() {
 
   const totalCal = dayPlates.reduce((s, p) => s + (p.calories ?? 0), 0);
 
-  const changeDiet = async (next: string) => {
-    if (!user || next === diet) return;
+  const orderedFilters = useMemo(() => {
+    const current = normalizeDietPreference(diet);
+    return [...DIET_FILTERS].sort((a, b) => (a.key === current ? -1 : b.key === current ? 1 : 0));
+  }, [diet]);
+
+  const regenerateForDiet = async (nextDiet: string, force = false) => {
+    if (!user) return;
+    const normalized = normalizeDietPreference(nextDiet);
+    if (!force && normalized === diet) return;
     try {
       setRegening(true);
-      setDiet(next);
-      await regeneratePlating(user.id, next);
-      toast({ title: `Plates updated`, description: `Filter: ${next}` });
+      setDiet(normalized);
+      setFoods([]);
+      await regeneratePlating(user.id, normalized);
+      toast({ title: "Plates updated", description: `Preference: ${orderedFilters.find((f) => f.key === normalized)?.label ?? normalized}` });
       await load();
     } catch (e: any) {
       toast({ title: "Failed", description: e.message, variant: "destructive" });
@@ -86,13 +95,16 @@ export default function DietPlatingCalendar() {
     }
   };
 
-  const regen = () => user && changeDiet(diet);
+  const changeDiet = (next: string) => regenerateForDiet(next);
+
+  const regen = () => user && regenerateForDiet(diet, true);
 
   const doSwap = async (plate: DietPlating) => {
     try {
       setSwappingId(plate.id);
       const newData = await swapPlate(plate.id);
       setPlatings((prev) => prev.map((p) => (p.id === plate.id ? { ...p, plate_data: newData } : p)));
+      toast({ title: "Meal shuffled" });
     } catch (e: any) {
       toast({ title: "Swap failed", description: e.message, variant: "destructive" });
     } finally {
@@ -104,10 +116,8 @@ export default function DietPlatingCalendar() {
     setPickerFor(plate);
     setPicked(((plate.plate_data as any)?.items as string[]) ?? []);
     setFoodSearch("");
-    if (foods.length === 0) {
-      const list = await fetchApprovedFoods(diet);
-      setFoods(list);
-    }
+    const list = await fetchApprovedFoods(diet);
+    setFoods(list);
   };
 
   const togglePick = (name: string) => {
@@ -190,7 +200,7 @@ export default function DietPlatingCalendar() {
 
       {/* Diet filter chips */}
       <div className="flex gap-1.5 flex-wrap">
-        {DIET_FILTERS.map((f) => {
+        {orderedFilters.map((f) => {
           const active = diet === f.key;
           return (
             <button
