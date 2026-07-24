@@ -254,10 +254,19 @@ function MedicationListEditor({ medications, onChange }: { medications: Medicine
 
 interface EditProfileProps {
   onBack: () => void;
+  /** When editing another user (coach mode), pass their user_id */
+  targetUserId?: string;
+  /** Display name for header when in coach mode */
+  targetName?: string;
+  /** True when a coach is editing a patient */
+  coachMode?: boolean;
+  /** Called after a successful save */
+  onSaved?: () => void;
 }
 
-export default function EditProfile({ onBack }: EditProfileProps) {
+export default function EditProfile({ onBack, targetUserId, targetName, coachMode = false, onSaved }: EditProfileProps) {
   const { user } = useAuth();
+  const effectiveUserId = targetUserId ?? user?.id ?? null;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
@@ -265,8 +274,11 @@ export default function EditProfile({ onBack }: EditProfileProps) {
   const [uploading, setUploading] = useState(false);
   const [detecting, setDetecting] = useState(false);
   const [photoMenuOpen, setPhotoMenuOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const stored = getUser();
+  // In coach mode, don't seed from the coach's own localStorage — start empty
+  // and populate purely from the target patient's backend profile.
+  const stored = coachMode ? ({ profile: {}, bodyMetrics: {} } as any) : getUser();
 
   const [name, setName] = useState(stored.profile.name ?? "");
   const [age, setAge] = useState(stored.profile.age?.toString() ?? "");
@@ -291,14 +303,15 @@ export default function EditProfile({ onBack }: EditProfileProps) {
   const [anniversaryDate, setAnniversaryDate] = useState("");
   const [spouseName, setSpouseName] = useState("");
 
+
   // Lifestyle, clinical, deep profiling from backend
   const [lifestyle, setLifestyle] = useState<Record<string, any>>({});
   const [clinical, setClinical] = useState<Record<string, any>>({});
   const [deepProfiling, setDeepProfiling] = useState<Record<string, any>>({});
 
   useEffect(() => {
-    if (!user) return;
-    fetchProfile(user.id).then((profile) => {
+    if (!effectiveUserId) return;
+    fetchProfile(effectiveUserId).then((profile) => {
       if (!profile) return;
       if (profile.phone) setPhone(profile.phone);
       if ((profile as any).country_code) setCountryCode((profile as any).country_code);
@@ -332,16 +345,14 @@ export default function EditProfile({ onBack }: EditProfileProps) {
 
     // Smart inference: auto-fill hypo/hyper thyroid, uric acid, kidney disease,
     // iron deficiency and fatty liver from the most recent blood test.
-    fetchUserResults(user.id).then((results) => {
+    fetchUserResults(effectiveUserId).then((results) => {
       const inferred = inferConditionsFromLabs(results);
       if (Object.keys(inferred).length === 0) return;
       setDeepProfiling((prev) => {
         const next = { ...prev };
         (Object.keys(inferred) as (keyof typeof inferred)[]).forEach((k) => {
           const cur = (next as any)[k];
-          // Uric acid: always refresh with latest lab value
           if (k === "uricAcid") { (next as any)[k] = inferred[k]; return; }
-          // Others: only auto-fill when the user hasn't set it, or their answer was "no"/"unsure" but labs say yes
           if (cur == null || cur === "" || cur === "no" || cur === "unsure") {
             (next as any)[k] = inferred[k];
           }
@@ -349,13 +360,14 @@ export default function EditProfile({ onBack }: EditProfileProps) {
         return next;
       });
     }).catch(() => { /* ignore — lab pull is best-effort */ });
-  }, [user]);
+  }, [effectiveUserId]);
+
 
   const uploadAvatarBlob = async (blob: Blob, ext: string) => {
-    if (!user) return;
+    if (!effectiveUserId) return;
     setUploading(true);
     try {
-      const path = `${user.id}/avatar.${ext}`;
+      const path = `${effectiveUserId}/avatar.${ext}`;
       const { error: uploadError } = await supabase.storage
         .from("avatars")
         .upload(path, blob, { upsert: true, contentType: blob.type || `image/${ext}` });
@@ -363,8 +375,8 @@ export default function EditProfile({ onBack }: EditProfileProps) {
       const { data } = supabase.storage.from("avatars").getPublicUrl(path);
       const url = `${data.publicUrl}?t=${Date.now()}`;
       setAvatarUrl(url);
-      saveUser({ avatarUrl: url });
-      await updateProfile(user.id, { avatar_url: url });
+      if (!coachMode) saveUser({ avatarUrl: url });
+      await updateProfile(effectiveUserId, { avatar_url: url });
       toast.success("Photo updated!");
     } catch (err: any) {
       console.error(err);
@@ -373,6 +385,7 @@ export default function EditProfile({ onBack }: EditProfileProps) {
       setUploading(false);
     }
   };
+
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -507,8 +520,19 @@ export default function EditProfile({ onBack }: EditProfileProps) {
     );
   };
 
+  const requestSave = () => {
+    if (coachMode) {
+      setConfirmOpen(true);
+      return;
+    }
+    void handleSave();
+  };
+
   const handleSave = async () => {
-    if (!user) return;
+    if (!effectiveUserId) return;
+    setConfirmOpen(false);
+    setSaving(true);
+
     setSaving(true);
 
     // Recompute health score with current data
@@ -584,23 +608,26 @@ export default function EditProfile({ onBack }: EditProfileProps) {
         ? parseInt(age)
         : undefined;
 
-    // Update localStorage with recomputed score
-    saveUser({
-      profile: { name, age: effectiveAge, gender, email: trimmedEmail || undefined } as any,
-      bodyMetrics: bodyMetrics as any,
-      lifestyle: lifestyleData as any,
-      clinical: clinicalData as any,
-      deepProfiling: deepProfiling,
-      assessment,
-    });
+    // Update localStorage only when the signed-in user is editing themselves
+    if (!coachMode) {
+      saveUser({
+        profile: { name, age: effectiveAge, gender, email: trimmedEmail || undefined } as any,
+        bodyMetrics: bodyMetrics as any,
+        lifestyle: lifestyleData as any,
+        clinical: clinicalData as any,
+        deepProfiling: deepProfiling,
+        assessment,
+      });
+    }
 
-    const currentProfile = await fetchProfile(user.id);
+    const currentProfile = await fetchProfile(effectiveUserId);
+
     const previousScore = currentProfile?.assessment?.healthScore ?? null;
     const initialScore = currentProfile?.initial_health_score ?? previousScore ?? assessment.healthScore;
     const newScore = assessment.healthScore;
 
     // Update backend after capturing previous score state
-    const ok = await updateProfile(user.id, {
+    const ok = await updateProfile(effectiveUserId, {
       name,
       age: effectiveAge ?? null,
       gender: gender || null,
@@ -630,18 +657,19 @@ export default function EditProfile({ onBack }: EditProfileProps) {
 
     // Set initial score if not yet set
     if (!currentProfile?.initial_health_score && currentProfile?.initial_health_score !== 0) {
-      await updateProfile(user.id, {
+      await updateProfile(effectiveUserId, {
         initial_health_score: previousScore ?? newScore,
         initial_assessment_date: currentProfile?.created_at ?? new Date().toISOString(),
       } as any);
     }
 
-    if (ok) {
+    if (ok && !coachMode) {
+
       // Load coach assignment once (used for score-decline alert + BMI push)
       const { data: assignment } = await supabase
         .from("coach_assignments" as any)
         .select("coach_id, coaches:coach_id ( user_id, name )")
-        .eq("user_id", user.id)
+        .eq("user_id", effectiveUserId)
         .eq("is_active", true)
         .maybeSingle();
       const coachRow: any = (assignment as any)?.coaches ?? null;
@@ -653,7 +681,7 @@ export default function EditProfile({ onBack }: EditProfileProps) {
       // If score declined, create an alert for the coach (DB trigger emits push)
       if (previousScore !== null && scoreDelta < 0 && assignment) {
         await supabase.from("health_score_alerts" as any).insert({
-          user_id: user.id,
+          user_id: effectiveUserId,
           coach_id: (assignment as any).coach_id,
           previous_score: previousScore,
           new_score: newScore,
@@ -688,14 +716,14 @@ export default function EditProfile({ onBack }: EditProfileProps) {
 
         await Promise.all([
           supabase.from("compliments" as any).insert({
-            user_id: user.id,
+            user_id: effectiveUserId,
             compliment_type: "health_score",
             message,
             emoji: "🚀",
             metric_value: metricValue,
           } as any),
           createNotification({
-            user_id: user.id,
+            user_id: effectiveUserId,
             title: "🚀 Health Score Up!",
             body: message,
             type: "compliment",
@@ -703,7 +731,7 @@ export default function EditProfile({ onBack }: EditProfileProps) {
             action_url: "/home?tab=profile",
           }),
           createNotification({
-            user_id: user.id,
+            user_id: effectiveUserId,
             title: "📣 Share your win!",
             body: `Your health score improved by ${metricValue}. Tap to inspire the community 🎉`,
             type: "achievement_share",
@@ -716,16 +744,22 @@ export default function EditProfile({ onBack }: EditProfileProps) {
 
     setSaving(false);
     if (ok) {
-      const delta = newScore - initialScore;
-      const deltaStr = delta > 0 ? `+${delta}` : `${delta}`;
-      const emoji = delta > 0 ? "📈" : delta < 0 ? "📉" : "➡️";
-      toast.success(`${emoji} Health score: ${newScore} (${deltaStr} from start)`);
+      if (coachMode) {
+        toast.success("Patient profile updated");
+      } else {
+        const delta = newScore - initialScore;
+        const deltaStr = delta > 0 ? `+${delta}` : `${delta}`;
+        const emoji = delta > 0 ? "📈" : delta < 0 ? "📉" : "➡️";
+        toast.success(`${emoji} Health score: ${newScore} (${deltaStr} from start)`);
+      }
       window.dispatchEvent(new CustomEvent("health-log-saved"));
+      onSaved?.();
       onBack();
     } else {
       toast.error("Failed to save profile");
     }
   };
+
 
   const genders = ["Male", "Female", "Other"];
   const maritalOptions = ["Single", "Married", "Divorced", "Widowed"];
@@ -739,7 +773,10 @@ export default function EditProfile({ onBack }: EditProfileProps) {
         <button onClick={onBack} className="w-9 h-9 shrink-0 rounded-full liquid-glass flex items-center justify-center">
           <ArrowLeft className="w-4 h-4 text-foreground" strokeWidth={1.8} />
         </button>
-        <h2 className="min-w-0 text-lg font-black text-foreground leading-tight break-words">Edit Profile</h2>
+        <h2 className="min-w-0 text-lg font-black text-foreground leading-tight break-words">
+          {coachMode ? `Edit — ${targetName || "Patient"}` : "Edit Profile"}
+        </h2>
+
       </div>
 
       <div className="flex-1 overflow-y-auto px-5 py-6 space-y-6">
@@ -1248,7 +1285,7 @@ export default function EditProfile({ onBack }: EditProfileProps) {
           </motion.div>
         )}
         <motion.button
-          onClick={handleSave}
+          onClick={requestSave}
           disabled={saving}
           className="w-full gradient-blue text-primary-foreground font-bold py-4 rounded-2xl glow-blue flex items-center justify-center gap-2 disabled:opacity-50"
           initial={{ opacity: 0, y: 10 }}
@@ -1259,12 +1296,39 @@ export default function EditProfile({ onBack }: EditProfileProps) {
           {saving ? (
             <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
           ) : (
-            <><Save className="w-4 h-4" strokeWidth={2} /> Save Profile</>
+            <><Save className="w-4 h-4" strokeWidth={2} /> {coachMode ? "Save changes" : "Save Profile"}</>
           )}
         </motion.button>
 
         <div className="h-8" />
       </div>
+
+      {/* Coach override confirmation */}
+      {coachMode && confirmOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-foreground/40 backdrop-blur-sm p-4" onClick={() => setConfirmOpen(false)}>
+          <div className="w-full max-w-sm bg-background rounded-2xl p-5 shadow-2xl ring-1 ring-border/60" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-foreground font-black text-base">Save changes?</h3>
+            <p className="text-muted-foreground text-sm mt-1">
+              You're overriding {targetName || "the patient"}'s profile. Continue?
+            </p>
+            <div className="mt-4 flex gap-2">
+              <button
+                className="flex-1 py-3 rounded-xl bg-muted text-foreground text-sm font-bold"
+                onClick={() => setConfirmOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="flex-1 py-3 rounded-xl bg-[var(--bbdo-red)] text-white text-sm font-black"
+                onClick={() => { void handleSave(); }}
+              >
+                Yes, save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+
   );
 }
