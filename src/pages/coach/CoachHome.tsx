@@ -451,8 +451,8 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
         </motion.div>
       )}
 
-      {/* Dashboard — Patients / Rating / Sessions */}
-      <motion.div className="grid grid-cols-3 gap-3" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+      {/* Dashboard — Patients / Commission / Rating / Sessions (2×2) */}
+      <motion.div className="grid grid-cols-2 gap-3" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
         <button
           onClick={onViewPatient}
           className="liquid-glass rounded-2xl p-4 text-center hover:bg-accent/40 transition-colors"
@@ -460,6 +460,20 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
           <Users className="w-5 h-5 text-primary mx-auto mb-1.5" strokeWidth={1.8} />
           <p className="stat-number text-2xl text-foreground">{patients.length}</p>
           <p className="text-muted-foreground text-[10px] font-medium no-break">Patients →</p>
+        </button>
+        <button
+          onClick={() => setCommissionOpen(true)}
+          disabled={!commissionInfo}
+          className="liquid-glass rounded-2xl p-4 text-center hover:bg-accent/40 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          title="Estimated monthly commission — tap to see breakdown"
+        >
+          <Percent className="w-5 h-5 text-primary mx-auto mb-1.5" strokeWidth={1.8} />
+          <p className="stat-number text-2xl text-foreground">
+            {monthlyCommission != null
+              ? new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0, notation: monthlyCommission >= 100000 ? "compact" : "standard" }).format(monthlyCommission)
+              : "—"}
+          </p>
+          <p className="text-muted-foreground text-[10px] font-medium no-break">Commission {commissionInfo?.frequency ?? "monthly"} →</p>
         </button>
         <div className="liquid-glass rounded-2xl p-4 text-center">
           <Star className="w-5 h-5 text-warning mx-auto mb-1.5 fill-warning" />
@@ -478,6 +492,7 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
           <p className="text-muted-foreground text-[10px] font-medium no-break">Sessions →</p>
         </button>
       </motion.div>
+
 
       {/* Meetings to Schedule — surfaced right below the KPI grid */}
       {needsScheduling.length > 0 && (
