@@ -362,7 +362,23 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
             <div className={`w-2 h-2 rounded-full ${sc.dot} animate-pulse`} />
             <span className={`text-xs font-bold ${sc.text}`}>{patientStatus.label}</span>
           </div>
+          <button
+            onClick={() => setEditProfileOpen(true)}
+            className="liquid-glass rounded-xl p-2"
+            aria-label="Edit patient profile"
+            title="Edit profile"
+          >
+            <Pencil className="w-4 h-4 text-foreground" strokeWidth={1.8} />
+          </button>
         </motion.div>
+
+        <PatientProfileEditor
+          open={editProfileOpen}
+          onClose={() => setEditProfileOpen(false)}
+          patientUserId={selectedPatient.user_id}
+          patientName={selectedPatient.name ?? "Patient"}
+          onSaved={() => { loadPatients(); openPatient(selectedPatient); }}
+        />
 
         {/* Patient Info Card */}
         <motion.div className="liquid-glass rounded-3xl p-5" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
