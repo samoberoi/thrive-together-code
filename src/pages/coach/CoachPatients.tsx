@@ -580,7 +580,7 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-1 mb-4 overflow-x-auto pb-1">
+          <div className="flex gap-1.5 mb-4 overflow-x-auto pb-1 -mx-5 px-5 snap-x scroll-smooth">
             {([
               { key: "diabetes" as LogTab, label: "Diabetes", icon: <Droplets className="w-3.5 h-3.5" /> },
               { key: "bp" as LogTab, label: "BP", icon: <Heart className="w-3.5 h-3.5" /> },
@@ -591,7 +591,7 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
               <button
                 key={tab.key}
                 onClick={() => setLogTab(tab.key)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
+                className={`flex-none snap-start no-break flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
                   logTab === tab.key
                     ? "bg-primary text-primary-foreground"
                     : "bg-muted/50 text-muted-foreground hover:bg-muted"
