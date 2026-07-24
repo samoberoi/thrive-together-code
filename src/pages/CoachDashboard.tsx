@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Home, Users, LogOut, Timer, Pill, MessageCircle, FlaskConical, Calendar, MessageSquareWarning } from "lucide-react";
+import { Home, Users, LogOut, Timer, Pill, MessageCircle, FlaskConical, Calendar, MessageSquareWarning, Activity } from "lucide-react";
 import NotificationCenter from "@/components/NotificationCenter";
 import SoundToggle from "@/components/SoundToggle";
 import CoachCommissionCard from "@/components/CoachCommissionCard";
