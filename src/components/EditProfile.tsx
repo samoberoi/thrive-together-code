@@ -310,8 +310,8 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
   const [deepProfiling, setDeepProfiling] = useState<Record<string, any>>({});
 
   useEffect(() => {
-    if (!user) return;
-    fetchProfile(user.id).then((profile) => {
+    if (!effectiveUserId) return;
+    fetchProfile(effectiveUserId).then((profile) => {
       if (!profile) return;
       if (profile.phone) setPhone(profile.phone);
       if ((profile as any).country_code) setCountryCode((profile as any).country_code);
@@ -345,16 +345,14 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
 
     // Smart inference: auto-fill hypo/hyper thyroid, uric acid, kidney disease,
     // iron deficiency and fatty liver from the most recent blood test.
-    fetchUserResults(user.id).then((results) => {
+    fetchUserResults(effectiveUserId).then((results) => {
       const inferred = inferConditionsFromLabs(results);
       if (Object.keys(inferred).length === 0) return;
       setDeepProfiling((prev) => {
         const next = { ...prev };
         (Object.keys(inferred) as (keyof typeof inferred)[]).forEach((k) => {
           const cur = (next as any)[k];
-          // Uric acid: always refresh with latest lab value
           if (k === "uricAcid") { (next as any)[k] = inferred[k]; return; }
-          // Others: only auto-fill when the user hasn't set it, or their answer was "no"/"unsure" but labs say yes
           if (cur == null || cur === "" || cur === "no" || cur === "unsure") {
             (next as any)[k] = inferred[k];
           }
@@ -362,7 +360,8 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
         return next;
       });
     }).catch(() => { /* ignore — lab pull is best-effort */ });
-  }, [user]);
+  }, [effectiveUserId]);
+
 
   const uploadAvatarBlob = async (blob: Blob, ext: string) => {
     if (!user) return;
