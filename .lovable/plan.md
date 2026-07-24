@@ -1,44 +1,98 @@
-## Scope
+# Production-Ready Responsive Refactor
 
-Ship the visual/UX gap between end-user and coach surfaces, plus the concrete fixes called out on the Home screen and coach inbox. No new CSS tokens — reuse the existing `liquid-glass`, `.no-break`, `stat-number`, `RoleTopBar`, `ob-cta`, `EmptyState` primitives already shared with Apple/Android.
+Goal: one unified, adaptive design system that renders consistently across every Android and iOS device, with platform-native touches where they matter (iOS SF weights, Android ripples/elevation). Delivered in phases so each turn ships a working, testable slice — no big-bang rewrite that risks the stable flows (onboarding, video, food, coach).
 
-## End-user Home (`src/pages/tabs/Home.tsx`)
+---
 
-1. **Reorder blocks** so the header reads:
-   - Greeting (H1)
-   - Weekly Consistency Streak (`GlobalStreakCard`)
-   - Then the "Immediate medical supervision recommended" alert (currently rendered first)
-   - Then the coach-meeting card, Yoga class, etc.
-2. **Greeting swap:** when a coach exists, render `Good afternoon, <CoachName> 👋` and make the name a tap target that navigates to Messages → coach chat (dispatch the same event the messages tab uses today). Fall back to first name when no coach is assigned (Foundation tier).
-3. **Meeting card:** currently the "coming in shortly" banner shows even after the coach schedules a meeting because `nextMeeting` only accepts rows with `scheduled_at >= now - 1h`. Broaden the query and status filter so a `scheduled` meeting (any future time, or in-progress within `duration_min`) always resolves to the "Next Coach Meeting" hero card with real date/time, coach name, and agenda. The empty-state banner only shows when zero scheduled meetings exist.
+## Phase 1 — Foundation (this turn)
 
-## Coach Home (`src/pages/coach/CoachHome.tsx`)
+Build the design system primitives every screen will use. Nothing visual changes for the user yet, but every subsequent phase pulls from this.
 
-Apply the end-user visual grammar (no new tokens):
+- **Responsive tokens** in `index.css` / `tailwind.config.ts`
+  - Fluid type scale via `clamp()`: `--fs-caption`, `--fs-body`, `--fs-subhead`, `--fs-heading`, `--fs-display`
+  - Spacing scale: `--sp-1` … `--sp-8` (4/8/12/16/20/24/32/40)
+  - Radius, elevation, motion tokens
+  - Safe-area tokens: `--sat`, `--sab`, `--sal`, `--sar` bound to `env(safe-area-inset-*)`
+  - Bottom-nav clearance token: `--nav-h` + `--nav-clear = calc(var(--nav-h) + var(--sab))`
+- **Layout primitives** in `src/components/layout/`
+  - `AppScreen` — `min-height:100svh`, safe-area top padding, platform class hook
+  - `AppScrollArea` — scroll container with `--nav-clear` bottom padding baked in
+  - `AppHeader` — sticky header respecting notch/Dynamic Island
+  - `AppBottomBar` — fixed bar sitting above home indicator / gesture pill
+  - `AppSheet` — bottom sheet with `92svh` mobile / centered desktop, pinned header + footer, keyboard-aware
+  - `KeyboardAwareView` — uses `visualViewport` API + Capacitor `Keyboard` events to lift composer above keyboard
+  - `ResponsiveGrid` — auto 1↔2↔3 col based on container width (uses `@container` queries)
+- **Platform adapter** `src/lib/platform.ts`
+  - `isIOS`, `isAndroid`, `platformClass` applied to `<html>` at boot
+  - iOS gets SF-style font stack + tighter tracking; Android gets Roboto stack + Material ripple utility
+- **Typography component** `<Text variant="…">` mapping to tokens, with `numberOfLines` + ellipsis + `no-break` for chips/labels
+- **Chip / Badge / Button** primitives updated to: min 48dp height (buttons), content-hugging width (chips), max 2 lines, ellipsis, never fixed width
+- **Card** primitive: equal-height, container-query driven 1↔2 column collapse under ~360px
+- **Keyboard plugin wiring** in `src/main.tsx` — set `Keyboard.setResizeMode({mode: 'native'})` on iOS, `body` on Android, publish `--kb-h` CSS var
 
-- Hero greeting: same `text-[30px] font-semibold tracking-[-0.03em]` treatment as user Home.
-- Section cards wrapped in `liquid-glass rounded-3xl p-5`, headings promoted to `text-base font-black`, `Meetings require scheduling` gets an icon chip identical to user meeting card, and the "4 pending" pill becomes a compact `text-[10px] uppercase tracking-[0.16em]` badge inside the header row (no vertical wrap).
-- Patient rows: standard 12px radius, avatar 40px, `Schedule` CTA styled as `ob-cta-blue` pill matching size across rows.
+Exit criteria: primitives exist, tokens defined, zero regressions (no screen migrated yet).
 
-## Coach Patients (`src/pages/coach/CoachPatients.tsx`)
+---
 
-- Log-history tab strip (Diabetes / BP / Weight / Fasting / Supps): wrap each chip with `.no-break` + `min-width:0` and switch the row to a horizontally-scrollable `snap-x` strip (already `overflow-x-auto`; add `whitespace-nowrap` and `shrink-0` on tab buttons). Fixes chips spilling off the card.
-- Patient summary card metric tiles: apply `.no-break` on labels ("Health", "Weight", "Sugar") and units to prevent mid-word wraps on Nord widths.
+## Phase 2 — Global chrome
 
-## Coach Inbox (`src/components/chat/CoachInbox.tsx`)
+- `BottomNav` → `AppBottomBar` (fixed, safe-area aware, proper hit targets)
+- All page shells wrapped in `AppScreen` + `AppScrollArea` via a small route-level HOC so every page inherits nav clearance and safe area for free
+- Global CSS: remove `h-screen`, replace with `h-dvh` / `min-h-svh`; kill hardcoded `pb-20`, `mb-24`, `pt-safe` scattered patterns
 
-- When `openPatientId` triggers `getOrCreateConversation`, reload conversations **and** immediately open the newly created convo so the chat view (with input box + send button) renders even at zero messages. Today it only calls `loadConversations()` and drops the user on the empty inbox.
-- Empty-state inside an open conversation: keep the "No messages yet" illustration but the composer at the bottom is already present — this fix just makes sure we land inside the conversation, not the inbox list, so users can send the first message.
+Exit criteria: no content hidden under nav or notch on any route without touching each page.
 
-## Out of scope
+---
 
-- No global CSS changes (per user directive).
-- No changes to package-2/3 gating logic — visual polish only across those tiers reuses the same Home component.
-- Coach profile page, meetings tab internals, and supplements/lab-tests coach screens are not touched in this pass; they will be a follow-up if the user wants the same polish extended.
+## Phase 3 — High-traffic user screens
 
-## Verification
+Migrate onto primitives, verify each on iPhone SE (375), iPhone 15 Pro Max (430), Pixel 4a (393), Nord 5 (412), foldable (280 unfolded), iPad (768+):
 
-- Playwright: load `/` as a paid user with a scheduled meeting → confirm hero shows date/time; alert appears **after** streak card; greeting shows coach name.
-- Load `/coach` → confirm greeting matches user Home density, "Meetings require scheduling" header aligned, pending badge inline.
-- Coach Patients → open a patient → tab strip scrolls without chip clipping.
-- Coach Patients → tap chat on a patient with no history → lands directly inside the chat view with composer, can send first message.
+- Home (user + coach greeting variants)
+- Dashboard (health metrics, weight, filter chips, grid alignment)
+- Food / DietPlatingCalendar (chips, picker sheet)
+- Exercise + Yoga (video cards)
+- Profile + EditProfile (marital status row, DOB, allergies)
+- Auth / Onboarding (keyboard overlap, safe area, CTA placement)
+
+---
+
+## Phase 4 — Coach portal
+
+- CoachHome (2×2 KPI, activity 2-up)
+- CoachPatients (2-col cards, package chips content-hugging, expiry pill)
+- CoachInbox / PatientChat / YogaChat (keyboard-aware composer, fixed header, scrollable messages, no nav overlap)
+- CoachFasting / CoachMove / CoachSupplements / CoachVideoAssign
+
+---
+
+## Phase 5 — Secondary screens
+
+Remaining routes: Notifications, Plans, Invoices, Meetings, Lab tests, Community feed, Breath protocol, Soleus, Settings. Same primitive migration, verified against the device matrix.
+
+---
+
+## Phase 6 — QA sweep + polish
+
+- Landscape pass
+- Accessibility: 48×48 hit targets, dynamic type scaling, contrast, `<main>` landmark per route
+- Screenshot verification via Playwright against the full device viewport matrix listed in your brief
+- Remove now-dead device-specific CSS overrides (`.ob-bottom`, `.mobile-bottom-safe` Android hack, one-off `pb-*` on individual pages)
+
+---
+
+## Technical details
+
+- **No React Native / Flutter.** The app is Capacitor + React + Vite; the responsive system is CSS/`svh`/`env()`/container queries + `visualViewport` for keyboard, which is the correct primitive stack for this codebase. Rewriting to RN/Flutter would be a full app replacement, not a refactor.
+- **Container queries** (`@container`) drive card collapse rather than viewport media queries so cards behave correctly in any parent width (sheets, split views, iPad multitasking).
+- **Keyboard**: iOS uses `visualViewport.height` diff; Android uses Capacitor Keyboard `keyboardWillShow` → publishes `--kb-h`. Composer positions with `bottom: calc(var(--kb-h, 0px) + var(--sab))`.
+- **Platform-native**: shared spacing/typography/layout tokens; platform-specific class applies SF vs Roboto stack, iOS-style large title vs Android app-bar, Material ripple utility on Android-only pressables.
+- **Migration safety**: primitives are additive. Old screens keep working until migrated. Each phase is independently shippable and reversible.
+
+---
+
+## Turn cadence
+
+Each phase = one turn (Phase 3–5 may split into 2 turns each given the number of screens). After Phase 1 I'll pause so you can sanity-check the tokens/primitives before I roll them across ~80 screens. If the foundation is wrong, we catch it once instead of 80 times.
+
+Approve to start Phase 1.
