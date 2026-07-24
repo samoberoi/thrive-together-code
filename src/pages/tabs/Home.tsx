@@ -1274,7 +1274,42 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
 
   return (
     <div className="flex flex-col gap-6 px-5 md:px-8 xl:px-10 pt-3 md:pt-6 pb-6">
-      {/* Override Alert */}
+      {/* Hero greeting — when a coach is assigned, feature the coach's name as the
+          tap-through to the chat. Foundation users (no coach) keep the first name. */}
+      <motion.div
+        className="pt-1 pb-2"
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <h1 className="text-[30px] sm:text-[34px] leading-[1.1] font-semibold tracking-[-0.03em] text-foreground no-break">
+          {greeting || "Good morning"},{" "}
+          {coachName ? (
+            <button
+              type="button"
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent<string>("nav:set-tab", { detail: "consult" }));
+                window.dispatchEvent(new CustomEvent("nav:open-coach-chat"));
+              }}
+              className="underline decoration-primary/40 decoration-[3px] underline-offset-[6px] hover:decoration-primary transition-colors"
+            >
+              {coachName}
+            </button>
+          ) : (
+            firstName
+          )}{" "}
+          <span className="inline-block">👋</span>
+        </h1>
+        {coachName && (
+          <p className="text-sm text-muted-foreground mt-1.5">Your coach — tap the name to open the chat</p>
+        )}
+      </motion.div>
+
+      {/* BBDO Global Streak */}
+      <GlobalStreakCard />
+
+      {/* Override Alert — placed below the consistency streak so the greeting
+          leads and the medical banner sits in-context with today's status. */}
       {overrideTriggered && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -1288,24 +1323,6 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
           </div>
         </motion.div>
       )}
-
-      {/* Hero greeting — simple, warm, breathing room. Safe-area top padding
-          ensures the greeting is never hidden behind the Android status bar. */}
-      <motion.div
-        className="pt-1 pb-2"
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-      >
-        <h1 className="text-[30px] sm:text-[34px] leading-[1.1] font-semibold tracking-[-0.03em] text-foreground">
-          {greeting || "Good morning"}, {firstName} <span className="inline-block">👋</span>
-        </h1>
-      </motion.div>
-
-
-
-      {/* BBDO Global Streak */}
-      <GlobalStreakCard />
 
       {/* Today's Yoga Class reminder */}
       <TodaysYogaClass />
