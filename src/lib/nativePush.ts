@@ -35,9 +35,11 @@ const BBDOAndroidPush = registerPlugin<{
 }>("BBDOAndroidPush");
 
 let registered = false;
+let registeringListeners = false;
 let activeUserId: string | null = null;
 let lastRegistrationToken: string | null = null;
 let tokenWaiters: Array<(token: string) => void> = [];
+let lastAttemptAt = 0;
 
 export function isNativePushSupported(): boolean {
   // Both iOS (APNs) and Android (FCM via google-services.json) are wired up.
@@ -65,7 +67,16 @@ async function upsertToken(userId: string, token: string) {
       },
       { onConflict: "user_id,platform" },
     );
-  if (error) throw error;
+  if (error) {
+    console.warn("[push] token upsert failed", {
+      code: (error as any)?.code,
+      message: (error as any)?.message,
+      details: (error as any)?.details,
+      hint: (error as any)?.hint,
+      platform,
+    });
+    throw error;
+  }
 
   // Prevent duplicate native banners caused by old tokens remaining valid after
   // app reinstalls/upgrades. Keep the newest token per user per OS.
@@ -183,6 +194,50 @@ async function resetAndroidFcmTokenAfterChannelUpgrade() {
   }
 }
 
+async function attachPushListenersOnce() {
+  if (registered || registeringListeners) return;
+  registeringListeners = true;
+  try {
+    await PushNotifications.addListener("registration", async (t) => {
+      try {
+        lastRegistrationToken = t.value;
+        resolveTokenWaiters(t.value);
+        const uid = activeUserId;
+        if (!uid) throw new Error("No active user for push token");
+        await upsertToken(uid, t.value);
+        // eslint-disable-next-line no-console
+        console.log("[push] token registered:", t.value.slice(0, 12) + "…");
+      } catch (err) {
+        console.warn("[push] failed to store token", err);
+      }
+    });
+
+    await PushNotifications.addListener("registrationError", (err) => {
+      console.warn("[push] registration error", err);
+    });
+
+    await PushNotifications.addListener(
+      "pushNotificationReceived",
+      (n) => {
+        console.log("[push] received in-app:", n);
+        void playNativePushAppSound();
+      },
+    );
+
+    await PushNotifications.addListener(
+      "pushNotificationActionPerformed",
+      (a) => {
+        console.log("[push] tapped:", a);
+        void playNativePushAppSound();
+      },
+    );
+
+    registered = true;
+  } finally {
+    registeringListeners = false;
+  }
+}
+
 /**
  * Call once after the user is signed in. Safe to call again — listeners are
  * only attached the first time; permission is re-checked without prompting
@@ -197,6 +252,15 @@ export async function registerNativePush(userId: string): Promise<
 
   try {
     activeUserId = userId;
+    const now = Date.now();
+    if (now - lastAttemptAt < 5_000) {
+      const token = lastRegistrationToken ?? (await fetchStoredToken(userId));
+      return { ok: true, token: token ?? undefined };
+    }
+    lastAttemptAt = now;
+
+    await attachPushListenersOnce();
+
     let perm = await PushNotifications.checkPermissions();
     if (perm.receive === "prompt" || perm.receive === "prompt-with-rationale") {
       perm = await PushNotifications.requestPermissions();
@@ -239,44 +303,6 @@ export async function registerNativePush(userId: string): Promise<
       } catch (err) {
         console.warn("[push] android channel setup failed", err);
       }
-    }
-
-    if (!registered) {
-      registered = true;
-
-      await PushNotifications.addListener("registration", async (t) => {
-        try {
-          lastRegistrationToken = t.value;
-          resolveTokenWaiters(t.value);
-          const uid = activeUserId;
-          if (!uid) throw new Error("No active user for push token");
-          await upsertToken(uid, t.value);
-          // eslint-disable-next-line no-console
-          console.log("[push] token registered:", t.value.slice(0, 12) + "…");
-        } catch (err) {
-          console.warn("[push] failed to store token", err);
-        }
-      });
-
-      await PushNotifications.addListener("registrationError", (err) => {
-        console.warn("[push] registration error", err);
-      });
-
-      await PushNotifications.addListener(
-        "pushNotificationReceived",
-        (n) => {
-          console.log("[push] received in-app:", n);
-          void playNativePushAppSound();
-        },
-      );
-
-      await PushNotifications.addListener(
-        "pushNotificationActionPerformed",
-        (a) => {
-          console.log("[push] tapped:", a);
-          void playNativePushAppSound();
-        },
-      );
     }
 
     await PushNotifications.register();
