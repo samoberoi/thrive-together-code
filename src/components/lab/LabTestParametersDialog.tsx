@@ -67,8 +67,11 @@ export function LabTestParametersDialog({ open, onOpenChange, testId, testName, 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[calc(100vw-1.5rem)] max-w-2xl max-h-[calc(100dvh-1.5rem)] overflow-hidden flex flex-col p-0">
-        <DialogHeader className="shrink-0 px-5 pt-5 pb-3 border-b border-border">
+      <DialogContent
+        className="w-[calc(100vw-1.5rem)] max-w-2xl max-h-[calc(100dvh-1.5rem)] overflow-hidden flex flex-col p-0 [&>button[type='button']]:top-[calc(env(safe-area-inset-top)+0.75rem)] [&>button[type='button']]:right-3 [&>button[type='button']]:z-10 [&>button[type='button']]:h-9 [&>button[type='button']]:w-9 [&>button[type='button']]:rounded-full [&>button[type='button']]:bg-background [&>button[type='button']]:border [&>button[type='button']]:border-border [&>button[type='button']]:flex [&>button[type='button']]:items-center [&>button[type='button']]:justify-center [&>button[type='button']]:opacity-100 [&>button[type='button']>svg]:h-4 [&>button[type='button']>svg]:w-4"
+        style={{ paddingTop: "env(safe-area-inset-top)" }}
+      >
+        <DialogHeader className="shrink-0 px-5 pt-4 pb-3 pr-14 border-b border-border">
           <DialogTitle className="flex items-center gap-2">
             <FlaskConical className="w-5 h-5 text-primary" />
             {testName || "Parameters covered"}
