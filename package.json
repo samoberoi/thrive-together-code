@@ -9,6 +9,7 @@
     "build:dev": "vite build --mode development",
     "cap:assets:ios": "capacitor-assets generate --ios --assetPath resources --iconBackgroundColor '#FCFCFD' --iconBackgroundColorDark '#0F1A3D' --splashBackgroundColor '#FCFCFD' --splashBackgroundColorDark '#0F1A3D'",
     "cap:sync:ios": "npm run cap:assets:ios && npm run build && cap sync ios",
+    "cap:repair:ios": "rm -rf ios/App/CapApp-SPM/.build ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm && npm run cap:sync:ios",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
