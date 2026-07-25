@@ -86,6 +86,16 @@ export default function AllergyAndSubPrefs({
     return items.filter((it) => allergenFoodIds.includes(it.id) && !eligibleIds.has(it.id));
   }, [items, eligible, allergenFoodIds]);
 
+  // Selected chips shown pinned at the top so users don't have to hunt through
+  // the alphabetical list to see or remove picks.
+  const selectedItems = useMemo(() => {
+    const byId = new Map(items.map((i) => [i.id, i] as const));
+    return allergenFoodIds
+      .map((id) => byId.get(id))
+      .filter((it): it is FoodItemLite => Boolean(it));
+  }, [items, allergenFoodIds]);
+
+
   const toggleAllergen = (id: string) => {
     if (allergenFoodIds.includes(id)) onAllergensChange(allergenFoodIds.filter((x) => x !== id));
     else onAllergensChange([...allergenFoodIds, id]);
