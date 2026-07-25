@@ -217,7 +217,7 @@ export default function DietPlatingCalendar() {
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[11.5px] font-bold bg-emerald-500/10 text-emerald-700 border border-emerald-500/30">
+        <span className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[11.5px] font-bold bg-primary/10 text-primary border border-primary/30">
           <Leaf className="w-3.5 h-3.5" />
           Your preference: {DIET_PREF_LABEL[diet] ?? "Veg"}
         </span>
