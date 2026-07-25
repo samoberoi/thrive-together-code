@@ -20,6 +20,15 @@ import { logStartupEvent, reportStartupError } from "@/lib/startupDiagnostics";
 export const EXPLICIT_LOGOUT_KEY = "bb_explicit_logout";
 let existingSessionRestorePromise: Promise<Session | null> | null = null;
 
+function scheduleNativePushRegistration(userId: string, delayMs = 800) {
+  if (!isNativePushSupported()) return;
+  window.setTimeout(() => {
+    void registerNativePush(userId).catch((error) => {
+      console.warn("registerNativePush failed", error);
+    });
+  }, delayMs);
+}
+
 export function clearPersistedAuthState(markLoggedOut = true) {
   try {
     clearUser();
@@ -228,8 +237,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Register for native push (APNs / FCM) whenever a native session is
         // restored for a different user, not only on a fresh SIGNED_IN event.
         // Existing iPhone installs often restore a session after rebuild/sync.
-        if (newUid && previousUid !== newUid && isNativePushSupported()) {
-          setTimeout(() => { void registerNativePush(newUid); }, 800);
+        if (newUid && previousUid !== newUid) {
+          scheduleNativePushRegistration(newUid);
         }
         prevUserId.current = newUid;
       }
@@ -277,9 +286,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.error("sendWelcomeNotification failed", error);
           });
         }, 0);
-        if (isNativePushSupported()) {
-          setTimeout(() => { void registerNativePush(uid); }, 900);
-        }
+        scheduleNativePushRegistration(uid, 900);
       }
     })().catch((error) => {
       reportStartupError("Initial auth restore failed", error);
