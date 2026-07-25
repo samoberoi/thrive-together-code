@@ -244,8 +244,8 @@ export default function CoachVideoAssignPage({ module }: Props) {
                       )}
                     </p>
                   </div>
-                  <Button size="sm" variant="secondary" onClick={() => setSelectedPatient(p)}>
-                    Manage
+                  <Button size="sm" variant={count > 0 ? "outline" : "default"} onClick={() => setSelectedPatient(p)}>
+                    {count > 0 ? "Edit" : "Assign"}
                   </Button>
                 </li>
               );
