@@ -1054,6 +1054,15 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
       logMealTimeOnly(meal, iso);
       return;
     }
+    if (packageKey === "intensive" || packageKey === "pro") {
+      // Package 3 (Intensive/Pro): users don't build plates — they use their
+      // pre-created 30-day plate plan. Log the meal time and send them to the
+      // Diet tab where the plating calendar is shown.
+      setPendingMealISO(null);
+      logMealTimeOnly(meal, iso);
+      window.dispatchEvent(new CustomEvent("nav:set-tab", { detail: "diet" }));
+      return;
+    }
     setPendingMealISO(iso);
     setPlateModalFor(meal);
   };
