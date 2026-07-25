@@ -48,12 +48,34 @@ export default function DietPlatingCalendar() {
   const load = async () => {
     if (!user) return;
     setLoading(true);
-    const [list, pref] = await Promise.all([
+    let [list, pref] = await Promise.all([
       fetchPlatingForUser(user.id),
       fetchCurrentDietPreference(user.id),
     ]);
+    const normalizedPref = normalizeDietPreference(pref);
+    // Auto-regenerate if plates are stale relative to current diet preference,
+    // or if the stored plate diet doesn't match (e.g. user updated preference
+    // after plates were originally generated).
+    const today = new Date().toISOString().slice(0, 10);
+    const latestStart = list[0]?.plan_start_date;
+    const storedDiet = list[0]?.plate_data?.diet
+      ? normalizeDietPreference(list[0].plate_data.diet)
+      : null;
+    const stale =
+      list.length === 0 ||
+      !latestStart ||
+      latestStart < today && !storedDiet ||
+      (storedDiet && storedDiet !== normalizedPref);
+    if (stale) {
+      try {
+        await regeneratePlating(user.id, normalizedPref);
+        list = await fetchPlatingForUser(user.id);
+      } catch {
+        /* ignore, fall back to whatever plates exist */
+      }
+    }
     setPlatings(list);
-    setDiet(normalizeDietPreference(pref));
+    setDiet(normalizedPref);
     if (list.length) setActiveDay(dayIndexForToday(list[0].plan_start_date));
     setLoading(false);
   };
