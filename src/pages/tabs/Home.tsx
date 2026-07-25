@@ -347,6 +347,7 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
   }, [getLocalDateKey, todayKey]);
 
   const { getColor: getGaugeColor, modules: gaugeModules } = useColorGauges();
+  const { categories: bmiCategories } = useBmiCategories();
   const [userHeightCm, setUserHeightCm] = useState<number | null>(null);
   const getRingColor = useCallback(
     (label: "Health" | "Weight" | "Blood Glucose", value: number, baseline: number | null) => {
@@ -1585,19 +1586,12 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
         const wForBmi = typeof latestWeight === "number" ? latestWeight : (typeof user.bodyMetrics?.weight === "number" ? user.bodyMetrics.weight : null);
         const hForBmi = typeof user.bodyMetrics?.height === "number" ? user.bodyMetrics.height : (typeof userHeightCm === "number" ? userHeightCm : null);
         const bmi = wForBmi && hForBmi && hForBmi > 0 ? +(wForBmi / Math.pow(hForBmi / 100, 2)).toFixed(1) : null;
-        // WHO adult BMI: <18.5 Underweight, 18.5–24.9 Healthy, 25–29.9 Overweight, ≥30 Obese
-        const bmiStatus = bmi == null
-          ? "—"
-          : bmi < 18.5 ? "Underweight"
-          : bmi < 25 ? "Healthy"
-          : bmi < 30 ? "Overweight"
-          : "Obese";
+        // BMI category from backend bmi_categories table (WHO bands, admin-editable)
+        const bmiCat = categorizeBmi(bmi, bmiCategories);
+        const bmiStatus = bmi == null ? "—" : (bmiCat?.label ?? "—");
         const bmiColor = bmi == null
           ? "hsl(var(--primary))"
-          : bmi < 18.5 ? "var(--bbdo-amber)"
-          : bmi < 25 ? "var(--bbdo-mint)"
-          : bmi < 30 ? "var(--bbdo-amber)"
-          : "var(--bbdo-red)";
+          : (bmiCat?.color ?? "var(--bbdo-mint)");
         return (
           <div className="grid grid-cols-4 gap-2">
             <MetricRing
