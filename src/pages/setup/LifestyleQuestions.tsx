@@ -104,11 +104,17 @@ export default function LifestyleQuestions() {
             { id: "moderate", label: "Moderate", icon: <Bike className="w-4 h-4" strokeWidth={1.8} /> },
             { id: "active", label: "Very Active", icon: <Dumbbell className="w-4 h-4" strokeWidth={1.8} /> },
           ]} onSelect={(id) => setActivity(id as ActivityLevel)} cols={4} />
-          <OptionRow label="What do you prefer to eat?" selected={diet} options={[
-            { id: "vegetarian", label: "Vegetarian", icon: <Salad className="w-4 h-4" strokeWidth={1.8} /> },
-            { id: "non_vegetarian", label: "Non-Veg", icon: <Drumstick className="w-4 h-4" strokeWidth={1.8} /> },
-            { id: "vegan", label: "Vegan", icon: <Sprout className="w-4 h-4" strokeWidth={1.8} /> },
-          ]} onSelect={(id) => setDiet(id as DietType)} cols={3} />
+          <OptionRow
+            label="What do you prefer to eat?"
+            selected={diet}
+            options={dietTypes.map((t) => ({
+              id: t.slug,
+              label: t.label,
+              icon: DIET_ICONS[t.slug] ?? <Utensils className="w-4 h-4" strokeWidth={1.8} />,
+            }))}
+            onSelect={(id) => setDiet(id)}
+            cols={dietTypes.length >= 4 ? 3 : dietTypes.length}
+          />
           <div>
             <div className="flex items-center justify-between mb-2">
               <p className="text-foreground font-semibold text-sm">Average sleep hours</p>
