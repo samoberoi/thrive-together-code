@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Heart, MessageCircle, Users, Send, Plus,
@@ -169,6 +170,61 @@ function PostCard({
     );
   })();
 
+  const likersSheet = typeof document === "undefined" ? null : createPortal(
+    <AnimatePresence>
+      {showLikers && (
+        <motion.div
+          className="fixed inset-0 z-[10000] flex items-end justify-center bg-foreground/30 backdrop-blur-sm"
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          onClick={() => setShowLikers(false)}
+        >
+          <motion.div
+            className="relative w-full sm:max-w-md bg-card rounded-t-3xl sm:rounded-3xl border border-border shadow-2xl max-h-[min(74dvh,620px)] flex flex-col overflow-hidden"
+            initial={{ y: 56 }} animate={{ y: 0 }} exit={{ y: 56 }}
+            transition={{ duration: 0.22, ease: EASE }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-border/60 flex-shrink-0">
+              <p className="font-black text-lg text-foreground">Likes</p>
+              <button
+                type="button"
+                onClick={() => setShowLikers(false)}
+                aria-label="Close likes"
+                className="w-10 h-10 rounded-full bg-muted text-muted-foreground flex items-center justify-center flex-shrink-0"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div
+              className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 py-3"
+              style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1rem)" }}
+            >
+              {allLikers === null ? (
+                <div className="min-h-32 flex items-center justify-center"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
+              ) : allLikers.length === 0 ? (
+                <p className="text-center text-sm text-muted-foreground py-10">No likes yet</p>
+              ) : (
+                <ul className="space-y-1">
+                  {allLikers.map((l) => (
+                    <li key={l.user_id} className="flex items-center gap-3 rounded-2xl px-1 py-3">
+                      <div className="w-11 h-11 rounded-full bg-muted overflow-hidden flex items-center justify-center flex-shrink-0 ring-1 ring-border/60">
+                        {l.avatar_url
+                          ? <img src={l.avatar_url} alt="" className="w-full h-full object-cover" />
+                          : <span className="text-sm font-black text-foreground">{(l.name || "?")[0]}</span>}
+                      </div>
+                      <span className="min-w-0 flex-1 text-[15px] font-bold text-foreground truncate">{l.name}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>,
+    document.body,
+  );
+
   return (
     <motion.div
       className="bg-card rounded-3xl p-5 border border-border/60"
@@ -234,49 +290,7 @@ function PostCard({
 
       {likedByLine}
 
-      <AnimatePresence>
-        {showLikers && (
-          <motion.div
-            className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/50"
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            onClick={() => setShowLikers(false)}
-          >
-            <motion.div
-              className="w-full sm:max-w-sm bg-card rounded-t-3xl sm:rounded-3xl border border-border/60 max-h-[70vh] flex flex-col"
-              initial={{ y: 40 }} animate={{ y: 0 }} exit={{ y: 40 }}
-              transition={{ duration: 0.22, ease: EASE }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between px-5 py-4 border-b border-border/60">
-                <p className="font-bold text-foreground">Likes</p>
-                <button onClick={() => setShowLikers(false)} className="text-muted-foreground">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="flex-1 overflow-y-auto">
-                {allLikers === null ? (
-                  <div className="py-8 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
-                ) : allLikers.length === 0 ? (
-                  <p className="text-center text-sm text-muted-foreground py-8">No likes yet</p>
-                ) : (
-                  <ul className="divide-y divide-border/60">
-                    {allLikers.map((l) => (
-                      <li key={l.user_id} className="flex items-center gap-3 px-5 py-3">
-                        <div className="w-9 h-9 rounded-full bg-muted overflow-hidden flex items-center justify-center flex-shrink-0">
-                          {l.avatar_url
-                            ? <img src={l.avatar_url} alt="" className="w-full h-full object-cover" />
-                            : <span className="text-xs font-bold text-foreground">{(l.name || "?")[0]}</span>}
-                        </div>
-                        <span className="text-sm font-medium text-foreground truncate">{l.name}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {likersSheet}
 
 
       <AnimatePresence>
