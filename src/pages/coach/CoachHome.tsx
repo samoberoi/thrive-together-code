@@ -99,8 +99,8 @@ function evaluateAlerts(patients: PatientSummary[]): Alert[] {
           metric: "Weight",
         });
       }
-    } else if (p.weight && (p.weight >= 150 || p.weight <= 35)) {
-      push({ user_id: p.user_id, patient_name: name, type: "warning", message: `Weight is ${p.weight} kg`, metric: "Weight" });
+    } else if (p.latestWeight != null && (p.latestWeight >= 150 || p.latestWeight <= 35)) {
+      push({ user_id: p.user_id, patient_name: name, type: "warning", message: `Weight is ${p.latestWeight} kg`, metric: "Weight" });
     }
     if (p.bmi && p.bmi >= 30) {
       push({ user_id: p.user_id, patient_name: name, type: p.bmi >= 35 ? "danger" : "warning", message: `BMI is ${p.bmi} (${p.bmi_category})`, metric: "BMI" });
