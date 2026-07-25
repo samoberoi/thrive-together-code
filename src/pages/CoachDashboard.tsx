@@ -258,7 +258,7 @@ export default function CoachDashboard() {
         <RoleBottomNav<CoachTab>
           active={activeTab}
           onSelect={(tab) => {
-            setActiveTab(tab);
+            selectTab(tab);
             setNotificationsOpen(false);
           }}
           items={navItems.map((n) => ({
