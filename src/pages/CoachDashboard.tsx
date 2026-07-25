@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Home, Users, LogOut, Timer, Pill, MessageCircle, FlaskConical, Calendar, MessageSquareWarning, Activity, Dumbbell, Flower2 } from "lucide-react";
+import { Home, Users, LogOut, Timer, Pill, MessageCircle, FlaskConical, Calendar, MessageSquareWarning, Activity, Dumbbell, Flower2, Heart } from "lucide-react";
+import Community from "./tabs/Community";
 import NotificationCenter from "@/components/NotificationCenter";
 import SoundToggle from "@/components/SoundToggle";
 import CoachCommissionCard from "@/components/CoachCommissionCard";
@@ -24,13 +25,14 @@ import { useAttentionCounts } from "@/hooks/useAttentionCounts";
 import AttentionBadge from "@/components/attention/AttentionBadge";
 import { RoleBottomNav, RoleTopBar, type RoleNavItem } from "@/components/shared";
 
-export type CoachTab = "home" | "patients" | "meetings" | "requests" | "messages" | "fasting" | "supplements" | "move" | "train" | "yoga" | "labtests" | "profile";
+export type CoachTab = "home" | "patients" | "meetings" | "requests" | "messages" | "community" | "fasting" | "supplements" | "move" | "train" | "yoga" | "labtests" | "profile";
 
 const navItems: { id: CoachTab; icon: React.ElementType; label: string }[] = [
   { id: "home", icon: Home, label: "Home" },
   { id: "patients", icon: Users, label: "Patients" },
   { id: "meetings", icon: Calendar, label: "Meetings" },
   { id: "messages", icon: MessageCircle, label: "Messages" },
+  { id: "community", icon: Heart, label: "Community" },
   { id: "fasting", icon: Timer, label: "Fasting" },
   { id: "supplements", icon: Pill, label: "Supplements" },
   { id: "move", icon: Activity, label: "Move" },
@@ -142,6 +144,7 @@ export default function CoachDashboard() {
     meetings: <CoachMeetings />,
     requests: <CoachConsultationRequests />,
     messages: coachMeta ? <CoachInbox coachId={coachMeta.id} openPatientId={chatPatientId} /> : null,
+    community: <Community />,
     fasting: <CoachFasting />,
     supplements: <CoachSupplements />,
     move: <CoachMove />,
