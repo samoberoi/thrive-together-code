@@ -201,7 +201,7 @@ export default function Splash() {
           }}
           initial={{ width: "0%" }}
           animate={{ width: "100%" }}
-          transition={{ delay: 0.3, duration: 1.9, ease: EASE }}
+          transition={{ delay: 0.3, duration: 2.4, ease: EASE }}
         />
       </motion.div>
     </div>
