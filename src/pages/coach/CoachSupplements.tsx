@@ -582,24 +582,27 @@ export default function CoachSupplements() {
                       <>
                         <button
                           onClick={(e) => { e.stopPropagation(); setEditingPatient(patient.user_id); setExpandedPatient(patient.user_id); }}
-                          className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-primary/10 text-primary text-xs font-semibold"
+                          className="w-9 h-9 flex items-center justify-center rounded-xl bg-primary/10 text-primary"
+                          aria-label="Edit plan"
                         >
-                          <Edit2 className="w-3.5 h-3.5" /> Manage
+                          <Edit2 className="w-4 h-4" />
                         </button>
                         {plan.status === "active" && (
                           <button
                             onClick={(e) => { e.stopPropagation(); handleStatusChange(plan, "paused"); }}
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-500/10 text-amber-500 text-xs font-semibold"
+                            className="w-9 h-9 flex items-center justify-center rounded-xl bg-amber-500/10 text-amber-500"
+                            aria-label="Pause plan"
                           >
-                            <Pause className="w-3.5 h-3.5" /> Pause
+                            <Pause className="w-4 h-4" />
                           </button>
                         )}
                         {plan.status === "paused" && (
                           <button
                             onClick={(e) => { e.stopPropagation(); handleStatusChange(plan, "active"); }}
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-primary/10 text-primary text-xs font-semibold"
+                            className="w-9 h-9 flex items-center justify-center rounded-xl bg-primary/10 text-primary"
+                            aria-label="Resume plan"
                           >
-                            <Play className="w-3.5 h-3.5" /> Resume
+                            <Play className="w-4 h-4" />
                           </button>
                         )}
                       </>
