@@ -113,8 +113,68 @@ function loadImage(file: File): Promise<HTMLImageElement> {
   });
 }
 
+function formatStamp(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** Draw a small "BBDO • timestamp" watermark in the bottom-right corner. */
+function drawWatermark(ctx: CanvasRenderingContext2D, w: number, h: number) {
+  // Scale font relative to image size, clamped to a readable range
+  const base = Math.max(12, Math.min(28, Math.round(Math.min(w, h) * 0.028)));
+  const pad = Math.round(base * 0.6);
+  const gap = Math.round(base * 0.35);
+  const stamp = formatStamp(new Date());
+
+  const logoFont = `900 ${base}px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`;
+  const stampFont = `600 ${Math.round(base * 0.72)}px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`;
+
+  ctx.save();
+  ctx.textBaseline = "alphabetic";
+  ctx.textAlign = "left";
+
+  // Measure
+  ctx.font = logoFont;
+  const bbW = ctx.measureText("BB").width;
+  const doW = ctx.measureText("DO").width;
+  ctx.font = stampFont;
+  const stampW = ctx.measureText(stamp).width;
+
+  const boxW = Math.max(bbW + doW, stampW) + pad * 2;
+  const boxH = base + Math.round(base * 0.72) + gap + pad * 1.4;
+  const x = w - boxW - Math.round(base * 0.5);
+  const y = h - boxH - Math.round(base * 0.5);
+
+  // Translucent pill background for legibility over any photo
+  ctx.fillStyle = "rgba(0, 0, 0, 0.42)";
+  const r = Math.round(base * 0.4);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + boxW, y, x + boxW, y + boxH, r);
+  ctx.arcTo(x + boxW, y + boxH, x, y + boxH, r);
+  ctx.arcTo(x, y + boxH, x, y, r);
+  ctx.arcTo(x, y, x + boxW, y, r);
+  ctx.closePath();
+  ctx.fill();
+
+  // "BBDO" wordmark — BB red, DO blue
+  const textY = y + pad + base * 0.85;
+  ctx.font = logoFont;
+  ctx.fillStyle = "#E11D48"; // brand red
+  ctx.fillText("BB", x + pad, textY);
+  ctx.fillStyle = "#2563EB"; // brand blue
+  ctx.fillText("DO", x + pad + bbW, textY);
+
+  // Timestamp
+  ctx.font = stampFont;
+  ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
+  ctx.fillText(stamp, x + pad, textY + gap + Math.round(base * 0.72));
+
+  ctx.restore();
+}
+
 async function compressImage(file: File): Promise<Blob> {
-  // Skip GIFs (animation) — but hard-cap size
+  // GIFs (animation) — can't stamp without losing animation; leave untouched
   if (file.type === "image/gif") return file;
   try {
     const img = await loadImage(file);
@@ -129,12 +189,12 @@ async function compressImage(file: File): Promise<Blob> {
     const ctx = canvas.getContext("2d");
     if (!ctx) return file;
     ctx.drawImage(img, 0, 0, w, h);
+    drawWatermark(ctx, w, h);
     const blob = await new Promise<Blob | null>((resolve) =>
       canvas.toBlob(resolve, "image/jpeg", JPEG_QUALITY),
     );
     if (!blob) return file;
-    // If compression actually made it bigger (rare, tiny images), keep original
-    return blob.size < file.size ? blob : blob;
+    return blob;
   } catch {
     return file;
   }
