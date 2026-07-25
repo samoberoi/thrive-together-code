@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
     const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
 
     // Preload signals used by audience filters.
-    const [suppPlans, suppTracking, movementProgress, fasting, mealPhotos, dietPref, protocols, videoProgress, profiles, breathSessions] = await Promise.all([
+    const [suppPlans, suppTracking, movementProgress, fasting, mealPhotos, dietPref, protocols, videoProgress, profiles, breathSessions, waterLogs, soleusSessions, glucoseLogs] = await Promise.all([
       supabase.from("user_supplement_plans").select("user_id").in("user_id", patientUserIds),
       supabase.from("user_supplement_tracking").select("user_id, taken_at").gte("taken_at", startOfDay).in("user_id", patientUserIds),
       supabase.from("user_movement_progress").select("user_id, log_date, steps, target_steps").eq("log_date", startOfDay.slice(0, 10)).in("user_id", patientUserIds),
@@ -114,6 +114,9 @@ Deno.serve(async (req) => {
       supabase.from("video_progress").select("user_id, last_watched_at").gte("last_watched_at", startOfDay).in("user_id", patientUserIds),
       supabase.from("profiles").select("user_id, name, age, weight, height, gender, clinical, deep_profiling").in("user_id", patientUserIds),
       supabase.from("user_breath_sessions").select("user_id, session_at").gte("session_at", startOfDay).in("user_id", patientUserIds),
+      supabase.from("health_logs").select("user_id, weight_kg, logged_at").eq("log_type", "water").gte("logged_at", startOfDay).in("user_id", patientUserIds),
+      supabase.from("user_soleus_sessions").select("user_id, session_at").gte("session_at", startOfDay).in("user_id", patientUserIds),
+      supabase.from("health_logs").select("user_id, glucose_morning, glucose_evening, logged_at").eq("log_type", "diabetes").gte("logged_at", startOfDay).in("user_id", patientUserIds),
     ]);
 
     const hasSuppPlan = new Set((suppPlans.data ?? []).map((r: any) => r.user_id));
@@ -130,6 +133,18 @@ Deno.serve(async (req) => {
       breathCountByUser.set(r.user_id, (breathCountByUser.get(r.user_id) ?? 0) + 1);
     }
     const BREATH_GOAL = 4;
+    const WATER_GOAL = 8;
+    const waterGlassesByUser = new Map<string, number>();
+    for (const r of waterLogs.data ?? []) {
+      waterGlassesByUser.set(r.user_id, (waterGlassesByUser.get(r.user_id) ?? 0) + Number((r as any).weight_kg ?? 0));
+    }
+    const soleusDoneToday = new Set((soleusSessions.data ?? []).map((r: any) => r.user_id));
+    const glucoseMorningDoneToday = new Set<string>();
+    const glucoseEveningDoneToday = new Set<string>();
+    for (const r of (glucoseLogs.data ?? []) as any[]) {
+      if (r.glucose_morning != null) glucoseMorningDoneToday.add(r.user_id);
+      if (r.glucose_evening != null) glucoseEveningDoneToday.add(r.user_id);
+    }
     const profileMap = new Map<string, any>();
     for (const p of profiles.data ?? []) profileMap.set(p.user_id, p);
 
@@ -176,6 +191,12 @@ Deno.serve(async (req) => {
         const c = breathCountByUser.get(userId) ?? 0;
         if (c >= BREATH_GOAL) return false;
       }
+      if (f.missed_water_today) {
+        if ((waterGlassesByUser.get(userId) ?? 0) >= WATER_GOAL) return false;
+      }
+      if (f.missed_soleus_today && soleusDoneToday.has(userId)) return false;
+      if (f.missed_glucose_morning && glucoseMorningDoneToday.has(userId)) return false;
+      if (f.missed_glucose_evening && glucoseEveningDoneToday.has(userId)) return false;
       if (f.has_diet_plan && !hasDietPlan.has(userId)) return false;
       if (f.needs_bp_tracking) {
         if (!userNeedsBpTracking(userId)) return false;
