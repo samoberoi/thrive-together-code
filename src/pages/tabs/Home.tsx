@@ -1866,12 +1866,18 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
           {(fastingState === "none" || fastingState === "eating") && (
             <button
               onClick={() => {
-                try { localStorage.setItem("bbdo:openReference", "1"); } catch {}
+                const isPrebuilt = packageKey === "intensive" || packageKey === "pro";
+                try {
+                  if (!isPrebuilt) localStorage.setItem("bbdo:openReference", "1");
+                } catch {}
                 window.dispatchEvent(new CustomEvent("nav:set-tab", { detail: "diet" }));
               }}
               className="mt-2 w-full py-2 text-xs font-semibold text-primary underline-offset-2 hover:underline flex items-center justify-center gap-1.5"
             >
-              <BookOpen className="w-3.5 h-3.5" /> View Quick Food Reference
+              <BookOpen className="w-3.5 h-3.5" />
+              {packageKey === "intensive" || packageKey === "pro"
+                ? "Eat Smart · 30-day plate plan"
+                : "View Quick Food Reference"}
             </button>
           )}
 
