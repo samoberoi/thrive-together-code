@@ -141,6 +141,7 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
   const [patientStatuses, setPatientStatuses] = useState<Record<string, PatientHealthStatus>>({});
   const [patientMetrics, setPatientMetrics] = useState<Record<string, { healthScore: number | null; initialScore: number | null; latestWeight: number | null; initialWeight: number | null; latestGlucose: number | null; initialGlucose: number | null }>>({});
   const [statusFilter, setStatusFilter] = useState<"all" | "green" | "yellow" | "red">("all");
+  const [packageFilter, setPackageFilter] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [logsLoading, setLogsLoading] = useState(false);
   const [logTab, setLogTab] = useState<LogTab>("diabetes");
