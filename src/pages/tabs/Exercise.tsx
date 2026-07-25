@@ -595,10 +595,10 @@ export default function ExerciseTab({ packageKey }: Props) {
 
       {/* Tier tabs */}
       {visibleTiers.length >= 1 && (
-        <div className="flex gap-2 overflow-x-auto -mx-1 px-1">
+        <div className="flex gap-2 overflow-x-auto -mx-1 px-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           <button
             onClick={() => setActiveTier("all")}
-            className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
+            className={`shrink-0 px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
               activeTier === "all"
                 ? "bg-[var(--bbdo-blue)] text-white shadow-card"
                 : "bg-[var(--bbdo-surface)] text-muted-foreground hover:text-foreground"
@@ -610,7 +610,7 @@ export default function ExerciseTab({ packageKey }: Props) {
             <button
               key={t}
               onClick={() => setActiveTier(t)}
-              className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
+              className={`shrink-0 px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
                 activeTier === t
                   ? "text-white shadow-card"
                   : "bg-[var(--bbdo-surface)] text-muted-foreground hover:text-foreground"
