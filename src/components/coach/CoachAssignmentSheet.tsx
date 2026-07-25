@@ -194,7 +194,10 @@ export default function CoachAssignmentSheet({
           )}
         </div>
 
-        <div className="p-3 border-t flex items-center gap-2 sticky bottom-0 bg-background">
+        <div
+          className="p-3 border-t flex items-center gap-2 sticky bottom-0 bg-background"
+          style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+        >
           <Button variant="ghost" className="flex-1" onClick={onClose} disabled={saving}>
             Cancel
           </Button>
