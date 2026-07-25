@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Calendar, Sunrise, Apple, Moon, Sparkles, Loader2, Shuffle, Pencil, X, Check, Search } from "lucide-react";
+import { Calendar, Sunrise, Apple, Moon, Sparkles, Loader2, Shuffle, Pencil, X, Check, Search, Leaf } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   fetchPlatingForUser,
@@ -23,12 +23,13 @@ const slotLabel: Record<string, string> = {
 };
 const slotOrder = ["first_meal", "mid_bite", "last_meal"];
 
-const DIET_FILTERS = [
-  { key: "non_veg", label: "Non-veg" },
-  { key: "mixed", label: "Mixed" },
-  { key: "veg", label: "Veg" },
-  { key: "vegan", label: "Vegan" },
-] as const;
+const DIET_PREF_LABEL: Record<string, string> = {
+  veg: "Veg",
+  non_veg: "Non-veg",
+  vegan: "Vegan",
+  jain: "Jain",
+  eggitarian: "Eggitarian",
+};
 
 export default function DietPlatingCalendar() {
   const { user } = useAuth();
@@ -37,7 +38,7 @@ export default function DietPlatingCalendar() {
   const [activeDay, setActiveDay] = useState(0);
   const [loading, setLoading] = useState(true);
   const [regening, setRegening] = useState(false);
-  const [diet, setDiet] = useState<string>("mixed");
+  const [diet, setDiet] = useState<string>("veg");
   const [swappingId, setSwappingId] = useState<string | null>(null);
   const [pickerFor, setPickerFor] = useState<DietPlating | null>(null);
   const [foods, setFoods] = useState<ApprovedFood[]>([]);
@@ -94,11 +95,6 @@ export default function DietPlatingCalendar() {
 
   const totalCal = dayPlates.reduce((s, p) => s + (p.calories ?? 0), 0);
 
-  const orderedFilters = useMemo(() => {
-    const current = normalizeDietPreference(diet);
-    return [...DIET_FILTERS].sort((a, b) => (a.key === current ? -1 : b.key === current ? 1 : 0));
-  }, [diet]);
-
   const regenerateForDiet = async (nextDiet: string, force = false) => {
     if (!user) return;
     const normalized = normalizeDietPreference(nextDiet);
@@ -108,7 +104,7 @@ export default function DietPlatingCalendar() {
       setDiet(normalized);
       setFoods([]);
       await regeneratePlating(user.id, normalized);
-      toast({ title: "Plates updated", description: `Preference: ${orderedFilters.find((f) => f.key === normalized)?.label ?? normalized}` });
+      toast({ title: "Plates updated", description: `Preference: ${DIET_PREF_LABEL[normalized] ?? normalized}` });
       await load();
     } catch (e: any) {
       toast({ title: "Failed", description: e.message, variant: "destructive" });
@@ -116,8 +112,6 @@ export default function DietPlatingCalendar() {
       setRegening(false);
     }
   };
-
-  const changeDiet = (next: string) => regenerateForDiet(next);
 
   const regen = () => user && regenerateForDiet(diet, true);
 
@@ -222,23 +216,14 @@ export default function DietPlatingCalendar() {
         </button>
       </div>
 
-      {/* Diet filter chips */}
-      <div className="flex gap-1.5 flex-wrap">
-        {orderedFilters.map((f) => {
-          const active = diet === f.key;
-          return (
-            <button
-              key={f.key}
-              onClick={() => changeDiet(f.key)}
-              disabled={regening}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${
-                active ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground hover:bg-muted"
-              }`}
-            >
-              {f.label}
-            </button>
-          );
-        })}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[11.5px] font-bold bg-primary/10 text-primary border border-primary/30">
+          <Leaf className="w-3.5 h-3.5" />
+          Your preference: {DIET_PREF_LABEL[diet] ?? "Veg"}
+        </span>
+        <span className="text-[10.5px] text-muted-foreground">
+          Change it in Profile → Settings.
+        </span>
       </div>
 
       {/* Day strip */}
