@@ -547,9 +547,9 @@ export default function CoachHome({ onViewPatient, onViewMessages }: { onViewPat
           </div>
         </button>
         <button
-          onClick={onViewMessages}
+          onClick={() => setReviewsOpen(true)}
           className="liquid-glass rounded-2xl p-2 hover:bg-accent/40 transition-colors min-w-0 h-[66px] flex items-center gap-2 text-left"
-          title="Open messages"
+          title="See who rated you and their reviews"
         >
           <Star className="w-5 h-5 text-warning fill-warning shrink-0" />
           <div className="min-w-0">
