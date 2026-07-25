@@ -144,6 +144,7 @@ export default function CoachDashboard() {
     meetings: <CoachMeetings />,
     requests: <CoachConsultationRequests />,
     messages: coachMeta ? <CoachInbox coachId={coachMeta.id} openPatientId={chatPatientId} /> : null,
+    community: <Community />,
     fasting: <CoachFasting />,
     supplements: <CoachSupplements />,
     move: <CoachMove />,
