@@ -956,6 +956,10 @@ class BBDOBridgeViewController: CAPBridgeViewController {
         bbdoNativeLog("BBDOBridgeViewController.capacitorDidLoad")
         bridge?.webView?.configuration.allowsInlineMediaPlayback = true
         bridge?.webView?.configuration.mediaTypesRequiringUserActionForPlayback = []
+        bridge?.webView?.scrollView.minimumZoomScale = 1.0
+        bridge?.webView?.scrollView.maximumZoomScale = 1.0
+        bridge?.webView?.scrollView.zoomScale = 1.0
+        bridge?.webView?.scrollView.bouncesZoom = false
         // Enable the standard iOS edge-swipe navigation gestures inside the
         // WKWebView: swipe from the left edge = go back, swipe from the right
         // edge = go forward. WKWebView records SPA pushState entries in its
