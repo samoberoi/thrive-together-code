@@ -41,6 +41,7 @@ const navItems: { id: CoachTab; icon: React.ElementType; label: string }[] = [
 
 export default function CoachDashboard() {
   const [activeTab, setActiveTab] = useState<CoachTab>("home");
+  const [visitedTabs, setVisitedTabs] = useState<Set<CoachTab>>(new Set(["home"]));
   const [chatPatientId, setChatPatientId] = useState<string | null>(null);
   const [showTour, setShowTour] = useState(false);
   const [tourReplay, setTourReplay] = useState(false);
@@ -48,6 +49,11 @@ export default function CoachDashboard() {
   const [loading, setLoading] = useState(true);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const { user, signOut } = useAuth();
+
+  const selectTab = (tab: CoachTab) => {
+    setActiveTab(tab);
+    setVisitedTabs((prev) => (prev.has(tab) ? prev : new Set(prev).add(tab)));
+  };
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { counts: attentionCounts } = useAttentionCounts();
