@@ -54,6 +54,7 @@ import { Phone } from "lucide-react";
 import CoachSummaryDialog from "@/components/CoachSummaryDialog";
 import FoundationLabCard from "@/components/home/FoundationLabCard";
 import { fetchAssignedCoach } from "@/lib/coachService";
+import { useBmiCategories, categorizeBmi } from "@/hooks/useBmiCategories";
 
 function getHabitItems(t: (k: string) => string) {
   return [
