@@ -432,8 +432,8 @@ export default function Auth() {
                         value={phone}
                         onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
                         className="w-full bg-transparent text-foreground font-bold text-[18px] tracking-[0.02em] outline-none placeholder:text-muted-foreground/60 placeholder:font-medium py-4 tabular"
-                        autoFocus
                       />
+
                       {phone.length === 10 && (
                         <motion.div initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }}
                           className="w-6 h-6 rounded-full bg-primary flex items-center justify-center shrink-0">
@@ -506,7 +506,7 @@ export default function Auth() {
                 </p>
 
                 <div className="mt-6 flex justify-center">
-                  <InputOTP maxLength={6} value={otp} onChange={(v) => { setOtp(v); if (otpError) setOtpError(""); }} autoFocus>
+                  <InputOTP maxLength={6} value={otp} onChange={(v) => { setOtp(v); if (otpError) setOtpError(""); }}>
                     <InputOTPGroup className="gap-2.5">
                       {[0, 1, 2, 3, 4, 5].map((i) => (
                         <InputOTPSlot
@@ -561,7 +561,7 @@ export default function Auth() {
                 <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-[0.18em] mb-2 ml-0.5 block">Full name</label>
                 <div className="liquid-glass-input px-4 py-3.5">
                   <input type="text" placeholder="e.g. Arjun, Priya, Rahul…" value={name} onChange={(e) => setName(e.target.value)}
-                    className="w-full bg-transparent text-foreground font-medium text-base outline-none placeholder:text-muted-foreground" autoFocus />
+                    className="w-full bg-transparent text-foreground font-medium text-base outline-none placeholder:text-muted-foreground" />
                 </div>
               </div>
 
