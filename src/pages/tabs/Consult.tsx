@@ -59,11 +59,14 @@ export default function Consult() {
 
   useEffect(() => {
     if (!user) return;
+    let cancelled = false;
     setLoading(true);
     fetchAssignedCoach(user.id).then(async (c) => {
+      if (cancelled) return;
       setCoach(c);
       if (c) {
         const r = await fetchMyRating(user.id, c.id);
+        if (cancelled) return;
         if (r) {
           setMyRating(r.rating);
           setReview(r.review ?? "");
@@ -80,11 +83,18 @@ export default function Consult() {
       .limit(1)
       .maybeSingle()
       .then(({ data }) => setPlanId((data as any)?.plan_id ?? null));
+    return () => { cancelled = true; };
   }, [user]);
 
   // Allow the Home greeting (and other surfaces) to jump straight into the coach chat.
   useEffect(() => {
     const openChat = () => setShowChat(true);
+    try {
+      if (sessionStorage.getItem("bbdo:openCoachChat") === "1") {
+        sessionStorage.removeItem("bbdo:openCoachChat");
+        setShowChat(true);
+      }
+    } catch {}
     window.addEventListener("nav:open-coach-chat", openChat);
     return () => window.removeEventListener("nav:open-coach-chat", openChat);
   }, []);

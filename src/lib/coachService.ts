@@ -34,10 +34,12 @@ export interface Coach {
   bank_ifsc: string | null;
   aadhaar_doc_url: string | null;
   pan_doc_url: string | null;
-  working_hours_start: string | null;
-  working_hours_end: string | null;
-  working_timezone: string | null;
+  working_hours_start?: string | null;
+  working_hours_end?: string | null;
+  working_timezone?: string | null;
 }
+
+const COACH_PUBLIC_SELECT = "id, name, phone, bio, description, specialization, coach_type, years_experience, total_consultations, avg_rating, total_ratings, avatar_url, languages, qualification, city, is_active";
 
 export interface CoachAssignment {
   id: string;
@@ -95,7 +97,53 @@ export async function resolveCurrentCoach(user: any, select = "*"): Promise<Coac
 
 /** Fetch the user's currently assigned coach */
 export async function fetchAssignedCoach(userId: string): Promise<Coach | null> {
-  const coachSelect = "id, name, phone, bio, description, specialization, coach_type, years_experience, total_consultations, avg_rating, total_ratings, avatar_url, languages, qualification, city, is_active, working_hours_start, working_hours_end, working_timezone";
+  const normalizeCoach = (row: any): Coach | null => {
+    if (!row?.id || !row?.name) return null;
+    return {
+      id: row.id,
+      phone: row.phone ?? "",
+      name: row.name,
+      description: row.description ?? null,
+      specialization: row.specialization ?? null,
+      coach_type: row.coach_type ?? "active_reset",
+      years_experience: row.years_experience ?? 0,
+      total_consultations: row.total_consultations ?? 0,
+      avg_rating: Number(row.avg_rating ?? 5),
+      total_ratings: row.total_ratings ?? 0,
+      avatar_url: row.avatar_url ?? null,
+      is_active: row.is_active ?? true,
+      email: row.email ?? null,
+      date_of_birth: row.date_of_birth ?? null,
+      emergency_contact_name: row.emergency_contact_name ?? null,
+      emergency_contact_phone: row.emergency_contact_phone ?? null,
+      address_line1: row.address_line1 ?? null,
+      address_line2: row.address_line2 ?? null,
+      city: row.city ?? null,
+      state: row.state ?? null,
+      pincode: row.pincode ?? null,
+      pan_card: row.pan_card ?? null,
+      aadhaar_card: row.aadhaar_card ?? null,
+      qualification: row.qualification ?? null,
+      languages: row.languages ?? null,
+      bio: row.bio ?? null,
+      start_date: row.start_date ?? null,
+      commission_percent: row.commission_percent ?? null,
+      bank_name: row.bank_name ?? null,
+      bank_account_number: row.bank_account_number ?? null,
+      bank_ifsc: row.bank_ifsc ?? null,
+      aadhaar_doc_url: row.aadhaar_doc_url ?? null,
+      pan_doc_url: row.pan_doc_url ?? null,
+      working_hours_start: row.working_hours_start ?? null,
+      working_hours_end: row.working_hours_end ?? null,
+      working_timezone: row.working_timezone ?? null,
+    };
+  };
+
+  const { data: resolved, error: rpcError } = await supabase.rpc("get_assigned_coach" as any, { _user_id: userId });
+  const resolvedRow = Array.isArray(resolved) ? resolved[0] : resolved;
+  const rpcCoach = normalizeCoach(resolvedRow);
+  if (rpcCoach) return rpcCoach;
+  if (rpcError) console.warn("Assigned coach resolver failed, falling back:", rpcError);
 
   const byNameFallback = async (): Promise<Coach | null> => {
     const { data: profile } = await supabase
@@ -104,14 +152,14 @@ export async function fetchAssignedCoach(userId: string): Promise<Coach | null> 
       .eq("user_id", userId)
       .maybeSingle();
     const coachName = (profile as any)?.coach_name as string | undefined;
-    if (!coachName) return null;
+    if (!coachName?.trim()) return null;
     const { data: byName } = await supabase
       .from("coaches" as any)
-      .select(coachSelect)
+      .select(COACH_PUBLIC_SELECT)
       .ilike("name", coachName.trim())
       .eq("is_active", true)
       .maybeSingle();
-    return (byName as unknown as Coach) ?? null;
+    return normalizeCoach(byName);
   };
 
   // Get active assignment
@@ -130,7 +178,7 @@ export async function fetchAssignedCoach(userId: string): Promise<Coach | null> 
 
   const { data: coach, error: cErr } = await supabase
     .from("coaches" as any)
-    .select(coachSelect)
+    .select(COACH_PUBLIC_SELECT)
     .eq("id", coachId)
     .maybeSingle();
 
@@ -139,7 +187,7 @@ export async function fetchAssignedCoach(userId: string): Promise<Coach | null> 
     return byNameFallback();
   }
 
-  return coach as unknown as Coach;
+  return normalizeCoach(coach);
 }
 
 

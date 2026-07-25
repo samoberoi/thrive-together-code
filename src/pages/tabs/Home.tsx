@@ -53,6 +53,7 @@ import { whatsappCallUrl, isMeetingCallable } from "@/lib/coachAvailability";
 import { Phone } from "lucide-react";
 import CoachSummaryDialog from "@/components/CoachSummaryDialog";
 import FoundationLabCard from "@/components/home/FoundationLabCard";
+import { fetchAssignedCoach } from "@/lib/coachService";
 
 function getHabitItems(t: (k: string) => string) {
   return [
@@ -384,6 +385,7 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
     setCoachDialogOpen(true);
   };
   const openCoachChat = () => {
+    try { sessionStorage.setItem("bbdo:openCoachChat", "1"); } catch {}
     window.dispatchEvent(new CustomEvent<string>("nav:set-tab", { detail: "consult" }));
     window.dispatchEvent(new CustomEvent("nav:open-coach-chat"));
   };
@@ -615,24 +617,15 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
       (window as any).__bbdoReloadMovement = loadMovement;
       fetchProfile(authUser.id).then(async (p) => {
         setDbProfile(p ?? null);
-        if (p?.coach_name) setCoachName(p.coach_name);
-        // Best-effort: load coach avatar for the greeting chip
+        // Use the same resolver as the My Coach tab so Home never shows a stale/ghost coach.
         try {
-          const { data: asgn } = await supabase
-            .from("coach_assignments")
-            .select("coach_id")
-            .eq("user_id", authUser.id)
-            .eq("is_active", true)
-            .maybeSingle();
-          const coachId = (asgn as any)?.coach_id;
-          if (coachId) {
-            const { data: c } = await supabase
-              .from("coaches")
-              .select("name, avatar_url")
-              .eq("id", coachId)
-              .maybeSingle();
-            if ((c as any)?.name) setCoachName((c as any).name);
-            if ((c as any)?.avatar_url) setCoachAvatar((c as any).avatar_url);
+          const assignedCoach = await fetchAssignedCoach(authUser.id);
+          if (assignedCoach?.name) {
+            setCoachName(assignedCoach.name);
+            setCoachAvatar(assignedCoach.avatar_url ?? null);
+          } else {
+            setCoachName(null);
+            setCoachAvatar(null);
           }
         } catch { /* ignore */ }
         if (p?.initial_health_score != null) {

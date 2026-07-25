@@ -26,7 +26,7 @@ export default function CoachSummaryDialog({ open, onOpenChange, coachId, userId
         if (coachId) {
           const { data } = await supabase
             .from("coaches" as any)
-            .select("id, name, phone, bio, description, specialization, coach_type, years_experience, total_consultations, avg_rating, total_ratings, avatar_url, languages, qualification, city, is_active, working_hours_start, working_hours_end, working_timezone")
+            .select("id, name, phone, bio, description, specialization, coach_type, years_experience, total_consultations, avg_rating, total_ratings, avatar_url, languages, qualification, city, is_active")
             .eq("id", coachId)
             .maybeSingle();
           if (!cancelled) setCoach((data as any) ?? null);
