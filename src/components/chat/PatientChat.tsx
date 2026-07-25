@@ -353,6 +353,7 @@ export default function PatientChat({ coach, onBack }: PatientChatProps) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
