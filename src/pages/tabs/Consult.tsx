@@ -145,32 +145,8 @@ export default function Consult() {
       <UpcomingMeetingsCard />
       <RecommendationsPanel />
 
-      {coach && (planId === "intensive" || planId === "pro") && (
-        <button
-          onClick={() => setReqOpen(true)}
-          className="liquid-glass rounded-3xl p-4 flex items-center justify-between text-left hover:bg-primary/5 transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-[12px] liquid-glass-icon tile-icon-red flex items-center justify-center">
-              <MessageSquareWarning className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-foreground font-bold text-sm">Request a consultation</p>
-              <p className="text-xs text-muted-foreground">Get a one-on-one with your coach</p>
-            </div>
-          </div>
-          <ChevronRight className="w-4 h-4 text-muted-foreground" />
-        </button>
-      )}
+      {/* Consultation request removed — patients chat directly with their coach */}
 
-      {user && (
-        <RequestConsultationDialog
-          open={reqOpen}
-          onOpenChange={setReqOpen}
-          userId={user.id}
-          coachId={coach?.id ?? null}
-        />
-      )}
 
       {/* Coach Card */}
       {coach ? (
