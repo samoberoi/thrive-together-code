@@ -561,7 +561,7 @@ export default function Auth() {
                 <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-[0.18em] mb-2 ml-0.5 block">Full name</label>
                 <div className="liquid-glass-input px-4 py-3.5">
                   <input type="text" placeholder="e.g. Arjun, Priya, Rahul…" value={name} onChange={(e) => setName(e.target.value)}
-                    className="w-full bg-transparent text-foreground font-medium text-base outline-none placeholder:text-muted-foreground" autoFocus />
+                    className="w-full bg-transparent text-foreground font-medium text-base outline-none placeholder:text-muted-foreground" />
                 </div>
               </div>
 
