@@ -5198,6 +5198,14 @@ export type Database = {
         Args: { _diet: string }
         Returns: string
       }
+      bbdo_user_diet_gating: {
+        Args: { _user_id: string }
+        Returns: {
+          allergen_ids: string[]
+          recs: string[]
+          sub_prefs: string[]
+        }[]
+      }
       book_yoga_month: {
         Args: {
           _duration_days?: number
