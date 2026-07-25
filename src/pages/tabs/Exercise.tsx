@@ -377,8 +377,9 @@ export default function ExerciseTab({ packageKey }: Props) {
   const filtered = useMemo(() => {
     const assignedSet = isCoachManaged && assignedItems ? new Set(assignedItems) : null;
     return exercises
-      .filter((e) => visibleTiers.includes(e.tier as ExerciseTier))
-      .filter((e) => (assignedSet ? assignedSet.has(e.id) : true))
+      // Coach-assigned items bypass the tier gate — if the coach explicitly
+      // assigned it, the user gets to see it regardless of their plan tier.
+      .filter((e) => (assignedSet ? assignedSet.has(e.id) : visibleTiers.includes(e.tier as ExerciseTier)))
       .filter((e) => (activeTier === "all" ? true : e.tier === activeTier))
       .filter((e) => (activeCat === "all" ? true : e.category_id === activeCat))
       .sort((a, b) => (a.tier - b.tier) || (a.sort_order - b.sort_order));
