@@ -205,7 +205,7 @@ export async function addComment(postId: string, userId: string, content: string
   return !error;
 }
 
-/** Toggle like on a post */
+/** Toggle like on a post. Returns whether the post is now liked. */
 export async function toggleLike(postId: string, userId: string): Promise<boolean> {
   // Check if already liked
   const { data: existing } = await supabase
@@ -219,7 +219,10 @@ export async function toggleLike(postId: string, userId: string): Promise<boolea
     await supabase.from("community_likes").delete().eq("id", existing.id);
     return false; // unliked
   } else {
-    await supabase.from("community_likes").insert({ post_id: postId, user_id: userId });
+    // Upsert-style: swallow duplicate-key errors so double-taps don't error out
+    await supabase
+      .from("community_likes")
+      .insert({ post_id: postId, user_id: userId }, { count: "exact" } as any);
     return true; // liked
   }
 }
@@ -234,6 +237,37 @@ export async function fetchUserLikes(userId: string, postIds: string[]): Promise
     .in("post_id", postIds);
 
   return new Set((data || []).map((d: any) => d.post_id));
+}
+
+export interface PostLiker {
+  user_id: string;
+  name: string;
+  avatar_url: string | null;
+}
+
+/** Fetch the actual list of users who liked a post (most recent first). */
+export async function fetchPostLikers(postId: string, limit = 100): Promise<PostLiker[]> {
+  const { data: likes } = await supabase
+    .from("community_likes")
+    .select("user_id, created_at")
+    .eq("post_id", postId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (!likes || likes.length === 0) return [];
+  const ids = [...new Set(likes.map((l: any) => l.user_id))];
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("user_id, name, avatar_url")
+    .in("user_id", ids);
+  const map = new Map((profiles || []).map((p: any) => [p.user_id, p]));
+  return likes.map((l: any) => {
+    const p: any = map.get(l.user_id);
+    return {
+      user_id: l.user_id,
+      name: p?.name || "Member",
+      avatar_url: p?.avatar_url || null,
+    };
+  });
 }
 
 /** Generate achievement post content */
