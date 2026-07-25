@@ -191,6 +191,12 @@ Deno.serve(async (req) => {
         const c = breathCountByUser.get(userId) ?? 0;
         if (c >= BREATH_GOAL) return false;
       }
+      if (f.missed_water_today) {
+        if ((waterGlassesByUser.get(userId) ?? 0) >= WATER_GOAL) return false;
+      }
+      if (f.missed_soleus_today && soleusDoneToday.has(userId)) return false;
+      if (f.missed_glucose_morning && glucoseMorningDoneToday.has(userId)) return false;
+      if (f.missed_glucose_evening && glucoseEveningDoneToday.has(userId)) return false;
       if (f.has_diet_plan && !hasDietPlan.has(userId)) return false;
       if (f.needs_bp_tracking) {
         if (!userNeedsBpTracking(userId)) return false;
