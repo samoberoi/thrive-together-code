@@ -1823,7 +1823,11 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
             </button>
           )}
           {fastingState === "eating" && (() => {
-            const readyLabel = packageKey === "foundation" ? "Log last meal (LMOD)" : "Track LMOD — Build my plate";
+            const readyLabel = packageKey === "foundation"
+              ? "Log last meal (LMOD)"
+              : packageKey === "intensive" || packageKey === "pro"
+              ? "Track LMOD — View my plate"
+              : "Track LMOD — Build my plate";
             return (
               <button
                 onClick={() => openMealTimePicker("lmod")}
