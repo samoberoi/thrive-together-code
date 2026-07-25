@@ -96,7 +96,7 @@ export default function PatientChat({ coach, onBack }: PatientChatProps) {
     setShowQuickQuestions(false);
     await sendMessage(conversation.id, user.id, "patient", msg, isPredefined);
     setSending(false);
-    inputRef.current?.focus();
+    // Do not auto-open keyboard after sending; user taps input to reopen.
   };
 
   const formatTime = (dateStr: string) =>

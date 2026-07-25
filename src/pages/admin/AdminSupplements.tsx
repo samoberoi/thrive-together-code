@@ -434,7 +434,6 @@ export default function AdminSupplements() {
                 return (
                   <span key={c} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-background border border-input">
                     <input
-                      autoFocus
                       className="w-32 bg-transparent text-xs font-semibold outline-none"
                       value={editCategoryValue}
                       onChange={(e) => setEditCategoryValue(e.target.value)}
@@ -516,7 +515,6 @@ export default function AdminSupplements() {
                       onChange={(e) => setEditConditionValues({ ...editConditionValues, icon: e.target.value })}
                     />
                     <input
-                      autoFocus
                       className="w-40 bg-transparent text-xs font-semibold outline-none"
                       placeholder="Label"
                       value={editConditionValues.label}

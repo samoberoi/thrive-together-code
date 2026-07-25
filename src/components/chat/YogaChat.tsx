@@ -135,7 +135,7 @@ export default function YogaChat({
     setSending(true);
     await sendPartnerMessage(conversation.id, user.id, role, msg);
     setSending(false);
-    inputRef.current?.focus();
+    // Do not auto-open keyboard after sending; user taps input to reopen.
   };
 
   const formatTime = (dateStr: string) =>

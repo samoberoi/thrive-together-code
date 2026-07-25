@@ -156,7 +156,7 @@ export default function CoachInbox({ coachId, openPatientId }: CoachInboxProps) 
     setSending(true);
     await sendMessage(activeConvo.id, user.id, "coach", msg);
     setSending(false);
-    inputRef.current?.focus();
+    // Do not auto-open keyboard after sending; user taps input to reopen.
   };
 
   const formatTime = (dateStr: string) => {

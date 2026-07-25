@@ -412,7 +412,6 @@ function CreatePostSheet({
           placeholder="Steps you took today, a win, a meal, a question…"
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          autoFocus
         />
 
         {/* Image preview */}
