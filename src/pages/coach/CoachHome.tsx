@@ -336,6 +336,10 @@ export default function CoachHome({ onViewPatient, onViewMessages }: { onViewPat
       }
       const onTrack = applicableCount > 0 && doneCount >= Math.ceil(applicableCount * 0.7);
 
+      const latestWeightValue = weightHistoryByUser.get(a.user_id)?.[0] ?? profile?.weight ?? null;
+      const previousWeightValue = weightHistoryByUser.get(a.user_id)?.[1]
+        ?? (profile?.weight != null && latestWeightValue != null && Number(profile.weight) !== Number(latestWeightValue) ? Number(profile.weight) : null);
+
       return {
         user_id: a.user_id,
         assigned_at: a.assigned_at,
@@ -345,8 +349,8 @@ export default function CoachHome({ onViewPatient, onViewMessages }: { onViewPat
         age: profile?.age ?? null,
         gender: profile?.gender ?? null,
         weight: profile?.weight ?? null,
-        latestWeight: weightHistoryByUser.get(a.user_id)?.[0] ?? profile?.weight ?? null,
-        previousWeight: weightHistoryByUser.get(a.user_id)?.[1] ?? null,
+        latestWeight: latestWeightValue,
+        previousWeight: previousWeightValue,
         bmi: profile?.bmi ?? null,
         bmi_category: profile?.bmi_category ?? null,
         latestGlucose: latestGlucoseByUser.get(a.user_id) ?? null,
