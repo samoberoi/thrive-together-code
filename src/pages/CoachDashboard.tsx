@@ -232,7 +232,7 @@ export default function CoachDashboard() {
           avatarUrl={coachMeta?.avatarUrl}
           avatarInitial={coachMeta?.name?.[0] ?? "C"}
           profileActive={activeTab === "profile"}
-          onProfileClick={() => setActiveTab("profile")}
+          onProfileClick={() => selectTab("profile")}
           notificationCount={attentionCounts.notifications}
           right={<SoundToggle inline />}
         />
