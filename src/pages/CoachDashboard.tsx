@@ -104,7 +104,7 @@ export default function CoachDashboard() {
 
   const handleChatWithPatient = (patientId: string) => {
     setChatPatientId(patientId);
-    setActiveTab("messages");
+    selectTab("messages");
   };
 
   // Clear chatPatientId when leaving messages tab
