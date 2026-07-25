@@ -224,7 +224,6 @@ function BmiTile({ bmi, status, color }: { bmi: number | null; status: string; c
   const r = 39;
   const c = 2 * Math.PI * r;
   useEffect(() => { const t = setTimeout(() => setAnimated(pct), 400); return () => clearTimeout(t); }, [pct]);
-  const isObese = status === "Obese";
   return (
     <motion.div
       className="liquid-glass-strong rounded-[20px] p-2.5 w-full min-w-0 flex flex-col items-center justify-between gap-1.5"
@@ -250,14 +249,11 @@ function BmiTile({ bmi, status, color }: { bmi: number | null; status: string; c
         </div>
       </div>
       <span className="text-muted-foreground text-[9px] font-bold uppercase tracking-[0.12em] text-center leading-tight">BMI</span>
-      <div className="min-h-[18px] flex items-center justify-center">
+      <div className="min-h-[18px] flex items-center justify-center w-full">
         {bmi != null && (
           <div
-            className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-              isObese
-                ? "text-destructive bg-destructive/10"
-                : "text-[var(--bbdo-mint)] bg-[var(--bbdo-mint)]/10"
-            }`}
+            className="text-[10px] font-bold px-2 py-0.5 rounded-full text-center leading-tight break-words max-w-full"
+            style={{ color, backgroundColor: `${color}1A` }}
           >
             {status}
           </div>
