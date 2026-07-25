@@ -118,38 +118,53 @@ function formatStamp(d: Date): string {
   return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-/** Draw a small "BBDO • timestamp" watermark in the bottom-right corner. */
-function drawWatermark(ctx: CanvasRenderingContext2D, w: number, h: number) {
-  // Scale font relative to image size, clamped to a readable range
+// Preload BBDO logo once for watermarking
+import bbdoLogoAsset from "@/assets/bbdo-logo.png.asset.json";
+let _bbdoLogoImg: HTMLImageElement | null = null;
+let _bbdoLogoPromise: Promise<HTMLImageElement | null> | null = null;
+function loadBbdoLogo(): Promise<HTMLImageElement | null> {
+  if (_bbdoLogoImg) return Promise.resolve(_bbdoLogoImg);
+  if (_bbdoLogoPromise) return _bbdoLogoPromise;
+  _bbdoLogoPromise = new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => { _bbdoLogoImg = img; resolve(img); };
+    img.onerror = () => resolve(null);
+    img.src = (bbdoLogoAsset as any).url;
+  });
+  return _bbdoLogoPromise;
+}
+
+/** Draw BBDO logo + timestamp watermark in the bottom-right corner. */
+function drawWatermark(ctx: CanvasRenderingContext2D, w: number, h: number, logo: HTMLImageElement | null) {
   const base = Math.max(12, Math.min(28, Math.round(Math.min(w, h) * 0.028)));
   const pad = Math.round(base * 0.6);
-  const gap = Math.round(base * 0.35);
+  const gap = Math.round(base * 0.45);
   const stamp = formatStamp(new Date());
 
-  const logoFont = `900 ${base}px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`;
-  const stampFont = `600 ${Math.round(base * 0.72)}px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`;
+  const stampFont = `600 ${Math.round(base * 0.78)}px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`;
+
+  // Logo box size (scaled to base)
+  const logoH = Math.round(base * 1.6);
+  const logoW = logo ? Math.round(logoH * (logo.naturalWidth / logo.naturalHeight)) : Math.round(logoH * 1.2);
 
   ctx.save();
   ctx.textBaseline = "alphabetic";
   ctx.textAlign = "left";
 
-  // Measure
-  ctx.font = logoFont;
-  const bbW = ctx.measureText("BB").width;
-  const doW = ctx.measureText("DO").width;
   ctx.font = stampFont;
   const stampW = ctx.measureText(stamp).width;
 
-  const boxW = Math.max(bbW + doW, stampW) + pad * 2;
-  const boxH = base + Math.round(base * 0.72) + gap + pad * 1.4;
+  const boxW = Math.max(logoW, stampW) + pad * 2;
+  const boxH = logoH + gap + Math.round(base * 0.78) + pad * 1.4;
   const x = w - boxW - Math.round(base * 0.5);
   const y = h - boxH - Math.round(base * 0.5);
 
-  // High-contrast pill background for legibility over bright photos.
+  // Pill background
   ctx.shadowColor = "rgba(0, 0, 0, 0.35)";
   ctx.shadowBlur = Math.round(base * 0.25);
   ctx.shadowOffsetY = Math.max(1, Math.round(base * 0.08));
-  ctx.fillStyle = "rgba(0, 0, 0, 0.78)";
+  ctx.fillStyle = "rgba(0, 0, 0, 0.72)";
   const r = Math.round(base * 0.4);
   ctx.beginPath();
   ctx.moveTo(x + r, y);
@@ -161,26 +176,22 @@ function drawWatermark(ctx: CanvasRenderingContext2D, w: number, h: number) {
   ctx.fill();
   ctx.shadowColor = "transparent";
 
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.62)";
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.55)";
   ctx.lineWidth = Math.max(1, Math.round(base * 0.07));
   ctx.stroke();
 
-  // "BBDO" wordmark — BB red, DO blue
-  const textY = y + pad + base * 0.85;
-  ctx.font = logoFont;
-  ctx.lineWidth = Math.max(2, Math.round(base * 0.12));
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.92)";
-  ctx.strokeText("BB", x + pad, textY);
-  ctx.fillStyle = "#E11D48"; // brand red
-  ctx.fillText("BB", x + pad, textY);
-  ctx.strokeText("DO", x + pad + bbW, textY);
-  ctx.fillStyle = "#2563EB"; // brand blue
-  ctx.fillText("DO", x + pad + bbW, textY);
+  // Logo (centered horizontally in the pill)
+  if (logo) {
+    const lx = x + (boxW - logoW) / 2;
+    const ly = y + pad * 0.7;
+    ctx.drawImage(logo, lx, ly, logoW, logoH);
+  }
 
   // Timestamp
   ctx.font = stampFont;
   ctx.fillStyle = "rgba(255, 255, 255, 1)";
-  ctx.fillText(stamp, x + pad, textY + gap + Math.round(base * 0.72));
+  const tsY = y + pad * 0.7 + logoH + gap + Math.round(base * 0.78);
+  ctx.fillText(stamp, x + (boxW - stampW) / 2, tsY);
 
   ctx.restore();
 }
@@ -201,7 +212,8 @@ async function compressImage(file: File): Promise<Blob> {
     const ctx = canvas.getContext("2d");
     if (!ctx) return file;
     ctx.drawImage(img, 0, 0, w, h);
-    drawWatermark(ctx, w, h);
+    const logo = await loadBbdoLogo();
+    drawWatermark(ctx, w, h, logo);
     const blob = await new Promise<Blob | null>((resolve) =>
       canvas.toBlob(resolve, "image/jpeg", JPEG_QUALITY),
     );
