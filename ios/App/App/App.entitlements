@@ -5,7 +5,7 @@
 	<key>com.apple.developer.healthkit</key>
 	<true/>
 	<key>aps-environment</key>
-	<string>development</string>
+	<string>production</string>
 	<key>com.apple.developer.usernotifications.time-sensitive</key>
 	<true/>
 </dict>
