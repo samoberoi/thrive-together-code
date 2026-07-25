@@ -32,8 +32,8 @@ export default function Splash() {
     } catch {
       /* ignore */
     }
-    const tExit = window.setTimeout(() => setGone(true), 1700);
-    const tReady = window.setTimeout(() => setMinimumSplashDone(true), 2000);
+    const tExit = window.setTimeout(() => setGone(true), 2600);
+    const tReady = window.setTimeout(() => setMinimumSplashDone(true), 3000);
 
     return () => {
       window.clearTimeout(tExit);
@@ -79,10 +79,8 @@ export default function Splash() {
     { text: "Obesity", color: "var(--bbdo-blue)" },
   ];
   const acronym = [
-    { text: "(", color: "var(--bbdo-ink)" },
     { text: "BB", color: "var(--bbdo-red)" },
     { text: "DO", color: "var(--bbdo-blue)" },
-    { text: ")", color: "var(--bbdo-ink)" },
   ];
 
   return (
@@ -203,7 +201,7 @@ export default function Splash() {
           }}
           initial={{ width: "0%" }}
           animate={{ width: "100%" }}
-          transition={{ delay: 0.3, duration: 1.9, ease: EASE }}
+          transition={{ delay: 0.3, duration: 2.4, ease: EASE }}
         />
       </motion.div>
     </div>
