@@ -133,6 +133,18 @@ Deno.serve(async (req) => {
       breathCountByUser.set(r.user_id, (breathCountByUser.get(r.user_id) ?? 0) + 1);
     }
     const BREATH_GOAL = 4;
+    const WATER_GOAL = 8;
+    const waterGlassesByUser = new Map<string, number>();
+    for (const r of waterLogs.data ?? []) {
+      waterGlassesByUser.set(r.user_id, (waterGlassesByUser.get(r.user_id) ?? 0) + Number((r as any).weight_kg ?? 0));
+    }
+    const soleusDoneToday = new Set((soleusSessions.data ?? []).map((r: any) => r.user_id));
+    const glucoseMorningDoneToday = new Set<string>();
+    const glucoseEveningDoneToday = new Set<string>();
+    for (const r of (glucoseLogs.data ?? []) as any[]) {
+      if (r.glucose_morning != null) glucoseMorningDoneToday.add(r.user_id);
+      if (r.glucose_evening != null) glucoseEveningDoneToday.add(r.user_id);
+    }
     const profileMap = new Map<string, any>();
     for (const p of profiles.data ?? []) profileMap.set(p.user_id, p);
 
