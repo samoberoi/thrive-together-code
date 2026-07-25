@@ -162,15 +162,22 @@ export default function YogaChat({
   }, [messages]);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-[60vh]">
+    return createPortal(
+      <div
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-[#FCFCFD]"
+        style={{ paddingTop: "env(safe-area-inset-top)" }}
+      >
         <Loader2 className="w-6 h-6 text-primary animate-spin" />
-      </div>
+      </div>,
+      document.body,
     );
   }
 
-  return (
-    <div className="fixed inset-0 z-[60] flex flex-col bg-[#FCFCFD]" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[100] flex flex-col bg-[#FCFCFD]"
+      style={{ paddingTop: "env(safe-area-inset-top)" }}
+    >
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white/85 backdrop-blur-xl border-b border-border/60">
         <div className="max-w-3xl mx-auto flex items-center gap-3 px-3 md:px-4 py-3">
