@@ -212,7 +212,8 @@ async function compressImage(file: File): Promise<Blob> {
     const ctx = canvas.getContext("2d");
     if (!ctx) return file;
     ctx.drawImage(img, 0, 0, w, h);
-    drawWatermark(ctx, w, h);
+    const logo = await loadBbdoLogo();
+    drawWatermark(ctx, w, h, logo);
     const blob = await new Promise<Blob | null>((resolve) =>
       canvas.toBlob(resolve, "image/jpeg", JPEG_QUALITY),
     );
