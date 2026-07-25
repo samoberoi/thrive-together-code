@@ -585,13 +585,33 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
       diabetesType: clinical.diabetesType ?? deepProfiling.diabetesType,
     });
 
+    // Map the unified diet preference (veg/non_veg/vegan/eggitarian/jain) into
+    // the legacy lifestyle.diet slug (vegetarian/non_vegetarian/vegan) so
+    // health-score and other legacy consumers keep working.
+    const mapDietPrefToLifestyle = (p?: string): string | undefined => {
+      switch (p) {
+        case "veg":
+        case "jain":
+          return "vegetarian";
+        case "non_veg":
+        case "eggitarian":
+          return "non_vegetarian";
+        case "vegan":
+          return "vegan";
+        default:
+          return lifestyle.diet;
+      }
+    };
+    const derivedLifestyleDiet = mapDietPrefToLifestyle(dietPrefs[0]);
+
     const lifestyleData: LifestyleData = {
       smoking: lifestyle.smoking ?? false,
       alcohol: lifestyle.alcohol ?? "none",
       activity: lifestyle.activity ?? "moderate",
       sleepHours: lifestyle.sleepHours ?? 7,
-      diet: lifestyle.diet,
+      diet: derivedLifestyleDiet,
     };
+
 
     const dp: DeepProfilingData = {
       fastingGlucose: deepProfiling.fastingGlucose,
@@ -677,7 +697,7 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
       marital_status: maritalStatus || null,
       anniversary_date: anniversaryDate || null,
       spouse_name: spouseName || null,
-      lifestyle: lifestyle,
+      lifestyle: { ...lifestyle, diet: derivedLifestyleDiet },
       clinical: clinical,
       deep_profiling: deepProfiling,
       assessment: assessment as any,
@@ -1220,7 +1240,7 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
             <ToggleChip label="Smoking" value={lifestyle.smoking ? "yes" : "no"} onChange={(v) => setLifestyle({ ...lifestyle, smoking: v === "yes" })} options={[{ id: "yes", label: "Yes" }, { id: "no", label: "No" }]} />
             <ToggleChip label="Alcohol" value={lifestyle.alcohol ?? ""} onChange={(v) => setLifestyle({ ...lifestyle, alcohol: v })} options={[{ id: "none", label: "None" }, { id: "moderate", label: "Moderate" }, { id: "high", label: "High" }]} />
             <ToggleChip label="Activity Level" value={lifestyle.activity ?? ""} onChange={(v) => setLifestyle({ ...lifestyle, activity: v })} options={[{ id: "sedentary", label: "Sedentary" }, { id: "light", label: "Light" }, { id: "moderate", label: "Moderate" }, { id: "active", label: "Active" }]} />
-            <ToggleChip label="Diet" value={lifestyle.diet ?? ""} onChange={(v) => setLifestyle({ ...lifestyle, diet: v })} options={[{ id: "vegetarian", label: "Vegetarian" }, { id: "non_vegetarian", label: "Non-Veg" }, { id: "vegan", label: "Vegan" }]} />
+            {/* Diet moved to the Diet & Allergies section — single source of truth */}
             <div className="space-y-1.5">
               <Label className="text-muted-foreground text-xs">Sleep ({lifestyle.sleepHours ?? 7} hrs)</Label>
               <input type="range" min={3} max={12} step={0.5} value={lifestyle.sleepHours ?? 7} onChange={(e) => setLifestyle({ ...lifestyle, sleepHours: parseFloat(e.target.value) })} className="w-full h-2 rounded-full appearance-none cursor-pointer" style={{ background: `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--primary)) ${(((lifestyle.sleepHours ?? 7) - 3) / 9) * 100}%, hsl(var(--border)) ${(((lifestyle.sleepHours ?? 7) - 3) / 9) * 100}%, hsl(var(--border)) 100%)` }} />
