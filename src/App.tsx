@@ -106,7 +106,9 @@ function NativeSessionRedirect() {
 
   useEffect(() => {
     if (!isNative() || loading || !ready || !session) return;
-    if (PUBLIC_ENTRY_ROUTES.has(location.pathname)) {
+    // "/" is the splash — it owns its own routing (with a minimum display
+    // duration), so never race it from here.
+    if (location.pathname !== "/" && PUBLIC_ENTRY_ROUTES.has(location.pathname)) {
       let cancelled = false;
       void resolvePostAuthRoute(session.user.id, { missingProfileRoute: null }).then((route) => {
         if (!cancelled && route && route !== location.pathname) {
