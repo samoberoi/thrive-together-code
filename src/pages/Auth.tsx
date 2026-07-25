@@ -506,7 +506,7 @@ export default function Auth() {
                 </p>
 
                 <div className="mt-6 flex justify-center">
-                  <InputOTP maxLength={6} value={otp} onChange={(v) => { setOtp(v); if (otpError) setOtpError(""); }} autoFocus>
+                  <InputOTP maxLength={6} value={otp} onChange={(v) => { setOtp(v); if (otpError) setOtpError(""); }}>
                     <InputOTPGroup className="gap-2.5">
                       {[0, 1, 2, 3, 4, 5].map((i) => (
                         <InputOTPSlot
