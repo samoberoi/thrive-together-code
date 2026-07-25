@@ -27,8 +27,11 @@ export default function PatientProfileEditor({ open, onClose, patientUserId, pat
 
   return createPortal(
     <div
-      className="fixed inset-0 bg-background overflow-y-auto overscroll-contain"
-      style={{ zIndex: 10000 }}
+      className="fixed inset-0 bg-background overflow-y-auto overflow-x-hidden overscroll-contain"
+      style={{
+        zIndex: 10000,
+        paddingBottom: "env(safe-area-inset-bottom)",
+      }}
       role="dialog"
       aria-modal="true"
     >
