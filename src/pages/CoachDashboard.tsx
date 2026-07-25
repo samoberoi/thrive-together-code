@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Home, Users, LogOut, Timer, Pill, MessageCircle, FlaskConical, Calendar, MessageSquareWarning, Activity, Dumbbell, Flower2 } from "lucide-react";
+import { Home, Users, LogOut, Timer, Pill, MessageCircle, FlaskConical, Calendar, MessageSquareWarning, Activity, Dumbbell, Flower2, Heart } from "lucide-react";
+import Community from "./tabs/Community";
 import NotificationCenter from "@/components/NotificationCenter";
 import SoundToggle from "@/components/SoundToggle";
 import CoachCommissionCard from "@/components/CoachCommissionCard";
