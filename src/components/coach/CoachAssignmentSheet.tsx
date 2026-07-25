@@ -187,8 +187,9 @@ export default function CoachAssignmentSheet({
             Cancel
           </Button>
           <Button className="flex-1" onClick={handleSave} disabled={!dirty || saving}>
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : `Submit${selected.size ? ` (${selected.size})` : ""}`}
           </Button>
+
         </div>
       </SheetContent>
     </Sheet>
