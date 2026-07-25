@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Home, Users, LogOut, Timer, Pill, MessageCircle, FlaskConical, Calendar, MessageSquareWarning, Activity, Dumbbell, Flower2 } from "lucide-react";
 import NotificationCenter from "@/components/NotificationCenter";
 import SoundToggle from "@/components/SoundToggle";
@@ -41,6 +41,7 @@ const navItems: { id: CoachTab; icon: React.ElementType; label: string }[] = [
 
 export default function CoachDashboard() {
   const [activeTab, setActiveTab] = useState<CoachTab>("home");
+  const [visitedTabs, setVisitedTabs] = useState<Set<CoachTab>>(new Set(["home"]));
   const [chatPatientId, setChatPatientId] = useState<string | null>(null);
   const [showTour, setShowTour] = useState(false);
   const [tourReplay, setTourReplay] = useState(false);
@@ -48,6 +49,11 @@ export default function CoachDashboard() {
   const [loading, setLoading] = useState(true);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const { user, signOut } = useAuth();
+
+  const selectTab = (tab: CoachTab) => {
+    setActiveTab(tab);
+    setVisitedTabs((prev) => (prev.has(tab) ? prev : new Set(prev).add(tab)));
+  };
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { counts: attentionCounts } = useAttentionCounts();
@@ -76,7 +82,7 @@ export default function CoachDashboard() {
   useEffect(() => {
     const tab = searchParams.get("tab") as CoachTab | null;
     if (tab && navItems.some((item) => item.id === tab)) {
-      setActiveTab(tab);
+      selectTab(tab);
       setNotificationsOpen(false);
     }
   }, [searchParams]);
@@ -98,7 +104,7 @@ export default function CoachDashboard() {
 
   const handleChatWithPatient = (patientId: string) => {
     setChatPatientId(patientId);
-    setActiveTab("messages");
+    selectTab("messages");
   };
 
   // Clear chatPatientId when leaving messages tab
@@ -131,7 +137,7 @@ export default function CoachDashboard() {
   }
 
   const tabContent: Record<CoachTab, React.ReactNode> = {
-    home: <CoachHome onViewPatient={() => setActiveTab("patients")} onViewFasting={() => setActiveTab("fasting")} onViewMessages={() => setActiveTab("messages")} />,
+    home: <CoachHome onViewPatient={() => selectTab("patients")} onViewFasting={() => selectTab("fasting")} onViewMessages={() => selectTab("messages")} />,
     patients: <CoachPatients onChatWithPatient={handleChatWithPatient} />,
     meetings: <CoachMeetings />,
     requests: <CoachConsultationRequests />,
@@ -144,6 +150,7 @@ export default function CoachDashboard() {
     labtests: <CoachLabTests />,
     profile: <CoachProfile onSignOut={handleSignOut} onReplayTour={handleReplayTour} />,
   };
+  const allTabs = Object.keys(tabContent) as CoachTab[];
 
   return (
     <div className="h-dvh bg-background flex overflow-hidden">
@@ -184,7 +191,7 @@ export default function CoachDashboard() {
               <motion.button
                 key={item.id}
                 onClick={() => {
-                  setActiveTab(item.id);
+                  selectTab(item.id);
                   setNotificationsOpen(false);
                 }}
                 className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-colors w-full ${
@@ -225,35 +232,25 @@ export default function CoachDashboard() {
           avatarUrl={coachMeta?.avatarUrl}
           avatarInitial={coachMeta?.name?.[0] ?? "C"}
           profileActive={activeTab === "profile"}
-          onProfileClick={() => setActiveTab("profile")}
+          onProfileClick={() => selectTab("profile")}
           notificationCount={attentionCounts.notifications}
           right={<SoundToggle inline />}
         />
         <main className="admin-shell flex-1 overflow-y-auto overflow-x-hidden pb-[calc(var(--nav-clear,5rem)+1rem)] md:pb-0">
           <div className="w-full max-w-3xl xl:max-w-4xl mx-auto">
-            <AnimatePresence initial={false} mode="wait">
-              {notificationsOpen ? (
-                <motion.div
-                  key="notifications"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-                >
-                  <NotificationsPanel embedded onClose={() => setNotificationsOpen(false)} />
-                </motion.div>
-              ) : (
-                <motion.div
-                  key={activeTab}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-                >
-                  {tabContent[activeTab]}
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {notificationsOpen ? (
+              <NotificationsPanel embedded onClose={() => setNotificationsOpen(false)} />
+            ) : (
+              // Keep already-visited tabs mounted so switching feels instant.
+              // Inactive panels are hidden but retain their fetched data and scroll position.
+              allTabs.map((tab) =>
+                visitedTabs.has(tab) ? (
+                  <div key={tab} hidden={activeTab !== tab} aria-hidden={activeTab !== tab}>
+                    {tabContent[tab]}
+                  </div>
+                ) : null
+              )
+            )}
           </div>
         </main>
 
@@ -261,7 +258,7 @@ export default function CoachDashboard() {
         <RoleBottomNav<CoachTab>
           active={activeTab}
           onSelect={(tab) => {
-            setActiveTab(tab);
+            selectTab(tab);
             setNotificationsOpen(false);
           }}
           items={navItems.map((n) => ({
