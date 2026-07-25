@@ -1794,11 +1794,8 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
                 <div>
                   <span className="text-muted-foreground text-sm font-medium">
                     Schedule: FMOD {weekPlanFmod ?? "—"} · LMOD {weekPlanLmod ?? "—"}
-                  </span>
-                  <div className="text-muted-foreground text-xs mt-1">
-                    Schedule: FMOD {weekPlanFmod ?? "—"} · LMOD {weekPlanLmod ?? "—"}
                     {fastingTarget > 0 && ` · ${fastingTarget}h fast`}
-                  </div>
+                  </span>
                 </div>
               ) : fastingState === "done" ? (
                 <span className="text-lg font-black text-primary">Fast complete</span>
