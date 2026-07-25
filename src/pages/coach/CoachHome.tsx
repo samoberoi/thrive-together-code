@@ -125,6 +125,7 @@ export default function CoachHome({ onViewPatient, onViewMessages }: { onViewPat
   const [search, setSearch] = useState("");
   const [commissionOpen, setCommissionOpen] = useState(false);
   const [commissionInfo, setCommissionInfo] = useState<CommissionSummary | null>(null);
+  const [reviewsOpen, setReviewsOpen] = useState(false);
 
 
   useEffect(() => {
