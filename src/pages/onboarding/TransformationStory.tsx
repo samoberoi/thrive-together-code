@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight, ArrowRight, TrendingDown } from "lucide-react";
@@ -6,6 +6,16 @@ import SoundToggle from "@/components/SoundToggle";
 
 import soniaBishtImg from "@/assets/sonia-bisht.jpg";
 import muneeruddinImg from "@/assets/muneeruddin-mohammed.jpg";
+
+// Preload the hero photos the moment this module loads so switching stories
+// never shows a white flash while the next image is fetched/decoded.
+if (typeof window !== "undefined") {
+  [soniaBishtImg, muneeruddinImg].forEach((src) => {
+    const img = new Image();
+    img.decoding = "async";
+    img.src = src;
+  });
+}
 
 const stories = [
   {
