@@ -90,15 +90,16 @@ export default function CoachVideoAssignPage({ module }: Props) {
       }
       const { data: profiles } = await supabase
         .from("profiles" as any)
-        .select("user_id, name, avatar_url, package_key")
+        .select("user_id, name, phone, avatar_url, package_key")
         .in("user_id", ids);
       const profileById = new Map<string, any>();
       ((profiles as any[]) ?? []).forEach((p) => profileById.set(p.user_id, p));
       const list: Patient[] = ids.map((uid) => {
         const p = profileById.get(uid);
+        const nm = (p?.name && String(p.name).trim()) || (p?.phone ? `+${String(p.phone).replace(/^\+/, "")}` : "Unnamed patient");
         return {
           user_id: uid,
-          name: p?.name || "Patient",
+          name: nm,
           package_key: p?.package_key ?? null,
           avatar_url: p?.avatar_url ?? null,
         };
