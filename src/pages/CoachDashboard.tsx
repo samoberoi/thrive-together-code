@@ -238,29 +238,19 @@ export default function CoachDashboard() {
         />
         <main className="admin-shell flex-1 overflow-y-auto overflow-x-hidden pb-[calc(var(--nav-clear,5rem)+1rem)] md:pb-0">
           <div className="w-full max-w-3xl xl:max-w-4xl mx-auto">
-            <AnimatePresence initial={false} mode="wait">
-              {notificationsOpen ? (
-                <motion.div
-                  key="notifications"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-                >
-                  <NotificationsPanel embedded onClose={() => setNotificationsOpen(false)} />
-                </motion.div>
-              ) : (
-                <motion.div
-                  key={activeTab}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-                >
-                  {tabContent[activeTab]}
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {notificationsOpen ? (
+              <NotificationsPanel embedded onClose={() => setNotificationsOpen(false)} />
+            ) : (
+              // Keep already-visited tabs mounted so switching feels instant.
+              // Inactive panels are hidden but retain their fetched data and scroll position.
+              allTabs.map((tab) =>
+                visitedTabs.has(tab) ? (
+                  <div key={tab} hidden={activeTab !== tab} aria-hidden={activeTab !== tab}>
+                    {tabContent[tab]}
+                  </div>
+                ) : null
+              )
+            )}
           </div>
         </main>
 
