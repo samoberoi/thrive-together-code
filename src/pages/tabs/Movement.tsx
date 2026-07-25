@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Footprints, Flame, Trophy, Target, Plus, TrendingUp, Sparkles, ChevronRight, CheckCircle2, Lock } from "lucide-react";
+import { Footprints, Flame, Trophy, Target, Plus, TrendingUp, Sparkles, ChevronRight, CheckCircle2, Lock, Watch } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchProfile } from "@/lib/profileService";
 import { getUserStreakStartDate } from "@/lib/globalStreak";
+import { canUseNativeHealth } from "@/lib/healthProvider";
+import { healthSourceLabel } from "@/lib/platformLabels";
+
 import {
   fetchMovementOverview,
   logTodaySteps,
@@ -148,24 +151,33 @@ export default function MovementTab() {
           <Target className="w-5 h-5 text-muted-foreground hidden sm:block" />
         </div>
 
-        <div className="mt-4 flex gap-2">
-          <input
-            type="number"
-            inputMode="numeric"
-            min={0}
-            placeholder="Log steps for today"
-            value={inputSteps}
-            onChange={(e) => setInputSteps(e.target.value)}
-            className="flex-1 h-10 rounded-xl border border-input bg-background px-3 text-sm"
-          />
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="h-10 px-4 rounded-xl bg-[var(--bbdo-red)] text-white text-sm font-bold inline-flex items-center gap-1.5 disabled:opacity-60"
-          >
-            <Plus className="w-4 h-4" /> {saving ? "Saving…" : "Log"}
-          </button>
-        </div>
+        {canUseNativeHealth() ? (
+          <div className="mt-4 rounded-2xl border border-border bg-background px-3 py-2.5 flex items-center gap-2">
+            <Watch className="h-4 w-4 shrink-0 text-primary" />
+            <p className="text-[12px] font-semibold text-muted-foreground">
+              {healthSourceLabel()} syncs your steps automatically
+            </p>
+          </div>
+        ) : (
+          <div className="mt-4 flex gap-2">
+            <input
+              type="number"
+              inputMode="numeric"
+              min={0}
+              placeholder="Log steps for today"
+              value={inputSteps}
+              onChange={(e) => setInputSteps(e.target.value)}
+              className="flex-1 h-10 rounded-xl border border-input bg-background px-3 text-sm"
+            />
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="h-10 px-4 rounded-xl bg-[var(--bbdo-red)] text-white text-sm font-bold inline-flex items-center gap-1.5 disabled:opacity-60"
+            >
+              <Plus className="w-4 h-4" /> {saving ? "Saving…" : "Log"}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* History since contract start */}
