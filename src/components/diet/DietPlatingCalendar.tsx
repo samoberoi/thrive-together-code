@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Calendar, Sunrise, Apple, Moon, Sparkles, Loader2, Shuffle, Pencil, X, Check, Search, Leaf } from "lucide-react";
+import { Calendar, Sunrise, Apple, Moon, Sparkles, Loader2, Shuffle, Pencil, X, Check, Search, Leaf, Lock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   fetchPlatingForUser,
@@ -9,9 +9,11 @@ import {
   updatePlate,
   fetchApprovedFoods,
   fetchCurrentDietPreference,
+  fetchTodayLoggedMealSlots,
   normalizeDietPreference,
   type DietPlating,
   type ApprovedFood,
+  type LoggedMealSlots,
 } from "@/lib/dietPlatingService";
 import { useToast } from "@/hooks/use-toast";
 
@@ -22,6 +24,7 @@ const slotLabel: Record<string, string> = {
   last_meal: "Last Meal",
 };
 const slotOrder = ["first_meal", "mid_bite", "last_meal"];
+const emptyLoggedSlots: LoggedMealSlots = { first_meal: false, mid_bite: false, last_meal: false };
 
 const DIET_PREF_LABEL: Record<string, string> = {
   veg: "Veg",
@@ -45,13 +48,15 @@ export default function DietPlatingCalendar() {
   const [picked, setPicked] = useState<string[]>([]);
   const [foodSearch, setFoodSearch] = useState("");
   const [savingPicker, setSavingPicker] = useState(false);
+  const [loggedSlots, setLoggedSlots] = useState<LoggedMealSlots>(emptyLoggedSlots);
 
   const load = async () => {
     if (!user) return;
     setLoading(true);
-    let [list, pref] = await Promise.all([
+    let [list, pref, slots] = await Promise.all([
       fetchPlatingForUser(user.id),
       fetchCurrentDietPreference(user.id),
+      fetchTodayLoggedMealSlots(user.id),
     ]);
     const normalizedPref = normalizeDietPreference(pref);
     // Auto-regenerate if plates are stale relative to current diet preference,
@@ -77,6 +82,7 @@ export default function DietPlatingCalendar() {
     }
     setPlatings(list);
     setDiet(normalizedPref);
+    setLoggedSlots(slots);
     if (list.length) setActiveDay(dayIndexForToday(list[0].plan_start_date));
     setLoading(false);
   };
@@ -116,11 +122,17 @@ export default function DietPlatingCalendar() {
   const regen = () => user && regenerateForDiet(diet, true);
 
   const doSwap = async (plate: DietPlating) => {
+    if (isPlateLogged(plate)) return;
     try {
       setSwappingId(plate.id);
+      const previousTitle = String((plate.plate_data as any)?.title ?? "");
       const newData = await swapPlate(plate.id);
-      setPlatings((prev) => prev.map((p) => (p.id === plate.id ? { ...p, plate_data: newData } : p)));
-      toast({ title: "Meal shuffled" });
+      setPlatings((prev) => prev.map((p) => (p.id === plate.id ? { ...p, plate_data: newData, calories: p.calories } : p)));
+      const nextTitle = String((newData as any)?.title ?? "");
+      toast({
+        title: nextTitle && nextTitle !== previousTitle ? "Meal changed" : "Meal refreshed",
+        description: nextTitle || undefined,
+      });
     } catch (e: any) {
       toast({ title: "Swap failed", description: e.message, variant: "destructive" });
     } finally {
@@ -129,12 +141,17 @@ export default function DietPlatingCalendar() {
   };
 
   const openPicker = async (plate: DietPlating) => {
+    if (isPlateLogged(plate)) return;
     setPickerFor(plate);
     setPicked(((plate.plate_data as any)?.items as string[]) ?? []);
     setFoodSearch("");
     const list = await fetchApprovedFoods(diet);
     setFoods(list);
   };
+
+  const isToday = Boolean(planStart) && activeDay === dayIndexForToday(planStart ?? "");
+  const isPlateLogged = (plate: DietPlating) =>
+    isToday && Boolean(loggedSlots[plate.meal_slot as keyof LoggedMealSlots]);
 
   const togglePick = (name: string) => {
     setPicked((prev) =>
@@ -197,13 +214,13 @@ export default function DietPlatingCalendar() {
   if (!planStart) return null;
 
   return (
-    <div className="liquid-glass rounded-3xl p-5 space-y-4">
-      <div className="flex items-center justify-between gap-2">
-        <div>
-          <p className="text-foreground font-bold flex items-center gap-2">
+    <div className="liquid-glass rounded-3xl p-4 sm:p-5 space-y-4 overflow-hidden">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-foreground font-bold flex items-center gap-2 no-break">
             <Calendar className="w-4 h-4 text-primary" /> Your 30-Day Plate Plan
           </p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground leading-relaxed no-break">
             Three eats a day — first meal, one mid-day bite, last meal. Tap Shuffle to swap any one.
           </p>
         </div>
@@ -248,50 +265,64 @@ export default function DietPlatingCalendar() {
       </div>
 
       {/* Plates */}
-      <div className="space-y-2">
+      <div className="space-y-3">
         {dayPlates.map((p) => {
           const Icon = slotIcon[p.meal_slot] ?? Sunrise;
           const t = (p.plate_data as any)?.title ?? "Plate";
           const items: string[] = (p.plate_data as any)?.items ?? [];
           const swapping = swappingId === p.id;
+          const logged = isPlateLogged(p);
           return (
-            <div key={p.id} className="rounded-2xl bg-muted/40 p-3">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                  <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
-                    <Icon className="w-4 h-4 text-primary" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+            <div
+              key={p.id}
+              className={`rounded-2xl p-3.5 transition-colors ${
+                logged ? "bg-muted/70 border border-border/80 opacity-75" : "bg-muted/40"
+              }`}
+            >
+              <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${logged ? "bg-muted text-muted-foreground" : "bg-primary/15 text-primary"}`}>
+                  <Icon className="w-4 h-4" />
+                </div>
+
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide leading-tight no-break">
                       {slotLabel[p.meal_slot] ?? p.meal_slot}
                     </p>
-                    <p className="text-foreground text-sm font-semibold truncate">{t}</p>
+                    {logged && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-background/80 border border-border px-2 py-0.5 text-[9px] font-bold text-muted-foreground shrink-0">
+                        <Lock className="w-2.5 h-2.5" /> Logged
+                      </span>
+                    )}
                   </div>
+                  <p className="text-foreground text-[15px] font-semibold leading-snug no-break line-clamp-2">{t}</p>
+                  {p.calories && <p className="text-[11px] text-muted-foreground font-medium mt-0.5">{p.calories} kcal</p>}
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  {p.calories && <span className="text-xs text-muted-foreground font-medium">{p.calories} kcal</span>}
+
+                <div className="grid gap-1.5 justify-items-end shrink-0">
                   <button
                     onClick={() => doSwap(p)}
-                    disabled={swapping}
-                    className="text-[10px] font-bold text-primary px-2 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 inline-flex items-center gap-1 disabled:opacity-60"
+                    disabled={swapping || logged}
+                    className="no-pill h-8 min-w-[86px] justify-center text-[11px] font-bold text-primary px-2.5 rounded-full bg-primary/10 hover:bg-primary/20 inline-flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {swapping ? <Loader2 className="w-3 h-3 animate-spin" /> : <Shuffle className="w-3 h-3" />}
                     Shuffle
                   </button>
                   <button
                     onClick={() => openPicker(p)}
-                    className="text-[10px] font-bold text-foreground px-2 py-1 rounded-lg bg-muted hover:bg-muted/70 inline-flex items-center gap-1"
+                    disabled={logged}
+                    className="no-pill h-8 min-w-[86px] justify-center text-[11px] font-bold text-foreground px-2.5 rounded-full bg-background/80 border border-border hover:bg-muted inline-flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Pencil className="w-3 h-3" /> Choose
                   </button>
                 </div>
               </div>
               {items.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-2 pl-11">
+                <div className="flex flex-wrap gap-1.5 mt-3 pl-[52px] max-[380px]:pl-0">
                   {items.map((it, i) => (
                     <span
                       key={i}
-                      className="text-[10px] px-2 py-0.5 rounded-full bg-background border border-border text-foreground"
+                      className="text-[11px] leading-tight px-2.5 py-1 rounded-full bg-background border border-border text-foreground no-break"
                     >
                       {it}
                     </span>

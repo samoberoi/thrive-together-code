@@ -10,6 +10,12 @@ export interface DietPlating {
   calories: number | null;
 }
 
+export interface LoggedMealSlots {
+  first_meal: boolean;
+  mid_bite: boolean;
+  last_meal: boolean;
+}
+
 export function normalizeDietPreference(value: string | null | undefined): string {
   const v = (value || "").toLowerCase().trim().replace(/[-\s]/g, "_");
   if (!v || v === "mixed") return "veg";
@@ -53,6 +59,37 @@ export async function swapPlate(plateId: string) {
   });
   if (error) throw error;
   return data as any;
+}
+
+export async function fetchTodayLoggedMealSlots(userId: string): Promise<LoggedMealSlots> {
+  const today = new Date();
+  const dateKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  const start = new Date(today);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(today);
+  end.setHours(23, 59, 59, 999);
+
+  const [{ data: tracking }, { data: photos }] = await Promise.all([
+    supabase
+      .from("fasting_tracking" as any)
+      .select("fmod_actual_time,lmod_actual_time")
+      .eq("user_id", userId)
+      .eq("date", dateKey)
+      .maybeSingle(),
+    supabase
+      .from("meal_photos" as any)
+      .select("meal_type,logged_at")
+      .eq("user_id", userId)
+      .gte("logged_at", start.toISOString())
+      .lte("logged_at", end.toISOString()),
+  ]);
+
+  const photoTypes = new Set(((photos as any[]) ?? []).map((row) => String(row.meal_type ?? "").toLowerCase()));
+  return {
+    first_meal: Boolean((tracking as any)?.fmod_actual_time) || photoTypes.has("fmod") || photoTypes.has("first_meal"),
+    mid_bite: photoTypes.has("mid_bite") || photoTypes.has("snack"),
+    last_meal: Boolean((tracking as any)?.lmod_actual_time) || photoTypes.has("lmod") || photoTypes.has("last_meal"),
+  };
 }
 
 export interface ApprovedFood {
