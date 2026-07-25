@@ -398,7 +398,6 @@ export default function Auth() {
                         <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border">
                           <Search className="w-4 h-4 text-muted-foreground shrink-0" />
                           <input
-                            autoFocus
                             value={countrySearch}
                             onChange={(e) => setCountrySearch(e.target.value)}
                             placeholder="Search country or code"
