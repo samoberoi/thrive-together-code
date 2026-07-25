@@ -2295,7 +2295,6 @@ function DiabetesSlot({
             <label className="block rounded-2xl bg-muted/45 px-4 py-4 focus-within:ring-2 focus-within:ring-primary/25">
               <div className="flex flex-col items-center justify-center gap-1 min-h-[84px]">
                 <input
-                  autoFocus
                   inputMode="decimal"
                   type="number"
                   value={val}

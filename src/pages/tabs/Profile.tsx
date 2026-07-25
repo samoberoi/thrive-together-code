@@ -1406,7 +1406,6 @@ function GlucoseSlot({ log, slot, onSaved }: { log: HealthLog; slot: "morning" |
       <p className="text-muted-foreground text-xs mb-1">{label}</p>
       <div className="flex items-center gap-1">
         <input
-          autoFocus
           inputMode="decimal"
           value={val}
           onChange={(e) => setVal(e.target.value)}
