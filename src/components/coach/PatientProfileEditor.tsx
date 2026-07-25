@@ -1,4 +1,5 @@
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import EditProfile from "@/components/EditProfile";
 
 interface Props {
@@ -11,16 +12,27 @@ interface Props {
 
 /**
  * Coach-facing patient profile editor.
- * Renders the exact same UI as the end-user Edit Profile screen,
- * but targets the selected patient and requires a confirmation
- * before overriding their data.
+ * Renders full-screen (not a cramped centered dialog) so the
+ * EditProfile UI has room to breathe on every device.
  */
 export default function PatientProfileEditor({ open, onClose, patientUserId, patientName, onSaved }: Props) {
-  if (!open) return null;
-  return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="p-0 gap-0 max-w-[560px] w-full sm:w-[560px] h-[92vh] max-h-[92vh] overflow-hidden">
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [open]);
 
+  if (!open) return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 bg-background overflow-y-auto overscroll-contain"
+      style={{ zIndex: 10000 }}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className="mx-auto w-full max-w-[720px] min-h-full">
         <EditProfile
           coachMode
           targetUserId={patientUserId}
@@ -28,7 +40,8 @@ export default function PatientProfileEditor({ open, onClose, patientUserId, pat
           onBack={onClose}
           onSaved={onSaved}
         />
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>,
+    document.body,
   );
 }

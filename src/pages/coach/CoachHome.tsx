@@ -108,7 +108,7 @@ const ALL_ACTIVITIES: ActivityKey[] = [
   "glucose", "bp", "weight", "fasting", "supplements", "exercise", "yoga", "diet",
 ];
 
-export default function CoachHome({ onViewPatient }: { onViewPatient?: () => void; onViewFasting?: () => void }) {
+export default function CoachHome({ onViewPatient, onViewMessages }: { onViewPatient?: () => void; onViewFasting?: () => void; onViewMessages?: () => void }) {
   const { user } = useAuth();
   const [coach, setCoach] = useState<Coach | null>(null);
   const [patients, setPatients] = useState<PatientSummary[]>([]);
@@ -544,7 +544,11 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
             </p>
           </div>
         </button>
-        <div className="liquid-glass rounded-2xl p-2 min-w-0 h-[66px] flex items-center gap-2 text-left">
+        <button
+          onClick={onViewMessages}
+          className="liquid-glass rounded-2xl p-2 hover:bg-accent/40 transition-colors min-w-0 h-[66px] flex items-center gap-2 text-left"
+          title="Open messages"
+        >
           <Star className="w-5 h-5 text-warning fill-warning shrink-0" />
           <div className="min-w-0">
             <p className="stat-number text-lg text-foreground leading-none">{Number(coach?.avg_rating ?? 0).toFixed(1)}</p>
@@ -552,7 +556,7 @@ export default function CoachHome({ onViewPatient }: { onViewPatient?: () => voi
               Rating{coach?.total_ratings ? ` · ${coach.total_ratings}` : ""}
             </p>
           </div>
-        </div>
+        </button>
         <button
           onClick={() => setSchedulePickerOpen(true)}
           className="liquid-glass rounded-2xl p-2 hover:bg-accent/40 transition-colors min-w-0 h-[66px] flex items-center gap-2 text-left"
