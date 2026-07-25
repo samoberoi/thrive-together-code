@@ -320,25 +320,21 @@ export default function CoachLabTests() {
                   onClick={() => setExpandedPatient(isExpanded && !isAssigning ? null : patient.user_id)}
                   className="w-full text-left p-4 sm:p-5"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center overflow-hidden shrink-0">{patient.avatar_url ? <img src={patient.avatar_url} alt="" className="w-10 h-10 rounded-2xl object-cover" /> : <span className="text-primary font-bold text-sm">{(patient.name ?? "?")[0].toUpperCase()}</span>}</div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-bold text-foreground text-sm truncate">{patient.name || "Unnamed"}</h3>
-                          {planLabel && <Badge variant="outline" className="text-[9px] border-primary/30 text-primary bg-primary/5">{planLabel}</Badge>}
-                        </div>
-                        <p className="text-[10px] text-muted-foreground">
-                          {patient.phone || "No phone"}
-                          {recs.length > 0 && <> · {assignedCodes.length} test{assignedCodes.length === 1 ? "" : "s"}</>}
-                          {patientReports.length > 0 && <> · {patientReports.length} report{patientReports.length === 1 ? "" : "s"}</>}
-                        </p>
-                      </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-2xl bg-primary/10 flex items-center justify-center overflow-hidden shrink-0">{patient.avatar_url ? <img src={patient.avatar_url} alt="" className="w-11 h-11 rounded-2xl object-cover" /> : <span className="text-primary font-bold text-sm">{(patient.name ?? "?")[0].toUpperCase()}</span>}</div>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-semibold text-foreground text-[15px] leading-tight truncate">{patient.name || "Unnamed"}</h3>
+                      <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                        {patient.phone || "No phone"}
+                        {recs.length > 0 && <> · {assignedCodes.length} test{assignedCodes.length === 1 ? "" : "s"}</>}
+                        {patientReports.length > 0 && <> · {patientReports.length} report{patientReports.length === 1 ? "" : "s"}</>}
+                      </p>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Badge variant="outline" className={`text-[10px] ${statusClass(statusLabel)}`}>{statusLabel}</Badge>
-                      {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
-                    </div>
+                    {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" /> : <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />}
+                  </div>
+                  <div className="mt-3 flex items-center gap-2 flex-wrap">
+                    {planLabel && <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary/5 text-primary text-[10px] font-semibold px-2 py-0.5 whitespace-nowrap">{planLabel}</span>}
+                    <span className={`inline-flex items-center rounded-full border text-[10px] font-semibold px-2 py-0.5 whitespace-nowrap normal-case tracking-normal ${statusClass(statusLabel)}`}>{statusLabel}</span>
                   </div>
                 </button>
 
