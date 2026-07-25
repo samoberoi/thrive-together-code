@@ -777,9 +777,11 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
   }
 
   // Patient list view
-  const filteredPatients = statusFilter === "all" 
-    ? patients 
-    : patients.filter(p => patientStatuses[p.user_id]?.status === statusFilter);
+  const filteredPatients = patients.filter((p) => {
+    if (statusFilter !== "all" && patientStatuses[p.user_id]?.status !== statusFilter) return false;
+    if (packageFilter && p.plan_name !== packageFilter) return false;
+    return true;
+  });
 
   const statusCounts = {
     all: patients.length,
