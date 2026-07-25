@@ -82,7 +82,7 @@ export default function CoachDashboard() {
   useEffect(() => {
     const tab = searchParams.get("tab") as CoachTab | null;
     if (tab && navItems.some((item) => item.id === tab)) {
-      setActiveTab(tab);
+      selectTab(tab);
       setNotificationsOpen(false);
     }
   }, [searchParams]);
