@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Send, Loader2, Zap, Check, CheckCheck, Sparkles } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -117,15 +118,22 @@ export default function PatientChat({ coach, onBack }: PatientChatProps) {
   const starters = PREDEFINED_QUESTIONS.slice(0, 4);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-[60vh]">
+    return createPortal(
+      <div
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-[#FCFCFD]"
+        style={{ paddingTop: "env(safe-area-inset-top)" }}
+      >
         <Loader2 className="w-6 h-6 text-primary animate-spin" />
-      </div>
+      </div>,
+      document.body,
     );
   }
 
-  return (
-    <div className="fixed inset-0 z-[60] flex flex-col bg-[#FCFCFD]" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[100] flex flex-col bg-[#FCFCFD]"
+      style={{ paddingTop: "env(safe-area-inset-top)" }}
+    >
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white/85 backdrop-blur-xl border-b border-border/60">
         <div className="max-w-3xl mx-auto flex items-center gap-3 px-3 md:px-4 py-3">
@@ -345,6 +353,7 @@ export default function PatientChat({ coach, onBack }: PatientChatProps) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
