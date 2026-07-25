@@ -69,8 +69,27 @@ function PostCard({
   const [commentText, setCommentText] = useState("");
   const [loadingComments, setLoadingComments] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [localLikeCount, setLocalLikeCount] = useState(post.like_count);
+  const [localLiked, setLocalLiked] = useState(isLiked);
+  const [localLikeCount, setLocalLikeCount] = useState(post.like_count || 0);
+  const [likeBusy, setLikeBusy] = useState(false);
+  const [likersPreview, setLikersPreview] = useState<PostLiker[]>([]);
+  const [showLikers, setShowLikers] = useState(false);
+  const [allLikers, setAllLikers] = useState<PostLiker[] | null>(null);
   const [localCommentCount, setLocalCommentCount] = useState(post.comment_count);
+
+  // Sync when parent state changes (e.g. after refetch)
+  useEffect(() => { setLocalLiked(isLiked); }, [isLiked]);
+  useEffect(() => { setLocalLikeCount(post.like_count || 0); }, [post.like_count]);
+
+  // Load a small preview of likers so we can show "Liked by Ravi and 4 others"
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const list = await fetchPostLikers(post.id, 3);
+      if (alive) setLikersPreview(list);
+    })();
+    return () => { alive = false; };
+  }, [post.id, localLikeCount]);
 
   const loadComments = useCallback(async () => {
     setLoadingComments(true);
@@ -85,9 +104,27 @@ function PostCard({
     setShowComments(!showComments);
   };
 
-  const handleLike = () => {
-    setLocalLikeCount((c) => (isLiked ? c - 1 : c + 1));
-    onToggleLike(post.id);
+  const handleLike = async () => {
+    if (likeBusy) return;
+    setLikeBusy(true);
+    const nextLiked = !localLiked;
+    // Optimistic: flip and clamp
+    setLocalLiked(nextLiked);
+    setLocalLikeCount((c) => Math.max(0, c + (nextLiked ? 1 : -1)));
+    try {
+      await onToggleLike(post.id);
+    } finally {
+      setLikeBusy(false);
+    }
+  };
+
+  const openLikers = async () => {
+    if (localLikeCount === 0) return;
+    setShowLikers(true);
+    if (allLikers === null) {
+      const list = await fetchPostLikers(post.id, 100);
+      setAllLikers(list);
+    }
   };
 
   const handleSubmitComment = async () => {
@@ -103,6 +140,34 @@ function PostCard({
 
   const tagInfo = getPostTag(post.post_type, post.achievement_data);
   const timeAgo = formatDistanceToNow(new Date(post.created_at), { addSuffix: true });
+
+  // Instagram-style "Liked by …" line
+  const likedByLine = (() => {
+    if (localLikeCount === 0 || likersPreview.length === 0) return null;
+    const first = likersPreview[0];
+    const rest = Math.max(0, localLikeCount - 1);
+    return (
+      <button
+        type="button"
+        onClick={openLikers}
+        className="mt-2 flex items-center gap-2 text-left"
+      >
+        <div className="flex -space-x-1.5">
+          {likersPreview.slice(0, 3).map((l) => (
+            <div key={l.user_id} className="w-5 h-5 rounded-full ring-2 ring-card bg-muted overflow-hidden flex items-center justify-center">
+              {l.avatar_url
+                ? <img src={l.avatar_url} alt="" className="w-full h-full object-cover" />
+                : <span className="text-[9px] font-bold text-foreground">{(l.name || "?")[0]}</span>}
+            </div>
+          ))}
+        </div>
+        <span className="text-xs text-muted-foreground truncate">
+          Liked by <span className="font-semibold text-foreground">{first.name}</span>
+          {rest > 0 && <> and <span className="font-semibold text-foreground">{rest} other{rest === 1 ? "" : "s"}</span></>}
+        </span>
+      </button>
+    );
+  })();
 
   return (
     <motion.div
@@ -156,16 +221,63 @@ function PostCard({
       )}
 
       <div className="flex items-center gap-5 mt-4 pt-3 border-t border-border/60">
-        <motion.button onClick={handleLike} className="flex items-center gap-1.5" whileTap={{ scale: 0.96 }}
+        <motion.button onClick={handleLike} disabled={likeBusy} className="flex items-center gap-1.5 disabled:opacity-70" whileTap={{ scale: 0.96 }}
           transition={{ duration: 0.12, ease: EASE }}>
-          <Heart className={`w-5 h-5 transition-colors ${isLiked ? "text-[var(--bbdo-red)] fill-[var(--bbdo-red)]" : "text-muted-foreground"}`} strokeWidth={1.6} />
-          <span className={`text-sm font-semibold ${isLiked ? "text-[var(--bbdo-red)]" : "text-muted-foreground"}`}>{localLikeCount}</span>
+          <Heart className={`w-5 h-5 transition-colors ${localLiked ? "text-[var(--bbdo-red)] fill-[var(--bbdo-red)]" : "text-muted-foreground"}`} strokeWidth={1.6} />
+          <span className={`text-sm font-semibold ${localLiked ? "text-[var(--bbdo-red)]" : "text-muted-foreground"}`}>{localLikeCount}</span>
         </motion.button>
         <button className="flex items-center gap-1.5" onClick={handleToggleComments}>
           <MessageCircle className={`w-5 h-5 transition-colors ${showComments ? "text-[var(--bbdo-blue)]" : "text-muted-foreground"}`} strokeWidth={1.6} />
           <span className={`text-sm font-semibold ${showComments ? "text-[var(--bbdo-blue)]" : "text-muted-foreground"}`}>{localCommentCount}</span>
         </button>
       </div>
+
+      {likedByLine}
+
+      <AnimatePresence>
+        {showLikers && (
+          <motion.div
+            className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/50"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={() => setShowLikers(false)}
+          >
+            <motion.div
+              className="w-full sm:max-w-sm bg-card rounded-t-3xl sm:rounded-3xl border border-border/60 max-h-[70vh] flex flex-col"
+              initial={{ y: 40 }} animate={{ y: 0 }} exit={{ y: 40 }}
+              transition={{ duration: 0.22, ease: EASE }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between px-5 py-4 border-b border-border/60">
+                <p className="font-bold text-foreground">Likes</p>
+                <button onClick={() => setShowLikers(false)} className="text-muted-foreground">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto">
+                {allLikers === null ? (
+                  <div className="py-8 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
+                ) : allLikers.length === 0 ? (
+                  <p className="text-center text-sm text-muted-foreground py-8">No likes yet</p>
+                ) : (
+                  <ul className="divide-y divide-border/60">
+                    {allLikers.map((l) => (
+                      <li key={l.user_id} className="flex items-center gap-3 px-5 py-3">
+                        <div className="w-9 h-9 rounded-full bg-muted overflow-hidden flex items-center justify-center flex-shrink-0">
+                          {l.avatar_url
+                            ? <img src={l.avatar_url} alt="" className="w-full h-full object-cover" />
+                            : <span className="text-xs font-bold text-foreground">{(l.name || "?")[0]}</span>}
+                        </div>
+                        <span className="text-sm font-medium text-foreground truncate">{l.name}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
 
       <AnimatePresence>
         {showComments && (
