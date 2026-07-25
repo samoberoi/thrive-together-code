@@ -487,13 +487,26 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
                 {displayStatus}
               </Badge>
             </div>
-            <ul className="space-y-1">
-              {items.map((t, i) => (
-                <li key={i} className="flex justify-between text-sm">
-                  <span>{t.product_name}</span>
-                  <span className="text-muted-foreground">{priceOf(t) > 0 ? `₹${priceOf(t).toLocaleString("en-IN")}` : "-"}</span>
-                </li>
-              ))}
+            <ul className="space-y-2">
+              {items.map((t, i) => {
+                const count = t.parameters_count || (Array.isArray(t?.raw_data?.testsIncluded) ? t.raw_data.testsIncluded.length : 0);
+                return (
+                  <li key={i} className="rounded-xl bg-muted/40 ring-1 ring-border p-2.5 flex items-center justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold leading-tight break-words">{t.product_name}</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        {count > 0 ? `${count} parameters` : "Curated panel"} · {t.fasting_required ? "fasting" : "no fasting"}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-sm font-black tabular-nums">{priceOf(t) > 0 ? `₹${priceOf(t).toLocaleString("en-IN")}` : "-"}</span>
+                      <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => setDetailsTest(t)}>
+                        <Eye className="w-3.5 h-3.5 mr-1" /> Details
+                      </Button>
+                    </div>
+                  </li>
+                );
+              })}
               {(r.product_codes || []).filter((c) => !testsByCode[c]).map((c) => (
                 <li key={c} className="text-sm text-muted-foreground">{c}</li>
               ))}
