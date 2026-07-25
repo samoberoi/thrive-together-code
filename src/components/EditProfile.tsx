@@ -697,7 +697,7 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
       marital_status: maritalStatus || null,
       anniversary_date: anniversaryDate || null,
       spouse_name: spouseName || null,
-      lifestyle: lifestyle,
+      lifestyle: { ...lifestyle, diet: derivedLifestyleDiet },
       clinical: clinical,
       deep_profiling: deepProfiling,
       assessment: assessment as any,
