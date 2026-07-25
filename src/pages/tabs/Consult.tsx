@@ -176,16 +176,16 @@ export default function Consult() {
                   +91 {coach.phone}
                 </a>
               )}
-              <div className="flex items-center gap-3 mt-1.5">
-                <div className="flex items-center gap-1">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1.5 text-xs text-muted-foreground">
+                <span className="inline-flex items-center gap-1 whitespace-nowrap">
                   <Star className="w-3.5 h-3.5 text-warning fill-warning" />
-                  <span className="text-foreground text-xs font-bold">{coach.avg_rating}</span>
-                  <span className="text-muted-foreground text-xs">({coach.total_ratings})</span>
-                </div>
-                <span className="text-muted-foreground text-xs">•</span>
-                <span className="text-muted-foreground text-xs">{coach.years_experience} yrs exp</span>
-                <span className="text-muted-foreground text-xs">•</span>
-                <span className="text-muted-foreground text-xs">{coach.total_consultations.toLocaleString()} sessions</span>
+                  <span className="text-foreground font-bold">{Number(coach.avg_rating).toFixed(1)}</span>
+                  <span>({coach.total_ratings})</span>
+                </span>
+                <span>•</span>
+                <span className="whitespace-nowrap">{coach.years_experience} yrs exp</span>
+                <span>•</span>
+                <span className="whitespace-nowrap">{coach.total_consultations.toLocaleString()} sessions</span>
               </div>
             </div>
           </div>
