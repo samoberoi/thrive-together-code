@@ -54,7 +54,6 @@ export default function CoachDashboard() {
 
   const tabAttentionCounts: Partial<Record<CoachTab, number>> = {
     messages: attentionCounts.coachMessages,
-    requests: attentionCounts.consultationRequests,
   };
 
   useEffect(() => {
