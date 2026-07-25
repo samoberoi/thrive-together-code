@@ -190,11 +190,11 @@ export default function LabBookingDialog({ open, onClose, productCodes, recommen
             <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <div>
+            <div className="min-w-0">
               <Label>Age</Label>
               <Input type="number" value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value })} />
             </div>
-            <div>
+            <div className="min-w-0">
               <Label>Gender</Label>
               <select className="h-10 w-full rounded-md border border-input bg-background px-3 text-base"
                 value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })}>
