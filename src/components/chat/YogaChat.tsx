@@ -369,6 +369,7 @@ export default function YogaChat({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
