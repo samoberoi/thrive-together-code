@@ -139,11 +139,33 @@ export async function fetchAssignedCoach(userId: string): Promise<Coach | null> 
     };
   };
 
-  const { data: resolved, error: rpcError } = await supabase.rpc("get_assigned_coach" as any, { _user_id: userId });
-  const resolvedRow = Array.isArray(resolved) ? resolved[0] : resolved;
-  const rpcCoach = normalizeCoach(resolvedRow);
+  const loadResolvedCoach = async (): Promise<Coach | null> => {
+    const { data: resolved, error } = await supabase.rpc("get_assigned_coach" as any, { _user_id: userId });
+    if (error) console.warn("Assigned coach resolver failed, falling back:", error);
+    const resolvedRow = Array.isArray(resolved) ? resolved[0] : resolved;
+    return normalizeCoach(resolvedRow);
+  };
+
+  const rpcCoach = await loadResolvedCoach();
   if (rpcCoach) return rpcCoach;
-  if (rpcError) console.warn("Assigned coach resolver failed, falling back:", rpcError);
+
+  // If a paid coach plan exists but the assignment row is missing, repair it once.
+  try {
+    const { data: activeSub } = await supabase
+      .from("subscriptions" as any)
+      .select("plan_id")
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .order("started_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const planId = (activeSub as any)?.plan_id as string | undefined;
+    if (planId && !["foundation", "starter"].includes(planId)) {
+      await autoAssignCoach(userId, planId);
+      const repairedCoach = await loadResolvedCoach();
+      if (repairedCoach) return repairedCoach;
+    }
+  } catch {}
 
   const byNameFallback = async (): Promise<Coach | null> => {
     const { data: profile } = await supabase
