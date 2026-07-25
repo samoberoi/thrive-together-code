@@ -34,6 +34,20 @@ export const isNative = () =>
 
 let installed = false;
 
+function lockNativeViewportScale(): void {
+  if (typeof document === "undefined") return;
+  const viewport = document.querySelector<HTMLMetaElement>('meta[name="viewport"]');
+  const content = "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover";
+  if (viewport) {
+    viewport.setAttribute("content", content);
+    return;
+  }
+  const meta = document.createElement("meta");
+  meta.name = "viewport";
+  meta.content = content;
+  document.head.appendChild(meta);
+}
+
 /**
  * Install platform class + keyboard-height tracker. Call once from main.tsx.
  * Idempotent.
@@ -45,6 +59,7 @@ export function installPlatformAdapter(): void {
   const root = document.documentElement;
   const p = getPlatform();
   root.classList.add(`bb-${p}`);
+  if (isNative()) lockNativeViewportScale();
 
   // Seed CSS vars so calc() never falls back to unresolved values.
   const setVar = (k: string, v: string) => root.style.setProperty(k, v);

@@ -633,13 +633,30 @@
   /* Minimum 44×44 tap targets (Apple HIG / WCAG 2.5.5) */
   .tap-44 { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
 
-  /* Prevent iOS Safari zoom-on-focus for text inputs (needs ≥16px font-size) */
-  @media (max-width: 767px) {
+  /* Prevent mobile WebView/Safari zoom-on-focus globally.
+     Utility classes like text-sm/text-xs are class selectors and were beating
+     the old element rule, causing iOS/Android to zoom into textareas/inputs
+     (chat, reviews, forms) and leave the app visually enlarged. */
+  @media (max-width: 767px), (pointer: coarse) {
     input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
     select,
-    textarea {
-      font-size: 16px;
+    textarea,
+    [contenteditable="true"] {
+      font-size: 16px !important;
+      -webkit-text-size-adjust: 100% !important;
+      text-size-adjust: 100% !important;
+      touch-action: manipulation;
     }
+  }
+
+  html.bb-native input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+  html.bb-native select,
+  html.bb-native textarea,
+  html.bb-native [contenteditable="true"] {
+    font-size: 16px !important;
+    -webkit-text-size-adjust: 100% !important;
+    text-size-adjust: 100% !important;
+    touch-action: manipulation;
   }
 
   /* Clamp helpers for user-generated strings */
