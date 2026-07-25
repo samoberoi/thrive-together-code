@@ -24,7 +24,7 @@ import { PushNotifications } from "@capacitor/push-notifications";
 import { getNotificationSoundSettings } from "@/lib/notificationSoundService";
 import { playNotificationSound } from "@/lib/soundEngine";
 import { fireRealtimeHealthNotificationAlert } from "@/lib/healthAlerts";
-import { isNativePushSupported } from "@/lib/nativePush";
+import { isNativePushSupported, registerNativePush } from "@/lib/nativePush";
 import { resolvePostAuthRoute, resolveProtectedAccess } from "@/lib/accessControl";
 
 // Eager: splash + onboarding entry (paint instantly on cold start)
@@ -216,6 +216,9 @@ function GlobalRealtimeAlerts() {
           // Clear the OS notification tray and resync badge to the real count.
           void PushNotifications.removeAllDeliveredNotifications().catch(() => {});
           void syncBadge();
+          void registerNativePush(user.id).catch((error) => {
+            console.warn("[push] resume registration failed", error);
+          });
         }
       }).then((l) => {
         appListener = l;
