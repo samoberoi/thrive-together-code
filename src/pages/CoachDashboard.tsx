@@ -137,7 +137,7 @@ export default function CoachDashboard() {
   }
 
   const tabContent: Record<CoachTab, React.ReactNode> = {
-    home: <CoachHome onViewPatient={() => setActiveTab("patients")} onViewFasting={() => setActiveTab("fasting")} onViewMessages={() => setActiveTab("messages")} />,
+    home: <CoachHome onViewPatient={() => selectTab("patients")} onViewFasting={() => selectTab("fasting")} onViewMessages={() => selectTab("messages")} />,
     patients: <CoachPatients onChatWithPatient={handleChatWithPatient} />,
     meetings: <CoachMeetings />,
     requests: <CoachConsultationRequests />,
@@ -150,6 +150,7 @@ export default function CoachDashboard() {
     labtests: <CoachLabTests />,
     profile: <CoachProfile onSignOut={handleSignOut} onReplayTour={handleReplayTour} />,
   };
+  const allTabs = Object.keys(tabContent) as CoachTab[];
 
   return (
     <div className="h-dvh bg-background flex overflow-hidden">
