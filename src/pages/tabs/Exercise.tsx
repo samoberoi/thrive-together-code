@@ -377,8 +377,9 @@ export default function ExerciseTab({ packageKey }: Props) {
   const filtered = useMemo(() => {
     const assignedSet = isCoachManaged && assignedItems ? new Set(assignedItems) : null;
     return exercises
-      .filter((e) => visibleTiers.includes(e.tier as ExerciseTier))
-      .filter((e) => (assignedSet ? assignedSet.has(e.id) : true))
+      // Coach-assigned items bypass the tier gate — if the coach explicitly
+      // assigned it, the user gets to see it regardless of their plan tier.
+      .filter((e) => (assignedSet ? assignedSet.has(e.id) : visibleTiers.includes(e.tier as ExerciseTier)))
       .filter((e) => (activeTier === "all" ? true : e.tier === activeTier))
       .filter((e) => (activeCat === "all" ? true : e.category_id === activeCat))
       .sort((a, b) => (a.tier - b.tier) || (a.sort_order - b.sort_order));
@@ -594,10 +595,10 @@ export default function ExerciseTab({ packageKey }: Props) {
 
       {/* Tier tabs */}
       {visibleTiers.length >= 1 && (
-        <div className="flex gap-2 overflow-x-auto -mx-1 px-1">
+        <div className="flex gap-2 overflow-x-auto -mx-1 px-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           <button
             onClick={() => setActiveTier("all")}
-            className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
+            className={`shrink-0 px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
               activeTier === "all"
                 ? "bg-[var(--bbdo-blue)] text-white shadow-card"
                 : "bg-[var(--bbdo-surface)] text-muted-foreground hover:text-foreground"
@@ -609,7 +610,7 @@ export default function ExerciseTab({ packageKey }: Props) {
             <button
               key={t}
               onClick={() => setActiveTier(t)}
-              className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
+              className={`shrink-0 px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
                 activeTier === t
                   ? "text-white shadow-card"
                   : "bg-[var(--bbdo-surface)] text-muted-foreground hover:text-foreground"
@@ -623,10 +624,10 @@ export default function ExerciseTab({ packageKey }: Props) {
       )}
 
       {/* Category filter */}
-      <div className="flex gap-2 overflow-x-auto -mx-1 px-1">
+      <div className="flex gap-2 overflow-x-auto -mx-1 px-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         <button
           onClick={() => setActiveCat("all")}
-          className={`px-3 py-1.5 rounded-full text-xs font-bold ${
+          className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap ${
             activeCat === "all"
               ? "bg-[var(--bbdo-blue)] text-white"
               : "bg-[var(--bbdo-surface)] text-muted-foreground"
@@ -638,7 +639,7 @@ export default function ExerciseTab({ packageKey }: Props) {
           <button
             key={c.id}
             onClick={() => setActiveCat(c.id)}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap ${
+            className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap ${
               activeCat === c.id
                 ? "bg-[var(--bbdo-blue)] text-white"
                 : "bg-[var(--bbdo-surface)] text-muted-foreground"
