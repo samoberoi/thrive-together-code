@@ -73,15 +73,40 @@ export default function CoachFasting() {
       const trackingMap: Record<string, FastingTracking[]> = {};
       const streakMap: Record<string, { currentStreak: number; longestStreak: number }> = {};
 
-      for (const uid of userIds) {
-        const { data: up } = await supabase
-          .from("user_protocols" as any).select("*").eq("user_id", uid)
-          .eq("status", "active").order("created_at", { ascending: false }).limit(1).maybeSingle();
-        protocolMap[uid] = (up as any) ?? null;
+      if (userIds.length > 0) {
+        // Batch: one query for all active user_protocols, one for all tracking in the last 60 days.
+        const sinceDate = new Date();
+        sinceDate.setDate(sinceDate.getDate() - 60);
+        const sinceStr = sinceDate.toISOString().split("T")[0];
 
-        const tracking = await fetchTrackingForUser(uid, 60);
-        trackingMap[uid] = tracking;
-        streakMap[uid] = calculateStreak(tracking);
+        const [{ data: allProtocols }, { data: allTracking }] = await Promise.all([
+          supabase
+            .from("user_protocols" as any)
+            .select("*")
+            .in("user_id", userIds)
+            .eq("status", "active")
+            .order("created_at", { ascending: false }),
+          supabase
+            .from("fasting_tracking" as any)
+            .select("*")
+            .in("user_id", userIds)
+            .gte("date", sinceStr)
+            .order("date", { ascending: false }),
+        ]);
+
+        for (const uid of userIds) {
+          protocolMap[uid] = null;
+          trackingMap[uid] = [];
+        }
+        for (const up of ((allProtocols as any[]) || [])) {
+          if (protocolMap[up.user_id] === null) protocolMap[up.user_id] = up as any;
+        }
+        for (const t of ((allTracking as any[]) || [])) {
+          (trackingMap[t.user_id] ||= []).push(t as any);
+        }
+        for (const uid of userIds) {
+          streakMap[uid] = calculateStreak(trackingMap[uid]);
+        }
       }
       setPatientProtocols(protocolMap);
       setPatientTracking(trackingMap);
