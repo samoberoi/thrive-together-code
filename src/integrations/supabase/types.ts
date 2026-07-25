@@ -5351,6 +5351,27 @@ export type Database = {
         Args: { _diet?: string; _user_id: string }
         Returns: number
       }
+      get_assigned_coach: {
+        Args: { _user_id: string }
+        Returns: {
+          avatar_url: string
+          avg_rating: number
+          bio: string
+          city: string
+          coach_type: Database["public"]["Enums"]["coach_type"]
+          description: string
+          id: string
+          is_active: boolean
+          languages: string[]
+          name: string
+          phone: string
+          qualification: string
+          specialization: string
+          total_consultations: number
+          total_ratings: number
+          years_experience: number
+        }[]
+      }
       get_coach_commission_summary: {
         Args: { _coach_id: string }
         Returns: {
