@@ -2,26 +2,39 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, ArrowRight, Leaf, Cigarette, Wine, Beer, Ban, Sofa, PersonStanding, Bike, Dumbbell, Salad, Drumstick, Sprout } from "lucide-react";
+import { ArrowLeft, ArrowRight, Leaf, Cigarette, Wine, Beer, Ban, Sofa, PersonStanding, Bike, Dumbbell, Salad, Drumstick, Sprout, Egg, Utensils } from "lucide-react";
 import { saveUser, getUser } from "@/lib/userStore";
 import { calculateHealthScore, calculateBMI, inferClinicalValues } from "@/lib/healthEngine";
 import type { BodyMetrics, ClinicalData, LifestyleData } from "@/lib/healthEngine";
+import { useDietTypes } from "@/hooks/useDietTypes";
 
 type AlcoholLevel = "none" | "moderate" | "high";
 type ActivityLevel = "sedentary" | "light" | "moderate" | "active";
-type DietType = "vegetarian" | "non_vegetarian" | "vegan";
+
+// Icon per diet slug — falls back to a generic utensils icon for anything the
+// backend adds later that we haven't mapped yet.
+const DIET_ICONS: Record<string, React.ReactNode> = {
+  veg: <Salad className="w-4 h-4" strokeWidth={1.8} />,
+  vegetarian: <Salad className="w-4 h-4" strokeWidth={1.8} />,
+  vegan: <Sprout className="w-4 h-4" strokeWidth={1.8} />,
+  jain: <Leaf className="w-4 h-4" strokeWidth={1.8} />,
+  eggitarian: <Egg className="w-4 h-4" strokeWidth={1.8} />,
+  non_veg: <Drumstick className="w-4 h-4" strokeWidth={1.8} />,
+  non_vegetarian: <Drumstick className="w-4 h-4" strokeWidth={1.8} />,
+};
 
 export default function LifestyleQuestions() {
   const navigate = useNavigate();
+  const { types: dietTypes } = useDietTypes();
   const [smoking, setSmoking] = useState<boolean | null>(null);
   const [alcohol, setAlcohol] = useState<AlcoholLevel | null>(null);
   const [activity, setActivity] = useState<ActivityLevel | null>(null);
   const [sleepHours, setSleepHours] = useState(7);
-  const [diet, setDiet] = useState<DietType | null>(null);
+  const [diet, setDiet] = useState<string | null>(null);
   const canProceed = smoking !== null && alcohol !== null && activity !== null && diet !== null;
 
   const handleSubmit = () => {
-    const lifestyle: LifestyleData & { diet: DietType } = { smoking: smoking!, alcohol: alcohol!, activity: activity!, sleepHours, diet: diet! };
+    const lifestyle: LifestyleData & { diet: string } = { smoking: smoking!, alcohol: alcohol!, activity: activity!, sleepHours, diet: diet! };
     saveUser({ lifestyle: lifestyle as any });
     const u = getUser();
     const h = u.bodyMetrics.height ?? 170; const w = u.bodyMetrics.weight ?? 70;
@@ -33,6 +46,7 @@ export default function LifestyleQuestions() {
     saveUser({ bodyMetrics: body, assessment });
     navigate("/insight");
   };
+
 
   const OptionRow = ({ label, selected, options, onSelect, cols = 2 }: {
     label: string; selected: string | null; options: { id: string; label: string; icon: React.ReactNode }[];
