@@ -112,7 +112,7 @@ export default function CoachAssignmentSheet({
           </p>
         </SheetHeader>
 
-        <div className="px-4 py-3 border-b">
+        <div className="px-4 py-3 border-b space-y-2">
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -122,7 +122,30 @@ export default function CoachAssignmentSheet({
               className="pl-9"
             />
           </div>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="flex-1"
+              onClick={() => setSelected(new Set(filtered.map((i) => i.key)))}
+              disabled={loading || loadingItems || filtered.length === 0}
+            >
+              Select all{q ? " (filtered)" : ""}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="flex-1"
+              onClick={() => setSelected(new Set())}
+              disabled={loading || loadingItems || selected.size === 0}
+            >
+              Clear all
+            </Button>
+          </div>
         </div>
+
 
         <div className="flex-1 overflow-y-auto px-2 py-2">
           {loading || loadingItems ? (
@@ -164,8 +187,9 @@ export default function CoachAssignmentSheet({
             Cancel
           </Button>
           <Button className="flex-1" onClick={handleSave} disabled={!dirty || saving}>
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : `Submit${selected.size ? ` (${selected.size})` : ""}`}
           </Button>
+
         </div>
       </SheetContent>
     </Sheet>
