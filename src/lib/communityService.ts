@@ -247,27 +247,18 @@ export interface PostLiker {
 
 /** Fetch the actual list of users who liked a post (most recent first). */
 export async function fetchPostLikers(postId: string, limit = 100): Promise<PostLiker[]> {
-  const { data: likes } = await supabase
-    .from("community_likes")
-    .select("user_id, created_at")
-    .eq("post_id", postId)
-    .order("created_at", { ascending: false })
-    .limit(limit);
-  if (!likes || likes.length === 0) return [];
-  const ids = [...new Set(likes.map((l: any) => l.user_id))];
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("user_id, name, avatar_url")
-    .in("user_id", ids);
-  const map = new Map((profiles || []).map((p: any) => [p.user_id, p]));
-  return likes.map((l: any) => {
-    const p: any = map.get(l.user_id);
-    return {
-      user_id: l.user_id,
-      name: p?.name || "Member",
-      avatar_url: p?.avatar_url || null,
-    };
+  const { data, error } = await (supabase as any).rpc("get_community_post_likers", {
+    _post_id: postId,
+    _limit: limit,
   });
+
+  if (error || !data) return [];
+
+  return data.map((l: any) => ({
+    user_id: l.user_id,
+    name: l.name || "Member",
+    avatar_url: l.avatar_url || null,
+  }));
 }
 
 /** Generate achievement post content */
