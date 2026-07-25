@@ -236,7 +236,7 @@ export default function CoachHome({ onViewPatient, onViewMessages }: { onViewPat
       supabase.from("meal_photos" as any)
         .select("user_id").in("user_id", patientIds).gte("logged_at", todayIso),
       supabase.from("health_logs" as any)
-        .select("user_id, glucose_morning, logged_at")
+        .select("user_id, glucose_morning, glucose_evening, logged_at")
         .in("user_id", patientIds).eq("log_type", "diabetes")
         .order("logged_at", { ascending: false }),
       supabase.from("health_logs" as any)
