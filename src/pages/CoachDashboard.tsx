@@ -191,7 +191,7 @@ export default function CoachDashboard() {
               <motion.button
                 key={item.id}
                 onClick={() => {
-                  setActiveTab(item.id);
+                  selectTab(item.id);
                   setNotificationsOpen(false);
                 }}
                 className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-colors w-full ${
