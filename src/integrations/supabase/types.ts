@@ -5387,6 +5387,15 @@ export type Database = {
           total_paying: number
         }[]
       }
+      get_community_post_likers: {
+        Args: { _limit?: number; _post_id: string }
+        Returns: {
+          avatar_url: string
+          liked_at: string
+          name: string
+          user_id: string
+        }[]
+      }
       get_daily_exercise_goal: { Args: never; Returns: number }
       get_daily_yoga_minutes: { Args: never; Returns: number }
       get_lab_test_markup_pct: { Args: never; Returns: number }
