@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, Loader2, Wind, X } from "lucide-react";
 import { toast } from "sonner";
@@ -8,6 +8,10 @@ import { useBreathSessionsToday } from "@/hooks/useBreathSessionsToday";
 import { BREATH_PROTOCOL_VIDEO, getBreathYoutubeId, recordBreathSession } from "@/lib/breathProtocol";
 import { isNativeIOSApp, youtubePlayerProxyUrl } from "@/lib/youtubeEmbed";
 import NativeYouTubePlayer from "@/components/exercises/NativeYouTubePlayer";
+
+// Auto-log a round once the user has effectively watched the full protocol.
+// Video is 76s — credit after ~60s of watch time to allow for buffering/pause.
+const AUTO_LOG_AFTER_SEC = 60;
 
 export default function BreathProtocolDrawer({
   open,
@@ -22,6 +26,10 @@ export default function BreathProtocolDrawer({
   const [videoId, setVideoId] = useState(BREATH_PROTOCOL_VIDEO.youtubeId);
   const [useNativePlayer] = useState(() => isNativeIOSApp());
 
+  // Track auto-log state so we only credit one round per drawer open.
+  const watchedSecRef = useRef(0);
+  const autoLoggedRef = useRef(false);
+  const savingRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -35,24 +43,83 @@ export default function BreathProtocolDrawer({
     [videoId],
   );
 
+  const logRound = async (source: "manual" | "video") => {
+    if (!user || savingRef.current) return false;
+    if (completed) return false;
+    savingRef.current = true;
+    setSaving(true);
+    const ok = await recordBreathSession(user.id, source);
+    setSaving(false);
+    savingRef.current = false;
+    if (ok) {
+      await refresh();
+      const next = Math.min(goal, count + 1);
+      if (next >= goal) toast.success("BBDO Breath Protocol complete for today ✨");
+      else toast.success(`Round ${next} of ${goal} logged`);
+      return true;
+    }
+    return false;
+  };
+
   const onComplete = async () => {
     if (!user) { toast.error("Please sign in"); return; }
     if (completed) {
       toast.success("You've already closed today's loop 🎉");
       return;
     }
-    setSaving(true);
-    const ok = await recordBreathSession(user.id, "manual");
-    setSaving(false);
-    if (ok) {
-      await refresh();
-      const next = Math.min(goal, count + 1);
-      if (next >= goal) toast.success("BBDO Breath Protocol complete for today ✨");
-      else toast.success(`Round ${next} of ${goal} logged`);
-    } else {
-      toast.error("Couldn't save this round. Try again.");
-    }
+    const ok = await logRound("manual");
+    if (ok) autoLoggedRef.current = true;
+    else toast.error("Couldn't save this round. Try again.");
   };
+
+  // Reset watch counters each time the drawer opens.
+  useEffect(() => {
+    if (!open) return;
+    watchedSecRef.current = 0;
+    autoLoggedRef.current = false;
+  }, [open]);
+
+  // Wall-clock fallback: while the drawer is open, count elapsed time and
+  // auto-log a round once we cross the threshold. Works for iframe + native.
+  useEffect(() => {
+    if (!open || completed) return;
+    const iv = window.setInterval(() => {
+      if (document.hidden) return;
+      watchedSecRef.current += 1;
+      if (!autoLoggedRef.current && watchedSecRef.current >= AUTO_LOG_AFTER_SEC) {
+        autoLoggedRef.current = true;
+        void logRound("video");
+      }
+    }, 1000);
+    return () => window.clearInterval(iv);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, completed, user]);
+
+  // If the proxied YouTube player reports progress or "ended", trust that first.
+  useEffect(() => {
+    if (!open) return;
+    const onMsg = (event: MessageEvent) => {
+      const d = event?.data;
+      if (!d || typeof d !== "object") return;
+      if (d.type === "progress" && typeof d.currentTime === "number") {
+        if (d.currentTime > watchedSecRef.current) watchedSecRef.current = d.currentTime;
+        if (!autoLoggedRef.current && d.currentTime >= AUTO_LOG_AFTER_SEC) {
+          autoLoggedRef.current = true;
+          void logRound("video");
+        }
+      } else if (d.type === "state" && d.state === 0) {
+        // ended
+        if (!autoLoggedRef.current) {
+          autoLoggedRef.current = true;
+          void logRound("video");
+        }
+      }
+    };
+    window.addEventListener("message", onMsg);
+    return () => window.removeEventListener("message", onMsg);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, completed, user]);
+
 
   const progressPct = Math.min(100, Math.round((count / goal) * 100));
 
