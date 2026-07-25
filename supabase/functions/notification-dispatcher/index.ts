@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
     const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
 
     // Preload signals used by audience filters.
-    const [suppPlans, suppTracking, movementProgress, fasting, mealPhotos, dietPref, protocols, videoProgress, profiles, breathSessions] = await Promise.all([
+    const [suppPlans, suppTracking, movementProgress, fasting, mealPhotos, dietPref, protocols, videoProgress, profiles, breathSessions, waterLogs, soleusSessions, glucoseLogs] = await Promise.all([
       supabase.from("user_supplement_plans").select("user_id").in("user_id", patientUserIds),
       supabase.from("user_supplement_tracking").select("user_id, taken_at").gte("taken_at", startOfDay).in("user_id", patientUserIds),
       supabase.from("user_movement_progress").select("user_id, log_date, steps, target_steps").eq("log_date", startOfDay.slice(0, 10)).in("user_id", patientUserIds),
@@ -114,6 +114,9 @@ Deno.serve(async (req) => {
       supabase.from("video_progress").select("user_id, last_watched_at").gte("last_watched_at", startOfDay).in("user_id", patientUserIds),
       supabase.from("profiles").select("user_id, name, age, weight, height, gender, clinical, deep_profiling").in("user_id", patientUserIds),
       supabase.from("user_breath_sessions").select("user_id, session_at").gte("session_at", startOfDay).in("user_id", patientUserIds),
+      supabase.from("health_logs").select("user_id, weight_kg, logged_at").eq("log_type", "water").gte("logged_at", startOfDay).in("user_id", patientUserIds),
+      supabase.from("user_soleus_sessions").select("user_id, session_at").gte("session_at", startOfDay).in("user_id", patientUserIds),
+      supabase.from("health_logs").select("user_id, glucose_morning, glucose_evening, logged_at").eq("log_type", "diabetes").gte("logged_at", startOfDay).in("user_id", patientUserIds),
     ]);
 
     const hasSuppPlan = new Set((suppPlans.data ?? []).map((r: any) => r.user_id));
