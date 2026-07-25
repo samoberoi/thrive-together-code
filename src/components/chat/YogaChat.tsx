@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Send, Loader2, Check, CheckCheck, Sparkles } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
