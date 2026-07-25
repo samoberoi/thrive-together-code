@@ -624,10 +624,10 @@ export default function ExerciseTab({ packageKey }: Props) {
       )}
 
       {/* Category filter */}
-      <div className="flex gap-2 overflow-x-auto -mx-1 px-1">
+      <div className="flex gap-2 overflow-x-auto -mx-1 px-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         <button
           onClick={() => setActiveCat("all")}
-          className={`px-3 py-1.5 rounded-full text-xs font-bold ${
+          className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap ${
             activeCat === "all"
               ? "bg-[var(--bbdo-blue)] text-white"
               : "bg-[var(--bbdo-surface)] text-muted-foreground"
@@ -639,7 +639,7 @@ export default function ExerciseTab({ packageKey }: Props) {
           <button
             key={c.id}
             onClick={() => setActiveCat(c.id)}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap ${
+            className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap ${
               activeCat === c.id
                 ? "bg-[var(--bbdo-blue)] text-white"
                 : "bg-[var(--bbdo-surface)] text-muted-foreground"
