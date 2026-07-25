@@ -131,7 +131,7 @@ export default function CoachDashboard() {
   }
 
   const tabContent: Record<CoachTab, React.ReactNode> = {
-    home: <CoachHome onViewPatient={() => setActiveTab("patients")} onViewFasting={() => setActiveTab("fasting")} />,
+    home: <CoachHome onViewPatient={() => setActiveTab("patients")} onViewFasting={() => setActiveTab("fasting")} onViewMessages={() => setActiveTab("messages")} />,
     patients: <CoachPatients onChatWithPatient={handleChatWithPatient} />,
     meetings: <CoachMeetings />,
     requests: <CoachConsultationRequests />,
