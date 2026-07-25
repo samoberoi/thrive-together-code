@@ -145,32 +145,8 @@ export default function Consult() {
       <UpcomingMeetingsCard />
       <RecommendationsPanel />
 
-      {coach && (planId === "intensive" || planId === "pro") && (
-        <button
-          onClick={() => setReqOpen(true)}
-          className="liquid-glass rounded-3xl p-4 flex items-center justify-between text-left hover:bg-primary/5 transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-[12px] liquid-glass-icon tile-icon-red flex items-center justify-center">
-              <MessageSquareWarning className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-foreground font-bold text-sm">Request a consultation</p>
-              <p className="text-xs text-muted-foreground">Get a one-on-one with your coach</p>
-            </div>
-          </div>
-          <ChevronRight className="w-4 h-4 text-muted-foreground" />
-        </button>
-      )}
+      {/* Consultation request removed — patients chat directly with their coach */}
 
-      {user && (
-        <RequestConsultationDialog
-          open={reqOpen}
-          onOpenChange={setReqOpen}
-          userId={user.id}
-          coachId={coach?.id ?? null}
-        />
-      )}
 
       {/* Coach Card */}
       {coach ? (
@@ -200,16 +176,16 @@ export default function Consult() {
                   +91 {coach.phone}
                 </a>
               )}
-              <div className="flex items-center gap-3 mt-1.5">
-                <div className="flex items-center gap-1">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1.5 text-xs text-muted-foreground">
+                <span className="inline-flex items-center gap-1 whitespace-nowrap">
                   <Star className="w-3.5 h-3.5 text-warning fill-warning" />
-                  <span className="text-foreground text-xs font-bold">{coach.avg_rating}</span>
-                  <span className="text-muted-foreground text-xs">({coach.total_ratings})</span>
-                </div>
-                <span className="text-muted-foreground text-xs">•</span>
-                <span className="text-muted-foreground text-xs">{coach.years_experience} yrs exp</span>
-                <span className="text-muted-foreground text-xs">•</span>
-                <span className="text-muted-foreground text-xs">{coach.total_consultations.toLocaleString()} sessions</span>
+                  <span className="text-foreground font-bold">{Number(coach.avg_rating).toFixed(1)}</span>
+                  <span>({coach.total_ratings})</span>
+                </span>
+                <span>•</span>
+                <span className="whitespace-nowrap">{coach.years_experience} yrs exp</span>
+                <span>•</span>
+                <span className="whitespace-nowrap">{coach.total_consultations.toLocaleString()} sessions</span>
               </div>
             </div>
           </div>
