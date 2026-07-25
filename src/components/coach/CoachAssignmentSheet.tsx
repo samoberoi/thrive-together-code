@@ -102,7 +102,11 @@ export default function CoachAssignmentSheet({
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent side="bottom" className="h-[92dvh] p-0 flex flex-col">
+      <SheetContent
+        side="bottom"
+        className="h-[92dvh] p-0 flex flex-col"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
         <SheetHeader className="px-4 pt-4 pb-3 border-b">
           <SheetTitle className="text-left">
             Assign {label} — {patient.name}
@@ -120,6 +124,7 @@ export default function CoachAssignmentSheet({
               value={q}
               onChange={(e) => setQ(e.target.value)}
               className="pl-9"
+              autoFocus={false}
             />
           </div>
           <div className="flex items-center gap-2">
@@ -189,7 +194,10 @@ export default function CoachAssignmentSheet({
           )}
         </div>
 
-        <div className="p-3 border-t flex items-center gap-2 sticky bottom-0 bg-background">
+        <div
+          className="p-3 border-t flex items-center gap-2 sticky bottom-0 bg-background"
+          style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+        >
           <Button variant="ghost" className="flex-1" onClick={onClose} disabled={saving}>
             Cancel
           </Button>

@@ -18,6 +18,7 @@ import CoachActivityNudgeDialog, {
   type ActivityKey,
   type PendingPatient,
 } from "@/components/coach/CoachActivityNudgeDialog";
+import CoachReviewsDialog from "@/components/coach/CoachReviewsDialog";
 
 
 interface PatientSummary {
@@ -124,6 +125,7 @@ export default function CoachHome({ onViewPatient, onViewMessages }: { onViewPat
   const [search, setSearch] = useState("");
   const [commissionOpen, setCommissionOpen] = useState(false);
   const [commissionInfo, setCommissionInfo] = useState<CommissionSummary | null>(null);
+  const [reviewsOpen, setReviewsOpen] = useState(false);
 
 
   useEffect(() => {
@@ -545,9 +547,9 @@ export default function CoachHome({ onViewPatient, onViewMessages }: { onViewPat
           </div>
         </button>
         <button
-          onClick={onViewMessages}
+          onClick={() => setReviewsOpen(true)}
           className="liquid-glass rounded-2xl p-2 hover:bg-accent/40 transition-colors min-w-0 h-[66px] flex items-center gap-2 text-left"
-          title="Open messages"
+          title="See who rated you and their reviews"
         >
           <Star className="w-5 h-5 text-warning fill-warning shrink-0" />
           <div className="min-w-0">
@@ -836,6 +838,15 @@ export default function CoachHome({ onViewPatient, onViewMessages }: { onViewPat
           totalMonthlyRevenue={commissionInfo.totalMonthlyRevenue}
           monthlyCommission={commissionInfo.monthlyCommission}
           rows={commissionInfo.rows}
+        />
+      )}
+      {coach && (
+        <CoachReviewsDialog
+          open={reviewsOpen}
+          onOpenChange={setReviewsOpen}
+          coachId={coach.id}
+          avgRating={Number(coach.avg_rating ?? 0)}
+          totalRatings={Number(coach.total_ratings ?? 0)}
         />
       )}
     </div>
