@@ -452,11 +452,11 @@ export default function ExerciseTab({ packageKey }: Props) {
     }
   };
 
-  if (loading) {
-    return <div className="p-6 text-sm text-muted-foreground">Loading exercises…</div>;
+  if (loading || (isCoachManaged && assignmentsLoading)) {
+    return <div className="theme-exercise px-4 md:px-6 pt-6 pb-10 min-h-[60vh]" aria-hidden />;
   }
 
-  if (isCoachManaged && !assignmentsLoading && assignedItems && assignedItems.length === 0) {
+  if (isCoachManaged && assignedItems && assignedItems.length === 0) {
     return (
       <div className="theme-exercise px-4 md:px-6 pt-6 pb-10">
         <EmptyState
