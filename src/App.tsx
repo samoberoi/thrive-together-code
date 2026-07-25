@@ -23,8 +23,8 @@ import { App as CapApp } from "@capacitor/app";
 import { PushNotifications } from "@capacitor/push-notifications";
 import { getNotificationSoundSettings } from "@/lib/notificationSoundService";
 import { playNotificationSound } from "@/lib/soundEngine";
-import { fireRealtimeHealthNotificationAlert } from "@/lib/healthAlerts";
-import { isNativePushSupported, registerNativePush } from "@/lib/nativePush";
+import { fireRealtimeHealthNotificationAlert, sendLocalHealthAlert } from "@/lib/healthAlerts";
+import { currentPlatform, isNativePushSupported, registerNativePush } from "@/lib/nativePush";
 import { resolvePostAuthRoute, resolveProtectedAccess } from "@/lib/accessControl";
 
 // Eager: splash + onboarding entry (paint instantly on cold start)
@@ -228,9 +228,15 @@ function GlobalRealtimeAlerts() {
     const unsub = subscribeToNotifications(user.id, (notification) => {
       // Any incoming notification → re-fetch true unread count and update badge.
       void syncBadge();
-      // On native apps, the OS notification payload/channel must own the sound.
-      // Do not play delayed WebAudio when the user taps a notification and the app opens.
-      if (isNativePushSupported()) return;
+      // Android does not show FCM notification banners while the WebView is in
+      // the foreground, so mirror the live database notification into a local
+      // native banner. iOS foreground presentation is already handled by APNs.
+      if (isNativePushSupported()) {
+        if (currentPlatform() === "android") {
+          void sendLocalHealthAlert(notification.title, notification.body);
+        }
+        return;
+      }
       void getNotificationSoundSettings().then((settings) => {
         if (!settings.enabled) return;
         if (notification.type === "health_alert") {

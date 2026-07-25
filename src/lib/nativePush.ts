@@ -171,25 +171,14 @@ async function resetAndroidFcmTokenAfterChannelUpgrade() {
     localStorage.removeItem("bbdo_fcm_token_reset_bbdo-alerts-v7");
     localStorage.removeItem("bbdo_fcm_token_reset_com.hyperrevamp.bbdo:bbdoapp:73939371932:v2");
     localStorage.removeItem("bbdo_fcm_token_reset_com.hyperrevamp.bbdo:bbdoapp:73939371932:v3");
-    // Also purge any stale token rows in the DB for this user so FCM stops
-    // sending to UNREGISTERED tokens minted under the previous app package.
-    if (activeUserId) {
-      try {
-        await (supabase as any)
-          .from("device_push_tokens")
-          .delete()
-          .eq("user_id", activeUserId)
-          .eq("platform", "android");
-      } catch (dbErr) {
-        console.warn("[push] android stale-token purge skipped", dbErr);
-      }
-    }
-    await PushNotifications.unregister();
-    await new Promise((resolve) => window.setTimeout(resolve, 700));
+    // Do not unregister/delete the server token here. Channel sound changes are
+    // independent of FCM tokens, and unregistering during app resume can leave
+    // Android with no usable token if the replacement registration event is
+    // delayed by Play Services. Stale rows are removed only after a new token is
+    // successfully upserted, or by the sender when FCM returns UNREGISTERED.
   } catch (err) {
     console.warn("[push] android token reset skipped", err);
   } finally {
-    lastRegistrationToken = null;
     localStorage.setItem(ANDROID_TOKEN_RESET_KEY, "1");
   }
 }

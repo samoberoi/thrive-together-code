@@ -32,10 +32,10 @@ export const AppBottomBar = React.forwardRef<HTMLElement, AppBottomBarProps>(
       const write = () => {
         const h = el.getBoundingClientRect().height;
         root.style.setProperty("--nav-h", `${Math.round(h)}px`);
-        root.style.setProperty(
-          "--nav-clear",
-          `calc(${Math.round(h)}px + env(safe-area-inset-bottom))`,
-        );
+        // getBoundingClientRect() already includes this bar's safe-area padding,
+        // so --nav-clear must be the measured height only. Adding env() again
+        // double-counts iOS insets and pushes content/nav chrome upward.
+        root.style.setProperty("--nav-clear", `${Math.round(h)}px`);
       };
       write();
       const ro = new ResizeObserver(write);
