@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Shield, CreditCard, Link2, Palette, Bell, Flame, TrendingUp, Salad, Music4 } from "lucide-react";
+import { Shield, CreditCard, Link2, Palette, Bell, Flame, TrendingUp, Salad, Music4, Scale } from "lucide-react";
 import { cn } from "@/lib/utils";
 import AdminRBAC from "./AdminRBAC";
 import AdminSubscriptions from "./AdminSubscriptions";
@@ -10,16 +10,18 @@ import AdminNotificationManager from "./AdminNotificationManager";
 import AdminGlobalStreak from "./AdminGlobalStreak";
 import AdminPnl from "./AdminPnl";
 import AdminDietTypes from "./AdminDietTypes";
+import AdminBmiCategories from "./AdminBmiCategories";
 import SoundManagerCard from "@/components/admin/SoundManagerCard";
 
 import CsvToolbar from "@/components/admin/CsvToolbar";
-type Tab = "rbac" | "subscriptions" | "assignments" | "color_gauges" | "notifications" | "global_streak" | "pnl" | "diet_types" | "sound";
+type Tab = "rbac" | "subscriptions" | "assignments" | "color_gauges" | "notifications" | "global_streak" | "pnl" | "diet_types" | "sound" | "bmi";
 
 const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: "rbac", label: "Role-Based Access", icon: Shield },
   { id: "subscriptions", label: "Subscriptions", icon: CreditCard },
   { id: "assignments", label: "Coach Assignments", icon: Link2 },
   { id: "color_gauges", label: "Color Gauge Manager", icon: Palette },
+  { id: "bmi", label: "BMI Categories", icon: Scale },
   { id: "notifications", label: "Notification Manager", icon: Bell },
   { id: "sound", label: "Sound Manager", icon: Music4 },
   { id: "global_streak", label: "Global Streak", icon: Flame },
@@ -78,6 +80,7 @@ export default function AdminControlCenter({ initialTab = "rbac" }: { initialTab
           {tab === "global_streak" && <AdminGlobalStreak />}
           {tab === "pnl" && <AdminPnl />}
           {tab === "diet_types" && <AdminDietTypes />}
+          {tab === "bmi" && <AdminBmiCategories />}
           {tab === "sound" && <div className="px-4 sm:px-6"><SoundManagerCard /></div>}
         </motion.div>
       </AnimatePresence>
