@@ -184,7 +184,7 @@ export default function LabBookingDialog({ open, onClose, productCodes, recommen
             <X className="h-5 w-5" />
           </Button>
         </DialogHeader>
-        <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4 overscroll-contain">
+        <div className="flex-1 w-full min-w-0 space-y-4 overflow-y-auto overflow-x-hidden overscroll-contain px-4 py-4 [touch-action:pan-y]">
           <div>
             <Label>Patient Name</Label>
             <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
