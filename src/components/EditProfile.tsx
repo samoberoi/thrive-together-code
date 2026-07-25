@@ -585,13 +585,33 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
       diabetesType: clinical.diabetesType ?? deepProfiling.diabetesType,
     });
 
+    // Map the unified diet preference (veg/non_veg/vegan/eggitarian/jain) into
+    // the legacy lifestyle.diet slug (vegetarian/non_vegetarian/vegan) so
+    // health-score and other legacy consumers keep working.
+    const mapDietPrefToLifestyle = (p?: string): string | undefined => {
+      switch (p) {
+        case "veg":
+        case "jain":
+          return "vegetarian";
+        case "non_veg":
+        case "eggitarian":
+          return "non_vegetarian";
+        case "vegan":
+          return "vegan";
+        default:
+          return lifestyle.diet;
+      }
+    };
+    const derivedLifestyleDiet = mapDietPrefToLifestyle(dietPrefs[0]);
+
     const lifestyleData: LifestyleData = {
       smoking: lifestyle.smoking ?? false,
       alcohol: lifestyle.alcohol ?? "none",
       activity: lifestyle.activity ?? "moderate",
       sleepHours: lifestyle.sleepHours ?? 7,
-      diet: lifestyle.diet,
+      diet: derivedLifestyleDiet,
     };
+
 
     const dp: DeepProfilingData = {
       fastingGlucose: deepProfiling.fastingGlucose,
