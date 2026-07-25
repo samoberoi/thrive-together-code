@@ -5481,6 +5481,16 @@ export type Database = {
         Args: { _phone: string; _user_id: string }
         Returns: string
       }
+      notify_assigned_coaches_of_health_metric: {
+        Args: {
+          _body: string
+          _level?: string
+          _metric?: string
+          _patient_user_id: string
+          _title: string
+        }
+        Returns: undefined
+      }
       pay_and_create_custom_slot: {
         Args: { _booking_id: string }
         Returns: string
