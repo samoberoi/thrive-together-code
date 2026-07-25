@@ -86,6 +86,16 @@ export default function AllergyAndSubPrefs({
     return items.filter((it) => allergenFoodIds.includes(it.id) && !eligibleIds.has(it.id));
   }, [items, eligible, allergenFoodIds]);
 
+  // Selected chips shown pinned at the top so users don't have to hunt through
+  // the alphabetical list to see or remove picks.
+  const selectedItems = useMemo(() => {
+    const byId = new Map(items.map((i) => [i.id, i] as const));
+    return allergenFoodIds
+      .map((id) => byId.get(id))
+      .filter((it): it is FoodItemLite => Boolean(it));
+  }, [items, allergenFoodIds]);
+
+
   const toggleAllergen = (id: string) => {
     if (allergenFoodIds.includes(id)) onAllergensChange(allergenFoodIds.filter((x) => x !== id));
     else onAllergensChange([...allergenFoodIds, id]);
@@ -131,6 +141,32 @@ export default function AllergyAndSubPrefs({
           )}
         </div>
 
+        {selectedItems.length > 0 && (
+          <div className="mb-2 rounded-xl border border-[var(--bbdo-blue)]/30 bg-[var(--bbdo-blue)]/5 p-2">
+            <p className="text-[11px] font-bold text-[var(--bbdo-blue)] mb-1.5 uppercase tracking-wider">
+              Selected · tap × to remove
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {selectedItems.map((it) => {
+                const isOrphan = orphanAllergens.some((o) => o.id === it.id);
+                return (
+                  <button
+                    key={it.id}
+                    type="button"
+                    onClick={() => toggleAllergen(it.id)}
+                    className={`px-2.5 py-1 rounded-full text-[11px] font-semibold text-white flex items-center gap-1 ${
+                      isOrphan ? "bg-amber-600" : "bg-[var(--bbdo-blue)]"
+                    }`}
+                  >
+                    <span className="truncate max-w-[140px]">{it.name}</span>
+                    <span aria-hidden>×</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <div className="relative mb-2">
           <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
           <input
@@ -147,23 +183,7 @@ export default function AllergyAndSubPrefs({
           </div>
         ) : (
           <>
-            {orphanAllergens.length > 0 && (
-              <div className="mb-2 rounded-xl border border-amber-500/30 bg-amber-500/5 p-2">
-                <p className="text-[11px] font-bold text-amber-700 mb-1">Kept from earlier diet</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {orphanAllergens.map((it) => (
-                    <button
-                      key={it.id}
-                      type="button"
-                      onClick={() => toggleAllergen(it.id)}
-                      className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-600 text-white"
-                    >
-                      {it.name} ×
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+
 
             <div className="max-h-72 overflow-y-auto rounded-xl border border-border divide-y divide-border bg-card">
               {filtered.length === 0 ? (
