@@ -132,7 +132,13 @@ export default function Videos({ packageKey }: VideosProps = {}) {
   const yogaRemaining = Math.max(0, Math.round((yogaGoalMin - yogaMinutesToday) * 10) / 10);
   const thumbnailsReady = !(thumbnailsLoading || metadataLoading);
 
-  if (isCoachManaged && !assignmentsLoading && assignedItems && assignedItems.length === 0) {
+  // While coach assignments are still resolving, hold the paint so we don't
+  // flash the full videos layout before swapping to the "Awaiting" state.
+  if (isCoachManaged && assignmentsLoading) {
+    return <div className="px-5 pt-6 pb-10 min-h-[60vh]" aria-hidden />;
+  }
+
+  if (isCoachManaged && assignedItems && assignedItems.length === 0) {
     return (
       <div className="px-5 pt-6 pb-10">
         <EmptyState
