@@ -54,6 +54,7 @@ import { Phone } from "lucide-react";
 import CoachSummaryDialog from "@/components/CoachSummaryDialog";
 import FoundationLabCard from "@/components/home/FoundationLabCard";
 import { fetchAssignedCoach } from "@/lib/coachService";
+import { useBmiCategories, categorizeBmi } from "@/hooks/useBmiCategories";
 
 function getHabitItems(t: (k: string) => string) {
   return [
@@ -223,7 +224,6 @@ function BmiTile({ bmi, status, color }: { bmi: number | null; status: string; c
   const r = 39;
   const c = 2 * Math.PI * r;
   useEffect(() => { const t = setTimeout(() => setAnimated(pct), 400); return () => clearTimeout(t); }, [pct]);
-  const isObese = status === "Obese";
   return (
     <motion.div
       className="liquid-glass-strong rounded-[20px] p-2.5 w-full min-w-0 flex flex-col items-center justify-between gap-1.5"
@@ -249,14 +249,11 @@ function BmiTile({ bmi, status, color }: { bmi: number | null; status: string; c
         </div>
       </div>
       <span className="text-muted-foreground text-[9px] font-bold uppercase tracking-[0.12em] text-center leading-tight">BMI</span>
-      <div className="min-h-[18px] flex items-center justify-center">
+      <div className="min-h-[18px] flex items-center justify-center w-full">
         {bmi != null && (
           <div
-            className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-              isObese
-                ? "text-destructive bg-destructive/10"
-                : "text-[var(--bbdo-mint)] bg-[var(--bbdo-mint)]/10"
-            }`}
+            className="text-[10px] font-bold px-2 py-0.5 rounded-full text-center leading-tight break-words max-w-full"
+            style={{ color, backgroundColor: `${color}1A` }}
           >
             {status}
           </div>
@@ -346,6 +343,7 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
   }, [getLocalDateKey, todayKey]);
 
   const { getColor: getGaugeColor, modules: gaugeModules } = useColorGauges();
+  const { categories: bmiCategories } = useBmiCategories();
   const [userHeightCm, setUserHeightCm] = useState<number | null>(null);
   const getRingColor = useCallback(
     (label: "Health" | "Weight" | "Blood Glucose", value: number, baseline: number | null) => {
@@ -1584,19 +1582,12 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
         const wForBmi = typeof latestWeight === "number" ? latestWeight : (typeof user.bodyMetrics?.weight === "number" ? user.bodyMetrics.weight : null);
         const hForBmi = typeof user.bodyMetrics?.height === "number" ? user.bodyMetrics.height : (typeof userHeightCm === "number" ? userHeightCm : null);
         const bmi = wForBmi && hForBmi && hForBmi > 0 ? +(wForBmi / Math.pow(hForBmi / 100, 2)).toFixed(1) : null;
-        // WHO adult BMI: <18.5 Underweight, 18.5–24.9 Healthy, 25–29.9 Overweight, ≥30 Obese
-        const bmiStatus = bmi == null
-          ? "—"
-          : bmi < 18.5 ? "Underweight"
-          : bmi < 25 ? "Healthy"
-          : bmi < 30 ? "Overweight"
-          : "Obese";
+        // BMI category from backend bmi_categories table (WHO bands, admin-editable)
+        const bmiCat = categorizeBmi(bmi, bmiCategories);
+        const bmiStatus = bmi == null ? "—" : (bmiCat?.label ?? "—");
         const bmiColor = bmi == null
           ? "hsl(var(--primary))"
-          : bmi < 18.5 ? "var(--bbdo-amber)"
-          : bmi < 25 ? "var(--bbdo-mint)"
-          : bmi < 30 ? "var(--bbdo-amber)"
-          : "var(--bbdo-red)";
+          : (bmiCat?.color ?? "var(--bbdo-mint)");
         return (
           <div className="grid grid-cols-4 gap-2">
             <MetricRing
