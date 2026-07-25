@@ -145,8 +145,11 @@ function drawWatermark(ctx: CanvasRenderingContext2D, w: number, h: number) {
   const x = w - boxW - Math.round(base * 0.5);
   const y = h - boxH - Math.round(base * 0.5);
 
-  // Translucent pill background for legibility over any photo
-  ctx.fillStyle = "rgba(0, 0, 0, 0.42)";
+  // High-contrast pill background for legibility over bright photos.
+  ctx.shadowColor = "rgba(0, 0, 0, 0.35)";
+  ctx.shadowBlur = Math.round(base * 0.25);
+  ctx.shadowOffsetY = Math.max(1, Math.round(base * 0.08));
+  ctx.fillStyle = "rgba(0, 0, 0, 0.78)";
   const r = Math.round(base * 0.4);
   ctx.beginPath();
   ctx.moveTo(x + r, y);
@@ -156,18 +159,27 @@ function drawWatermark(ctx: CanvasRenderingContext2D, w: number, h: number) {
   ctx.arcTo(x, y, x + boxW, y, r);
   ctx.closePath();
   ctx.fill();
+  ctx.shadowColor = "transparent";
+
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.62)";
+  ctx.lineWidth = Math.max(1, Math.round(base * 0.07));
+  ctx.stroke();
 
   // "BBDO" wordmark — BB red, DO blue
   const textY = y + pad + base * 0.85;
   ctx.font = logoFont;
+  ctx.lineWidth = Math.max(2, Math.round(base * 0.12));
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.92)";
+  ctx.strokeText("BB", x + pad, textY);
   ctx.fillStyle = "#E11D48"; // brand red
   ctx.fillText("BB", x + pad, textY);
+  ctx.strokeText("DO", x + pad + bbW, textY);
   ctx.fillStyle = "#2563EB"; // brand blue
   ctx.fillText("DO", x + pad + bbW, textY);
 
   // Timestamp
   ctx.font = stampFont;
-  ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
+  ctx.fillStyle = "rgba(255, 255, 255, 1)";
   ctx.fillText(stamp, x + pad, textY + gap + Math.round(base * 0.72));
 
   ctx.restore();
