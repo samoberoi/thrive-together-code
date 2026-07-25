@@ -141,6 +141,7 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
   const [patientStatuses, setPatientStatuses] = useState<Record<string, PatientHealthStatus>>({});
   const [patientMetrics, setPatientMetrics] = useState<Record<string, { healthScore: number | null; initialScore: number | null; latestWeight: number | null; initialWeight: number | null; latestGlucose: number | null; initialGlucose: number | null }>>({});
   const [statusFilter, setStatusFilter] = useState<"all" | "green" | "yellow" | "red">("all");
+  const [packageFilter, setPackageFilter] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [logsLoading, setLogsLoading] = useState(false);
   const [logTab, setLogTab] = useState<LogTab>("diabetes");
@@ -776,9 +777,11 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
   }
 
   // Patient list view
-  const filteredPatients = statusFilter === "all" 
-    ? patients 
-    : patients.filter(p => patientStatuses[p.user_id]?.status === statusFilter);
+  const filteredPatients = patients.filter((p) => {
+    if (statusFilter !== "all" && patientStatuses[p.user_id]?.status !== statusFilter) return false;
+    if (packageFilter && p.plan_name !== packageFilter) return false;
+    return true;
+  });
 
   const statusCounts = {
     all: patients.length,
@@ -813,47 +816,70 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
   const daysUntil = (iso: string) => Math.ceil((Date.parse(iso) - now) / (24 * 60 * 60 * 1000));
 
   return (
-    <div className="flex flex-col gap-5 px-5 pt-14 pb-4">
+    <div className="flex flex-col gap-4 px-5 pt-3 pb-4">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-xl sm:text-2xl font-black text-foreground">My Patients</h1>
-        <p className="text-muted-foreground text-sm">{patients.length} active patient{patients.length !== 1 ? "s" : ""}</p>
+        <h1 className="text-2xl font-black text-foreground leading-tight">My Patients</h1>
       </motion.div>
 
-      {/* KPI: totals + upcoming renewals (conditional) */}
+      {/* KPI: Patients / On Track / Off Track — one row, clickable */}
       {patients.length > 0 && (
-        <motion.div className="grid grid-cols-2 gap-3" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }}>
-          <div className="liquid-glass rounded-2xl p-4">
-            <p className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wide">Patients</p>
-            <p className="stat-number text-2xl text-foreground mt-1">{patients.length}</p>
-            <p className="text-muted-foreground text-[10px] mt-0.5">Active</p>
-          </div>
-          {upcomingRenewals.length > 0 ? (
-            <div className="rounded-2xl p-4 bg-warning/10 border border-warning/30">
-              <p className="text-warning text-[10px] font-semibold uppercase tracking-wide">Upcoming Renewals</p>
-              <p className="stat-number text-2xl text-warning mt-1">{upcomingRenewals.length}</p>
-              <p className="text-muted-foreground text-[10px] mt-0.5">Next 30 days</p>
-            </div>
-          ) : (
-            <div className="liquid-glass rounded-2xl p-4">
-              <p className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wide">On Track</p>
-              <p className="stat-number text-2xl text-emerald-400 mt-1">{statusCounts.green}</p>
-              <p className="text-muted-foreground text-[10px] mt-0.5">Healthy patients</p>
-            </div>
-          )}
+        <motion.div className="grid grid-cols-3 gap-2" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }}>
+          <button
+            onClick={() => setStatusFilter("all")}
+            className={`liquid-glass rounded-2xl p-3 text-left transition ${statusFilter === "all" ? "ring-2 ring-primary" : ""}`}
+          >
+            <p className="text-muted-foreground text-[9px] font-semibold uppercase tracking-wide">Patients</p>
+            <p className="stat-number text-2xl text-foreground mt-1 leading-none">{patients.length}</p>
+            <p className="text-muted-foreground text-[10px] mt-1">Active</p>
+          </button>
+          <button
+            onClick={() => setStatusFilter("green")}
+            className={`rounded-2xl p-3 text-left transition bg-emerald-500/10 border border-emerald-500/30 ${statusFilter === "green" ? "ring-2 ring-emerald-400" : ""}`}
+          >
+            <p className="text-emerald-500 text-[9px] font-semibold uppercase tracking-wide">On Track</p>
+            <p className="stat-number text-2xl text-emerald-500 mt-1 leading-none">{statusCounts.green}</p>
+            <p className="text-muted-foreground text-[10px] mt-1">Healthy</p>
+          </button>
+          <button
+            onClick={() => setStatusFilter("red")}
+            className={`rounded-2xl p-3 text-left transition bg-red-500/10 border border-red-500/30 ${statusFilter === "red" ? "ring-2 ring-red-400" : ""}`}
+          >
+            <p className="text-red-500 text-[9px] font-semibold uppercase tracking-wide">Off Track</p>
+            <p className="stat-number text-2xl text-red-500 mt-1 leading-none">{statusCounts.red}</p>
+            <p className="text-muted-foreground text-[10px] mt-1">Needs care</p>
+          </button>
         </motion.div>
       )}
 
-      {/* Patients by package */}
+      {/* Patients by package — clickable to filter */}
       {packageEntries.length > 0 && (
         <motion.div className="liquid-glass rounded-2xl p-4" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.04 }}>
           <p className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wide mb-2">Patients by package</p>
           <div className="flex flex-wrap gap-2">
-            {packageEntries.map(([name, count]) => (
-              <span key={name} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold no-break">
-                {name}
-                <span className="text-[10px] font-black bg-primary/20 rounded-full px-1.5 py-0.5">{count}</span>
-              </span>
-            ))}
+            <button
+              onClick={() => setPackageFilter(null)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold no-break transition ${
+                packageFilter === null ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+              }`}
+            >
+              All
+              <span className="text-[10px] font-black bg-black/10 rounded-full px-1.5 py-0.5">{patients.length}</span>
+            </button>
+            {packageEntries.map(([name, count]) => {
+              const active = packageFilter === name;
+              return (
+                <button
+                  key={name}
+                  onClick={() => setPackageFilter(active ? null : name)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold no-break transition ${
+                    active ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary"
+                  }`}
+                >
+                  {name}
+                  <span className={`text-[10px] font-black rounded-full px-1.5 py-0.5 ${active ? "bg-black/10" : "bg-primary/20"}`}>{count}</span>
+                </button>
+              );
+            })}
           </div>
         </motion.div>
       )}
