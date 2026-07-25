@@ -173,6 +173,45 @@ export type Database = {
         }
         Relationships: []
       }
+      bmi_categories: {
+        Row: {
+          code: string
+          color: string | null
+          created_at: string
+          description: string | null
+          id: string
+          label: string
+          max_value: number | null
+          min_value: number | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          label: string
+          max_value?: number | null
+          min_value?: number | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          label?: string
+          max_value?: number | null
+          min_value?: number | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       channel_partner_packages: {
         Row: {
           classes_per_month: number | null
@@ -5370,6 +5409,14 @@ export type Database = {
           total_consultations: number
           total_ratings: number
           years_experience: number
+        }[]
+      }
+      get_bmi_category: {
+        Args: { _bmi: number }
+        Returns: {
+          code: string
+          color: string
+          label: string
         }[]
       }
       get_coach_commission_summary: {

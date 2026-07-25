@@ -109,19 +109,27 @@ export function inferClinicalValues(clinical: ClinicalData): ClinicalData {
   return inferred;
 }
 
-// ─── BMI Calculation (Asian classification) ──────────────────────────────────
+// ─── BMI Calculation (WHO adult classification) ──────────────────────────────
+// Underweight <18.5 · Normal 18.5–24.9 · Overweight 25.0–29.9
+// Obesity Class I 30.0–34.9 · Class II 35.0–39.9 · Class III ≥40
+// Backed by the `bmi_categories` table and `get_bmi_category` RPC in the DB.
+
+export function bmiCategoryFor(bmi: number): string {
+  if (!isFinite(bmi) || bmi <= 0) return "Normal weight";
+  if (bmi < 18.5) return "Underweight";
+  if (bmi < 25)   return "Normal weight";
+  if (bmi < 30)   return "Overweight";
+  if (bmi < 35)   return "Obesity Class I";
+  if (bmi < 40)   return "Obesity Class II";
+  return "Obesity Class III";
+}
 
 export function calculateBMI(heightCm: number, weightKg: number): { bmi: number; bmiCategory: string } {
   const h = heightCm / 100;
   const bmi = parseFloat((weightKg / (h * h)).toFixed(1));
-  let bmiCategory = "Normal";
-  if (bmi < 18.5) bmiCategory = "Underweight";
-  else if (bmi < 23) bmiCategory = "Normal";
-  else if (bmi < 25) bmiCategory = "Overweight";
-  else if (bmi < 30) bmiCategory = "Obese Class I";
-  else bmiCategory = "Obese Class II+";
-  return { bmi, bmiCategory };
+  return { bmi, bmiCategory: bmiCategoryFor(bmi) };
 }
+
 
 // ─── Category 1: Disease Severity Score (Max 25) ─────────────────────────────
 
