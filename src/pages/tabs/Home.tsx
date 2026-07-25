@@ -1054,6 +1054,15 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
       logMealTimeOnly(meal, iso);
       return;
     }
+    if (packageKey === "intensive" || packageKey === "pro") {
+      // Package 3 (Intensive/Pro): users don't build plates — they use their
+      // pre-created 30-day plate plan. Log the meal time and send them to the
+      // Diet tab where the plating calendar is shown.
+      setPendingMealISO(null);
+      logMealTimeOnly(meal, iso);
+      window.dispatchEvent(new CustomEvent("nav:set-tab", { detail: "diet" }));
+      return;
+    }
     setPendingMealISO(iso);
     setPlateModalFor(meal);
   };
@@ -1785,11 +1794,8 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
                 <div>
                   <span className="text-muted-foreground text-sm font-medium">
                     Schedule: FMOD {weekPlanFmod ?? "—"} · LMOD {weekPlanLmod ?? "—"}
-                  </span>
-                  <div className="text-muted-foreground text-xs mt-1">
-                    Schedule: FMOD {weekPlanFmod ?? "—"} · LMOD {weekPlanLmod ?? "—"}
                     {fastingTarget > 0 && ` · ${fastingTarget}h fast`}
-                  </div>
+                  </span>
                 </div>
               ) : fastingState === "done" ? (
                 <span className="text-lg font-black text-primary">Fast complete</span>
@@ -1809,11 +1815,19 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
               className="w-full py-3 rounded-2xl bg-primary text-primary-foreground font-bold text-sm flex items-center justify-center gap-2"
             >
               <UtensilsCrossed className="w-4 h-4" />
-              {packageKey === "foundation" ? "Log first meal (FMOD)" : "Track FMOD — Build my plate"}
+              {packageKey === "foundation"
+                ? "Log first meal (FMOD)"
+                : packageKey === "intensive" || packageKey === "pro"
+                ? "Track FMOD — View my plate"
+                : "Track FMOD — Build my plate"}
             </button>
           )}
           {fastingState === "eating" && (() => {
-            const readyLabel = packageKey === "foundation" ? "Log last meal (LMOD)" : "Track LMOD — Build my plate";
+            const readyLabel = packageKey === "foundation"
+              ? "Log last meal (LMOD)"
+              : packageKey === "intensive" || packageKey === "pro"
+              ? "Track LMOD — View my plate"
+              : "Track LMOD — Build my plate";
             return (
               <button
                 onClick={() => openMealTimePicker("lmod")}
@@ -1852,12 +1866,18 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
           {(fastingState === "none" || fastingState === "eating") && (
             <button
               onClick={() => {
-                try { localStorage.setItem("bbdo:openReference", "1"); } catch {}
+                const isPrebuilt = packageKey === "intensive" || packageKey === "pro";
+                try {
+                  if (!isPrebuilt) localStorage.setItem("bbdo:openReference", "1");
+                } catch {}
                 window.dispatchEvent(new CustomEvent("nav:set-tab", { detail: "diet" }));
               }}
               className="mt-2 w-full py-2 text-xs font-semibold text-primary underline-offset-2 hover:underline flex items-center justify-center gap-1.5"
             >
-              <BookOpen className="w-3.5 h-3.5" /> View Quick Food Reference
+              <BookOpen className="w-3.5 h-3.5" />
+              {packageKey === "intensive" || packageKey === "pro"
+                ? "Eat Smart · 30-day plate plan"
+                : "View Quick Food Reference"}
             </button>
           )}
 
@@ -1969,15 +1989,24 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
       {/* Meal time picker — choose when the meal actually happened */}
       {timePickerFor && (
         <div
-          className="fixed inset-0 z-50 bg-black/60 flex items-end sm:items-center justify-center px-4 pt-4"
-          style={{ paddingBottom: "var(--nav-clear, calc(env(safe-area-inset-bottom, 0px) + 6rem))" }}
+          className="fixed inset-0 z-50 bg-black/60 flex items-end sm:items-center justify-center p-3"
+          style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + var(--nav-h, 0px) + 12px)" }}
           onClick={() => setTimePickerFor(null)}
         >
-          <div className="bg-background rounded-2xl p-5 w-full max-w-sm shadow-lift" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="bg-background rounded-2xl p-5 w-full max-w-sm shadow-lift max-h-[85vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3 className="text-base font-bold text-foreground mb-1">
               When did you have your {timePickerFor === "fmod" ? "first meal" : "last meal"}?
             </h3>
-            <p className="text-xs text-muted-foreground mb-4">{packageKey === "foundation" ? "Pick the actual time to log this meal." : "Pick the actual time, then build your plate."}</p>
+            <p className="text-xs text-muted-foreground mb-4">
+              {packageKey === "foundation"
+                ? "Pick the actual time to log this meal."
+                : packageKey === "intensive" || packageKey === "pro"
+                ? "Pick the actual time, then view your 30-day plate."
+                : "Pick the actual time, then build your plate."}
+            </p>
             <input
               type="time"
               value={timePickerValue}
@@ -1989,7 +2018,11 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
                 onClick={() => confirmMealTime(false)}
                 className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-bold text-sm"
               >
-                {packageKey === "foundation" ? "Log meal" : "Continue → Build my plate"}
+                {packageKey === "foundation"
+                  ? "Log meal"
+                  : packageKey === "intensive" || packageKey === "pro"
+                  ? "Continue → View my plate"
+                  : "Continue → Build my plate"}
               </button>
               <button
                 onClick={() => setTimePickerFor(null)}
