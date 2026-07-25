@@ -35,7 +35,8 @@ import { useSearchParams } from "react-router-dom";
 import {
   fetchPosts, createPost, deletePost, fetchComments, addComment,
   toggleLike, fetchUserLikes, fetchPostCategories, uploadCommunityImage,
-  type CommunityPost, type CommunityComment, type PostCategory,
+  fetchPostLikers,
+  type CommunityPost, type CommunityComment, type PostCategory, type PostLiker,
 } from "@/lib/communityService";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
