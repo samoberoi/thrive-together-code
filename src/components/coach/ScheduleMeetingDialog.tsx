@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { scheduleMeeting, type MeetingType } from "@/lib/meetingService";
-import { Loader2, Phone } from "lucide-react";
+import { Loader2, Phone, Calendar as CalendarIcon, Clock, Timer, Tag, FileText, User } from "lucide-react";
 
 export interface PatientOption {
   user_id: string;
