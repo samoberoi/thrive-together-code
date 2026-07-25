@@ -432,8 +432,8 @@ export default function Auth() {
                         value={phone}
                         onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
                         className="w-full bg-transparent text-foreground font-bold text-[18px] tracking-[0.02em] outline-none placeholder:text-muted-foreground/60 placeholder:font-medium py-4 tabular"
-                        autoFocus
                       />
+
                       {phone.length === 10 && (
                         <motion.div initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }}
                           className="w-6 h-6 rounded-full bg-primary flex items-center justify-center shrink-0">
