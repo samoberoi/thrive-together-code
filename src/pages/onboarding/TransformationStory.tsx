@@ -7,6 +7,16 @@ import SoundToggle from "@/components/SoundToggle";
 import soniaBishtImg from "@/assets/sonia-bisht.jpg";
 import muneeruddinImg from "@/assets/muneeruddin-mohammed.jpg";
 
+// Preload the hero photos the moment this module loads so switching stories
+// never shows a white flash while the next image is fetched/decoded.
+if (typeof window !== "undefined") {
+  [soniaBishtImg, muneeruddinImg].forEach((src) => {
+    const img = new Image();
+    img.decoding = "async";
+    img.src = src;
+  });
+}
+
 const stories = [
   {
     name: "Sonia Bisht", age: 38, city: "Dehradun",
@@ -58,27 +68,39 @@ export default function TransformationStory() {
     <div className="phone-container ob-lock relative min-h-dvh overflow-x-hidden bg-black">
       <SoundToggle />
 
+      {/* All photos are mounted so the next one is already decoded — no white flash
+          between stories. Only the active slide is visible, and it slides in from
+          the right when switching forward. */}
+      {stories.map((s, idx) => (
+        <motion.img
+          key={s.name}
+          src={s.image}
+          alt={s.name}
+          loading="eager"
+          decoding="async"
+          className="absolute inset-0 w-full h-full object-cover object-center"
+          initial={false}
+          animate={{
+            x: idx === current ? "0%" : idx < current ? "-100%" : "100%",
+            opacity: idx === current ? 1 : 0.001,
+          }}
+          transition={{ x: { duration: 0.5, ease: EASE }, opacity: { duration: 0.28, ease: EASE } }}
+          style={{ zIndex: idx === current ? 1 : 0 }}
+        />
+      ))}
+      {/* Legibility gradients — dark on bottom for text, subtle on top for the kicker */}
+      <div className="absolute inset-0 z-[2] bg-[linear-gradient(to_top,rgba(0,0,0,0.95)_0%,rgba(0,0,0,0.75)_25%,rgba(0,0,0,0.35)_50%,transparent_70%)]" />
+      <div className="absolute inset-0 z-[2] bg-[linear-gradient(to_bottom,rgba(0,0,0,0.75)_0%,rgba(0,0,0,0.3)_15%,transparent_30%)]" />
+
       <AnimatePresence initial={false} mode="wait">
         <motion.div
           key={current}
-          className="absolute inset-0"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.28, ease: EASE }}
+          className="absolute inset-0 z-[3]"
+          initial={{ opacity: 0, x: 24 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -24 }}
+          transition={{ duration: 0.32, ease: EASE }}
         >
-          {/* Full-bleed photo */}
-          <img
-            src={story.image}
-            alt={story.name}
-            className="absolute inset-0 w-full h-full object-cover object-center"
-            loading="eager"
-            decoding="async"
-          />
-          {/* Legibility gradients — dark on bottom for text, subtle on top for the kicker */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(0,0,0,0.95)_0%,rgba(0,0,0,0.75)_25%,rgba(0,0,0,0.35)_50%,transparent_70%)]" />
-          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(0,0,0,0.75)_0%,rgba(0,0,0,0.3)_15%,transparent_30%)]" />
-
           {/* Top — kicker + duration chip */}
           <div className="absolute top-0 left-0 right-0 px-5 pt-[calc(env(safe-area-inset-top)+2.25rem)]">
             <div className="flex items-start justify-between gap-3">
