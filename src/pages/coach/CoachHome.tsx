@@ -18,6 +18,7 @@ import CoachActivityNudgeDialog, {
   type ActivityKey,
   type PendingPatient,
 } from "@/components/coach/CoachActivityNudgeDialog";
+import CoachReviewsDialog from "@/components/coach/CoachReviewsDialog";
 
 
 interface PatientSummary {
