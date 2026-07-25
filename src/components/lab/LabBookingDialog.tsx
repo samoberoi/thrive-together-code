@@ -165,7 +165,12 @@ export default function LabBookingDialog({ open, onClose, productCodes, recommen
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="!left-0 !right-0 !top-0 !bottom-0 !flex !h-[100dvh] !max-h-[100dvh] !w-full !max-w-none !translate-x-0 !translate-y-0 flex-col gap-0 overflow-hidden rounded-none border-0 p-0 sm:!left-[50%] sm:!right-auto sm:!top-[50%] sm:!bottom-auto sm:!h-auto sm:!max-h-[90vh] sm:!max-w-md sm:!translate-x-[-50%] sm:!translate-y-[-50%] sm:rounded-2xl sm:border sm:p-0 [&>button.absolute]:hidden">
+      <DialogContent
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+        className="!fixed !left-0 !right-0 !top-0 !bottom-0 !flex !h-[100dvh] !max-h-[100dvh] !w-screen !max-w-none !translate-x-0 !translate-y-0 flex-col gap-0 overflow-hidden overscroll-contain rounded-none border-0 p-0 touch-pan-y sm:!left-[50%] sm:!right-auto sm:!top-[50%] sm:!bottom-auto sm:!h-auto sm:!max-h-[90vh] sm:!w-full sm:!max-w-md sm:!translate-x-[-50%] sm:!translate-y-[-50%] sm:rounded-2xl sm:border sm:p-0 [&>button.absolute]:hidden"
+        style={{ margin: 0 }}>
         <DialogHeader className="relative flex-none border-b bg-background px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.875rem)] text-center sm:pt-5">
           <DialogTitle className="px-12 text-center text-xl leading-tight text-foreground">Book Lab Test</DialogTitle>
           <Button
