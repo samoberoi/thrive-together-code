@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Footprints, Flame, Trophy, Target, Plus, TrendingUp, Sparkles, ChevronRight, CheckCircle2, Lock } from "lucide-react";
+import { Footprints, Flame, Trophy, Target, Plus, TrendingUp, Sparkles, ChevronRight, CheckCircle2, Lock, Watch } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchProfile } from "@/lib/profileService";
