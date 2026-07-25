@@ -7,7 +7,7 @@ import { fetchProfile } from "@/lib/profileService";
 import { getUserStreakStartDate } from "@/lib/globalStreak";
 import { canUseNativeHealth } from "@/lib/healthProvider";
 import { healthSourceLabel } from "@/lib/platformLabels";
-import { Watch } from "lucide-react";
+
 import {
   fetchMovementOverview,
   logTodaySteps,
