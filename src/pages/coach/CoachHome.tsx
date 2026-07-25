@@ -840,6 +840,15 @@ export default function CoachHome({ onViewPatient, onViewMessages }: { onViewPat
           rows={commissionInfo.rows}
         />
       )}
+      {coach && (
+        <CoachReviewsDialog
+          open={reviewsOpen}
+          onOpenChange={setReviewsOpen}
+          coachId={coach.id}
+          avgRating={Number(coach.avg_rating ?? 0)}
+          totalRatings={Number(coach.total_ratings ?? 0)}
+        />
+      )}
     </div>
   );
 }
