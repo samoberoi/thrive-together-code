@@ -596,33 +596,52 @@ export default function CoachHome({ onViewPatient, onViewMessages }: { onViewPat
               const daysLeft = p.planExpires
                 ? Math.max(0, Math.ceil((new Date(p.planExpires).getTime() - Date.now()) / 86400000))
                 : null;
+              const urgency = daysLeft === null ? null : daysLeft <= 7 ? "danger" : daysLeft <= 21 ? "warn" : "ok";
               return (
                 <button
                   key={p.user_id}
                   onClick={() => setScheduleFor(p)}
-                  className="w-full flex items-center gap-3 p-3 rounded-2xl bg-card/70 hover:bg-card transition text-left"
+                  className="w-full flex items-start gap-3 p-3 rounded-2xl bg-card/70 hover:bg-card transition text-left"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                  <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
                     {p.avatar_url ? (
-                      <img src={p.avatar_url} alt="" className="w-10 h-10 rounded-xl object-cover" />
+                      <img src={p.avatar_url} alt="" className="w-11 h-11 rounded-xl object-cover" />
                     ) : (
                       <span className="text-primary font-bold text-sm">{(p.name ?? "?")[0].toUpperCase()}</span>
                     )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-foreground font-semibold text-sm truncate">{p.name ?? "Patient"}</p>
-                    <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
+                  <div className="flex-1 min-w-0 space-y-1.5">
+                    <p className="text-foreground font-semibold text-sm leading-snug break-words">
+                      {p.name ?? "Patient"}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-1.5">
                       {p.planName && (
-                        <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-md truncate">
+                        <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md break-words max-w-full">
                           {p.planName}
                         </span>
                       )}
                       {daysLeft !== null && (
-                        <span className="text-[10px] font-semibold text-muted-foreground no-break">{daysLeft}d left</span>
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-md no-break ${
+                            urgency === "danger"
+                              ? "bg-destructive/10 text-destructive"
+                              : urgency === "warn"
+                                ? "bg-warning/10 text-warning"
+                                : "bg-muted text-muted-foreground"
+                          }`}
+                        >
+                          {daysLeft}d left in plan
+                        </span>
                       )}
+                      <span className="text-[10px] font-semibold text-muted-foreground no-break">
+                        No meeting scheduled
+                      </span>
                     </div>
                   </div>
-                  <span className="gradient-blue text-primary-foreground rounded-xl w-9 h-9 flex items-center justify-center shrink-0" aria-label="Schedule meeting">
+                  <span
+                    className="gradient-blue text-primary-foreground rounded-xl w-9 h-9 flex items-center justify-center shrink-0 mt-0.5"
+                    aria-label="Schedule meeting"
+                  >
                     <Plus className="w-4 h-4" strokeWidth={2.4} />
                   </span>
                 </button>
