@@ -30,10 +30,13 @@ interface PatientSummary {
   age: number | null;
   gender: string | null;
   weight: number | null;
+  latestWeight: number | null;
+  previousWeight: number | null;
   bmi: number | null;
   bmi_category: string | null;
   latestGlucose: number | null;
   latestBpSystolic: number | null;
+  latestBpDiastolic: number | null;
   initialScore: number | null;
   currentScore: number | null;
   planName: string | null;
@@ -84,18 +87,37 @@ function evaluateAlerts(patients: PatientSummary[]): Alert[] {
   };
   for (const p of patients) {
     const name = p.name ?? "Unknown";
+    if (p.latestWeight != null && p.previousWeight != null) {
+      const delta = p.latestWeight - p.previousWeight;
+      const absDelta = Math.abs(delta);
+      if (absDelta >= 2) {
+        push({
+          user_id: p.user_id,
+          patient_name: name,
+          type: absDelta >= 10 ? "danger" : "warning",
+          message: `Weight ${delta > 0 ? "increased" : "decreased"} by ${Math.round(absDelta * 10) / 10} kg (${p.previousWeight} → ${p.latestWeight})`,
+          metric: "Weight",
+        });
+      }
+    } else if (p.latestWeight != null && (p.latestWeight >= 150 || p.latestWeight <= 35)) {
+      push({ user_id: p.user_id, patient_name: name, type: "warning", message: `Weight is ${p.latestWeight} kg`, metric: "Weight" });
+    }
     if (p.bmi && p.bmi >= 30) {
       push({ user_id: p.user_id, patient_name: name, type: p.bmi >= 35 ? "danger" : "warning", message: `BMI is ${p.bmi} (${p.bmi_category})`, metric: "BMI" });
     }
-    if (p.latestGlucose && p.latestGlucose >= 180) {
-      push({ user_id: p.user_id, patient_name: name, type: "danger", message: `Fasting glucose at ${p.latestGlucose} mg/dL`, metric: "Glucose" });
-    } else if (p.latestGlucose && p.latestGlucose >= 130) {
-      push({ user_id: p.user_id, patient_name: name, type: "warning", message: `Fasting glucose at ${p.latestGlucose} mg/dL`, metric: "Glucose" });
+    if (p.latestGlucose != null) {
+      if (p.latestGlucose >= 250 || p.latestGlucose <= 54) {
+        push({ user_id: p.user_id, patient_name: name, type: "danger", message: `Glucose at ${p.latestGlucose} mg/dL`, metric: "Glucose" });
+      } else if (p.latestGlucose >= 140 || p.latestGlucose <= 70) {
+        push({ user_id: p.user_id, patient_name: name, type: p.latestGlucose >= 180 ? "danger" : "warning", message: `Glucose at ${p.latestGlucose} mg/dL`, metric: "Glucose" });
+      }
     }
-    if (p.latestBpSystolic && p.latestBpSystolic >= 150) {
-      push({ user_id: p.user_id, patient_name: name, type: "danger", message: `BP systolic at ${p.latestBpSystolic} mmHg`, metric: "BP" });
-    } else if (p.latestBpSystolic && p.latestBpSystolic >= 140) {
-      push({ user_id: p.user_id, patient_name: name, type: "warning", message: `BP systolic at ${p.latestBpSystolic} mmHg`, metric: "BP" });
+    if (p.latestBpSystolic != null && p.latestBpDiastolic != null) {
+      if (p.latestBpSystolic >= 180 || p.latestBpDiastolic >= 120) {
+        push({ user_id: p.user_id, patient_name: name, type: "danger", message: `BP at ${p.latestBpSystolic}/${p.latestBpDiastolic} mmHg`, metric: "BP" });
+      } else if (p.latestBpSystolic >= 140 || p.latestBpDiastolic >= 90 || p.latestBpSystolic <= 90 || p.latestBpDiastolic <= 60) {
+        push({ user_id: p.user_id, patient_name: name, type: p.latestBpSystolic >= 150 ? "danger" : "warning", message: `BP at ${p.latestBpSystolic}/${p.latestBpDiastolic} mmHg`, metric: "BP" });
+      }
     }
     if (p.initialScore != null && p.currentScore != null && p.currentScore < p.initialScore) {
       const delta = p.currentScore - p.initialScore;
@@ -178,6 +200,7 @@ export default function CoachHome({ onViewPatient, onViewMessages }: { onViewPat
       { data: mealRows },
       { data: latestGlucose },
       { data: latestBp },
+      { data: recentWeights },
     ] = await Promise.all([
       supabase.from("profiles" as any)
         .select("user_id, name, phone, avatar_url, age, gender, weight, bmi, bmi_category, initial_health_score, assessment")
@@ -213,13 +236,19 @@ export default function CoachHome({ onViewPatient, onViewMessages }: { onViewPat
       supabase.from("meal_photos" as any)
         .select("user_id").in("user_id", patientIds).gte("logged_at", todayIso),
       supabase.from("health_logs" as any)
-        .select("user_id, glucose_morning, logged_at")
+        .select("user_id, glucose_morning, glucose_evening, logged_at")
         .in("user_id", patientIds).eq("log_type", "diabetes")
         .order("logged_at", { ascending: false }),
       supabase.from("health_logs" as any)
-        .select("user_id, bp_systolic, logged_at")
+        .select("user_id, bp_systolic, bp_diastolic, logged_at")
         .in("user_id", patientIds).eq("log_type", "bp")
         .order("logged_at", { ascending: false }),
+      supabase.from("health_logs" as any)
+        .select("user_id, weight_kg, logged_at")
+        .in("user_id", patientIds).eq("log_type", "weight")
+        .not("weight_kg", "is", null)
+        .order("logged_at", { ascending: false })
+        .limit(Math.max(patientIds.length * 4, 80)),
     ]);
 
     const suppPlanSet = new Set(((activePlans as any[]) ?? []).map((r) => r.user_id));
@@ -251,14 +280,26 @@ export default function CoachHome({ onViewPatient, onViewMessages }: { onViewPat
     // Latest glucose / BP (already ordered desc)
     const latestGlucoseByUser = new Map<string, number>();
     (latestGlucose as any[] | null)?.forEach((l) => {
-      if (!latestGlucoseByUser.has(l.user_id) && l.glucose_morning != null) {
-        latestGlucoseByUser.set(l.user_id, l.glucose_morning);
+      const glucose = l.glucose_morning ?? l.glucose_evening;
+      if (!latestGlucoseByUser.has(l.user_id) && glucose != null) {
+        latestGlucoseByUser.set(l.user_id, Number(glucose));
       }
     });
     const latestBpByUser = new Map<string, number>();
+    const latestBpDiastolicByUser = new Map<string, number>();
     (latestBp as any[] | null)?.forEach((l) => {
       if (!latestBpByUser.has(l.user_id) && l.bp_systolic != null) {
-        latestBpByUser.set(l.user_id, l.bp_systolic);
+        latestBpByUser.set(l.user_id, Number(l.bp_systolic));
+        if (l.bp_diastolic != null) latestBpDiastolicByUser.set(l.user_id, Number(l.bp_diastolic));
+      }
+    });
+    const weightHistoryByUser = new Map<string, number[]>();
+    (recentWeights as any[] | null)?.forEach((l) => {
+      if (l.weight_kg == null) return;
+      const arr = weightHistoryByUser.get(l.user_id) ?? [];
+      if (arr.length < 2) {
+        arr.push(Number(l.weight_kg));
+        weightHistoryByUser.set(l.user_id, arr);
       }
     });
 
@@ -295,6 +336,10 @@ export default function CoachHome({ onViewPatient, onViewMessages }: { onViewPat
       }
       const onTrack = applicableCount > 0 && doneCount >= Math.ceil(applicableCount * 0.7);
 
+      const latestWeightValue = weightHistoryByUser.get(a.user_id)?.[0] ?? profile?.weight ?? null;
+      const previousWeightValue = weightHistoryByUser.get(a.user_id)?.[1]
+        ?? (profile?.weight != null && latestWeightValue != null && Number(profile.weight) !== Number(latestWeightValue) ? Number(profile.weight) : null);
+
       return {
         user_id: a.user_id,
         assigned_at: a.assigned_at,
@@ -304,10 +349,13 @@ export default function CoachHome({ onViewPatient, onViewMessages }: { onViewPat
         age: profile?.age ?? null,
         gender: profile?.gender ?? null,
         weight: profile?.weight ?? null,
+        latestWeight: latestWeightValue,
+        previousWeight: previousWeightValue,
         bmi: profile?.bmi ?? null,
         bmi_category: profile?.bmi_category ?? null,
         latestGlucose: latestGlucoseByUser.get(a.user_id) ?? null,
         latestBpSystolic: latestBpByUser.get(a.user_id) ?? null,
+        latestBpDiastolic: latestBpDiastolicByUser.get(a.user_id) ?? null,
         initialScore: profile?.initial_health_score ?? null,
         currentScore: profile?.assessment?.healthScore ?? null,
         planName: sub?.plan_name ?? null,
