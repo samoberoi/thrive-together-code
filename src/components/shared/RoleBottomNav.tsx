@@ -43,9 +43,11 @@ export default function RoleBottomNav<TId extends string>({
   let overflow = items.slice(primarySlots);
   if (!primary.some((i) => i.id === active) && overflow.some((i) => i.id === active)) {
     const swapOut = primary[primary.length - 1];
-    const activeItem = overflow.find((i) => i.id === active)!;
-    primary = [...primary.slice(0, -1), activeItem];
-    overflow = overflow.map((i) => (i.id === active ? swapOut : i));
+    const activeItem = overflow.find((i) => i.id === active);
+    if (swapOut && activeItem) {
+      primary = [...primary.slice(0, -1), activeItem];
+      overflow = overflow.map((i) => (i.id === active ? swapOut : i));
+    }
   }
 
   const hasOverflow = overflow.length > 0;
@@ -116,10 +118,11 @@ export default function RoleBottomNav<TId extends string>({
       </Drawer>
 
       {/* Flat full-width dock — matches end-user BottomNav */}
-      <AppBottomBar className="md:hidden">
+      <AppBottomBar className="md:hidden" style={{ padding: 0 }}>
         <div
-          className="flex items-center gap-0.5 px-2 pt-1.5 pb-1.5"
+          className="flex items-center gap-0.5 px-2 pt-1.5"
           style={{
+            paddingBottom: "calc(max(0.375rem, env(safe-area-inset-bottom)) + var(--bbdo-native-bottom-guard, 0px))",
             background: "#ffffff",
             borderTop: "1px solid var(--bbdo-line)",
             boxShadow: "0 -6px 20px -12px rgba(15,26,61,0.18)",

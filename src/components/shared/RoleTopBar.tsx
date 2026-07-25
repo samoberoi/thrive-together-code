@@ -38,10 +38,13 @@ export default function RoleTopBar({
   return (
     <div
       className={cn(
-        "md:hidden sticky top-0 z-30 bg-background/85 backdrop-blur-xl flex items-center justify-between px-5 py-3",
+        "md:hidden sticky top-0 z-30 bg-background/85 backdrop-blur-xl flex items-center justify-between px-5 pb-3",
         className,
       )}
-      style={{ borderBottom: "1px solid hsl(var(--border))" }}
+      style={{
+        borderBottom: "1px solid hsl(var(--border))",
+        paddingTop: "calc(env(safe-area-inset-top) + 0.75rem)",
+      }}
     >
       <div className="flex items-center gap-2.5 min-w-0">
         <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-sm">
