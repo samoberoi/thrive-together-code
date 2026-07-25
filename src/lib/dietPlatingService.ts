@@ -12,7 +12,7 @@ export interface DietPlating {
 
 export function normalizeDietPreference(value: string | null | undefined): string {
   const v = (value || "").toLowerCase().trim().replace(/[-\s]/g, "_");
-  if (!v) return "mixed";
+  if (!v || v === "mixed") return "veg";
   if (v === "vegetarian") return "veg";
   if (v === "nonveg" || v === "non_vegetarian" || v === "nonvegetarian") return "non_veg";
   return v;
@@ -106,7 +106,7 @@ export async function fetchCurrentDietPreference(userId: string): Promise<string
   const prefs = (row?.diet_preferences as string[] | null | undefined)?.map(normalizeDietPreference).filter(Boolean) ?? [];
   const single = row?.diet_preference ? normalizeDietPreference(row.diet_preference) : "";
   const profileDiet = (profile as any)?.lifestyle?.diet ? normalizeDietPreference((profile as any).lifestyle.diet) : "";
-  return prefs[0] || single || profileDiet || "mixed";
+  return prefs[0] || single || profileDiet || "veg";
 }
 
 export function dayIndexForToday(planStartDate: string) {
