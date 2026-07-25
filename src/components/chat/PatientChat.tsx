@@ -303,7 +303,7 @@ export default function PatientChat({ coach, onBack }: PatientChatProps) {
       {/* Composer */}
       <div
         className="border-t border-border/60 bg-white/85 backdrop-blur-xl"
-        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + var(--kb-h, 0px))" }}
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + var(--kb-h, 0px) + var(--nav-h, 0px))" }}
       >
 
         <div className="max-w-3xl mx-auto px-3 md:px-4 py-2.5 flex items-end gap-2">
