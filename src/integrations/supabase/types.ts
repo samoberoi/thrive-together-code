@@ -5354,36 +5354,19 @@ export type Database = {
       get_assigned_coach: {
         Args: { _user_id: string }
         Returns: {
-          aadhaar_card: string
-          aadhaar_doc_url: string
-          address_line1: string
-          address_line2: string
           avatar_url: string
           avg_rating: number
-          bank_account_number: string
-          bank_ifsc: string
-          bank_name: string
           bio: string
           city: string
           coach_type: Database["public"]["Enums"]["coach_type"]
-          commission_percent: number
-          date_of_birth: string
           description: string
-          email: string
-          emergency_contact_name: string
-          emergency_contact_phone: string
           id: string
           is_active: boolean
           languages: string[]
           name: string
-          pan_card: string
-          pan_doc_url: string
           phone: string
-          pincode: string
           qualification: string
           specialization: string
-          start_date: string
-          state: string
           total_consultations: number
           total_ratings: number
           years_experience: number
