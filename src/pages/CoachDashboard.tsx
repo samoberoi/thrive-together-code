@@ -30,7 +30,6 @@ const navItems: { id: CoachTab; icon: React.ElementType; label: string }[] = [
   { id: "home", icon: Home, label: "Home" },
   { id: "patients", icon: Users, label: "Patients" },
   { id: "meetings", icon: Calendar, label: "Meetings" },
-  { id: "requests", icon: MessageSquareWarning, label: "Requests" },
   { id: "messages", icon: MessageCircle, label: "Messages" },
   { id: "fasting", icon: Timer, label: "Fasting" },
   { id: "supplements", icon: Pill, label: "Supplements" },
