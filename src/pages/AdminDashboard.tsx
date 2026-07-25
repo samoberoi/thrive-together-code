@@ -34,6 +34,7 @@ import {
   User as UserIcon,
   Mail,
   CalendarDays,
+  Scale,
 } from "lucide-react";
 
 import NotificationCenter from "@/components/NotificationCenter";
@@ -70,6 +71,7 @@ import AdminExercises from "./admin/AdminExercises";
 import AdminGlobalStreak from "./admin/AdminGlobalStreak";
 import AdminPnl from "./admin/AdminPnl";
 import AdminDietTypes from "./admin/AdminDietTypes";
+import AdminBmiCategories from "./admin/AdminBmiCategories";
 
 import NotificationsPanel from "@/components/NotificationsPanel";
 import { useAttentionCounts } from "@/hooks/useAttentionCounts";
@@ -105,6 +107,7 @@ export type AdminTab =
   | "global_streak"
   | "pnl"
   | "diet_types"
+  | "bmi"
   
   | "profile";
 
@@ -163,6 +166,7 @@ const navItems: NavItem[] = [
       { id: "global_streak", icon: Flame, label: "Global Streak" },
       { id: "pnl", icon: TrendingUp, label: "P&L Manager" },
       { id: "diet_types", icon: Salad, label: "Diet Types" },
+      { id: "bmi", icon: Scale, label: "BMI Categories" },
     ],
   },
 ];
@@ -198,6 +202,7 @@ const tabContentMap: Record<AdminTab, React.ReactNode> = {
   global_streak: <AdminGlobalStreak />,
   pnl: <AdminPnl />,
   diet_types: <AdminDietTypes />,
+  bmi: <AdminBmiCategories />,
   
   profile: null,
 };
@@ -231,6 +236,7 @@ const adminTabs = new Set<AdminTab>([
   "global_streak",
   "pnl",
   "diet_types",
+  "bmi",
   
   "profile",
 ]);
@@ -258,6 +264,7 @@ const controlCenterTabs = new Set<AdminTab>([
   "global_streak",
   "pnl",
   "diet_types",
+  "bmi",
 ]);
 
 const supplementTabs = new Set<AdminTab>(["supplements"]);
@@ -614,6 +621,7 @@ export default function AdminDashboard() {
             { id: "channel_partners", icon: Handshake, label: "Partners" },
             { id: "global_streak", icon: Flame, label: "Streak" },
             { id: "pnl", icon: TrendingUp, label: "P&L" },
+            { id: "bmi", icon: Scale, label: "BMI" },
           ]}
         />
       </div>
