@@ -271,7 +271,6 @@ export default function LabBookingDialog({ open, onClose, productCodes, recommen
             )}
           </div>
         </div>
-        </div>
         <DialogFooter className="flex-none border-t bg-background px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-3 sm:pb-4">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submitOrder} disabled={submitting || pinOk === false || !form.collection_slot}>
