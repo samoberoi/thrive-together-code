@@ -15,7 +15,6 @@ import type { AssignmentModule } from "@/lib/coachVideoAssignmentService";
 interface Patient {
   user_id: string;
   name: string;
-  package_key: string | null;
   avatar_url: string | null;
 }
 
@@ -36,8 +35,10 @@ export default function CoachVideoAssignPage({ module }: Props) {
 
   useEffect(() => {
     if (!user) return;
+    let cancelled = false;
     (async () => {
       setLoading(true);
+      try {
 
       // Resolve coach row: prefer user_id, fall back to phone match + self-heal.
       const resolveCoach = async (): Promise<string | null> => {
@@ -69,6 +70,7 @@ export default function CoachVideoAssignPage({ module }: Props) {
       };
 
       const cid = await resolveCoach();
+      if (cancelled) return;
       setCoachId(cid);
       if (!cid) {
         console.warn("[CoachVideoAssignPage] Could not resolve coach id for user", user.id);
@@ -88,23 +90,25 @@ export default function CoachVideoAssignPage({ module }: Props) {
         setLoading(false);
         return;
       }
-      const { data: profiles } = await supabase
+      const { data: profiles, error: pErr } = await supabase
         .from("profiles" as any)
-        .select("user_id, name, phone, avatar_url, package_key")
+        .select("user_id, name, phone, avatar_url")
         .in("user_id", ids);
+      if (pErr) console.warn("[CoachVideoAssignPage] profiles query error", pErr);
       const profileById = new Map<string, any>();
       ((profiles as any[]) ?? []).forEach((p) => profileById.set(p.user_id, p));
       const list: Patient[] = ids.map((uid) => {
         const p = profileById.get(uid);
-        const nm = (p?.name && String(p.name).trim()) || (p?.phone ? `+${String(p.phone).replace(/^\+/, "")}` : "Unnamed patient");
+        const phone = p?.phone ? `+${String(p.phone).replace(/^\+/, "")}` : "";
+        const nm = (p?.name && String(p.name).trim()) || phone || `User ${uid.slice(0, 8)}`;
         return {
           user_id: uid,
           name: nm,
-          package_key: p?.package_key ?? null,
           avatar_url: p?.avatar_url ?? null,
         };
       });
       list.sort((a, b) => a.name.localeCompare(b.name));
+      if (cancelled) return;
       setPatients(list);
 
       const { data: cva } = await supabase
@@ -119,7 +123,18 @@ export default function CoachVideoAssignPage({ module }: Props) {
       });
       setAssignedCounts(counts);
       setLoading(false);
+      } catch (e: any) {
+        if (!cancelled) {
+          console.warn("[CoachVideoAssignPage] load error", e);
+          toast.error(e?.message || "Failed to load patients");
+          setPatients([]);
+          setLoading(false);
+        }
+      }
     })();
+    return () => {
+      cancelled = true;
+    };
   }, [user, module]);
 
 
@@ -130,9 +145,8 @@ export default function CoachVideoAssignPage({ module }: Props) {
       try {
         if (module === "exercise") {
           const list = await listExercises();
-          const enabled = list.filter((e: any) => e.is_enabled !== false);
           setItems(
-            enabled.map((e: any) => ({
+            list.map((e: any) => ({
               key: e.id,
               title: e.name,
               subtitle: `Tier ${e.tier}`,
@@ -140,13 +154,8 @@ export default function CoachVideoAssignPage({ module }: Props) {
           );
         } else {
           const overrides = await fetchVideoMetadataOverrides();
-          const disabled = new Set(
-            Object.entries(overrides)
-              .filter(([, v]: any) => v?.is_enabled === false)
-              .map(([k]) => k),
-          );
+          const staticIds = new Set(staticYogaVideos.map((v) => v.id));
           const base: AssignableItem[] = staticYogaVideos
-            .filter((v) => !disabled.has(v.id))
             .map((v) => {
               const o: any = overrides[v.id] || {};
               return {
@@ -157,7 +166,7 @@ export default function CoachVideoAssignPage({ module }: Props) {
             });
           // Include custom uploaded videos
           const customs: AssignableItem[] = Object.entries(overrides)
-            .filter(([, v]: any) => v?.is_custom && v?.is_enabled !== false)
+            .filter(([k, v]: any) => v?.is_custom && !staticIds.has(k))
             .map(([k, v]: any) => ({
               key: k,
               title: v.name || "Custom video",

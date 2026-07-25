@@ -128,7 +128,13 @@ export default function CoachAssignmentSheet({
               size="sm"
               variant="outline"
               className="flex-1"
-              onClick={() => setSelected(new Set(filtered.map((i) => i.key)))}
+              onClick={() =>
+                setSelected((prev) => {
+                  const next = new Set(prev);
+                  filtered.forEach((i) => next.add(i.key));
+                  return next;
+                })
+              }
               disabled={loading || loadingItems || filtered.length === 0}
             >
               Select all{q ? " (filtered)" : ""}
@@ -166,8 +172,9 @@ export default function CoachAssignmentSheet({
                       className={`w-full flex items-start gap-3 rounded-xl border px-3 py-3 text-left transition-colors ${
                         checked ? "bg-primary/10 border-primary/40" : "bg-card border-border"
                       }`}
+                      aria-pressed={checked}
                     >
-                      <Checkbox checked={checked} className="mt-0.5" onCheckedChange={() => toggle(it.key)} />
+                      <Checkbox checked={checked} className="mt-0.5 pointer-events-none" aria-hidden="true" />
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-semibold truncate">{it.title}</p>
                         {it.subtitle && (
