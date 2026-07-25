@@ -57,6 +57,16 @@ interface Alert {
   type: "danger" | "warning";
   message: string;
   metric: string;
+  created_at?: string;
+  source?: "notification" | "calculated";
+}
+
+interface CoachHealthNotification {
+  id: string;
+  title: string | null;
+  body: string | null;
+  icon: string | null;
+  created_at: string;
 }
 
 interface CommissionBreakdownRow {
@@ -76,15 +86,52 @@ interface CommissionSummary {
   rows: CommissionBreakdownRow[];
 }
 
-function evaluateAlerts(patients: PatientSummary[]): Alert[] {
+function parseCoachHealthNotification(row: CoachHealthNotification): Alert | null {
+  const rawTitle = (row.title ?? "").trim();
+  const rawBody = (row.body ?? "").trim();
+  if (!rawTitle && !rawBody) return null;
+
+  const titleText = rawTitle
+    .replace(/^[^\p{L}\p{N}]+/u, "")
+    .replace(/^Critical:\s*/i, "")
+    .trim();
+  const lowerTitle = titleText.toLowerCase();
+  const updatedIndex = lowerTitle.indexOf(" updated health data");
+  const attentionIndex = lowerTitle.indexOf(" needs attention");
+  const splitIndex = updatedIndex >= 0 ? updatedIndex : attentionIndex;
+  const patientName = splitIndex >= 0 ? titleText.slice(0, splitIndex).trim() : titleText;
+
+  const colonIndex = rawBody.indexOf(":");
+  const metric = colonIndex > 0 ? rawBody.slice(0, colonIndex).trim() : "Health";
+  const message = (colonIndex > 0 ? rawBody.slice(colonIndex + 1) : rawBody)
+    .replace(/\.?\s*Tap to review\.?$/i, "")
+    .trim();
+
+  return {
+    user_id: row.id,
+    patient_name: patientName || "Patient",
+    type: rawTitle.includes("🚨") || /critical/i.test(rawTitle) ? "danger" : "warning",
+    message: message || rawBody || "Health data updated",
+    metric: metric || "Health",
+    created_at: row.created_at,
+    source: "notification",
+  };
+}
+
+function evaluateAlerts(patients: PatientSummary[], healthNotifications: CoachHealthNotification[] = []): Alert[] {
   const seen = new Set<string>();
   const alerts: Alert[] = [];
   const push = (a: Alert) => {
-    const key = `${a.user_id}|${a.metric}`;
+    const key = `${a.patient_name.toLowerCase()}|${a.metric.toLowerCase()}|${a.message.toLowerCase()}`;
     if (seen.has(key)) return;
     seen.add(key);
     alerts.push(a);
   };
+  healthNotifications
+    .map(parseCoachHealthNotification)
+    .forEach((alert) => {
+      if (alert) push(alert);
+    });
   for (const p of patients) {
     const name = p.name ?? "Unknown";
     if (p.latestWeight != null && p.previousWeight != null) {
@@ -97,34 +144,41 @@ function evaluateAlerts(patients: PatientSummary[]): Alert[] {
           type: absDelta >= 10 ? "danger" : "warning",
           message: `Weight ${delta > 0 ? "increased" : "decreased"} by ${Math.round(absDelta * 10) / 10} kg (${p.previousWeight} → ${p.latestWeight})`,
           metric: "Weight",
+          source: "calculated",
         });
       }
     } else if (p.latestWeight != null && (p.latestWeight >= 150 || p.latestWeight <= 35)) {
-      push({ user_id: p.user_id, patient_name: name, type: "warning", message: `Weight is ${p.latestWeight} kg`, metric: "Weight" });
+      push({ user_id: p.user_id, patient_name: name, type: "warning", message: `Weight is ${p.latestWeight} kg`, metric: "Weight", source: "calculated" });
     }
     if (p.bmi && p.bmi >= 30) {
-      push({ user_id: p.user_id, patient_name: name, type: p.bmi >= 35 ? "danger" : "warning", message: `BMI is ${p.bmi} (${p.bmi_category})`, metric: "BMI" });
+      push({ user_id: p.user_id, patient_name: name, type: p.bmi >= 35 ? "danger" : "warning", message: `BMI is ${p.bmi} (${p.bmi_category})`, metric: "BMI", source: "calculated" });
     }
     if (p.latestGlucose != null) {
       if (p.latestGlucose >= 250 || p.latestGlucose <= 54) {
-        push({ user_id: p.user_id, patient_name: name, type: "danger", message: `Glucose at ${p.latestGlucose} mg/dL`, metric: "Glucose" });
+        push({ user_id: p.user_id, patient_name: name, type: "danger", message: `Glucose at ${p.latestGlucose} mg/dL`, metric: "Glucose", source: "calculated" });
       } else if (p.latestGlucose >= 140 || p.latestGlucose <= 70) {
-        push({ user_id: p.user_id, patient_name: name, type: p.latestGlucose >= 180 ? "danger" : "warning", message: `Glucose at ${p.latestGlucose} mg/dL`, metric: "Glucose" });
+        push({ user_id: p.user_id, patient_name: name, type: p.latestGlucose >= 180 ? "danger" : "warning", message: `Glucose at ${p.latestGlucose} mg/dL`, metric: "Glucose", source: "calculated" });
       }
     }
     if (p.latestBpSystolic != null && p.latestBpDiastolic != null) {
       if (p.latestBpSystolic >= 180 || p.latestBpDiastolic >= 120) {
-        push({ user_id: p.user_id, patient_name: name, type: "danger", message: `BP at ${p.latestBpSystolic}/${p.latestBpDiastolic} mmHg`, metric: "BP" });
+        push({ user_id: p.user_id, patient_name: name, type: "danger", message: `BP at ${p.latestBpSystolic}/${p.latestBpDiastolic} mmHg`, metric: "BP", source: "calculated" });
       } else if (p.latestBpSystolic >= 140 || p.latestBpDiastolic >= 90 || p.latestBpSystolic <= 90 || p.latestBpDiastolic <= 60) {
-        push({ user_id: p.user_id, patient_name: name, type: p.latestBpSystolic >= 150 ? "danger" : "warning", message: `BP at ${p.latestBpSystolic}/${p.latestBpDiastolic} mmHg`, metric: "BP" });
+        push({ user_id: p.user_id, patient_name: name, type: p.latestBpSystolic >= 150 ? "danger" : "warning", message: `BP at ${p.latestBpSystolic}/${p.latestBpDiastolic} mmHg`, metric: "BP", source: "calculated" });
       }
     }
     if (p.initialScore != null && p.currentScore != null && p.currentScore < p.initialScore) {
       const delta = p.currentScore - p.initialScore;
-      push({ user_id: p.user_id, patient_name: name, type: delta <= -5 ? "danger" : "warning", message: `Health score dropped ${Math.abs(delta)} pts (${p.initialScore} → ${p.currentScore})`, metric: "Score" });
+      push({ user_id: p.user_id, patient_name: name, type: delta <= -5 ? "danger" : "warning", message: `Health score dropped ${Math.abs(delta)} pts (${p.initialScore} → ${p.currentScore})`, metric: "Score", source: "calculated" });
     }
   }
-  return alerts.sort((a, b) => (a.type === "danger" ? -1 : 1));
+  return alerts.sort((a, b) => {
+    if (a.created_at && b.created_at) return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    if (a.created_at) return -1;
+    if (b.created_at) return 1;
+    if (a.type === b.type) return 0;
+    return a.type === "danger" ? -1 : 1;
+  });
 }
 
 const ALL_ACTIVITIES: ActivityKey[] = [
@@ -153,8 +207,23 @@ export default function CoachHome({ onViewPatient, onViewMessages }: { onViewPat
   useEffect(() => {
     if (!user) return;
     loadData();
-     
-  }, [user]);
+
+    const channel = supabase
+      .channel(`coach-health-alerts-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          const row = payload.new as { type?: string };
+          if (row.type === "health_alert") loadData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
 
   const loadData = async () => {
     if (!user) return;
@@ -185,6 +254,7 @@ export default function CoachHome({ onViewPatient, onViewMessages }: { onViewPat
     todayStart.setHours(0, 0, 0, 0);
     const todayIso = todayStart.toISOString();
     const todayDate = todayStart.toISOString().slice(0, 10);
+    const recentHealthAlertIso = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
 
     // Fetch everything in parallel across all patients (single queries, not per-patient loops)
     const [
@@ -201,6 +271,7 @@ export default function CoachHome({ onViewPatient, onViewMessages }: { onViewPat
       { data: latestGlucose },
       { data: latestBp },
       { data: recentWeights },
+      { data: recentCoachHealthAlerts },
     ] = await Promise.all([
       supabase.from("profiles" as any)
         .select("user_id, name, phone, avatar_url, age, gender, weight, bmi, bmi_category, initial_health_score, assessment")
@@ -248,7 +319,14 @@ export default function CoachHome({ onViewPatient, onViewMessages }: { onViewPat
         .in("user_id", patientIds).eq("log_type", "weight")
         .not("weight_kg", "is", null)
         .order("logged_at", { ascending: false })
-        .limit(Math.max(patientIds.length * 4, 80)),
+        .limit(1000),
+      supabase.from("notifications" as any)
+        .select("id, title, body, icon, created_at")
+        .eq("user_id", user.id)
+        .eq("type", "health_alert")
+        .gte("created_at", recentHealthAlertIso)
+        .order("created_at", { ascending: false })
+        .limit(30),
     ]);
 
     const suppPlanSet = new Set(((activePlans as any[]) ?? []).map((r) => r.user_id));
@@ -372,7 +450,7 @@ export default function CoachHome({ onViewPatient, onViewMessages }: { onViewPat
     });
 
     setPatients(enriched);
-    setAlerts(evaluateAlerts(enriched));
+    setAlerts(evaluateAlerts(enriched, ((recentCoachHealthAlerts as any[]) ?? []) as CoachHealthNotification[]));
 
     const { data: handledMeetings } = await supabase
       .from("coach_meetings" as any)
