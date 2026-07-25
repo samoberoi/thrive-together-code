@@ -1815,7 +1815,11 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
               className="w-full py-3 rounded-2xl bg-primary text-primary-foreground font-bold text-sm flex items-center justify-center gap-2"
             >
               <UtensilsCrossed className="w-4 h-4" />
-              {packageKey === "foundation" ? "Log first meal (FMOD)" : "Track FMOD — Build my plate"}
+              {packageKey === "foundation"
+                ? "Log first meal (FMOD)"
+                : packageKey === "intensive" || packageKey === "pro"
+                ? "Track FMOD — View my plate"
+                : "Track FMOD — Build my plate"}
             </button>
           )}
           {fastingState === "eating" && (() => {
