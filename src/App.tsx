@@ -200,9 +200,9 @@ function GlobalRealtimeAlerts() {
     }
     let cancelled = false;
 
-    const syncBadge = async () => {
+    const syncBadge = async (opts: { force?: boolean } = {}) => {
       try {
-        const count = await fetchUnreadCount(user.id, { force: true });
+        const count = await fetchUnreadCount(user.id, { force: opts.force ?? false });
         if (!cancelled) await setAppBadgeCount(count);
       } catch (error) {
         console.warn("[badge] unread sync failed", error);
@@ -210,14 +210,14 @@ function GlobalRealtimeAlerts() {
     };
 
     // Initial sync + refresh whenever the app returns to the foreground.
-    void syncBadge();
+    void syncBadge({ force: true });
     let appListener: { remove: () => void } | null = null;
     if (isNativePushSupported()) {
       void CapApp.addListener("appStateChange", (state) => {
         if (state.isActive) {
           // Clear the OS notification tray and resync badge to the real count.
           void PushNotifications.removeAllDeliveredNotifications().catch(() => {});
-          void syncBadge();
+          void syncBadge({ force: true });
           void registerNativePush(user.id).catch((error) => {
             console.warn("[push] resume registration failed", error);
           });
@@ -228,8 +228,11 @@ function GlobalRealtimeAlerts() {
     }
 
     const unsub = subscribeToNotifications(user.id, (notification) => {
-      // Any incoming notification → re-fetch true unread count and update badge.
-      void syncBadge();
+      // Realtime insert → bump the cached count locally (no COUNT query).
+      const next = adjustUnreadCount(user.id, 1);
+      if (next != null) void setAppBadgeCount(next);
+      else void syncBadge({ force: true });
+
       // Android does not show FCM notification banners while the WebView is in
       // the foreground, so mirror the live database notification into a local
       // native banner. iOS foreground presentation is already handled by APNs.
