@@ -127,6 +127,10 @@ export async function updateProfile(userId: string, updates: Partial<ProfileRow>
     .from("profiles" as any)
     .upsert({ user_id: userId, ...updates } as any, { onConflict: "user_id" });
 
+  invalidateProfileCache(userId);
+
+
+
   if (error) {
     console.error("Failed to update profile:", error);
     return false;
