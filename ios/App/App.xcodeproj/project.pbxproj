@@ -115,11 +115,14 @@
 						CreatedOnToolsVersion = 9.2;
 						LastSwiftMigration = 1100;
 						ProvisioningStyle = Automatic;
-					SystemCapabilities = {
-						com.apple.HealthKit = {
-							enabled = 1;
+						SystemCapabilities = {
+							com.apple.HealthKit = {
+								enabled = 1;
+							};
+							com.apple.Push = {
+								enabled = 1;
+							};
 						};
-					};
 					};
 				};
 			};
