@@ -101,7 +101,7 @@ export default function BodyStats() {
             </div>
             <div>
               <div className="flex items-center justify-between mb-3">
-                <p className="text-foreground font-semibold text-sm">Waist Size <span className="text-muted-foreground font-normal">(optional)</span></p>
+                <p className="text-foreground font-semibold text-sm">Waist Size</p>
                 <div className="flex liquid-glass rounded-lg p-0.5 gap-0.5">
                   {(["cm", "in"] as const).map((u) => (
                     <button key={u} onClick={() => setWaistUnit(u)} className={`px-3 py-1 rounded-md text-xs font-bold transition-colors ${waistUnit === u ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>{u}</button>
