@@ -107,6 +107,7 @@ export async function createProfile(profile: ProfileRow) {
     console.error("Failed to create profile:", error);
     return null;
   }
+  invalidateProfileCache(profile.user_id);
   return data as unknown as ProfileRow;
 }
 
@@ -116,7 +117,11 @@ export async function updateProfile(userId: string, updates: Partial<ProfileRow>
     Object.prototype.hasOwnProperty.call(updates, "weight") ||
     !!(updates.clinical as any)?.systolicBP ||
     !!(updates.clinical as any)?.diastolicBP;
-  const previousProfile = shouldCheckHealthAlert ? await fetchProfile(userId) : null;
+  const previousProfile = shouldCheckHealthAlert
+    ? await fetchProfile(userId, { force: true })
+    : null;
+  invalidateProfileCache(userId);
+
 
   const { error } = await supabase
     .from("profiles" as any)
