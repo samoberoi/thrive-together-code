@@ -21,7 +21,7 @@ export default function NotificationCenter({ unreadCount: controlledCount }: { u
     if (!user) return;
     if (controlledCount == null) fetchUnreadCount(user.id).then(setUnreadCount);
     const unsub = subscribeToNotifications(user.id, (notification) => {
-      if (controlledCount == null) fetchUnreadCount(user.id).then(setUnreadCount);
+      if (controlledCount == null) fetchUnreadCount(user.id, { force: true }).then(setUnreadCount);
       if (isNativePushSupported()) return;
       // Play the BBDO signature sound on any new notification, regardless of
       // whether the notifications panel is currently mounted.

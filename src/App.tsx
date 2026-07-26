@@ -202,7 +202,7 @@ function GlobalRealtimeAlerts() {
 
     const syncBadge = async () => {
       try {
-        const count = await fetchUnreadCount(user.id);
+        const count = await fetchUnreadCount(user.id, { force: true });
         if (!cancelled) await setAppBadgeCount(count);
       } catch (error) {
         console.warn("[badge] unread sync failed", error);
