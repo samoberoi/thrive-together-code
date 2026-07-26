@@ -571,21 +571,28 @@ export default function AdminDashboard() {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
               >
-                {notificationsOpen ? (
-                  <NotificationsPanel embedded onClose={() => setNotificationsOpen(false)} />
-                ) : activeTab === "profile" ? (
-                  <AdminProfileView
-                    email={user?.email}
-                    initial={adminInitial}
-                    onSignOut={handleSignOut}
-                    onOpenAdmins={() => selectTab("admins")}
-                    onOpenRBAC={() => selectTab("rbac")}
-                    onOpenNotifications={() => selectTab("notifications")}
-                  />
-                ) : (
-                  tabContentMap[activeTab]
-                )}
+                <Suspense
+                  fallback={
+                    <div className="p-8 text-sm text-muted-foreground">Loading…</div>
+                  }
+                >
+                  {notificationsOpen ? (
+                    <NotificationsPanel embedded onClose={() => setNotificationsOpen(false)} />
+                  ) : activeTab === "profile" ? (
+                    <AdminProfileView
+                      email={user?.email}
+                      initial={adminInitial}
+                      onSignOut={handleSignOut}
+                      onOpenAdmins={() => selectTab("admins")}
+                      onOpenRBAC={() => selectTab("rbac")}
+                      onOpenNotifications={() => selectTab("notifications")}
+                    />
+                  ) : (
+                    tabContentMap[activeTab]
+                  )}
+                </Suspense>
               </motion.div>
+
             </AnimatePresence>
           </div>
         </main>
