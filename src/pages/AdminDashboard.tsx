@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
