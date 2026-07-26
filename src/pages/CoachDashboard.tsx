@@ -1,25 +1,28 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { motion } from "framer-motion";
 import { Home, Users, LogOut, Timer, Pill, MessageCircle, FlaskConical, Calendar, MessageSquareWarning, Activity, Dumbbell, Flower2, Heart } from "lucide-react";
-import Community from "./tabs/Community";
 import NotificationCenter from "@/components/NotificationCenter";
 import SoundToggle from "@/components/SoundToggle";
 import CoachCommissionCard from "@/components/CoachCommissionCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { resolveCurrentCoach } from "@/lib/coachService";
-import CoachHome from "./coach/CoachHome";
-import CoachPatients from "./coach/CoachPatients";
-import CoachProfile from "./coach/CoachProfile";
 import CoachGuidedTour from "./coach/CoachGuidedTour";
-import CoachFasting from "./coach/CoachFasting";
-import CoachSupplements from "./coach/CoachSupplements";
-import CoachLabTests from "./coach/CoachLabTests";
-import CoachMeetings from "./coach/CoachMeetings";
-import CoachMove from "./coach/CoachMove";
-import CoachVideoAssignPage from "./coach/CoachVideoAssignPage";
-import CoachConsultationRequests from "./coach/CoachConsultationRequests";
-import CoachInbox from "@/components/chat/CoachInbox";
+
+// Lazy: coach panels mount on first visit, so each gets its own chunk.
+const Community = lazy(() => import("./tabs/Community"));
+const CoachHome = lazy(() => import("./coach/CoachHome"));
+const CoachPatients = lazy(() => import("./coach/CoachPatients"));
+const CoachProfile = lazy(() => import("./coach/CoachProfile"));
+const CoachFasting = lazy(() => import("./coach/CoachFasting"));
+const CoachSupplements = lazy(() => import("./coach/CoachSupplements"));
+const CoachLabTests = lazy(() => import("./coach/CoachLabTests"));
+const CoachMeetings = lazy(() => import("./coach/CoachMeetings"));
+const CoachMove = lazy(() => import("./coach/CoachMove"));
+const CoachVideoAssignPage = lazy(() => import("./coach/CoachVideoAssignPage"));
+const CoachConsultationRequests = lazy(() => import("./coach/CoachConsultationRequests"));
+const CoachInbox = lazy(() => import("@/components/chat/CoachInbox"));
+
 import NotificationsPanel from "@/components/NotificationsPanel";
 import { useAttentionCounts } from "@/hooks/useAttentionCounts";
 import AttentionBadge from "@/components/attention/AttentionBadge";
@@ -249,10 +252,13 @@ export default function CoachDashboard() {
               allTabs.map((tab) =>
                 visitedTabs.has(tab) ? (
                   <div key={tab} hidden={activeTab !== tab} aria-hidden={activeTab !== tab}>
-                    {tabContent[tab]}
+                    <Suspense fallback={<div className="p-8 text-sm text-muted-foreground">Loading…</div>}>
+                      {tabContent[tab]}
+                    </Suspense>
                   </div>
                 ) : null
               )
+
             )}
           </div>
         </main>

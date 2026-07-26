@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Bell } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { fetchUnreadCount, subscribeToNotifications } from "@/lib/notificationService";
+import { fetchUnreadCount, subscribeToNotifications, adjustUnreadCount } from "@/lib/notificationService";
 import { playNotificationSound } from "@/lib/soundEngine";
 import { getNotificationSoundSettings } from "@/lib/notificationSoundService";
 import { fireRealtimeHealthNotificationAlert } from "@/lib/healthAlerts";
@@ -21,8 +21,15 @@ export default function NotificationCenter({ unreadCount: controlledCount }: { u
     if (!user) return;
     if (controlledCount == null) fetchUnreadCount(user.id).then(setUnreadCount);
     const unsub = subscribeToNotifications(user.id, (notification) => {
-      if (controlledCount == null) fetchUnreadCount(user.id, { force: true }).then(setUnreadCount);
+      if (controlledCount == null) {
+        // Realtime insert → bump the cached count locally instead of running
+        // another COUNT query for every incoming notification.
+        const next = adjustUnreadCount(user.id, 1);
+        if (next != null) setUnreadCount(next);
+        else void fetchUnreadCount(user.id, { force: true }).then(setUnreadCount);
+      }
       if (isNativePushSupported()) return;
+
       // Play the BBDO signature sound on any new notification, regardless of
       // whether the notifications panel is currently mounted.
       void getNotificationSoundSettings().then((s) => {

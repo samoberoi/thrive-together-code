@@ -100,8 +100,8 @@ export async function createPost(
  * signed URL usable as <img src>. Files are namespaced under the user's id
  * so per-user RLS policies apply.
  */
-const MAX_DIMENSION = 1600;
-const JPEG_QUALITY = 0.8;
+const MAX_DIMENSION = 1280;
+const JPEG_QUALITY = 0.72;
 
 function loadImage(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -231,7 +231,7 @@ export async function uploadCommunityImage(userId: string, file: File): Promise<
   const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
   const { error: upErr } = await supabase.storage
     .from("community-images")
-    .upload(path, compressed, { cacheControl: "3600", upsert: false, contentType });
+    .upload(path, compressed, { cacheControl: "31536000", upsert: false, contentType });
   if (upErr) return null;
   // 10-year signed URL (private bucket, but readable by any authenticated user via RLS).
   const { data, error } = await supabase.storage

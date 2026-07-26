@@ -30,6 +30,24 @@ export function invalidateUnreadCount(userId?: string) {
   }
 }
 
+/** Last known unread count without touching the network. */
+export function getCachedUnreadCount(userId: string): number | null {
+  return unreadCache.get(userId)?.value ?? null;
+}
+
+/**
+ * Adjust the cached unread count locally (realtime insert = +1, read = -1).
+ * Keeps the badge live without firing a COUNT query for every event.
+ */
+export function adjustUnreadCount(userId: string, delta: number): number | null {
+  const cached = unreadCache.get(userId);
+  if (!cached) return null;
+  const value = Math.max(0, cached.value + delta);
+  unreadCache.set(userId, { at: Date.now(), value });
+  return value;
+}
+
+
 /** Fetch unread count (cached for 15s; pass { force: true } to bypass) */
 export async function fetchUnreadCount(
   userId: string,
