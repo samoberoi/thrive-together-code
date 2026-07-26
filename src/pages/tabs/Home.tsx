@@ -643,13 +643,14 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
       });
       const profilePromise = fetchProfile(authUser.id);
       Promise.all([
-        fetchHealthLogs("diabetes", authUser.id),
-        fetchHealthLogs("bp", authUser.id),
-        fetchHealthLogs("weight", authUser.id),
-        fetchHealthLogs("water", authUser.id),
+        fetchHealthLogsMulti(authUser.id, ["diabetes", "bp", "weight", "water"]),
         fetchProgressSummaries(authUser.id),
         profilePromise,
-      ]).then(([diabetesLogs, bpLogs, weightLogs, waterLogs, summaries, p]) => {
+      ]).then(([logsByType, summaries, p]) => {
+        const diabetesLogs = logsByType.diabetes;
+        const bpLogs = logsByType.bp;
+        const weightLogs = logsByType.weight;
+        const waterLogs = logsByType.water;
         setDbProfile(p ?? null);
         setGlucoseData(diabetesLogs.filter(l => l.glucose_morning).map(l => ({ v: Number(l.glucose_morning) })).reverse());
         setWeightData(weightLogs.filter(l => l.weight_kg).map(l => ({ v: Number(l.weight_kg) })).reverse());
@@ -713,13 +714,14 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
     const handler = () => {
       if (!authUser) return;
       Promise.all([
-        fetchHealthLogs("diabetes", authUser.id),
-        fetchHealthLogs("bp", authUser.id),
-        fetchHealthLogs("weight", authUser.id),
-        fetchHealthLogs("water", authUser.id),
+        fetchHealthLogsMulti(authUser.id, ["diabetes", "bp", "weight", "water"]),
         fetchProgressSummaries(authUser.id),
         fetchProfile(authUser.id),
-      ]).then(([diabetesLogs, bpLogs, weightLogs, waterLogs, summaries, p]) => {
+      ]).then(([logsByType, summaries, p]) => {
+        const diabetesLogs = logsByType.diabetes;
+        const bpLogs = logsByType.bp;
+        const weightLogs = logsByType.weight;
+        const waterLogs = logsByType.water;
         setDbProfile(p ?? null);
         setGlucoseData(diabetesLogs.filter(l => l.glucose_morning).map(l => ({ v: Number(l.glucose_morning) })).reverse());
         setWeightData(weightLogs.filter(l => l.weight_kg).map(l => ({ v: Number(l.weight_kg) })).reverse());
