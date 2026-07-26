@@ -48,6 +48,8 @@ function formatSyncedAt(iso?: string) {
   }
 }
 
+const HEALTH_SYNC_INTERVAL_MS = 5 * 60_000;
+
 export default function AppleHealthSnapshotCard() {
   const { user } = useAuth();
   const isNative = canUseNativeHealth();
@@ -119,7 +121,13 @@ export default function AppleHealthSnapshotCard() {
     });
     const onVis = () => { if (document.visibilityState === "visible") void load(); };
     document.addEventListener("visibilitychange", onVis);
+    // Refresh vitals every 5 minutes while the app is in the foreground.
+    const interval = window.setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      void load();
+    }, HEALTH_SYNC_INTERVAL_MS);
     return () => {
+      window.clearInterval(interval);
       document.removeEventListener("visibilitychange", onVis);
       unsub();
       void sub.then((s) => s.remove());
