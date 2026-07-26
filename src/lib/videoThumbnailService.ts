@@ -146,6 +146,7 @@ export async function fetchThumbnailOverrides(
   opts: { force?: boolean } = {},
 ): Promise<ThumbnailMap> {
   if (!opts.force) {
+    if (!thumbnailCache) thumbnailCache = readPersistedCache();
     if (thumbnailCache && Date.now() - thumbnailCache.at < THUMBNAIL_TTL_MS) return thumbnailCache.map;
     if (thumbnailInFlight) return thumbnailInFlight;
   }
@@ -158,8 +159,10 @@ export async function fetchThumbnailOverrides(
     const map: ThumbnailMap = {};
     for (const row of data) map[row.video_id] = withVersion(row.thumbnail_url, row.updated_at);
     thumbnailCache = { at: Date.now(), map };
+    persistCache(thumbnailCache);
     return map;
   })();
+
 
   thumbnailInFlight = request;
   try {
