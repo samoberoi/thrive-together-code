@@ -12,16 +12,58 @@ export interface AppNotification {
   created_at: string;
 }
 
-/** Fetch unread count */
-export async function fetchUnreadCount(userId: string): Promise<number> {
-  const { count, error } = await supabase
-    .from("notifications" as any)
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", userId)
-    .eq("is_read", false);
-  if (error) return 0;
-  return count ?? 0;
+// ─── Unread count cache ──────────────────────────────────────────────────
+// The bell badge, the app-icon badge and the notifications panel all ask for
+// the unread count. Cache it briefly and dedupe concurrent calls so a single
+// realtime event doesn't trigger several identical count queries.
+const UNREAD_TTL_MS = 15_000;
+const unreadCache = new Map<string, { at: number; value: number }>();
+const unreadInFlight = new Map<string, Promise<number>>();
+
+export function invalidateUnreadCount(userId?: string) {
+  if (userId) {
+    unreadCache.delete(userId);
+    unreadInFlight.delete(userId);
+  } else {
+    unreadCache.clear();
+    unreadInFlight.clear();
+  }
 }
+
+/** Fetch unread count (cached for 15s; pass { force: true } to bypass) */
+export async function fetchUnreadCount(
+  userId: string,
+  opts: { force?: boolean } = {},
+): Promise<number> {
+  if (!userId) return 0;
+
+  if (!opts.force) {
+    const cached = unreadCache.get(userId);
+    if (cached && Date.now() - cached.at < UNREAD_TTL_MS) return cached.value;
+    const pending = unreadInFlight.get(userId);
+    if (pending) return pending;
+  }
+
+  const request = (async () => {
+    const { count, error } = await supabase
+      .from("notifications" as any)
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("is_read", false);
+    if (error) return 0;
+    const value = count ?? 0;
+    unreadCache.set(userId, { at: Date.now(), value });
+    return value;
+  })();
+
+  unreadInFlight.set(userId, request);
+  try {
+    return await request;
+  } finally {
+    unreadInFlight.delete(userId);
+  }
+}
+
 
 /** Fetch recent notifications */
 export async function fetchNotifications(userId: string, limit = 30): Promise<AppNotification[]> {
