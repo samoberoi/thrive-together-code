@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Bell } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { fetchUnreadCount, subscribeToNotifications } from "@/lib/notificationService";
+import { fetchUnreadCount, subscribeToNotifications, adjustUnreadCount } from "@/lib/notificationService";
 import { playNotificationSound } from "@/lib/soundEngine";
 import { getNotificationSoundSettings } from "@/lib/notificationSoundService";
 import { fireRealtimeHealthNotificationAlert } from "@/lib/healthAlerts";
