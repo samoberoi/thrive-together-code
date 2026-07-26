@@ -83,6 +83,7 @@ export async function markRead(id: string): Promise<void> {
     .from("notifications" as any)
     .update({ is_read: true } as any)
     .eq("id", id);
+  invalidateUnreadCount();
 }
 
 /** Mark all notifications as read */
@@ -91,17 +92,21 @@ export async function markAllRead(): Promise<void> {
     .from("notifications" as any)
     .update({ is_read: true } as any)
     .eq("is_read", false);
+  invalidateUnreadCount();
 }
 
 /** Delete a notification */
 export async function deleteNotification(id: string): Promise<void> {
   await supabase.from("notifications" as any).delete().eq("id", id);
+  invalidateUnreadCount();
 }
 
 /** Clear all notifications */
 export async function clearAllNotifications(): Promise<void> {
   await supabase.from("notifications" as any).delete().neq("id", "00000000-0000-0000-0000-000000000000");
+  invalidateUnreadCount();
 }
+
 
 /** Create a local notification (for instant in-app use) */
 export async function createNotification(opts: {
