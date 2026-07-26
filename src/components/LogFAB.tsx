@@ -128,7 +128,7 @@ export default function LogFAB(_props: { packageKey?: string | null }) {
   // Fetch last weight entry when weight drawer opens
   useEffect(() => {
     if (activeLog === "weight" && user) {
-      fetchHealthLogs("weight").then((logs) => {
+      fetchHealthLogs("weight", user.id).then((logs) => {
         if (logs.length > 0) {
           setLastWeight({
             value: logs[0].weight_kg ?? 0,
@@ -142,7 +142,7 @@ export default function LogFAB(_props: { packageKey?: string | null }) {
   // Seed water count from today's existing logs when drawer opens
   useEffect(() => {
     if (activeLog === "water" && user) {
-      fetchHealthLogs("water").then((logs) => {
+      fetchHealthLogs("water", user.id).then((logs) => {
         const todayStr = new Date().toISOString().slice(0, 10);
         const total = logs
           .filter((l) => l.logged_at?.slice(0, 10) === todayStr)

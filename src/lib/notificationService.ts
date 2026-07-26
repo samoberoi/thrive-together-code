@@ -128,12 +128,26 @@ export async function createNotification(opts: {
   if (error) throw error;
 }
 
-/** Ensure the one-time welcome notification exists for this signed-in user. */
+/**
+ * Ensure the one-time welcome notification exists for this signed-in user.
+ * The RPC is idempotent server-side, but it used to run on every session
+ * restore — remember locally that we've already asked so app launches skip it.
+ */
+const WELCOME_FLAG_PREFIX = "bb_welcome_sent_";
+
 export async function sendWelcomeNotification(userId: string): Promise<string | null> {
+  if (!userId) return null;
+  const flagKey = `${WELCOME_FLAG_PREFIX}${userId}`;
+  try {
+    if (localStorage.getItem(flagKey)) return null;
+  } catch {}
+
   const { data, error } = await (supabase as any).rpc("send_welcome_notification", {
     _user_id: userId,
   });
   if (error) throw error;
+  try { localStorage.setItem(flagKey, "1"); } catch {}
+  invalidateUnreadCount(userId);
   return (data ?? null) as string | null;
 }
 

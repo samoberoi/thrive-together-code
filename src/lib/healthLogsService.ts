@@ -33,6 +33,40 @@ export async function fetchHealthLogs(logType: string, userId?: string): Promise
   return (data as unknown as HealthLog[]) ?? [];
 }
 
+/**
+ * Fetch several log types for one user in a SINGLE query.
+ * Home used to fire four separate requests (diabetes/bp/weight/water) twice per
+ * visit — this collapses them into one round trip and groups client-side.
+ */
+export async function fetchHealthLogsMulti(
+  userId: string,
+  logTypes: string[],
+  perType = 30,
+): Promise<Record<string, HealthLog[]>> {
+  const grouped: Record<string, HealthLog[]> = {};
+  for (const t of logTypes) grouped[t] = [];
+  if (!userId || logTypes.length === 0) return grouped;
+
+  const { data, error } = await supabase
+    .from("health_logs" as any)
+    .select("*")
+    .eq("user_id", userId)
+    .in("log_type", logTypes)
+    .order("logged_at", { ascending: false })
+    .limit(perType * logTypes.length);
+
+  if (error) {
+    console.error("Failed to fetch health logs:", error);
+    return grouped;
+  }
+
+  for (const row of (data as unknown as HealthLog[]) ?? []) {
+    const bucket = grouped[row.log_type];
+    if (bucket && bucket.length < perType) bucket.push(row);
+  }
+  return grouped;
+}
+
 export async function insertHealthLog(log: Partial<Omit<HealthLog, "id" | "created_at">> & { user_id: string; log_type: HealthLog["log_type"] }) {
   const { data, error } = await supabase
     .from("health_logs" as any)
@@ -111,14 +145,28 @@ export async function insertOnboardingLogs(userId: string, data: {
 }
 
 /** Backfill initial logs from profile for existing users who onboarded before logging was added */
+const BACKFILL_FLAG_PREFIX = "bb_health_backfilled_";
+
 export async function backfillFromProfile(userId: string) {
+  // Once a user has been backfilled (or is known to already have logs) we never
+  // need to run the count + profile probe again on future app launches.
+  const flagKey = `${BACKFILL_FLAG_PREFIX}${userId}`;
+  try {
+    if (localStorage.getItem(flagKey)) return;
+  } catch {}
+
+  const markDone = () => {
+    try { localStorage.setItem(flagKey, "1"); } catch {}
+  };
+
   // Check if any logs exist already
   const { count, error: countErr } = await supabase
     .from("health_logs" as any)
     .select("id", { count: "exact", head: true })
     .eq("user_id", userId);
 
-  if (countErr || (count && count > 0)) return; // already has logs
+  if (countErr) return;
+  if (count && count > 0) { markDone(); return; } // already has logs
 
   // Fetch profile to get weight & fasting glucose
   const { data: profile, error: profErr } = await supabase
@@ -128,6 +176,7 @@ export async function backfillFromProfile(userId: string) {
     .maybeSingle();
 
   if (profErr || !profile) return;
+  markDone();
   const p = profile as any;
   const logDate = p.created_at ?? new Date().toISOString();
   const logs: Omit<HealthLog, "id" | "created_at">[] = [];

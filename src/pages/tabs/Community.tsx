@@ -40,6 +40,7 @@ import {
   type CommunityPost, type CommunityComment, type PostCategory, type PostLiker,
 } from "@/lib/communityService";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchCommunityMemberCount } from "@/lib/communityService";
 import { formatDistanceToNow } from "date-fns";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
@@ -555,9 +556,9 @@ export default function Community() {
   useEffect(() => { loadFeed(); }, [loadFeed]);
 
   useEffect(() => {
-    supabase.from("profiles").select("id", { count: "exact", head: true }).then(({ count }) => {
-      setMemberCount(count || 0);
-    });
+    // Cached, security-definer count — avoids a full row-level scan of the
+    // member list every time the feed mounts.
+    void fetchCommunityMemberCount().then(setMemberCount);
   }, []);
 
   // Load current user's role + (if coach) assigned patient ids for delete-permission UI

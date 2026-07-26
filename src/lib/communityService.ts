@@ -363,3 +363,24 @@ export function generateAchievementContent(
       return "Making progress on my health journey! 🌟";
   }
 }
+
+
+// ─── Member count ────────────────────────────────────────────────────────
+// Counting profiles under row-level security meant a full scan on every feed
+// mount (seconds on a large member list). Use the cheap RPC and cache it.
+const MEMBER_COUNT_TTL_MS = 5 * 60_000;
+let memberCountCache: { at: number; value: number } | null = null;
+
+export async function fetchCommunityMemberCount(): Promise<number> {
+  if (memberCountCache && Date.now() - memberCountCache.at < MEMBER_COUNT_TTL_MS) {
+    return memberCountCache.value;
+  }
+  const { data, error } = await (supabase as any).rpc("community_member_count");
+  if (error) {
+    console.warn("fetchCommunityMemberCount failed", error);
+    return memberCountCache?.value ?? 0;
+  }
+  const value = Number(data ?? 0);
+  memberCountCache = { at: Date.now(), value };
+  return value;
+}
