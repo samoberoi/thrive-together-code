@@ -99,14 +99,48 @@ async function uploadThumbnail(videoId: string, file: File) {
   return data.publicUrl;
 }
 
-export async function fetchThumbnailOverrides(): Promise<ThumbnailMap> {
-  const { data, error } = await supabase
-    .from("video_thumbnails")
-    .select("video_id, thumbnail_url, updated_at");
-  if (error || !data) return {};
-  const map: ThumbnailMap = {};
-  for (const row of data) map[row.video_id] = withVersion(row.thumbnail_url, row.updated_at);
-  return map;
+// ─── Thumbnail override cache ────────────────────────────────────────────
+// Every video grid (Yoga, Exercise, Videos, admin) pulls the whole overrides
+// table on mount. Cache the map for 5 minutes and dedupe concurrent scans.
+const THUMBNAIL_TTL_MS = 5 * 60_000;
+let thumbnailCache: { at: number; map: ThumbnailMap } | null = null;
+let thumbnailInFlight: Promise<ThumbnailMap> | null = null;
+
+export function invalidateThumbnailOverrides() {
+  thumbnailCache = null;
+  thumbnailInFlight = null;
+}
+
+/** Last known overrides (no network) — lets grids paint instantly. */
+export function getCachedThumbnailOverrides(): ThumbnailMap | null {
+  return thumbnailCache?.map ?? null;
+}
+
+export async function fetchThumbnailOverrides(
+  opts: { force?: boolean } = {},
+): Promise<ThumbnailMap> {
+  if (!opts.force) {
+    if (thumbnailCache && Date.now() - thumbnailCache.at < THUMBNAIL_TTL_MS) return thumbnailCache.map;
+    if (thumbnailInFlight) return thumbnailInFlight;
+  }
+
+  const request = (async () => {
+    const { data, error } = await supabase
+      .from("video_thumbnails")
+      .select("video_id, thumbnail_url, updated_at");
+    if (error || !data) return thumbnailCache?.map ?? {};
+    const map: ThumbnailMap = {};
+    for (const row of data) map[row.video_id] = withVersion(row.thumbnail_url, row.updated_at);
+    thumbnailCache = { at: Date.now(), map };
+    return map;
+  })();
+
+  thumbnailInFlight = request;
+  try {
+    return await request;
+  } finally {
+    thumbnailInFlight = null;
+  }
 }
 
 export async function setVideoThumbnail(videoId: string, thumbnail: string | File) {
@@ -138,6 +172,7 @@ export async function setVideoThumbnail(videoId: string, thumbnail: string | Fil
     { onConflict: "video_id" },
   );
   if (metadataError) throw metadataError;
+  invalidateThumbnailOverrides();
 }
 
 export async function clearVideoThumbnail(videoId: string) {
@@ -148,6 +183,7 @@ export async function clearVideoThumbnail(videoId: string) {
     .update({ thumbnail_url: null, updated_at: new Date().toISOString() })
     .eq("video_id", videoId);
   if (metadataError) throw metadataError;
+  invalidateThumbnailOverrides();
 }
 
 export function fileToDataUrl(file: File): Promise<string> {

@@ -13,6 +13,8 @@ import {
   type MovementOverview,
 } from "@/lib/movementUserService";
 
+const HEALTH_SYNC_INTERVAL_MS = 5 * 60_000;
+
 export default function TodayStepsCard({ onOpenMovement }: { onOpenMovement?: () => void }) {
   const { user } = useAuth();
   const [data, setData] = useState<MovementOverview | null>(null);
@@ -86,6 +88,17 @@ export default function TodayStepsCard({ onOpenMovement }: { onOpenMovement?: ()
       document.removeEventListener("visibilitychange", onVisibilityChange);
       void sub.then((s) => s.remove());
     };
+  }, [healthStepsAvailable, syncHealthSteps, user]);
+
+  // Keep step counts fresh while the app is open (every 5 minutes) so users
+  // walking with the app in the foreground see their steps move.
+  useEffect(() => {
+    if (!user || !healthStepsAvailable) return;
+    const id = window.setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      void syncHealthSteps(false);
+    }, HEALTH_SYNC_INTERVAL_MS);
+    return () => window.clearInterval(id);
   }, [healthStepsAvailable, syncHealthSteps, user]);
 
   useEffect(() => {
