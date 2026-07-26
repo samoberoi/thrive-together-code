@@ -1,5 +1,9 @@
 import { useEffect, useState, useCallback } from "react";
-import { fetchThumbnailOverrides, type ThumbnailMap } from "@/lib/videoThumbnailService";
+import {
+  fetchThumbnailOverrides,
+  getCachedThumbnailOverrides,
+  type ThumbnailMap,
+} from "@/lib/videoThumbnailService";
 
 const THUMBNAILS_CHANGED_EVENT = "bbdo:video-thumbnails-changed";
 
@@ -8,20 +12,22 @@ export function notifyVideoThumbnailsChanged() {
 }
 
 export function useVideoThumbnails() {
-  const [overrides, setOverrides] = useState<ThumbnailMap>({});
-  const [loading, setLoading] = useState(true);
+  const cached = getCachedThumbnailOverrides();
+  const [overrides, setOverrides] = useState<ThumbnailMap>(cached ?? {});
+  const [loading, setLoading] = useState(!cached);
 
-  const reload = useCallback(async () => {
-    setLoading(true);
-    const map = await fetchThumbnailOverrides();
+  const reload = useCallback(async (force = false) => {
+    if (!getCachedThumbnailOverrides()) setLoading(true);
+    const map = await fetchThumbnailOverrides({ force });
     setOverrides(map);
     setLoading(false);
   }, []);
 
   useEffect(() => {
-    reload();
-    window.addEventListener(THUMBNAILS_CHANGED_EVENT, reload);
-    return () => window.removeEventListener(THUMBNAILS_CHANGED_EVENT, reload);
+    void reload();
+    const onChanged = () => void reload(true);
+    window.addEventListener(THUMBNAILS_CHANGED_EVENT, onChanged);
+    return () => window.removeEventListener(THUMBNAILS_CHANGED_EVENT, onChanged);
   }, [reload]);
 
   const resolve = useCallback(
