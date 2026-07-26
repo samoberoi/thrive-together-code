@@ -252,10 +252,13 @@ export default function CoachDashboard() {
               allTabs.map((tab) =>
                 visitedTabs.has(tab) ? (
                   <div key={tab} hidden={activeTab !== tab} aria-hidden={activeTab !== tab}>
-                    {tabContent[tab]}
+                    <Suspense fallback={<div className="p-8 text-sm text-muted-foreground">Loading…</div>}>
+                      {tabContent[tab]}
+                    </Suspense>
                   </div>
                 ) : null
               )
+
             )}
           </div>
         </main>
