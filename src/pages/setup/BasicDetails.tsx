@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Progress } from "@/components/ui/progress";
 import { ArrowRight, ArrowLeft, UserCircle, Users, User } from "lucide-react";
 import { saveUser, getUser } from "@/lib/userStore";
@@ -48,15 +48,15 @@ export default function BasicDetails() {
           <div>
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3 block">Your Age</label>
             <div className="flex flex-col items-center gap-4 py-6 px-4 liquid-glass rounded-2xl">
-              <AnimatePresence initial={false}>
-                <motion.span key={age} className="text-7xl font-black text-primary leading-none" initial={{ opacity: 0.65 }} animate={{ opacity: 1 }} transition={{ duration: 0.12 }}>
-                  {age}
-                </motion.span>
-              </AnimatePresence>
+              {/* Fixed-height, non-remounting value — animating a keyed span made
+                  the old and new numbers stack while dragging, jumping the card. */}
+              <span className="text-7xl font-black text-primary leading-none tabular-nums h-[4.5rem] flex items-center">
+                {age}
+              </span>
               <span className="text-muted-foreground text-sm font-medium -mt-2">years old</span>
               <input type="range" min={18} max={100} value={age} onChange={(e) => setAge(parseInt(e.target.value))}
+                className="w-full h-2 rounded-full appearance-none cursor-pointer touch-pan-y" style={{ background: sliderBg }} />
 
-                className="w-full h-2 rounded-full appearance-none cursor-pointer" style={{ background: sliderBg }} />
               <div className="flex justify-between w-full text-muted-foreground text-xs">
                 <span>18 yrs</span><span>100 yrs</span>
               </div>
