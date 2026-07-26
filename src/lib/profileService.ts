@@ -38,20 +38,62 @@ export interface ProfileRow {
   initial_assessment_date?: string;
 }
 
-/** Fetch profile from backend and sync to localStorage */
-export async function fetchProfile(userId: string) {
-  const { data, error } = await supabase
-    .from("profiles" as any)
-    .select("*")
-    .eq("user_id", userId)
-    .maybeSingle();
+// ─── Profile cache ───────────────────────────────────────────────────────
+// Many screens call fetchProfile() on mount. Cache the row briefly (and dedupe
+// concurrent requests) so navigating between tabs doesn't re-hit the backend.
+const PROFILE_TTL_MS = 60_000;
+type ProfileCacheEntry = { at: number; value: ProfileRow | null };
+const profileCache = new Map<string, ProfileCacheEntry>();
+const profileInFlight = new Map<string, Promise<ProfileRow | null>>();
 
-  if (error) {
-    console.error("Failed to fetch profile:", error);
-    return null;
+export function invalidateProfileCache(userId?: string) {
+  if (userId) {
+    profileCache.delete(userId);
+    profileInFlight.delete(userId);
+  } else {
+    profileCache.clear();
+    profileInFlight.clear();
   }
-  return data as unknown as ProfileRow | null;
 }
+
+/** Fetch profile from backend (cached for 60s; pass { force: true } to bypass) */
+export async function fetchProfile(
+  userId: string,
+  opts: { force?: boolean } = {},
+): Promise<ProfileRow | null> {
+  if (!userId) return null;
+
+  if (!opts.force) {
+    const cached = profileCache.get(userId);
+    if (cached && Date.now() - cached.at < PROFILE_TTL_MS) return cached.value;
+    const pending = profileInFlight.get(userId);
+    if (pending) return pending;
+  }
+
+  const request = (async () => {
+    const { data, error } = await supabase
+      .from("profiles" as any)
+      .select("*")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Failed to fetch profile:", error);
+      return null;
+    }
+    const row = data as unknown as ProfileRow | null;
+    profileCache.set(userId, { at: Date.now(), value: row });
+    return row;
+  })();
+
+  profileInFlight.set(userId, request);
+  try {
+    return await request;
+  } finally {
+    profileInFlight.delete(userId);
+  }
+}
+
 
 /** Create a new profile row */
 export async function createProfile(profile: ProfileRow) {
