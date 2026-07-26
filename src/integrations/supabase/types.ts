@@ -5338,6 +5338,7 @@ export type Database = {
         Args: { _patient_user_id: string }
         Returns: boolean
       }
+      community_member_count: { Args: never; Returns: number }
       complete_demo_payment: {
         Args: {
           _duration_months: number
