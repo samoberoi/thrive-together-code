@@ -17,7 +17,7 @@ import { ProfileSyncProvider } from "@/components/ProfileSyncProvider";
 import { ConfirmProvider } from "@/components/ConfirmProvider";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import AutoTranslator from "@/components/AutoTranslator";
-import { subscribeToNotifications, fetchUnreadCount } from "@/lib/notificationService";
+import { subscribeToNotifications, fetchUnreadCount, adjustUnreadCount } from "@/lib/notificationService";
 import { setAppBadgeCount, clearAppBadge } from "@/lib/appBadge";
 import { App as CapApp } from "@capacitor/app";
 import { PushNotifications } from "@capacitor/push-notifications";
