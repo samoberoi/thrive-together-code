@@ -14,7 +14,7 @@ import { useUserStore } from "@/hooks/useUserStore";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { fetchActiveSubscription, type Subscription } from "@/lib/subscriptionService";
 import { fetchProfile } from "@/lib/profileService";
-import { fetchHealthLogs, fetchProgressSummaries, type HealthLog, type ProgressSummary } from "@/lib/healthLogsService";
+import { fetchHealthLogsMulti, fetchProgressSummaries, type HealthLog, type ProgressSummary } from "@/lib/healthLogsService";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   fetchUserProtocol, fetchWeeklyPlans, fetchProtocols, fetchTrackingForUser, upsertTracking,

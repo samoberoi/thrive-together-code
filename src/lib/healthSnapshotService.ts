@@ -12,7 +12,17 @@ function todayKey(): string {
   return local.toISOString().slice(0, 10);
 }
 
-/** Upsert today's Apple Health snapshot for the given user. */
+// Health syncs fire on every resume, every 5 minutes and on every HealthKit
+// change event. Most of those carry identical numbers, so remember the last
+// row we wrote and skip the upsert when nothing actually changed.
+const lastSavedSnapshot = new Map<string, string>();
+
+export function resetHealthSnapshotDedupe(userId?: string) {
+  if (userId) lastSavedSnapshot.delete(userId);
+  else lastSavedSnapshot.clear();
+}
+
+/** Upsert today's Apple Health snapshot for the given user (skips no-op writes). */
 export async function saveHealthSnapshot(userId: string, snap: HealthSnapshot): Promise<void> {
   if (!userId) return;
   const row = {
@@ -31,10 +41,19 @@ export async function saveHealthSnapshot(userId: string, snap: HealthSnapshot): 
     glucose_at: snap.glucoseAt ?? null,
     synced_at: new Date().toISOString(),
   };
+  // synced_at always changes, so compare everything else.
+  const { synced_at: _syncedAt, ...comparable } = row;
+  const signature = JSON.stringify(comparable);
+  if (lastSavedSnapshot.get(userId) === signature) return;
+
   const { error } = await supabase
     .from("apple_health_snapshots" as any)
     .upsert(row, { onConflict: "user_id,date" });
-  if (error) console.warn("saveHealthSnapshot failed", error);
+  if (error) {
+    console.warn("saveHealthSnapshot failed", error);
+    return;
+  }
+  lastSavedSnapshot.set(userId, signature);
 }
 
 /** Load the most recent stored snapshot for a user (used on web, where HealthKit isn't available). */

@@ -304,7 +304,7 @@ export default function Profile({ onClose, isDark = true, onToggleTheme }: Profi
           Promise.resolve(supabase.from("user_plates" as any).select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(60)).then(({ data }) => data ?? [])
         );
       } else {
-        promises.push(fetchHealthLogs(logsTab));
+        promises.push(fetchHealthLogs(logsTab, user.id));
       }
       Promise.all(promises).then(([summaries, logs, mealPhotos]) => {
         setProgressSummaries(summaries);

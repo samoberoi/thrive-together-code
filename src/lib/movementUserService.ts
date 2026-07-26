@@ -130,6 +130,8 @@ export async function logTodaySteps(userId: string, steps: number, dateIso?: str
   const existing = (existingRaw as any) ?? null;
 
   if (existing?.id) {
+    // Auto-sync re-reads the same step count constantly; don't write it again.
+    if (Number(existing.steps_count ?? -1) === Number(steps)) return;
     const { error } = await supabase
       .from("health_logs")
       .update({ steps_count: steps } as any)
