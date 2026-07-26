@@ -52,7 +52,9 @@ export function useTodayExerciseProgress(fallbackGoal = 30) {
     window.addEventListener("bbdo:video-progress-changed", onProgress);
     window.addEventListener("bbdo:video-progress-synced", onProgress);
     window.addEventListener("storage", onProgress);
-    const interval = window.setInterval(load, 60_000);
+    // No polling: progress events cover live updates, focus covers the rest.
+    const onVisible = () => { if (document.visibilityState === "visible") void load(); };
+    document.addEventListener("visibilitychange", onVisible);
 
     return () => {
       cancelled = true;
@@ -60,7 +62,7 @@ export function useTodayExerciseProgress(fallbackGoal = 30) {
       window.removeEventListener("bbdo:video-progress-changed", onProgress);
       window.removeEventListener("bbdo:video-progress-synced", onProgress);
       window.removeEventListener("storage", onProgress);
-      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [user?.id]);
 

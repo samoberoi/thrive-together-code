@@ -460,14 +460,17 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
     setYogaMinutesToday(0);
     const load = async () => setYogaMinutesToday(await getTodayYogaMinutes(authUser.id));
     void load();
-    const iv = setInterval(load, 60_000);
+    // Event-driven instead of polling: video progress events already fire on
+    // every change, and we top up whenever the screen regains focus.
     const onProgress = () => void load();
+    const onVisible = () => { if (document.visibilityState === "visible") void load(); };
     window.addEventListener("bbdo:video-progress-changed", onProgress);
     window.addEventListener("bbdo:video-progress-synced", onProgress);
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
-      clearInterval(iv);
       window.removeEventListener("bbdo:video-progress-changed", onProgress);
       window.removeEventListener("bbdo:video-progress-synced", onProgress);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [authUser?.id, todayKey]);
 
