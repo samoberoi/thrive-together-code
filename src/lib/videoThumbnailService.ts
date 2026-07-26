@@ -101,20 +101,46 @@ async function uploadThumbnail(videoId: string, file: File) {
 
 // ─── Thumbnail override cache ────────────────────────────────────────────
 // Every video grid (Yoga, Exercise, Videos, admin) pulls the whole overrides
-// table on mount. Cache the map for 5 minutes and dedupe concurrent scans.
+// table on mount. Cache the map for 5 minutes in memory AND in localStorage so
+// a cold app launch paints from disk instead of waiting on a full-table scan.
 const THUMBNAIL_TTL_MS = 5 * 60_000;
+const THUMBNAIL_STORAGE_KEY = "bbdo_video_thumbnail_overrides";
 let thumbnailCache: { at: number; map: ThumbnailMap } | null = null;
 let thumbnailInFlight: Promise<ThumbnailMap> | null = null;
+
+function readPersistedCache(): { at: number; map: ThumbnailMap } | null {
+  try {
+    const raw = localStorage.getItem(THUMBNAIL_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { at: number; map: ThumbnailMap };
+    if (!parsed?.map || typeof parsed.at !== "number") return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function persistCache(entry: { at: number; map: ThumbnailMap } | null) {
+  try {
+    if (!entry) localStorage.removeItem(THUMBNAIL_STORAGE_KEY);
+    else localStorage.setItem(THUMBNAIL_STORAGE_KEY, JSON.stringify(entry));
+  } catch {
+    /* storage full / unavailable — memory cache still works */
+  }
+}
 
 export function invalidateThumbnailOverrides() {
   thumbnailCache = null;
   thumbnailInFlight = null;
+  persistCache(null);
 }
 
 /** Last known overrides (no network) — lets grids paint instantly. */
 export function getCachedThumbnailOverrides(): ThumbnailMap | null {
+  if (!thumbnailCache) thumbnailCache = readPersistedCache();
   return thumbnailCache?.map ?? null;
 }
+
 
 export async function fetchThumbnailOverrides(
   opts: { force?: boolean } = {},
