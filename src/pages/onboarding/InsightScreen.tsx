@@ -13,6 +13,22 @@ const ACCENTS: Record<string, { color: string; tile: string; cta: string }> = {
   green: { color: "var(--bbdo-green, #10B981)", tile: "tile-icon-green", cta: "gradient-blue glow-blue" },
 };
 
+const WaistArrowsIcon = ({ className, strokeWidth, style }: { className?: string; strokeWidth?: number; style?: React.CSSProperties }) => (
+  <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth ?? 1.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M9 4c1.05 1.4 1.58 3.1 1.58 5.1 0 1.95-.48 3.3-1.44 4.04C8.18 13.88 7.7 15.5 7.7 18" />
+    <path d="M15 4c-1.05 1.4-1.58 3.1-1.58 5.1 0 1.95.48 3.3 1.44 4.04.96.74 1.44 2.36 1.44 4.86" />
+    <path d="M4 12h4" />
+    <path d="m6 10 2 2-2 2" />
+    <path d="M20 12h-4" />
+    <path d="m18 10-2 2 2 2" />
+  </svg>
+);
+
+const getGradeIcon = (icon: string) => {
+  if (icon === "WaistArrows") return WaistArrowsIcon;
+  return ((Icons as any)[icon] ?? Icons.Sparkles) as React.ElementType;
+};
+
 export default function InsightScreen() {
   const navigate = useNavigate();
   const [grade, setGrade] = useState<OnboardingGrade | null>(null);
@@ -39,7 +55,7 @@ export default function InsightScreen() {
 
         <div className="ob-stack flex-1">
           {g.cards.map((item, i) => {
-            const Icon = ((Icons as any)[item.icon] ?? Icons.Sparkles) as React.ElementType;
+            const Icon = getGradeIcon(item.icon);
             return (
               <motion.div key={`${g.slug}-${i}`} className="liquid-glass p-4" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + i * 0.12 }}>
                 <div className="flex items-start gap-3">
