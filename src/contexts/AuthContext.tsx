@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Session, User } from "@supabase/supabase-js";
 import { logAudit } from "@/lib/auditLog";
 import { clearUser } from "@/lib/userStore";
-import { sendWelcomeNotification } from "@/lib/notificationService";
+// Welcome notification is triggered from Home dashboard, not on auth events.
 import { registerNativePush, isNativePushSupported } from "@/lib/nativePush";
 import {
   clearNativePersistedAuthState,
@@ -227,13 +227,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const newUid = session?.user?.id ?? null;
         if (event === "SIGNED_IN" && newUid && previousUid !== newUid) {
           logAudit({ module: "Auth", action: "login", target_type: "user", target_id: newUid });
-          // Idempotent: server-side checks welcome_sent_at and no-ops if already sent.
-          setTimeout(() => {
-            void sendWelcomeNotification(newUid).catch((error) => {
-              console.error("sendWelcomeNotification failed", error);
-            });
-          }, 0);
+          // Welcome notification is intentionally triggered from Home dashboard
+          // (see src/pages/tabs/Home.tsx) — not on SIGNED_IN — so the user
+          // is greeted when they actually land on the dashboard.
         }
+
         // Register for native push (APNs / FCM) whenever a native session is
         // restored for a different user, not only on a fresh SIGNED_IN event.
         // Existing iPhone installs often restore a session after rebuild/sync.
@@ -281,13 +279,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logStartupEvent("auth provider ready", session?.user?.id || "no-session");
       const uid = session?.user?.id;
       if (uid) {
-        setTimeout(() => {
-          void sendWelcomeNotification(uid).catch((error) => {
-            console.error("sendWelcomeNotification failed", error);
-          });
-        }, 0);
+        // Welcome notification is triggered from the Home dashboard on landing,
+        // not on session restore.
         scheduleNativePushRegistration(uid, 900);
       }
+
     })().catch((error) => {
       reportStartupError("Initial auth restore failed", error);
       applySession(null);
