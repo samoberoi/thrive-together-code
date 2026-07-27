@@ -32,16 +32,28 @@ const getGradeIcon = (icon: string) => {
 
 export default function InsightScreen() {
   const navigate = useNavigate();
-  const [grade, setGrade] = useState<OnboardingGrade | null>(null);
+  const [grade, setGrade] = useState<OnboardingGrade | null>(() => getCachedOnboardingGrade());
 
   useEffect(() => { setPhase("hope"); }, []);
-  useEffect(() => { fetchOnboardingGrade().then(setGrade); }, []);
+  useEffect(() => {
+    if (grade) return;
+    let cancelled = false;
+    fetchOnboardingGrade().then((g) => { if (!cancelled) setGrade(g); });
+    return () => { cancelled = true; };
+  }, [grade]);
 
-  const g = grade ?? FALLBACK_GRADE;
+  // Render an empty canvas until the real grade resolves — never flash the
+  // fallback (severe) content and then swap it out.
+  if (!grade) {
+    return <div className="ob-screen phone-container ob-lock min-h-dvh overflow-x-hidden" />;
+  }
+
+  const g = grade;
   const accent = ACCENTS[g.accent] ?? ACCENTS.red;
 
   return (
     <div className="ob-screen phone-container ob-lock min-h-dvh overflow-x-hidden">
+
       <SoundToggle />
       <div className="ob-content">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
