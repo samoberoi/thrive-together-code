@@ -279,13 +279,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logStartupEvent("auth provider ready", session?.user?.id || "no-session");
       const uid = session?.user?.id;
       if (uid) {
-        setTimeout(() => {
-          void sendWelcomeNotification(uid).catch((error) => {
-            console.error("sendWelcomeNotification failed", error);
-          });
-        }, 0);
+        // Welcome notification is triggered from the Home dashboard on landing,
+        // not on session restore.
         scheduleNativePushRegistration(uid, 900);
       }
+
     })().catch((error) => {
       reportStartupError("Initial auth restore failed", error);
       applySession(null);
