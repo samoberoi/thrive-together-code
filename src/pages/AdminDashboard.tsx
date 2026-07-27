@@ -35,6 +35,7 @@ import {
   Mail,
   CalendarDays,
   Scale,
+  Gauge,
 } from "lucide-react";
 
 import NotificationCenter from "@/components/NotificationCenter";
