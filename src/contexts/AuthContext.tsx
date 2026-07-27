@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Session, User } from "@supabase/supabase-js";
 import { logAudit } from "@/lib/auditLog";
 import { clearUser } from "@/lib/userStore";
-import { sendWelcomeNotification } from "@/lib/notificationService";
+// Welcome notification is triggered from Home dashboard, not on auth events.
 import { registerNativePush, isNativePushSupported } from "@/lib/nativePush";
 import {
   clearNativePersistedAuthState,
