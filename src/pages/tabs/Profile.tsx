@@ -183,6 +183,29 @@ export default function Profile({ onClose, isDark = true, onToggleTheme }: Profi
   const [initialScore, setInitialScore] = useState<number | null>(null);
   const [memberSince, setMemberSince] = useState<string | null>(null);
   const userAvatar = storedUser?.avatarUrl;
+  const [avatarUploading, setAvatarUploading] = useState(false);
+
+  const handleAvatarUpload = async (blob: Blob, ext: string) => {
+    if (!user) return;
+    setAvatarUploading(true);
+    try {
+      const path = `${user.id}/avatar.${ext}`;
+      const { error } = await supabase.storage
+        .from("avatars")
+        .upload(path, blob, { upsert: true, contentType: blob.type || `image/${ext}` });
+      if (error) throw error;
+      const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+      const url = `${data.publicUrl}?t=${Date.now()}`;
+      saveUser({ avatarUrl: url });
+      await updateProfile(user.id, { avatar_url: url });
+      toast.success("Photo updated!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to upload photo");
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
   const [subPage, setSubPage] = useState<SubPage>(null);
   const [logsTab, setLogsTab] = useState<"diabetes" | "bp" | "weight" | "fasting" | "supplements" | "plates">("diabetes");
   const [plateLogs, setPlateLogs] = useState<any[]>([]);
