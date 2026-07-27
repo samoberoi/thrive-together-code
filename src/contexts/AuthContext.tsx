@@ -227,13 +227,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const newUid = session?.user?.id ?? null;
         if (event === "SIGNED_IN" && newUid && previousUid !== newUid) {
           logAudit({ module: "Auth", action: "login", target_type: "user", target_id: newUid });
-          // Idempotent: server-side checks welcome_sent_at and no-ops if already sent.
-          setTimeout(() => {
-            void sendWelcomeNotification(newUid).catch((error) => {
-              console.error("sendWelcomeNotification failed", error);
-            });
-          }, 0);
+          // Welcome notification is intentionally triggered from Home dashboard
+          // (see src/pages/tabs/Home.tsx) — not on SIGNED_IN — so the user
+          // is greeted when they actually land on the dashboard.
         }
+
         // Register for native push (APNs / FCM) whenever a native session is
         // restored for a different user, not only on a fresh SIGNED_IN event.
         // Existing iPhone installs often restore a session after rebuild/sync.
