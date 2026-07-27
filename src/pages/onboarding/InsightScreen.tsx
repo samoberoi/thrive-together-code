@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import * as Icons from "lucide-react";
@@ -13,7 +14,7 @@ const ACCENTS: Record<string, { color: string; tile: string; cta: string }> = {
   green: { color: "var(--bbdo-green, #10B981)", tile: "tile-icon-green", cta: "gradient-blue glow-blue" },
 };
 
-const WaistArrowsIcon = ({ className, strokeWidth, style }: { className?: string; strokeWidth?: number; style?: React.CSSProperties }) => (
+const WaistArrowsIcon = ({ className, strokeWidth, style }: { className?: string; strokeWidth?: number; style?: CSSProperties }) => (
   <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth ?? 1.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <path d="M9 4c1.05 1.4 1.58 3.1 1.58 5.1 0 1.95-.48 3.3-1.44 4.04C8.18 13.88 7.7 15.5 7.7 18" />
     <path d="M15 4c-1.05 1.4-1.58 3.1-1.58 5.1 0 1.95.48 3.3 1.44 4.04.96.74 1.44 2.36 1.44 4.86" />
