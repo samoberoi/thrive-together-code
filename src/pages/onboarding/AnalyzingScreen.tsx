@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Activity } from "lucide-react";
 import SoundToggle from "@/components/SoundToggle";
 import { setPhase, setIntensity } from "@/lib/musicEngine";
+import { resetOnboardingGrade, prefetchOnboardingGrade } from "@/lib/onboardingGrade";
 
 const insights = ["Scanning metabolic markers...", "Analyzing insulin response...", "Evaluating lifestyle impact...", "Mapping risk factors...", "Building your profile..."];
 
