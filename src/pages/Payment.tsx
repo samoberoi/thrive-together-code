@@ -338,7 +338,7 @@ export default function Payment() {
 
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
               <h1 className="text-3xl font-black text-foreground mb-2">Welcome to your<br />transformation journey!</h1>
-              <p className="text-muted-foreground text-sm mb-6">{name}, your <span className="text-primary font-semibold">{plan?.name}</span> is now active.</p>
+              <p className="text-muted-foreground text-sm mb-6">{name}, your <span className="text-primary font-semibold">{plan?.name}</span> is now live.</p>
             </motion.div>
 
             {plan?.assigns_coach !== false && assignedCoach && (
