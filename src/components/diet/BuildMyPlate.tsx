@@ -39,7 +39,7 @@ const BASE_AFTER_PROTEIN: SectionDef[] = [
   { id: "veggies", filterSlugs: ["vegetables"],              header: "Vegetables & Greens", hook: "Bulk up the plate with fibre and key nutrients.",  recMin: 2, recMax: 3 },
   { id: "fats",    filterSlugs: ["healthy_fats"],            header: "Healthy Fats",        hook: "Improves satiety and metabolic stability.",         recMin: 1, recMax: 2 },
   { id: "nuts",    filterSlugs: ["nuts_and_seeds"],          header: "Nuts & Seeds",        hook: "Nutrient boost for balance and recovery.",          recMin: 2, recMax: 3 },
-  { id: "dairy",   filterSlugs: ["dairy_products"],          header: "Dairy",               hook: "Optional — boost protein & fats with fermentation benefits.", recMin: 1, recMax: 2, optional: true },
+  { id: "dairy",   filterSlugs: ["dairy"],                    header: "Dairy",               hook: "Optional — boost protein & fats with fermentation benefits.", recMin: 1, recMax: 2, optional: true },
   { id: "carbs",   filterSlugs: ["rice_wheat_alternatives"], header: "Carb Alternatives",   hook: "Optional — use a controlled portion during reversal.", recMin: 1, recMax: 1, optional: true },
 ];
 
@@ -49,22 +49,23 @@ function buildSections(prefs: DietPref[]): SectionDef[] {
   const proteinStep: SectionDef = prefs.includes("non_veg")
     ? {
         id: "protein",
-        filterSlugs: ["lean_proteins_non_veg", "vegetarian_vegan_proteins"],
+        filterSlugs: ["lean_proteins", "veg_vegan_proteins"],
         header: "Protein",
         hook: "Anchor your plate. Pick from animal or plant proteins — or mix both. Total 1–2 works best.",
         recMin: 1, recMax: 2,
         groupLabels: {
-          lean_proteins_non_veg: "Lean (Non-veg)",
-          vegetarian_vegan_proteins: "Plant-based",
+          lean_proteins: "Lean (Non-veg)",
+          veg_vegan_proteins: "Plant-based",
         },
       }
     : {
         id: "protein",
-        filterSlugs: ["vegetarian_vegan_proteins"],
+        filterSlugs: ["veg_vegan_proteins"],
         header: "Veg / Vegan Protein",
         hook: "Anchor your plate with 1–2 plant proteins.",
         recMin: 1, recMax: 2,
       };
+
   return [proteinStep, ...BASE_AFTER_PROTEIN];
 }
 
