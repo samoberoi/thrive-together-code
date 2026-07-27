@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Activity } from "lucide-react";
 import SoundToggle from "@/components/SoundToggle";
 import { setPhase, setIntensity } from "@/lib/musicEngine";
+import { resetOnboardingGrade, prefetchOnboardingGrade } from "@/lib/onboardingGrade";
 
 const insights = ["Scanning metabolic markers...", "Analyzing insulin response...", "Evaluating lifestyle impact...", "Mapping risk factors...", "Building your profile..."];
 
@@ -12,7 +13,7 @@ export default function AnalyzingScreen() {
   const [progress, setProgress] = useState(0);
   const [insightIdx, setInsightIdx] = useState(0);
 
-  useEffect(() => { setPhase("hope"); setIntensity("high"); }, []);
+  useEffect(() => { setPhase("hope"); setIntensity("high"); resetOnboardingGrade(); void prefetchOnboardingGrade(); }, []);
   useEffect(() => { const interval = setInterval(() => setProgress((p) => { if (p >= 100) { clearInterval(interval); return 100; } return p + 2; }), 18); return () => clearInterval(interval); }, []);
   useEffect(() => { const interval = setInterval(() => setInsightIdx((i) => (i + 1) % insights.length), 500); return () => clearInterval(interval); }, []);
   useEffect(() => { if (progress >= 100) { const timer = setTimeout(() => navigate("/insight"), 200); return () => clearTimeout(timer); } }, [progress, navigate]);

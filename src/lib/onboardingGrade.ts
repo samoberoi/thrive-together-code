@@ -65,7 +65,10 @@ export function buildGradeAnswers(): Record<string, unknown> {
   };
 }
 
-export async function fetchOnboardingGrade(): Promise<OnboardingGrade> {
+let gradePromise: Promise<OnboardingGrade> | null = null;
+let gradeCache: OnboardingGrade | null = null;
+
+async function computeGrade(): Promise<OnboardingGrade> {
   try {
     const { data, error } = await (supabase as any).rpc("compute_onboarding_grade", {
       _answers: buildGradeAnswers(),
@@ -76,3 +79,29 @@ export async function fetchOnboardingGrade(): Promise<OnboardingGrade> {
     return FALLBACK_GRADE;
   }
 }
+
+/** Synchronously returns the grade if it has already been resolved. */
+export function getCachedOnboardingGrade(): OnboardingGrade | null {
+  return gradeCache;
+}
+
+/** Kick off the grade computation early (e.g. on the analyzing screen). */
+export function prefetchOnboardingGrade(): Promise<OnboardingGrade> {
+  if (!gradePromise) {
+    gradePromise = computeGrade().then((g) => {
+      gradeCache = g;
+      return g;
+    });
+  }
+  return gradePromise;
+}
+
+export function resetOnboardingGrade() {
+  gradePromise = null;
+  gradeCache = null;
+}
+
+export async function fetchOnboardingGrade(): Promise<OnboardingGrade> {
+  return prefetchOnboardingGrade();
+}
+
