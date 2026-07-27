@@ -3015,6 +3015,152 @@ export type Database = {
         }
         Relationships: []
       }
+      onboarding_grade_band_cards: {
+        Row: {
+          band_id: string
+          created_at: string
+          description: string
+          icon: string
+          id: string
+          is_active: boolean
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          band_id: string
+          created_at?: string
+          description: string
+          icon?: string
+          id?: string
+          is_active?: boolean
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          band_id?: string
+          created_at?: string
+          description?: string
+          icon?: string
+          id?: string
+          is_active?: boolean
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_grade_band_cards_band_id_fkey"
+            columns: ["band_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_grade_bands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onboarding_grade_bands: {
+        Row: {
+          accent: string
+          closing_line: string | null
+          created_at: string
+          cta_label: string
+          grade: number
+          headline: string
+          headline_highlight: string | null
+          id: string
+          is_active: boolean
+          kicker: string
+          max_points: number
+          min_points: number
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          accent?: string
+          closing_line?: string | null
+          created_at?: string
+          cta_label?: string
+          grade: number
+          headline: string
+          headline_highlight?: string | null
+          id?: string
+          is_active?: boolean
+          kicker?: string
+          max_points?: number
+          min_points?: number
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          accent?: string
+          closing_line?: string | null
+          created_at?: string
+          cta_label?: string
+          grade?: number
+          headline?: string
+          headline_highlight?: string | null
+          id?: string
+          is_active?: boolean
+          kicker?: string
+          max_points?: number
+          min_points?: number
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      onboarding_grade_rules: {
+        Row: {
+          answer_key: string | null
+          answer_label: string
+          created_at: string
+          id: string
+          is_active: boolean
+          match_type: string
+          max_value: number | null
+          min_value: number | null
+          points: number
+          question_key: string
+          question_label: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          answer_key?: string | null
+          answer_label: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          match_type?: string
+          max_value?: number | null
+          min_value?: number | null
+          points?: number
+          question_key: string
+          question_label: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          answer_key?: string | null
+          answer_label?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          match_type?: string
+          max_value?: number | null
+          min_value?: number | null
+          points?: number
+          question_key?: string
+          question_label?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       package_pricing: {
         Row: {
           billing_cycle: string
@@ -5369,6 +5515,7 @@ export type Database = {
         Args: { _day?: string; _user_id: string }
         Returns: Json
       }
+      compute_onboarding_grade: { Args: { _answers: Json }; Returns: Json }
       create_notification: {
         Args: {
           _action_url?: string
