@@ -16,7 +16,9 @@ import { LANGUAGE_LABELS, type Language } from "@/lib/i18n";
 import { useAppLanguages } from "@/hooks/useAppLanguages";
 import { fetchHealthLogs, fetchProgressSummaries, formatLogDate, insertHealthLog, type HealthLog, type ProgressSummary } from "@/lib/healthLogsService";
 import { toast } from "sonner";
-import { fetchProfile } from "@/lib/profileService";
+import { fetchProfile, updateProfile } from "@/lib/profileService";
+import { saveUser } from "@/lib/userStore";
+import AvatarPhotoPicker from "@/components/AvatarPhotoPicker";
 import { useAuth } from "@/contexts/AuthContext";
 import { useConfirm } from "@/components/ConfirmProvider";
 import { clearAppBadge } from "@/lib/appBadge";
@@ -181,6 +183,29 @@ export default function Profile({ onClose, isDark = true, onToggleTheme }: Profi
   const [initialScore, setInitialScore] = useState<number | null>(null);
   const [memberSince, setMemberSince] = useState<string | null>(null);
   const userAvatar = storedUser?.avatarUrl;
+  const [avatarUploading, setAvatarUploading] = useState(false);
+
+  const handleAvatarUpload = async (blob: Blob, ext: string) => {
+    if (!user) return;
+    setAvatarUploading(true);
+    try {
+      const path = `${user.id}/avatar.${ext}`;
+      const { error } = await supabase.storage
+        .from("avatars")
+        .upload(path, blob, { upsert: true, contentType: blob.type || `image/${ext}` });
+      if (error) throw error;
+      const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+      const url = `${data.publicUrl}?t=${Date.now()}`;
+      saveUser({ avatarUrl: url });
+      await updateProfile(user.id, { avatar_url: url });
+      toast.success("Photo updated!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to upload photo");
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
   const [subPage, setSubPage] = useState<SubPage>(null);
   const [logsTab, setLogsTab] = useState<"diabetes" | "bp" | "weight" | "fasting" | "supplements" | "plates">("diabetes");
   const [plateLogs, setPlateLogs] = useState<any[]>([]);
@@ -1161,13 +1186,14 @@ export default function Profile({ onClose, isDark = true, onToggleTheme }: Profi
       </div>
 
       <motion.div className="flex flex-col items-center gap-3" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="w-24 h-24 rounded-3xl overflow-hidden bg-primary/10 shadow-md flex items-center justify-center">
-          {userAvatar ? (
-            <img src={userAvatar} alt="Profile" className="w-full h-full object-cover" />
-          ) : (
-            <span className="text-primary font-black text-4xl">{userName.charAt(0).toUpperCase()}</span>
-          )}
-        </div>
+        <AvatarPhotoPicker
+          variant="avatar"
+          avatarUrl={userAvatar ?? null}
+          fallback={userName.charAt(0).toUpperCase()}
+          uploading={avatarUploading}
+          onUpload={handleAvatarUpload}
+        />
+
         <div className="max-w-full text-center">
           <h2 className="text-2xl font-black text-foreground leading-tight break-words">{userName}</h2>
           <p className="text-muted-foreground text-sm leading-snug break-words">{planName ?? t("member")}</p>
