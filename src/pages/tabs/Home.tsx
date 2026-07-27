@@ -1312,7 +1312,7 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
       >
-        <h1 className="text-[30px] sm:text-[34px] leading-[1.1] font-semibold tracking-[-0.03em] text-foreground no-break">
+        <h1 className="text-[clamp(22px,6.5vw,32px)] leading-[1.15] font-semibold tracking-[-0.03em] text-foreground break-words">
           {greeting || "Good morning"}, {firstName} <span className="inline-block">👋</span>
         </h1>
         {coachName && (
