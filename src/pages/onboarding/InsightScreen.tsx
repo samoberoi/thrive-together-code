@@ -6,7 +6,7 @@ import * as Icons from "lucide-react";
 import { ChevronRight, Heart } from "lucide-react";
 import SoundToggle from "@/components/SoundToggle";
 import { setPhase } from "@/lib/musicEngine";
-import { fetchOnboardingGrade, FALLBACK_GRADE, type OnboardingGrade } from "@/lib/onboardingGrade";
+import { fetchOnboardingGrade, getCachedOnboardingGrade, type OnboardingGrade } from "@/lib/onboardingGrade";
 
 const ACCENTS: Record<string, { color: string; tile: string; cta: string }> = {
   red: { color: "var(--bbdo-red)", tile: "tile-icon-red", cta: "gradient-blue glow-blue" },
