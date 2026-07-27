@@ -1163,13 +1163,14 @@ export default function Profile({ onClose, isDark = true, onToggleTheme }: Profi
       </div>
 
       <motion.div className="flex flex-col items-center gap-3" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="w-24 h-24 rounded-3xl overflow-hidden bg-primary/10 shadow-md flex items-center justify-center">
-          {userAvatar ? (
-            <img src={userAvatar} alt="Profile" className="w-full h-full object-cover" />
-          ) : (
-            <span className="text-primary font-black text-4xl">{userName.charAt(0).toUpperCase()}</span>
-          )}
-        </div>
+        <AvatarPhotoPicker
+          variant="avatar"
+          avatarUrl={userAvatar ?? null}
+          fallback={userName.charAt(0).toUpperCase()}
+          uploading={avatarUploading}
+          onUpload={handleAvatarUpload}
+        />
+
         <div className="max-w-full text-center">
           <h2 className="text-2xl font-black text-foreground leading-tight break-words">{userName}</h2>
           <p className="text-muted-foreground text-sm leading-snug break-words">{planName ?? t("member")}</p>
