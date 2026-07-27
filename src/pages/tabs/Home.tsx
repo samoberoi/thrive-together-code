@@ -450,6 +450,21 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
 
   const { user: authUser } = useAuth();
   const user = useUserStore();
+
+  // Fire the one-time welcome notification only when the user lands on the
+  // Home dashboard (not on OTP / SIGNED_IN). Server-side is idempotent, so
+  // repeat mounts are safe — subsequent calls no-op.
+  useEffect(() => {
+    const uid = authUser?.id;
+    if (!uid) return;
+    const t = setTimeout(() => {
+      void sendWelcomeNotification(uid).catch((error) => {
+        console.error("sendWelcomeNotification failed", error);
+      });
+    }, 800);
+    return () => clearTimeout(t);
+  }, [authUser?.id]);
+
   const [dbProfile, setDbProfile] = useState<any | null>(null);
   useEffect(() => {
     const h = user.bodyMetrics?.height;
