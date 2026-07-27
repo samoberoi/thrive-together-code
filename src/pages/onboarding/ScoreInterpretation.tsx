@@ -7,7 +7,7 @@ import SoundToggle from "@/components/SoundToggle";
 import { setPhase } from "@/lib/musicEngine";
 
 function getInterpretation(score: number) {
-  if (score >= 70) return { title: "Good, we can do better", message: "Your metabolic health is solid — but a few targeted shifts can take you further.", tone: "text-primary", bg: "bg-primary/10", hope: "Small, consistent optimizations can push your score well above 85." };
+  if (score >= 70) return { title: "Good, we can do better", message: "Your metabolic health is solid — but a few targeted shifts can take you further.", tone: "text-primary", bg: "bg-primary/10", hope: "Small, consistent optimizations can push your score well above 95." };
   if (score >= 60) return { title: "Wake-up Call", message: "Your body is signaling early metabolic stress. Now's the time to act.", tone: "text-warning", bg: "bg-warning/10", hope: "Most people in this range see meaningful improvement within 90 days of structured support." };
   if (score >= 50) return { title: "Attention Required", message: "Your markers show your metabolism is under real strain and needs care.", tone: "text-warning", bg: "bg-warning/10", hope: "With the right plan, this range typically improves significantly in 3–6 months." };
   if (score >= 40) return { title: "Moderate Risk", message: "You're heading toward metabolic dysfunction — reversible with focused intervention.", tone: "text-destructive", bg: "bg-destructive/10", hope: "People at this level routinely recover with a structured 6-month program." };

@@ -284,7 +284,7 @@ export function calculateHealthScore(
   const totalRisk = cat1 + cat2 + cat3 + cat4 + cat5;
   let healthScore = 100 - totalRisk;
   if (healthScore < 27) healthScore = 27;
-  if (healthScore > 95) healthScore = 95;
+  if (healthScore > 85) healthScore = 85;
 
   // Risk category
   let riskCategory = "Good";
