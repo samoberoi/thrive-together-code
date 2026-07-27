@@ -73,6 +73,7 @@ const AdminGlobalStreak = lazy(() => import("./admin/AdminGlobalStreak"));
 const AdminPnl = lazy(() => import("./admin/AdminPnl"));
 const AdminDietTypes = lazy(() => import("./admin/AdminDietTypes"));
 const AdminBmiCategories = lazy(() => import("./admin/AdminBmiCategories"));
+const AdminOnboardingGrades = lazy(() => import("./admin/AdminOnboardingGrades"));
 
 
 import NotificationsPanel from "@/components/NotificationsPanel";
@@ -110,6 +111,7 @@ export type AdminTab =
   | "pnl"
   | "diet_types"
   | "bmi"
+  | "onboarding_grades"
   
   | "profile";
 
@@ -169,6 +171,7 @@ const navItems: NavItem[] = [
       { id: "pnl", icon: TrendingUp, label: "P&L Manager" },
       { id: "diet_types", icon: Salad, label: "Diet Types" },
       { id: "bmi", icon: Scale, label: "BMI Categories" },
+      { id: "onboarding_grades", icon: Gauge, label: "Onboarding Grading" },
     ],
   },
 ];
@@ -205,6 +208,7 @@ const tabContentMap: Record<AdminTab, React.ReactNode> = {
   pnl: <AdminPnl />,
   diet_types: <AdminDietTypes />,
   bmi: <AdminBmiCategories />,
+  onboarding_grades: <AdminOnboardingGrades />,
   
   profile: null,
 };
@@ -239,6 +243,7 @@ const adminTabs = new Set<AdminTab>([
   "pnl",
   "diet_types",
   "bmi",
+  "onboarding_grades",
   
   "profile",
 ]);
@@ -267,6 +272,7 @@ const controlCenterTabs = new Set<AdminTab>([
   "pnl",
   "diet_types",
   "bmi",
+  "onboarding_grades",
 ]);
 
 const supplementTabs = new Set<AdminTab>(["supplements"]);
@@ -631,6 +637,7 @@ export default function AdminDashboard() {
             { id: "global_streak", icon: Flame, label: "Streak" },
             { id: "pnl", icon: TrendingUp, label: "P&L" },
             { id: "bmi", icon: Scale, label: "BMI" },
+            { id: "onboarding_grades", icon: Gauge, label: "Grading" },
           ]}
         />
       </div>
