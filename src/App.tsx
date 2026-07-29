@@ -35,6 +35,7 @@ import RealityHook from "./pages/onboarding/RealityHook";
 import TensionScreen from "./pages/onboarding/TensionScreen";
 import BreakPattern from "./pages/onboarding/BreakPattern";
 import NotFound from "./pages/NotFound";
+import DeleteAccount from "./pages/DeleteAccount";
 
 // Lazy: setup, onboarding tail, product, admin/coach/partner
 const BasicDetails = lazy(() => import("./pages/setup/BasicDetails"));
@@ -372,6 +373,7 @@ function AnimatedRoutes() {
         <Route path="/notifications" element={<PageTransition><NotificationsPage /></PageTransition>} />
 
 
+        <Route path="/delete-account" element={<PageTransition><DeleteAccount /></PageTransition>} />
         <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
       </Routes>
       </Suspense>
