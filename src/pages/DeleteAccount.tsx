@@ -1,6 +1,6 @@
 import { Mail, Trash2, Shield, Clock } from "lucide-react";
 
-const SUPPORT_EMAIL = "support@byebyediabetes.com";
+const SUPPORT_EMAIL = "byebyediabetes2025@gmail.com";
 
 export default function DeleteAccount() {
   return (
