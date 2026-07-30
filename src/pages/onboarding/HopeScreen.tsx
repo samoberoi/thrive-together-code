@@ -67,7 +67,12 @@ export default function HopeScreen() {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const copy = copyFor(grade?.slug);
+  // Never flash the severe copy before the real grade resolves.
+  if (!grade) {
+    return <div className="ob-screen phone-container ob-lock min-h-dvh overflow-x-hidden" />;
+  }
+
+  const copy = copyFor(grade.slug);
 
   return (
     <div className="ob-screen phone-container ob-lock min-h-dvh overflow-x-hidden">
