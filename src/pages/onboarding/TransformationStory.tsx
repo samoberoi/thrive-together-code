@@ -210,10 +210,10 @@ export default function TransformationStory() {
             <motion.button
               key={i}
               onClick={() => setCurrent(i)}
-              className="rounded-full bg-white"
+              className="rounded-full bg-white shrink-0 p-0 border-0 block"
               animate={{ width: i === current ? 22 : 6, opacity: i === current ? 1 : 0.35 }}
               transition={{ duration: 0.25, ease: EASE }}
-              style={{ height: 6 }}
+              style={{ height: 6, minHeight: 6, minWidth: 6 }}
               aria-label={`Story ${i + 1}`}
             />
           ))}
