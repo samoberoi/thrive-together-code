@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight, ArrowRight, TrendingDown } from "lucide-react";
 import SoundToggle from "@/components/SoundToggle";
+import { HeroCard } from "@/components/ui/HeroCard";
 
 import soniaImg from "@/assets/sonia-ba.jpg";
 import muneerImg from "@/assets/muneeruddin-ba.jpg";
@@ -108,11 +109,11 @@ const EASE = [0.22, 1, 0.36, 1] as const;
 function Metric({ label, before, after }: { label: string; before: string; after: string }) {
   return (
     <div className="flex flex-col items-center gap-1 py-2.5 px-1 text-center">
-      <p className="text-[0.55rem] font-semibold uppercase tracking-[0.12em] text-white/55">{label}</p>
-      <span className="text-white text-base font-black leading-none">{after}</span>
+      <p className="text-[0.55rem] font-semibold uppercase tracking-[0.12em] text-bbdo-inksoft">{label}</p>
+      <span className="text-bbdo-blue text-base font-black leading-none">{after}</span>
       <div className="flex items-center gap-1">
-        <span className="text-white/40 text-[0.62rem] line-through">{before}</span>
-        <ArrowRight className="w-2.5 h-2.5 text-primary/70" />
+        <span className="text-bbdo-inksoft text-[0.62rem] line-through opacity-70">{before}</span>
+        <ArrowRight className="w-2.5 h-2.5 text-bbdo-blue/70" />
       </div>
     </div>
   );
@@ -130,32 +131,35 @@ export default function TransformationStory() {
   };
 
   return (
-    <div className="phone-container ob-lock relative min-h-dvh overflow-x-hidden flex flex-col" style={{ background: "#0B1020" }}>
+    <div className="phone-container ob-lock relative min-h-dvh overflow-x-hidden flex flex-col">
       <SoundToggle />
 
       {/* Header */}
       <div className="px-5 pt-[calc(env(safe-area-inset-top)+2rem)] shrink-0">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-white/70">Real Transformation</p>
-            <h2 className="text-white text-[20px] leading-[1.1] font-black tracking-[-0.02em] mt-1.5">
-              Reversal isn't a promise. <span className="text-white/70">It's a pattern.</span>
-            </h2>
-          </div>
-          {story.duration && (
-            <div className="flex items-center gap-1.5 rounded-full bg-white/15 backdrop-blur-md px-3 py-1.5 shrink-0 mt-1">
-              <TrendingDown className="h-3.5 w-3.5 text-primary" />
-              <span className="text-[11px] font-bold text-white">{story.duration}</span>
+        <HeroCard variant="navy" className="pb-6">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="bbdo-eyebrow text-white mb-2">Real Transformation</p>
+              <h1 className="text-white text-[22px] leading-[1.1] font-extrabold tracking-tight">
+                Reversal isn't a promise.{" "}
+                <span className="text-white/70">It's a pattern.</span>
+              </h1>
             </div>
-          )}
-        </div>
-        <p className="text-white/60 text-[11px] font-medium mt-2">
-          Story {current + 1} of {stories.length}
-        </p>
+            {story.duration && (
+              <div className="flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 shrink-0 mt-1">
+                <TrendingDown className="h-3.5 w-3.5 text-white" />
+                <span className="text-[11px] font-bold text-white">{story.duration}</span>
+              </div>
+            )}
+          </div>
+          <p className="text-white/65 text-[11px] font-medium mt-2">
+            Story {current + 1} of {stories.length}
+          </p>
+        </HeroCard>
       </div>
 
       {/* Body */}
-      <div className="flex-1 min-h-0 flex flex-col justify-center px-5 pt-3">
+      <div className="flex-1 min-h-0 flex flex-col justify-center px-5 pt-4">
         <AnimatePresence initial={false} mode="wait">
           <motion.div
             key={current}
@@ -166,34 +170,34 @@ export default function TransformationStory() {
             className="flex flex-col"
           >
             {/* Before / After collage */}
-            <div className="relative rounded-2xl overflow-hidden ring-1 ring-white/10 bg-white/5">
+            <div className="relative rounded-2xl overflow-hidden bbdo-surface-card">
               <img
                 src={story.image}
                 alt={`${story.name} before and after transformation`}
                 loading="eager"
                 decoding="async"
-                className="w-full max-h-[42dvh] object-contain"
+                className="w-full max-h-[40dvh] object-contain"
               />
-              <span className="absolute top-2 left-2 rounded-full bg-black/65 backdrop-blur-sm px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white/85">
+              <span className="absolute top-2 left-2 rounded-full bg-bbdo-ink/85 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white">
                 Before
               </span>
-              <span className="absolute top-2 right-2 rounded-full bg-primary px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-primary-foreground">
+              <span className="absolute top-2 right-2 rounded-full bg-bbdo-blue px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white">
                 After
               </span>
             </div>
 
-            <h1 className="text-white text-[22px] leading-[1.1] font-black tracking-[-0.02em] mt-4">
+            <h2 className="text-bbdo-ink text-[20px] leading-[1.1] font-extrabold tracking-tight mt-4">
               {story.name}
-            </h1>
-            <p className="text-white/60 text-xs mt-1">Age {story.age} · {story.city}</p>
+            </h2>
+            <p className="text-bbdo-inksoft text-xs mt-1">Age {story.age} · {story.city}</p>
 
-            <div className="grid grid-cols-4 rounded-2xl bg-white/[0.06] ring-1 ring-white/10 mt-3">
+            <div className="grid grid-cols-4 rounded-2xl sub-card sub-card-tight mt-3 p-0">
               {story.metrics.map((m) => (
                 <Metric key={m.label} {...m} />
               ))}
             </div>
 
-            <p className="text-[13px] italic leading-[1.5] text-white/85 mt-3">
+            <p className="text-[13px] italic leading-[1.5] text-bbdo-inksoft mt-3">
               "{story.quote}"
             </p>
           </motion.div>
@@ -210,8 +214,8 @@ export default function TransformationStory() {
             <motion.button
               key={i}
               onClick={() => setCurrent(i)}
-              className="rounded-full bg-white shrink-0 p-0 border-0 block"
-              animate={{ width: i === current ? 22 : 6, opacity: i === current ? 1 : 0.35 }}
+              className="rounded-full bg-bbdo-ink shrink-0 p-0 border-0 block"
+              animate={{ width: i === current ? 22 : 6, opacity: i === current ? 1 : 0.25 }}
               transition={{ duration: 0.25, ease: EASE }}
               style={{ height: 6, minHeight: 6, minWidth: 6 }}
               aria-label={`Story ${i + 1}`}
@@ -219,7 +223,7 @@ export default function TransformationStory() {
           ))}
         </div>
 
-        <motion.button onClick={handleCta} whileTap={{ scale: 0.98 }} className="ob-cta gradient-blue glow-blue mt-4">
+        <motion.button onClick={handleCta} whileTap={{ scale: 0.98 }} className="ob-cta gradient-blue mt-4">
           {isLast ? "I want similar results" : "Next story"}
           <ChevronRight className="h-5 w-5" />
         </motion.button>
