@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight, ArrowRight, TrendingDown } from "lucide-react";
 import SoundToggle from "@/components/SoundToggle";
+import { HeroCard } from "@/components/ui/HeroCard";
 
 import soniaImg from "@/assets/sonia-ba.jpg";
 import muneerImg from "@/assets/muneeruddin-ba.jpg";
