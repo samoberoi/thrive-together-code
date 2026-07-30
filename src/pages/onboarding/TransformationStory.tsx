@@ -130,7 +130,7 @@ export default function TransformationStory() {
   };
 
   return (
-    <div className="phone-container ob-lock relative min-h-dvh overflow-x-hidden bg-black flex flex-col">
+    <div className="phone-container ob-lock relative min-h-dvh overflow-x-hidden flex flex-col" style={{ background: "#0B1020" }}>
       <SoundToggle />
 
       {/* Header */}
