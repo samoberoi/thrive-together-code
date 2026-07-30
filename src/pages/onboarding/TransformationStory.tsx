@@ -3,13 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight, ArrowRight, TrendingDown } from "lucide-react";
 import SoundToggle from "@/components/SoundToggle";
-import { resolveAssetUrl } from "@/lib/assetUrl";
 
-import soniaAsset from "@/assets/stories/Sonia_Bisht.png.asset.json";
-import muneerAsset from "@/assets/stories/Muneerudin_Mohammed.png.asset.json";
-import jagadishAsset from "@/assets/stories/Jagadish_Garewal.png.asset.json";
-import pravinAsset from "@/assets/stories/Pravin_Kumar.png.asset.json";
-import swatiAsset from "@/assets/stories/Swati_Apsingkar.jpg.asset.json";
+import soniaImg from "@/assets/sonia-ba.jpg";
+import muneerImg from "@/assets/muneeruddin-ba.jpg";
+import jagadishImg from "@/assets/jagadish-ba.jpg";
+import pravinImg from "@/assets/pravin-ba.jpg";
+import swatiImg from "@/assets/swati-ba.jpg";
+
 
 interface Story {
   name: string;
