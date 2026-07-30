@@ -27,7 +27,7 @@ const stories: Story[] = [
     age: 38,
     city: "Dehradun (INDIA)",
     duration: "7 months",
-    image: resolveAssetUrl(soniaAsset.url),
+    image: soniaImg,
     quote: "Post pregnancy diabetes. Medicine-free today.",
     metrics: [
       { label: "HbA1c", before: "9.8%", after: "5.5%" },
@@ -41,7 +41,7 @@ const stories: Story[] = [
     age: 49,
     city: "Dubai (UAE)",
     duration: "15 months",
-    image: resolveAssetUrl(muneerAsset.url),
+    image: muneerImg,
     quote: "Reduced insulin from 120 units to 8 — and got my confidence back.",
     metrics: [
       { label: "HbA1c", before: "8.1%", after: "5.7%" },
@@ -54,7 +54,7 @@ const stories: Story[] = [
     name: "Jagadish Garewal",
     age: 61,
     city: "Meerut (INDIA)",
-    image: resolveAssetUrl(jagadishAsset.url),
+    image: jagadishImg,
     quote:
       "A diabetic for 26 years, if I could do this at this age, anyone can. Hats off to Col. Gautam Guha and his platform BBDO.",
     metrics: [
@@ -68,7 +68,7 @@ const stories: Story[] = [
     name: "Pravin Kumar",
     age: 49,
     city: "Meerut (INDIA)",
-    image: resolveAssetUrl(pravinAsset.url),
+    image: pravinImg,
     quote:
       "Happy to have reversed my dyslipidemia and NASH — feel in better state of mind and body. Confidence is back.",
     metrics: [
@@ -82,7 +82,7 @@ const stories: Story[] = [
     name: "Dr Swati Apsingkar",
     age: 47,
     city: "Pune (INDIA)",
-    image: resolveAssetUrl(swatiAsset.url),
+    image: swatiImg,
     quote:
       "Happy to regain control of my health. My hypertensive medicine has also been discontinued.",
     metrics: [
