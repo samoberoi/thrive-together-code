@@ -207,9 +207,10 @@ export default function TransformationStory() {
 
       {/* Footer */}
       <div
-        className="px-5 shrink-0"
+        className="px-5 shrink-0 bg-background pt-2"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + var(--bbdo-native-bottom-guard, 0px) + 18px)" }}
       >
+
         <div className="flex items-center justify-center gap-2 mt-4">
           {stories.map((_, i) => (
             <motion.button
