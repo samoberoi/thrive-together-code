@@ -31,7 +31,7 @@ const DIET_PREF_LABEL: Record<string, string> = {
   non_veg: "Non-veg",
   vegan: "Vegan",
   jain: "Jain",
-  eggitarian: "Eggitarian",
+  eggitarian: "Eggetarian",
 };
 
 export default function DietPlatingCalendar() {
