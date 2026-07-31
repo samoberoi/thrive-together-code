@@ -49,7 +49,7 @@ export type DietBadgeMeta = { label: string; cls: string; title: string };
 export const dietBadge: Record<DietType, DietBadgeMeta> = {
   vegan:   { label: "Vegan", cls: "bg-emerald-500/15 text-emerald-700", title: "Vegan" },
   veg:     { label: "Veg",   cls: "bg-green-500/15 text-green-700",     title: "Vegetarian" },
-  eggitarian: { label: "Egg", cls: "bg-yellow-500/15 text-yellow-700", title: "Eggitarian" },
+  eggitarian: { label: "Egg", cls: "bg-yellow-500/15 text-yellow-700", title: "Eggetarian" },
   non_veg: { label: "Non-veg", cls: "bg-rose-500/15 text-rose-700",     title: "Non-vegetarian" },
   jain:    { label: "Jain",  cls: "bg-amber-500/15 text-amber-700",     title: "Jain" },
 };

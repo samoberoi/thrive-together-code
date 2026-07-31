@@ -86,7 +86,7 @@ const giLabel: Record<GiBand, string> = { low: "Low", low_med: "Low–Med", medi
 const DIET_BADGE: Record<DietType, { label: string; cls: string; title: string }> = {
   vegan:   { label: "VG", cls: "bg-emerald-500/10 text-emerald-700 border-emerald-500/30", title: "Vegan" },
   veg:     { label: "V",  cls: "bg-green-500/10  text-green-700   border-green-500/30",   title: "Vegetarian" },
-  eggitarian: { label: "EG", cls: "bg-yellow-500/10 text-yellow-700 border-yellow-500/30", title: "Eggitarian" },
+  eggitarian: { label: "EG", cls: "bg-yellow-500/10 text-yellow-700 border-yellow-500/30", title: "Eggetarian" },
   non_veg: { label: "NV", cls: "bg-rose-500/10   text-rose-700    border-rose-500/30",    title: "Non-vegetarian" },
   jain:    { label: "JN", cls: "bg-amber-500/10  text-amber-700   border-amber-500/30",   title: "Strictly Jain" },
 };

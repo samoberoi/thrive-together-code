@@ -1355,7 +1355,7 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
               { id: "veg", label: "Vegetarian" },
               { id: "non_veg", label: "Non-Veg" },
               { id: "vegan", label: "Vegan" },
-              { id: "eggitarian", label: "Eggitarian" },
+              { id: "eggitarian", label: "Eggetarian" },
               { id: "jain", label: "Jain" },
             ]}
           />

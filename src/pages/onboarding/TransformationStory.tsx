@@ -54,7 +54,7 @@ const stories: Story[] = [
   {
     name: "Jagadish Garewal",
     age: 61,
-    city: "Meerut (INDIA)",
+    city: "Ludhiana (INDIA)",
     image: jagadishImg,
     quote:
       "A diabetic for 26 years, if I could do this at this age, anyone can. Hats off to Col. Gautam Guha and his platform BBDO.",

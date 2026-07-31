@@ -28,7 +28,16 @@ const breakdownConfig = [
 
 function dietLabel(diet?: string) {
   if (!diet) return null;
-  const map: Record<string, string> = { vegetarian: "Vegetarian", non_vegetarian: "Non-Vegetarian", vegan: "Vegan" };
+  const map: Record<string, string> = {
+    vegetarian: "Vegetarian",
+    veg: "Vegetarian",
+    non_vegetarian: "Non-Vegetarian",
+    non_veg: "Non-Vegetarian",
+    vegan: "Vegan",
+    jain: "Jain",
+    eggitarian: "Eggetarian",
+    eggetarian: "Eggetarian",
+  };
   return map[diet] ?? diet;
 }
 
