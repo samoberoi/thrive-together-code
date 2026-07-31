@@ -159,7 +159,7 @@ export default function TransformationStory() {
       </div>
 
       {/* Body */}
-      <div className="flex-1 min-h-0 flex flex-col justify-center px-5 pt-4">
+      <div className="flex-1 min-h-0 overflow-y-auto px-5 pt-4">
         <AnimatePresence initial={false} mode="wait">
           <motion.div
             key={current}
@@ -169,14 +169,14 @@ export default function TransformationStory() {
             transition={{ duration: 0.3, ease: EASE }}
             className="flex flex-col"
           >
-            {/* Before / After collage */}
-            <div className="relative rounded-2xl overflow-hidden bbdo-surface-card">
+            {/* Before / After collage — identical frame for every story */}
+            <div className="relative w-full aspect-[5/4] rounded-2xl overflow-hidden bbdo-surface-card bg-bbdo-ink/5">
               <img
                 src={story.image}
                 alt={`${story.name} before and after transformation`}
                 loading="eager"
                 decoding="async"
-                className="w-full max-h-[40dvh] object-contain"
+                className="absolute inset-0 h-full w-full object-cover"
               />
               <span className="absolute top-2 left-2 rounded-full bg-bbdo-ink/85 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white">
                 Before
@@ -186,7 +186,7 @@ export default function TransformationStory() {
               </span>
             </div>
 
-            <h2 className="text-bbdo-ink text-[20px] leading-[1.1] font-extrabold tracking-tight mt-4">
+            <h2 className="text-bbdo-ink text-[20px] leading-[1.15] font-extrabold tracking-tight mt-4">
               {story.name}
             </h2>
             <p className="text-bbdo-inksoft text-xs mt-1">Age {story.age} · {story.city}</p>
@@ -197,18 +197,20 @@ export default function TransformationStory() {
               ))}
             </div>
 
-            <p className="text-[13px] italic leading-[1.5] text-bbdo-inksoft mt-3">
+            <p className="text-[13px] italic leading-[1.5] text-bbdo-inksoft mt-3 pb-2">
               "{story.quote}"
             </p>
           </motion.div>
         </AnimatePresence>
       </div>
 
+
       {/* Footer */}
       <div
-        className="px-5 shrink-0"
+        className="px-5 shrink-0 bg-background pt-2"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + var(--bbdo-native-bottom-guard, 0px) + 18px)" }}
       >
+
         <div className="flex items-center justify-center gap-2 mt-4">
           {stories.map((_, i) => (
             <motion.button
