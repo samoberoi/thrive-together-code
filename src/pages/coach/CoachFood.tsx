@@ -240,14 +240,22 @@ export default function CoachFood() {
             />
           </div>
 
-          <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+          <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground px-1">
             <span>{isToday ? "Today" : date} · {filtered.length} patients</span>
-            {noCheckinCount > 0 && (
-              <span className="inline-flex items-center gap-1 font-semibold text-amber-600">
-                <AlertTriangle className="w-3.5 h-3.5" /> {noCheckinCount} not checked in
-              </span>
-            )}
+            <div className="flex items-center gap-2">
+              {noCheckinCount > 0 && (
+                <span className="inline-flex items-center gap-1 font-semibold text-amber-600">
+                  <AlertTriangle className="w-3.5 h-3.5" /> {noCheckinCount} not checked in
+                </span>
+              )}
+              {pending.length > 0 && (
+                <Button size="sm" variant="outline" className="h-7 px-2.5 text-xs gap-1" onClick={() => openNudge("all")}>
+                  <Bell className="w-3.5 h-3.5" /> Nudge all ({pending.length})
+                </Button>
+              )}
+            </div>
           </div>
+
 
           {loading ? (
             <p className="text-sm text-muted-foreground px-1 py-8">Loading…</p>
