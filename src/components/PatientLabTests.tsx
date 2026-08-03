@@ -575,13 +575,13 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
             )}
 
             {(() => {
-              const recExt = extReports.filter((x) => x.recommendation_id === r.id);
+              const recExt = recExtReports;
               if (!r.external_intent && recExt.length === 0) return null;
               return (
                 <div className="rounded-2xl bg-[var(--bbdo-blue,#2563eb)]/5 ring-1 ring-primary/15 p-3 space-y-2">
                   <div className="flex items-center gap-2">
                     <Home className="w-4 h-4 text-primary shrink-0" />
-                    <p className="text-xs font-black">Getting this done outside</p>
+                    <p className="text-xs font-black">{recExt.length > 0 ? "Done outside — report received" : "Getting this done outside"}</p>
                   </div>
                   <p className="text-[11px] text-muted-foreground leading-snug">
                     {recExt.length === 0
@@ -617,7 +617,7 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
                     className="w-full h-9 text-xs font-bold"
                     onClick={() => setExternalRec({ rec: r, startAtUpload: true })}
                   >
-                    <Upload className="w-3.5 h-3.5 mr-1.5" /> Upload report
+                    <Upload className="w-3.5 h-3.5 mr-1.5" /> {recExt.length > 0 ? "Upload another report" : "Upload report"}
                   </Button>
                 </div>
               );
@@ -625,7 +625,7 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
 
             <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
               <div className="text-sm font-black">Total ₹{total.toFixed(0)}</div>
-              {r.status !== "booked" && !order && (
+              {r.status !== "booked" && !order && !extDone && (
                 <div className="flex items-center gap-2">
                   {!r.external_intent && (
                     <Button size="sm" variant="outline" onClick={() => setExternalRec({ rec: r, startAtUpload: false })}>
@@ -636,6 +636,7 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
                 </div>
               )}
             </div>
+
 
           </motion.div>
         );
