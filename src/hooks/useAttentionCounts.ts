@@ -109,6 +109,20 @@ export function useAttentionCounts() {
     const scopedErrorMessage = firstErrorMessage([coachChatsRes, consultationRes, partnerChatsRes]);
     if (scopedErrorMessage) console.warn("Scoped attention count query skipped", scopedErrorMessage);
 
+    // A recommendation is no longer "pending attention" once the patient has
+    // uploaded an external report for it (they got the test done outside).
+    const pendingRecIds = ((labRecsRes.data as any[]) ?? []).map((r) => r.id as string);
+    let outstandingLabRecs = pendingRecIds.length;
+    if (pendingRecIds.length > 0) {
+      const { data: extRows } = await supabase
+        .from("external_lab_reports" as any)
+        .select("recommendation_id")
+        .eq("user_id", userId)
+        .in("recommendation_id", pendingRecIds);
+      const covered = new Set(((extRows as any[]) ?? []).map((r) => r.recommendation_id));
+      outstandingLabRecs = pendingRecIds.filter((id) => !covered.has(id)).length;
+    }
+
     setCounts({
       notifications: Number(notificationsRes.count ?? 0),
       patientMessages: sumField(patientChatsRes.data as unknown[] | null, "patient_unread_count"),
@@ -116,7 +130,7 @@ export function useAttentionCounts() {
       partnerMessages: sumField(partnerChatsRes.data as unknown[] | null, "partner_unread_count"),
       yogaMessages: sumField(yogaChatsRes.data as unknown[] | null, "subscriber_unread_count"),
       consultationRequests: Number(consultationRes.count ?? 0),
-      labRecommendations: Number(labRecsRes.count ?? 0),
+      labRecommendations: outstandingLabRecs,
     });
     setLoading(false);
   }, [user?.id]);
