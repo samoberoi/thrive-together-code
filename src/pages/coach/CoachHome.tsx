@@ -454,6 +454,27 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
     setPatients(enriched);
     setAlerts(evaluateAlerts(enriched, ((recentCoachHealthAlerts as any[]) ?? []) as CoachHealthNotification[]));
 
+    // Patient-uploaded (external) lab reports the coach has not reviewed yet
+    try {
+      const { data: extRows } = await (supabase as any)
+        .from("external_lab_reports")
+        .select("id, user_id, file_name, created_at, reviewed_at")
+        .in("user_id", patientIds)
+        .is("reviewed_at", null)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      const nameById = new Map(enriched.map((p) => [p.user_id, p.name || "Patient"]));
+      setNewLabReports(((extRows as any[]) ?? []).map((r) => ({
+        id: r.id,
+        name: nameById.get(r.user_id) || "Patient",
+        fileName: r.file_name ?? null,
+        createdAt: r.created_at,
+      })));
+    } catch {
+      setNewLabReports([]);
+    }
+
+
     const { data: handledMeetings } = await supabase
       .from("coach_meetings" as any)
       .select("user_id, status")
