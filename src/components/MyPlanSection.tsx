@@ -137,6 +137,20 @@ export default function MyPlanSection({ onBack }: MyPlanSectionProps) {
             <p className="text-muted-foreground text-xs mt-1.5 leading-snug break-words">{percentUsed}% of your plan used — {daysRemaining} days remaining</p>
           </div>
 
+          {scheduledSub && (
+            <div className="liquid-glass rounded-2xl p-4 flex items-start gap-3">
+              <CalendarClock className="w-4 h-4 text-primary shrink-0 mt-0.5" strokeWidth={1.8} />
+              <div className="min-w-0">
+                <p className="text-foreground text-sm font-bold leading-snug break-words">
+                  {scheduledSub.plan_name} starts {formatDate(new Date(scheduledSub.started_at))}
+                </p>
+                <p className="text-muted-foreground text-xs mt-0.5 leading-snug break-words">
+                  Your current plan stays active until then — nothing changes today.
+                </p>
+              </div>
+            </div>
+          )}
+
           {daysRemaining <= 30 && (
             <div className="liquid-glass rounded-2xl p-4 flex items-center gap-3">
               <Bell className="w-4 h-4 text-destructive flex-shrink-0" strokeWidth={1.8} />
