@@ -3646,7 +3646,9 @@ export type Database = {
       }
       subscriptions: {
         Row: {
+          change_type: string
           created_at: string
+          credit_applied: number
           duration_months: number
           expires_at: string
           id: string
@@ -3658,7 +3660,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          change_type?: string
           created_at?: string
+          credit_applied?: number
           duration_months?: number
           expires_at: string
           id?: string
@@ -3670,7 +3674,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          change_type?: string
           created_at?: string
+          credit_applied?: number
           duration_months?: number
           expires_at?: string
           id?: string
@@ -5345,6 +5351,10 @@ export type Database = {
       }
     }
     Functions: {
+      activate_due_subscriptions: {
+        Args: { _user_id?: string }
+        Returns: undefined
+      }
       apply_referral_code: { Args: { _code: string }; Returns: string }
       approve_custom_slot_request: {
         Args: {
@@ -5473,6 +5483,35 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      change_subscription_plan: {
+        Args: {
+          _duration_months: number
+          _mode: string
+          _plan_id: string
+          _plan_name: string
+          _plan_price: number
+        }
+        Returns: {
+          change_type: string
+          created_at: string
+          credit_applied: number
+          duration_months: number
+          expires_at: string
+          id: string
+          plan_id: string
+          plan_name: string
+          plan_price: number
+          started_at: string
+          status: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "subscriptions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       cleanup_orphan_storage: {
         Args: never
         Returns: {
@@ -5493,7 +5532,9 @@ export type Database = {
           _plan_price: number
         }
         Returns: {
+          change_type: string
           created_at: string
+          credit_applied: number
           duration_months: number
           expires_at: string
           id: string
@@ -5660,6 +5701,10 @@ export type Database = {
           source: string
           user_id: string
         }[]
+      }
+      preview_plan_change: {
+        Args: { _duration_months: number; _mode: string; _plan_price: number }
+        Returns: Json
       }
       rbac_can: {
         Args: {

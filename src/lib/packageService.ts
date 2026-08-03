@@ -54,6 +54,8 @@ export interface SelectedPlan {
   base_monthly_price: number;
   discount_percent: number;
   assigns_coach: boolean;
+  /** new = first purchase, upgrade = starts today (prorated), downgrade = starts at current expiry */
+  change_mode?: "new" | "upgrade" | "downgrade" | "renewal";
 }
 
 const SELECTED_KEY = "bb_selected_plan";

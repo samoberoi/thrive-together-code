@@ -1,5 +1,5 @@
 import { fetchProfile } from "@/lib/profileService";
-import { fetchActiveSubscription } from "@/lib/subscriptionService";
+import { activateDueSubscriptions, fetchActiveSubscription } from "@/lib/subscriptionService";
 import { isAdminUser, isCoachUser } from "@/lib/roleService";
 import { isChannelPartner } from "@/lib/channelPartnerService";
 
@@ -25,6 +25,8 @@ export async function resolvePostAuthRoute(
   userId: string,
   options: { missingProfileRoute?: string | null } = {},
 ): Promise<string | null> {
+  // A scheduled downgrade becomes the live plan the moment the previous one ends.
+  await activateDueSubscriptions(userId);
   const [isAdmin, isCoach, isPartner, profile, activeSubscription] = await Promise.all([
     isAdminUser(userId),
     isCoachUser(userId),
@@ -44,6 +46,7 @@ export async function resolvePostAuthRoute(
 }
 
 export async function resolveProtectedAccess(userId: string): Promise<ProtectedAccessDecision> {
+  await activateDueSubscriptions(userId);
   const [isAdmin, isCoach, isPartner, profile, activeSubscription] = await Promise.all([
     isAdminUser(userId),
     isCoachUser(userId),

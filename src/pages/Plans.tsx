@@ -16,6 +16,7 @@ import {
 import {
   fetchActiveSubscription,
   fetchLatestSubscription,
+  fetchScheduledSubscription,
   isSubscriptionExpired,
   normalizePlanKey,
   type Subscription,
@@ -25,6 +26,9 @@ import { cn } from "@/lib/utils";
 
 const CYCLES: BillingCycle[] = ["yearly", "half_yearly", "quarterly", "monthly"];
 
+const fmtDate = (d: Date | string) =>
+  new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+
 export default function Plans() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -33,35 +37,37 @@ export default function Plans() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentPlanKey, setCurrentPlanKey] = useState<string | null>(null);
+  const [currentSortOrder, setCurrentSortOrder] = useState<number | null>(null);
+  const [activeSub, setActiveSub] = useState<Subscription | null>(null);
+  const [scheduledSub, setScheduledSub] = useState<Subscription | null>(null);
   const [expiredSub, setExpiredSub] = useState<Subscription | null>(null);
 
   useEffect(() => {
     setPhase("power");
     (async () => {
-      const [data, activeSub, latestSub] = await Promise.all([
+      const [data, active, latestSub, scheduled] = await Promise.all([
         fetchPackagesWithPricing({ onlyEnabled: true }),
         user ? fetchActiveSubscription(user.id) : Promise.resolve(null),
         user ? fetchLatestSubscription(user.id) : Promise.resolve(null),
+        user ? fetchScheduledSubscription(user.id) : Promise.resolve(null),
       ]);
-      const activeKey = normalizePlanKey(activeSub?.plan_id);
-      let visible = data.filter((p) => p.show_in_onboarding !== false);
-      // When user already has an active plan, only show upgrades (higher sort_order)
-      if (activeKey) {
-        const current = data.find((p) => p.plan_key === activeKey);
-        if (current) {
-          visible = visible.filter((p) => p.sort_order > current.sort_order);
-        }
-      }
+      const activeKey = normalizePlanKey(active?.plan_id);
+      // Show every other package — higher ones are upgrades, lower ones downgrades.
+      const visible = data.filter((p) => p.show_in_onboarding !== false);
+      const current = activeKey ? data.find((p) => p.plan_key === activeKey) : null;
       setPkgs(visible);
       setCurrentPlanKey(activeKey);
-      const expired = !activeSub && isSubscriptionExpired(latestSub) ? latestSub : null;
+      setCurrentSortOrder(current?.sort_order ?? null);
+      setActiveSub(active);
+      setScheduledSub(scheduled);
+      const expired = !active && isSubscriptionExpired(latestSub) ? latestSub : null;
       setExpiredSub(expired);
-      // Preselect: previously held plan if expired, else popular, else first
+      // Preselect: previously held plan if expired, else popular, else first non-current
       const previousKey = normalizePlanKey(expired?.plan_id);
       const previous = previousKey ? visible.find((p) => p.plan_key === previousKey) : null;
       const popular = visible.find((p) => p.accent === "popular" && p.plan_key !== activeKey);
-      const firstUpgrade = visible.find((p) => p.plan_key !== activeKey);
-      const pick = previous ?? popular ?? firstUpgrade ?? null;
+      const firstOther = visible.find((p) => p.plan_key !== activeKey);
+      const pick = previous ?? popular ?? firstOther ?? null;
       if (pick) setSelectedId(pick.id);
       setLoading(false);
     })();
@@ -77,13 +83,22 @@ export default function Plans() {
     if (availableCycles.length > 0 && !availableCycles.includes(cycle)) setCycle(availableCycles[0]);
   }, [availableCycles, cycle]);
 
+  const directionFor = (plan: PackageWithPricing): "upgrade" | "downgrade" | null => {
+    if (currentSortOrder == null || plan.plan_key === currentPlanKey) return null;
+    return plan.sort_order > currentSortOrder ? "upgrade" : "downgrade";
+  };
+
+  const selectedPkg = pkgs.find((p) => p.id === selectedId) ?? null;
+  const selectedDirection = selectedPkg ? directionFor(selectedPkg) : null;
+
   const handleStart = () => {
-    const pkg = pkgs.find((p) => p.id === selectedId);
+    const pkg = selectedPkg;
     if (!pkg) return;
     const row = pkg.pricing.find((r) => r.billing_cycle === cycle && r.enabled);
     if (!row) return;
     const months = CYCLE_MONTHS[cycle];
     const { monthly, total } = computePrice(pkg.base_monthly_price, row.discount_percent, months);
+    const direction = directionFor(pkg);
     saveSelectedPlan({
       package_id: pkg.id,
       plan_key: pkg.plan_key,
@@ -95,6 +110,7 @@ export default function Plans() {
       base_monthly_price: pkg.base_monthly_price,
       discount_percent: row.discount_percent,
       assigns_coach: pkg.assigns_coach !== false,
+      change_mode: direction ?? "new",
     });
     navigate("/commitment");
   };
@@ -123,19 +139,36 @@ export default function Plans() {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col flex-1">
         <div className="mb-5 mt-10">
           <span className="text-xs font-medium text-primary uppercase tracking-widest">
-            {expiredSub ? "Renew Access" : currentPlanKey ? "Upgrade Your Plan" : "Choose Your Path"}
+            {expiredSub ? "Renew Access" : currentPlanKey ? "Change Your Plan" : "Choose Your Path"}
           </span>
           <h1 className="text-3xl font-black text-foreground mt-1">
-            {expiredSub ? (<>Your plan<br />has expired</>) : currentPlanKey ? (<>Upgrade<br />your plan</>) : (<>Pick your<br />reset plan</>)}
+            {expiredSub ? (<>Your plan<br />has expired</>) : currentPlanKey ? (<>Change<br />your plan</>) : (<>Pick your<br />reset plan</>)}
           </h1>
+          {!expiredSub && currentPlanKey && (
+            <p className="text-muted-foreground text-xs mt-2 leading-snug">
+              Upgrades start today with credit for the unused part of your current plan. Downgrades start when your
+              current plan ends{activeSub ? ` on ${fmtDate(activeSub.expires_at)}` : ""}.
+            </p>
+          )}
         </div>
+
+        {scheduledSub && (
+          <div className="mb-5 rounded-2xl p-4 border border-primary/30 bg-primary/5">
+            <p className="text-foreground font-bold text-sm leading-tight">
+              {scheduledSub.plan_name} is scheduled
+            </p>
+            <p className="text-muted-foreground text-xs mt-1 leading-snug">
+              It starts on {fmtDate(scheduledSub.started_at)}. Choosing another plan below will replace it.
+            </p>
+          </div>
+        )}
 
         {expiredSub && (
           <div className="mb-5 rounded-2xl p-4 border border-destructive/40 bg-destructive/10 flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 shrink-0 text-destructive mt-0.5" strokeWidth={2} />
             <div className="min-w-0">
               <p className="text-foreground font-bold text-sm leading-tight">
-                {expiredSub.plan_name} expired on {new Date(expiredSub.expires_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                {expiredSub.plan_name} expired on {fmtDate(expiredSub.expires_at)}
               </p>
               <p className="text-muted-foreground text-xs mt-1 leading-snug">
                 Renew a plan below to restore full access to your dashboard, coach, and tracking.
@@ -169,6 +202,7 @@ export default function Plans() {
             const isCurrent = currentPlanKey != null && plan.plan_key === currentPlanKey;
             const isSelected = !isCurrent && selectedId === plan.id;
             const isPopular = plan.accent === "popular";
+            const direction = directionFor(plan);
             return (
               <motion.button
                 key={plan.id}
@@ -247,6 +281,18 @@ export default function Plans() {
                     ? "You're already enrolled on this plan."
                     : `Billed ₹${total.toLocaleString("en-IN")} every ${months} month${months > 1 ? "s" : ""}`}
                 </p>
+                {!isCurrent && direction && (
+                  <p
+                    className={cn(
+                      "text-[11px] font-semibold mb-3",
+                      direction === "upgrade" ? "text-primary" : "text-amber-700"
+                    )}
+                  >
+                    {direction === "upgrade"
+                      ? "Upgrade · starts today, unused balance credited"
+                      : `Downgrade · starts ${activeSub ? fmtDate(activeSub.expires_at) : "when your current plan ends"}`}
+                  </p>
+                )}
                 <div className="flex flex-col gap-2">
                   {plan.features.map((feat) => (
                     <div key={feat} className="flex items-center gap-2">
@@ -279,7 +325,14 @@ export default function Plans() {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
         >
-          {expiredSub ? "Renew Plan" : currentPlanKey ? "Upgrade Plan" : "Start My Journey"} <ChevronRight className="w-5 h-5" strokeWidth={1.5} />
+          {expiredSub
+            ? "Renew Plan"
+            : selectedDirection === "downgrade"
+            ? "Schedule Downgrade"
+            : selectedDirection === "upgrade"
+            ? "Upgrade Plan"
+            : "Start My Journey"}{" "}
+          <ChevronRight className="w-5 h-5" strokeWidth={1.5} />
         </motion.button>
         
       </motion.div>
