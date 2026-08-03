@@ -516,7 +516,14 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
         const priceOf = (t: Test) => patientPriceFor(t.offer_rate ?? t.rate, t.markup_pct, markupPct) ?? 0;
         const total = items.reduce((s, t) => s + priceOf(t), 0);
         const order = ordersByRec[r.id];
-        const displayStatus = !order && r.external_intent ? "Doing it outside" : orderDisplayStatus(order, r.status);
+        const recExtReports = extReports.filter((x) => x.recommendation_id === r.id);
+        const extDone = recExtReports.length > 0;
+        const extProcessing = extDone && recExtReports.every((x) => x.status === "processing" || x.status === "uploaded");
+        const displayStatus = !order && extDone
+          ? (extProcessing ? "Processing report" : "Completed")
+          : !order && r.external_intent
+            ? "Doing it outside"
+            : orderDisplayStatus(order, r.status);
         return (
 
           <motion.div key={r.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
