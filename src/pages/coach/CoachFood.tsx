@@ -1,13 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Apple, Users, Search, Check, AlertTriangle, ChevronDown, ChevronRight, Utensils } from "lucide-react";
+import { Apple, Users, Search, Check, AlertTriangle, ChevronDown, ChevronRight, Utensils, Bell, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { getOrCreateConversation, sendMessage } from "@/lib/chatService";
 import QuickFoodReference from "@/components/diet/QuickFoodReference";
 
 type View = "patients" | "reference";
+
 
 interface PatientRow {
   user_id: string;
@@ -61,6 +68,11 @@ export default function CoachFood() {
   const [photoSlots, setPhotoSlots] = useState<Record<string, Set<string>>>({});
   const [plates, setPlates] = useState<Record<string, Plate[]>>({});
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [coachId, setCoachId] = useState<string | null>(null);
+  const [nudgeTarget, setNudgeTarget] = useState<PatientRow | "all" | null>(null);
+  const [nudgeText, setNudgeText] = useState("");
+  const [sending, setSending] = useState(false);
+  const [nudged, setNudged] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (!user) return;
@@ -74,6 +86,8 @@ export default function CoachFood() {
     try {
       const { data: coach } = await supabase.from("coaches" as any).select("id").eq("user_id", user.id).maybeSingle();
       if (!coach) { setPatients([]); setLoading(false); return; }
+      setCoachId((coach as any).id);
+
 
       const { data: assignments } = await supabase
         .from("coach_assignments" as any)
@@ -155,7 +169,47 @@ export default function CoachFood() {
   const hasLmod = (uid: string) =>
     Boolean(checkins[uid]?.lmod) || photoSlots[uid]?.has("lmod") || photoSlots[uid]?.has("last_meal");
 
+  const pending = filtered.filter((p) => !hasFmod(p.user_id) || !hasLmod(p.user_id));
   const noCheckinCount = filtered.filter((p) => !hasFmod(p.user_id) && !hasLmod(p.user_id)).length;
+
+  const defaultNudge = (p: PatientRow | "all") => {
+    const missing = (uid: string) =>
+      !hasFmod(uid) && !hasLmod(uid) ? "your first and last meal" : !hasFmod(uid) ? "your first meal (FMOD)" : "your last meal (LMOD)";
+    if (p === "all") {
+      return `Hi! I noticed you haven't logged your meals for ${isToday ? "today" : date} yet. Please take a moment to check in — it really helps me guide you better. 🙂`;
+    }
+    const first = (p.name ?? "").split(" ")[0];
+    return `Hi${first ? " " + first : ""}! I noticed ${missing(p.user_id)} isn't logged for ${isToday ? "today" : date} yet. Please check in when you can — it helps me track your progress. 🙂`;
+  };
+
+  const openNudge = (target: PatientRow | "all") => {
+    setNudgeTarget(target);
+    setNudgeText(defaultNudge(target));
+  };
+
+  const sendNudge = async () => {
+    if (!user || !coachId || !nudgeTarget) return;
+    const text = nudgeText.trim();
+    if (!text) { toast.error("Write a message first"); return; }
+    const targets = nudgeTarget === "all" ? pending : [nudgeTarget];
+    if (targets.length === 0) { toast.info("Everyone has checked in"); setNudgeTarget(null); return; }
+    setSending(true);
+    let ok = 0;
+    for (const p of targets) {
+      try {
+        const convo = await getOrCreateConversation(p.user_id, coachId);
+        if (!convo) continue;
+        const msg = nudgeTarget === "all" ? defaultNudge(p) : text;
+        const sent = await sendMessage(convo.id, user.id, "coach", msg);
+        if (sent) { ok++; setNudged((prev) => ({ ...prev, [p.user_id]: true })); }
+      } catch { /* keep going */ }
+    }
+    setSending(false);
+    setNudgeTarget(null);
+    if (ok === 0) toast.error("Could not send the nudge");
+    else toast.success(ok === 1 ? "Nudge sent" : `Nudge sent to ${ok} patients`);
+  };
+
 
   return (
     <div className="theme-diet px-4 pt-2 pb-28 max-w-3xl mx-auto">
@@ -186,14 +240,22 @@ export default function CoachFood() {
             />
           </div>
 
-          <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+          <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground px-1">
             <span>{isToday ? "Today" : date} · {filtered.length} patients</span>
-            {noCheckinCount > 0 && (
-              <span className="inline-flex items-center gap-1 font-semibold text-amber-600">
-                <AlertTriangle className="w-3.5 h-3.5" /> {noCheckinCount} not checked in
-              </span>
-            )}
+            <div className="flex items-center gap-2">
+              {noCheckinCount > 0 && (
+                <span className="inline-flex items-center gap-1 font-semibold text-amber-600">
+                  <AlertTriangle className="w-3.5 h-3.5" /> {noCheckinCount} not checked in
+                </span>
+              )}
+              {pending.length > 0 && (
+                <Button size="sm" variant="outline" className="h-7 px-2.5 text-xs gap-1" onClick={() => openNudge("all")}>
+                  <Bell className="w-3.5 h-3.5" /> Nudge all ({pending.length})
+                </Button>
+              )}
+            </div>
           </div>
+
 
           {loading ? (
             <p className="text-sm text-muted-foreground px-1 py-8">Loading…</p>
@@ -243,6 +305,19 @@ export default function CoachFood() {
                     )}
                   </button>
 
+                  {(!fm || !lm) && (
+                    <div className="px-4 pb-3 -mt-1 flex items-center justify-end gap-2">
+                      {nudged[p.user_id] && (
+                        <span className="text-[11px] text-emerald-600 font-semibold inline-flex items-center gap-1">
+                          <Check className="w-3 h-3" /> Nudged
+                        </span>
+                      )}
+                      <Button size="sm" variant="outline" className="h-7 px-2.5 text-xs gap-1" onClick={() => openNudge(p)}>
+                        <Bell className="w-3.5 h-3.5" /> Nudge
+                      </Button>
+                    </div>
+                  )}
+
                   {open && (
                     <div className="px-4 pb-4 space-y-2">
                       {!fm && !lm && (
@@ -251,6 +326,7 @@ export default function CoachFood() {
                           <span>No check-in for {isToday ? "today" : date}. Nudge them to log their first and last meal.</span>
                         </div>
                       )}
+
                       {dayPlates.length === 0 ? (
                         <p className="text-xs text-muted-foreground">No plated meals scheduled for this day.</p>
                       ) : (
@@ -289,9 +365,61 @@ export default function CoachFood() {
           )}
         </div>
       )}
+
+      <Dialog open={!!nudgeTarget} onOpenChange={(o) => !o && setNudgeTarget(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {nudgeTarget === "all"
+                ? `Nudge ${pending.length} patients`
+                : `Nudge ${(nudgeTarget as PatientRow | null)?.name ?? "patient"}`}
+            </DialogTitle>
+            <DialogDescription>
+              {nudgeTarget === "all"
+                ? "Each patient gets a personalised message in their chat about the meals they haven't logged."
+                : "This goes straight into your chat with the patient."}
+            </DialogDescription>
+          </DialogHeader>
+
+          {nudgeTarget !== "all" && (
+            <>
+              <Textarea
+                value={nudgeText}
+                onChange={(e) => setNudgeText(e.target.value)}
+                rows={4}
+                className="text-sm"
+              />
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  "Quick reminder — please log your meal photo when you eat 🙂",
+                  "How did your fasting window go today? Let me know.",
+                  "Missing your check-in. Everything okay?",
+                ].map((q) => (
+                  <button
+                    key={q}
+                    onClick={() => setNudgeText(q)}
+                    className="no-pill text-[11px] px-2.5 py-1 rounded-full bg-muted text-muted-foreground hover:text-foreground"
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setNudgeTarget(null)} disabled={sending}>Cancel</Button>
+            <Button onClick={sendNudge} disabled={sending} className="gap-1.5">
+              {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bell className="w-4 h-4" />}
+              Send nudge
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
 
 function Pill({ ok, label }: { ok: boolean; label: string }) {
   return (
