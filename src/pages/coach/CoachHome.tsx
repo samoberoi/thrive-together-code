@@ -893,7 +893,42 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
         </motion.div>
       )}
 
+      {/* New lab reports uploaded by patients */}
+      {newLabReports.length > 0 && (
+        <motion.button
+          type="button"
+          onClick={onViewLabTests}
+          className="liquid-glass rounded-3xl p-5 text-left w-full hover:bg-accent/40 transition-colors"
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.14 }}
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <FlaskConical className="w-5 h-5 text-primary" strokeWidth={1.8} />
+            <span className="text-foreground font-bold">Lab reports available</span>
+            <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full ml-auto">
+              {newLabReports.length} new
+            </span>
+          </div>
+          <div className="flex flex-col gap-2">
+            {newLabReports.slice(0, 4).map((r) => (
+              <div key={r.id} className="flex items-start gap-3 rounded-2xl bg-primary/5 p-3">
+                <FileText className="w-4 h-4 mt-0.5 text-primary shrink-0" strokeWidth={2} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-foreground text-sm font-semibold truncate">{r.name}</p>
+                  <p className="text-muted-foreground text-xs truncate">
+                    Report uploaded{r.fileName ? ` · ${r.fileName}` : ""} · {new Date(r.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-primary text-xs font-bold mt-3">Click here to review →</p>
+        </motion.button>
+      )}
+
       {/* Alerts */}
+
       {alerts.length > 0 && (
         <motion.div className="liquid-glass rounded-3xl p-5" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }}>
           <div className="flex items-center gap-2 mb-4">
