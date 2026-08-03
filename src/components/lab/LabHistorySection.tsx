@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Activity, TrendingDown, TrendingUp, Minus, FlaskConical, Clock } from "lucide-react";
+import { Activity, TrendingDown, TrendingUp, Minus, FlaskConical, CircleSlash2 } from "lucide-react";
 import {
   fetchAllParameters,
   fetchParametersForProducts,
@@ -18,8 +18,8 @@ interface Props {
   patientName?: string | null;
   /**
    * Product codes the user has been recommended / has uploaded reports for.
-   * Their catalog markers are rendered as a "skeleton" (awaiting value) even
-   * before any values have been captured — same experience as a partner-lab report.
+   * Their catalog markers are rendered alongside captured values. Markers that
+   * are absent from the uploaded report are explicitly shown as unavailable.
    */
   expectedProductCodes?: string[];
 }
@@ -162,7 +162,7 @@ export default function LabHistorySection({ userId, patientName, expectedProduct
     return Object.entries(map).sort((a, b) => a[0].localeCompare(b[0]));
   }, [latest, paramsByCode, paramsByNorm, expected, panelMarkers]);
 
-  const pendingCount = useMemo(
+  const unavailableCount = useMemo(
     () => grouped.reduce((s, [, items]) => s + items.filter((i) => !i.result).length, 0),
     [grouped],
   );
@@ -194,13 +194,12 @@ export default function LabHistorySection({ userId, patientName, expectedProduct
     <div className="space-y-4">
       <BodyInvestigationMap userId={userId} patientName={patientName} />
 
-      {pendingCount > 0 && (
+      {unavailableCount > 0 && (
         <div className="liquid-glass rounded-2xl px-4 py-3 flex items-center gap-2">
-          <Clock className="w-4 h-4 text-primary shrink-0" />
+          <CircleSlash2 className="w-4 h-4 text-muted-foreground shrink-0" />
           <p className="text-[11px] text-muted-foreground leading-snug">
-            <span className="font-bold text-foreground">{pendingCount} marker{pendingCount === 1 ? "" : "s"} awaiting values.</span>{" "}
-            These come from your recommended panels — as soon as the report values are read in, each one lights up with your value,
-            range and trend.
+            <span className="font-bold text-foreground">{unavailableCount} marker{unavailableCount === 1 ? " is" : "s are"} unavailable.</span>{" "}
+            These markers were not found in the uploaded test report.
           </p>
         </div>
       )}
@@ -273,9 +272,9 @@ export default function LabHistorySection({ userId, patientName, expectedProduct
                       </>
                     ) : (
                       <>
-                        <div className="h-2.5 w-14 rounded-full bg-muted animate-pulse ml-auto" />
+                        <div className="text-sm font-black text-muted-foreground">—</div>
                         <span className="mt-1 inline-flex items-center gap-1 text-[9px] font-bold uppercase rounded-full px-1.5 py-0.5 bg-muted text-muted-foreground">
-                          <Clock className="w-2.5 h-2.5" /> Awaiting
+                          <CircleSlash2 className="w-2.5 h-2.5" /> Unavailable
                         </span>
                       </>
                     )}
