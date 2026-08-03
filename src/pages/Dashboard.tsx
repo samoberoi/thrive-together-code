@@ -175,12 +175,23 @@ export default function Dashboard() {
     if (!user) return;
     let cancelled = false;
     const load = async () => {
-      const { count } = await supabase
+      const { data: recRows } = await supabase
         .from("thyrocare_recommendations" as any)
-        .select("id", { count: "exact", head: true })
+        .select("id")
         .eq("user_id", user.id)
         .neq("status", "booked");
-      if (!cancelled) setPendingLabRecs(count || 0);
+      const ids = ((recRows as any[]) ?? []).map((r) => r.id as string);
+      let pending = ids.length;
+      if (ids.length > 0) {
+        const { data: extRows } = await supabase
+          .from("external_lab_reports" as any)
+          .select("recommendation_id")
+          .eq("user_id", user.id)
+          .in("recommendation_id", ids);
+        const covered = new Set(((extRows as any[]) ?? []).map((r) => r.recommendation_id));
+        pending = ids.filter((id) => !covered.has(id)).length;
+      }
+      if (!cancelled) setPendingLabRecs(pending);
     };
     load();
     const ch = supabase
@@ -188,6 +199,11 @@ export default function Dashboard() {
       .on(
         "postgres_changes" as any,
         { event: "*", schema: "public", table: "thyrocare_recommendations", filter: `user_id=eq.${user.id}` },
+        load,
+      )
+      .on(
+        "postgres_changes" as any,
+        { event: "*", schema: "public", table: "external_lab_reports", filter: `user_id=eq.${user.id}` },
         load,
       )
       .subscribe();

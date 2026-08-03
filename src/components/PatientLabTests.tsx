@@ -516,7 +516,14 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
         const priceOf = (t: Test) => patientPriceFor(t.offer_rate ?? t.rate, t.markup_pct, markupPct) ?? 0;
         const total = items.reduce((s, t) => s + priceOf(t), 0);
         const order = ordersByRec[r.id];
-        const displayStatus = !order && r.external_intent ? "Doing it outside" : orderDisplayStatus(order, r.status);
+        const recExtReports = extReports.filter((x) => x.recommendation_id === r.id);
+        const extDone = recExtReports.length > 0;
+        const extProcessing = extDone && recExtReports.every((x) => x.status === "processing" || x.status === "uploaded");
+        const displayStatus = !order && extDone
+          ? (extProcessing ? "Processing report" : "Completed")
+          : !order && r.external_intent
+            ? "Doing it outside"
+            : orderDisplayStatus(order, r.status);
         return (
 
           <motion.div key={r.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
@@ -525,7 +532,7 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
               <div className="text-xs text-muted-foreground">
                 {new Date(r.recommended_at).toLocaleDateString()}
               </div>
-              <Badge variant={order || r.status === "booked" ? "default" : "secondary"} className="text-[10px]">
+              <Badge variant={order || r.status === "booked" || extDone ? "default" : "secondary"} className="text-[10px]">
                 {displayStatus}
               </Badge>
             </div>
@@ -568,13 +575,13 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
             )}
 
             {(() => {
-              const recExt = extReports.filter((x) => x.recommendation_id === r.id);
+              const recExt = recExtReports;
               if (!r.external_intent && recExt.length === 0) return null;
               return (
                 <div className="rounded-2xl bg-[var(--bbdo-blue,#2563eb)]/5 ring-1 ring-primary/15 p-3 space-y-2">
                   <div className="flex items-center gap-2">
                     <Home className="w-4 h-4 text-primary shrink-0" />
-                    <p className="text-xs font-black">Getting this done outside</p>
+                    <p className="text-xs font-black">{recExt.length > 0 ? "Done outside — report received" : "Getting this done outside"}</p>
                   </div>
                   <p className="text-[11px] text-muted-foreground leading-snug">
                     {recExt.length === 0
@@ -610,7 +617,7 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
                     className="w-full h-9 text-xs font-bold"
                     onClick={() => setExternalRec({ rec: r, startAtUpload: true })}
                   >
-                    <Upload className="w-3.5 h-3.5 mr-1.5" /> Upload report
+                    <Upload className="w-3.5 h-3.5 mr-1.5" /> {recExt.length > 0 ? "Upload another report" : "Upload report"}
                   </Button>
                 </div>
               );
@@ -618,7 +625,7 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
 
             <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
               <div className="text-sm font-black">Total ₹{total.toFixed(0)}</div>
-              {r.status !== "booked" && !order && (
+              {r.status !== "booked" && !order && !extDone && (
                 <div className="flex items-center gap-2">
                   {!r.external_intent && (
                     <Button size="sm" variant="outline" onClick={() => setExternalRec({ rec: r, startAtUpload: false })}>
@@ -629,6 +636,7 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
                 </div>
               )}
             </div>
+
 
           </motion.div>
         );
