@@ -87,7 +87,27 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [bookingRec, setBookingRec] = useState<Rec | null>(null);
+  const [extReports, setExtReports] = useState<ExternalLabReport[]>([]);
+  const [externalRec, setExternalRec] = useState<{ rec: Rec; startAtUpload: boolean } | null>(null);
 
+  const reloadExternal = async () => {
+    if (!user) return;
+    setExtReports(await fetchExternalReportsForUser(user.id));
+  };
+
+  const reloadRecs = async () => {
+    if (!user) return;
+    const { data } = await supabase.from("thyrocare_recommendations" as any)
+      .select("id, product_codes, notes, status, recommended_at, external_intent, external_note")
+      .eq("user_id", user.id).order("recommended_at", { ascending: false });
+    setRecs(((data as any) || []) as Rec[]);
+  };
+
+  const openExternalReport = async (r: ExternalLabReport) => {
+    const url = await externalReportUrl(r.file_path);
+    if (!url) { toast.error("Couldn't open the report"); return; }
+    window.open(url, "_blank", "noopener");
+  };
 
   useEffect(() => {
     if (!user) {
@@ -95,13 +115,15 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
       setLoading(false);
       return;
     }
+    void reloadExternal();
     (async () => {
       try {
         setLoadError(null);
         const [r, rep, ord, prof] = await Promise.all([
           supabase.from("thyrocare_recommendations" as any)
-            .select("id, product_codes, notes, status, recommended_at")
+            .select("id, product_codes, notes, status, recommended_at, external_intent, external_note")
             .eq("user_id", user.id).order("recommended_at", { ascending: false }),
+
           supabase.from("thyrocare_reports" as any)
             .select("id, report_url, report_type, delivered_at, order_id, parameters")
             .eq("user_id", user.id).order("delivered_at", { ascending: false }),
