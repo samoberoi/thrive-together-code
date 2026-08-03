@@ -18,6 +18,7 @@ import LabHistorySection from "@/components/lab/LabHistorySection";
 import {
   fetchExternalReportsForUser,
   externalReportUrl,
+  parseExternalReport,
   type ExternalLabReport,
 } from "@/lib/externalLabService";
 
@@ -89,11 +90,20 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
   const [loadError, setLoadError] = useState<string | null>(null);
   const [bookingRec, setBookingRec] = useState<Rec | null>(null);
   const [extReports, setExtReports] = useState<ExternalLabReport[]>([]);
+  const [markerRevision, setMarkerRevision] = useState(0);
   const [externalRec, setExternalRec] = useState<{ rec: Rec; startAtUpload: boolean } | null>(null);
 
   const reloadExternal = async () => {
     if (!user) return;
-    setExtReports(await fetchExternalReportsForUser(user.id));
+    let rows = await fetchExternalReportsForUser(user.id);
+    setExtReports(rows);
+    const pending = rows.filter((report) => report.status === "uploaded");
+    if (pending.length) {
+      await Promise.allSettled(pending.map((report) => parseExternalReport(report.id)));
+      rows = await fetchExternalReportsForUser(user.id);
+      setExtReports(rows);
+      setMarkerRevision((value) => value + 1);
+    }
   };
 
   const reloadRecs = async () => {
@@ -668,7 +678,7 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
               <FlaskConical className="w-4 h-4 text-primary" />
               <h3 className="text-sm font-black uppercase tracking-wide">Your markers</h3>
             </div>
-            <LabHistorySection userId={user.id} expectedProductCodes={markerCodes} />
+            <LabHistorySection key={`${user.id}-${markerRevision}`} userId={user.id} expectedProductCodes={markerCodes} />
           </div>
         );
       })()}

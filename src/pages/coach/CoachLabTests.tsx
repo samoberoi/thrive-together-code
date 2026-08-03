@@ -17,7 +17,7 @@ import LabHistorySection from "@/components/lab/LabHistorySection";
 import { Activity, ChevronDown, ChevronUp, Home, FileText, ExternalLink, Upload, ClipboardEdit } from "lucide-react";
 import LabResultsEntry from "@/components/lab/LabResultsEntry";
 import ExternalTestDialog from "@/components/lab/ExternalTestDialog";
-import { fetchExternalReportsForUsers, externalReportUrl, type ExternalLabReport } from "@/lib/externalLabService";
+import { fetchExternalReportsForUsers, externalReportUrl, parseExternalReport, type ExternalLabReport } from "@/lib/externalLabService";
 
 type View = "patients" | "tests";
 
@@ -124,11 +124,18 @@ export default function CoachLabTests() {
   const markupPct = useLabTestMarkup();
 
   const [extReports, setExtReports] = useState<Record<string, ExternalLabReport[]>>({});
+  const [markerRevision, setMarkerRevision] = useState(0);
   const [entryTarget, setEntryTarget] = useState<{ userId: string; report: ExternalLabReport } | null>(null);
   const [uploadTarget, setUploadTarget] = useState<{ userId: string; recommendationId: string | null; productCodes: string[] } | null>(null);
 
   const loadExternal = async (userIds: string[]) => {
-    const rows = await fetchExternalReportsForUsers(userIds);
+    let rows = await fetchExternalReportsForUsers(userIds);
+    const pending = rows.filter((report) => report.status === "uploaded");
+    if (pending.length) {
+      await Promise.allSettled(pending.map((report) => parseExternalReport(report.id)));
+      rows = await fetchExternalReportsForUsers(userIds);
+      setMarkerRevision((value) => value + 1);
+    }
     const map: Record<string, ExternalLabReport[]> = {};
     for (const r of rows) (map[r.user_id] ||= []).push(r);
     setExtReports(map);
@@ -402,12 +409,12 @@ export default function CoachLabTests() {
                                           <div className="min-w-0 flex-1">
                                             <p className="text-[11px] font-bold truncate">{x.file_name || "Report"}</p>
                                             <p className="text-[10px] text-muted-foreground truncate">
-                                              {x.lab_name ? `${x.lab_name} · ` : ""}{x.status === "reviewed" ? "Values entered" : "Needs review"}
+                                              {x.lab_name ? `${x.lab_name} · ` : ""}{x.status === "reviewed" ? "Values processed" : x.status === "processing" ? "Reading values…" : x.status === "parse_failed" ? "Automatic reading failed" : "Uploaded"}
                                             </p>
                                           </div>
                                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openExternalReport(x)} aria-label="Open report"><ExternalLink className="w-3.5 h-3.5" /></Button>
                                           <Button size="sm" className="h-7 text-[10px] px-2" onClick={() => setEntryTarget({ userId: patient.user_id, report: x })}>
-                                            <ClipboardEdit className="w-3 h-3 mr-1" /> {x.status === "reviewed" ? "Edit values" : "Enter values"}
+                                            <ClipboardEdit className="w-3 h-3 mr-1" /> {x.status === "reviewed" ? "Edit values" : "Review values"}
                                           </Button>
                                         </div>
                                       ))}
@@ -424,7 +431,7 @@ export default function CoachLabTests() {
                       </div>
                     )}
 
-                    {patientReports.length > 0 && (
+                    {(patientReports.length > 0 || patientExternal.length > 0) && (
                       <div className="mt-4">
                         <button
                           onClick={() => setOpenInvestigation((s) => ({ ...s, [patient.user_id]: !s[patient.user_id] }))}
@@ -435,7 +442,7 @@ export default function CoachLabTests() {
                             {openInvestigation[patient.user_id] ? "Hide" : "View"} body investigation
                           </span>
                           <span className="text-[10px] font-black uppercase tracking-wider bg-white/70 dark:bg-black/30 px-2 py-0.5 rounded-full">
-                            {patientReports.length} report{patientReports.length === 1 ? "" : "s"}
+                            {patientReports.length + patientExternal.length} report{patientReports.length + patientExternal.length === 1 ? "" : "s"}
                           </span>
                           {openInvestigation[patient.user_id] ? (
                             <ChevronUp className="w-4 h-4" strokeWidth={2} />
@@ -445,7 +452,7 @@ export default function CoachLabTests() {
                         </button>
                         {openInvestigation[patient.user_id] && (
                           <div className="mt-3">
-                            <LabHistorySection userId={patient.user_id} patientName={patient.name} expectedProductCodes={Array.from(new Set(recs.flatMap((rc: any) => rc.product_codes || [])))} />
+                            <LabHistorySection key={`${patient.user_id}-${markerRevision}`} userId={patient.user_id} patientName={patient.name} expectedProductCodes={Array.from(new Set([...recs.flatMap((rc: any) => rc.product_codes || []), ...patientExternal.flatMap((report) => report.product_codes || [])]))} />
                           </div>
                         )}
                       </div>
