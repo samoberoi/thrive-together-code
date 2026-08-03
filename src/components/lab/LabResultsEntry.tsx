@@ -4,19 +4,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import {
+  fetchAllParameters,
   fetchParametersForProducts,
   fetchUserResults,
   saveResultsForOrder,
   type LabParameter,
   type ResultInput,
 } from "@/lib/labResultsService";
+import { saveResultsForExternalReport } from "@/lib/externalLabService";
 
 interface Props {
   open: boolean;
   onClose: () => void;
   userId: string;
-  orderId: string;
+  orderId: string | null;
   reportId: string | null;
+  /** Set when entering values from a report the patient got done outside. */
+  externalReportId?: string | null;
   productCodes: string[];
   collectionDate?: string | null;
   onSaved?: () => void;
@@ -28,6 +32,7 @@ export default function LabResultsEntry({
   userId,
   orderId,
   reportId,
+  externalReportId = null,
   productCodes,
   collectionDate,
   onSaved,
@@ -44,12 +49,16 @@ export default function LabResultsEntry({
   useEffect(() => {
     if (!open) return;
     setLoading(true);
-    Promise.all([fetchParametersForProducts(productCodes), fetchUserResults(userId)])
+    const catalogPromise =
+      productCodes.length > 0 ? fetchParametersForProducts(productCodes) : fetchAllParameters();
+    Promise.all([catalogPromise, fetchUserResults(userId)])
       .then(([catalog, results]) => {
         setParams(catalog);
-        const orderRows = results.filter((r) => r.order_id === orderId);
+        const rows = externalReportId
+          ? results.filter((r: any) => r.external_report_id === externalReportId)
+          : results.filter((r) => r.order_id === orderId);
         const seed: Record<string, string> = {};
-        for (const r of orderRows) {
+        for (const r of rows) {
           seed[r.parameter_code] = r.value_numeric != null ? String(r.value_numeric) : r.value_text || "";
         }
         setValues(seed);
@@ -59,7 +68,8 @@ export default function LabResultsEntry({
         toast.error("Couldn't load parameters");
       })
       .finally(() => setLoading(false));
-  }, [open, productCodes.join(","), userId, orderId]);
+  }, [open, productCodes.join(","), userId, orderId, externalReportId]);
+
 
   const grouped = useMemo(() => {
     const map: Record<string, LabParameter[]> = {};
