@@ -381,6 +381,38 @@ export default function CoachLabTests() {
                                 {rec.notes && <p className="text-[11px] text-muted-foreground border-l-2 border-primary pl-2 italic">{rec.notes}</p>}
                                 {!recOrder && <p className="text-[11px] text-muted-foreground">Current status: Not yet booked</p>}
                                 {recOrder && <LabOrderDetails order={recOrder} fastingRequired={items.some((t) => t.fasting_required)} reports={patientReports.filter((report) => report.order_id === recOrder.id)} userId={patient.user_id} />}
+                                {(rec.external_intent || (extReports[patient.user_id] || []).some((x) => x.recommendation_id === rec.id)) && (() => {
+                                  const recExt = (extReports[patient.user_id] || []).filter((x) => x.recommendation_id === rec.id);
+                                  return (
+                                    <div className="rounded-xl bg-background/70 ring-1 ring-primary/20 p-2.5 space-y-2">
+                                      <div className="flex items-center gap-1.5">
+                                        <Home className="w-3.5 h-3.5 text-primary shrink-0" />
+                                        <span className="text-[11px] font-black">Patient is getting this done outside</span>
+                                      </div>
+                                      {rec.external_note && <p className="text-[11px] text-muted-foreground italic">{rec.external_note}</p>}
+                                      {recExt.length === 0 ? (
+                                        <p className="text-[11px] text-muted-foreground">No report uploaded yet. Nudge the patient, or upload it yourself.</p>
+                                      ) : recExt.map((x) => (
+                                        <div key={x.id} className="flex items-center gap-2 rounded-lg bg-muted/50 p-2">
+                                          <FileText className="w-3.5 h-3.5 text-primary shrink-0" />
+                                          <div className="min-w-0 flex-1">
+                                            <p className="text-[11px] font-bold truncate">{x.file_name || "Report"}</p>
+                                            <p className="text-[10px] text-muted-foreground truncate">
+                                              {x.lab_name ? `${x.lab_name} · ` : ""}{x.status === "reviewed" ? "Values entered" : "Needs review"}
+                                            </p>
+                                          </div>
+                                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openExternalReport(x)} aria-label="Open report"><ExternalLink className="w-3.5 h-3.5" /></Button>
+                                          <Button size="sm" className="h-7 text-[10px] px-2" onClick={() => setEntryTarget({ userId: patient.user_id, report: x })}>
+                                            <ClipboardEdit className="w-3 h-3 mr-1" /> {x.status === "reviewed" ? "Edit values" : "Enter values"}
+                                          </Button>
+                                        </div>
+                                      ))}
+                                      <Button variant="outline" size="sm" className="h-8 w-full text-[11px]" onClick={() => setUploadTarget({ userId: patient.user_id, recommendationId: rec.id, productCodes: rec.product_codes || [] })}>
+                                        <Upload className="w-3.5 h-3.5 mr-1.5" /> Upload report for patient
+                                      </Button>
+                                    </div>
+                                  );
+                                })()}
                               </div>
                             );
                           })}
@@ -464,6 +496,33 @@ export default function CoachLabTests() {
           <div className="flex-1 overflow-y-auto px-2 pb-4">{patients.length === 0 ? <div className="text-center text-sm text-muted-foreground py-10">No assigned patients yet.</div> : filteredPatients.length === 0 ? <div className="text-center text-sm text-muted-foreground py-10">No patients match "{patientSearch}".</div> : <ul className="divide-y divide-border">{filteredPatients.map((p) => <li key={p.user_id}><button disabled={submitting} onClick={() => sendTo(p)} className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-accent disabled:opacity-50 transition-colors text-left"><div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm shrink-0">{initials(p.name) || <UserIcon className="w-4 h-4" />}</div><div className="flex-1 min-w-0"><div className="font-medium text-sm truncate">{p.name}</div></div><Send className="w-4 h-4 text-muted-foreground shrink-0" /></button></li>)}</ul>}</div>
         </SheetContent>
       </Sheet>
+
+      {entryTarget && (
+        <LabResultsEntry
+          open
+          onClose={() => setEntryTarget(null)}
+          userId={entryTarget.userId}
+          orderId={null}
+          reportId={null}
+          externalReportId={entryTarget.report.id}
+          productCodes={entryTarget.report.product_codes || []}
+          collectionDate={entryTarget.report.collected_on}
+          onSaved={() => { setEntryTarget(null); void loadData(); }}
+        />
+      )}
+
+      {uploadTarget && user && (
+        <ExternalTestDialog
+          open
+          onClose={() => setUploadTarget(null)}
+          userId={uploadTarget.userId}
+          recommendationId={uploadTarget.recommendationId}
+          productCodes={uploadTarget.productCodes}
+          startAtUpload
+          uploadedBy={user.id}
+          onDone={() => { void loadData(); }}
+        />
+      )}
 
       <LabTestParametersDialog open={!!paramsTest} onOpenChange={(o) => !o && setParamsTest(null)} testId={paramsTest?.id ?? null} testName={paramsTest?.product_name ?? null} productCode={paramsTest?.product_code ?? null} />
     </div>
