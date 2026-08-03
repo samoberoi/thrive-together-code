@@ -185,11 +185,13 @@ const ALL_ACTIVITIES: ActivityKey[] = [
   "glucose", "bp", "weight", "fasting", "supplements", "exercise", "yoga", "diet",
 ];
 
-export default function CoachHome({ onViewPatient, onViewMessages }: { onViewPatient?: () => void; onViewFasting?: () => void; onViewMessages?: () => void }) {
+export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTests }: { onViewPatient?: () => void; onViewFasting?: () => void; onViewMessages?: () => void; onViewLabTests?: () => void }) {
   const { user } = useAuth();
   const [coach, setCoach] = useState<Coach | null>(null);
   const [patients, setPatients] = useState<PatientSummary[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [newLabReports, setNewLabReports] = useState<{ id: string; name: string; fileName: string | null; createdAt: string }[]>([]);
+
   const [needsScheduling, setNeedsScheduling] = useState<PatientSummary[]>([]);
   const [scheduleFor, setScheduleFor] = useState<PatientSummary | null>(null);
   const [schedulePickerOpen, setSchedulePickerOpen] = useState(false);
