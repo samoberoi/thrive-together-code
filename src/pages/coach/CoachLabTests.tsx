@@ -14,7 +14,10 @@ import { patientPriceFor, useLabTestMarkup } from "@/lib/labTestMarkup";
 import { createNotification } from "@/lib/notificationService";
 import LabOrderDetails from "@/components/lab/LabOrderDetails";
 import BodyInvestigationMap from "@/components/lab/BodyInvestigationMap";
-import { Activity, ChevronDown, ChevronUp } from "lucide-react";
+import { Activity, ChevronDown, ChevronUp, Home, FileText, ExternalLink, Upload, ClipboardEdit } from "lucide-react";
+import LabResultsEntry from "@/components/lab/LabResultsEntry";
+import ExternalTestDialog from "@/components/lab/ExternalTestDialog";
+import { fetchExternalReportsForUsers, externalReportUrl, type ExternalLabReport } from "@/lib/externalLabService";
 
 type View = "patients" | "tests";
 
@@ -41,6 +44,8 @@ type Recommendation = {
   notes: string | null;
   status: string;
   recommended_at: string;
+  external_intent?: boolean | null;
+  external_note?: string | null;
 };
 
 type Order = {
@@ -118,6 +123,23 @@ export default function CoachLabTests() {
   const [expandedPatient, setExpandedPatient] = useState<string | null>(null);
   const markupPct = useLabTestMarkup();
 
+  const [extReports, setExtReports] = useState<Record<string, ExternalLabReport[]>>({});
+  const [entryTarget, setEntryTarget] = useState<{ userId: string; report: ExternalLabReport } | null>(null);
+  const [uploadTarget, setUploadTarget] = useState<{ userId: string; recommendationId: string | null; productCodes: string[] } | null>(null);
+
+  const loadExternal = async (userIds: string[]) => {
+    const rows = await fetchExternalReportsForUsers(userIds);
+    const map: Record<string, ExternalLabReport[]> = {};
+    for (const r of rows) (map[r.user_id] ||= []).push(r);
+    setExtReports(map);
+  };
+
+  const openExternalReport = async (r: ExternalLabReport) => {
+    const url = await externalReportUrl(r.file_path);
+    if (!url) { toast.error("Couldn't open the report"); return; }
+    window.open(url, "_blank", "noopener");
+  };
+
   const testsByCode = useMemo(() => Object.fromEntries(tests.map((t) => [t.product_code, t])), [tests]);
   const chosenTests = useMemo(() => tests.filter((t) => selectedTests.has(t.id)), [tests, selectedTests]);
   const priceFor = (t: Test) => patientPriceFor(t.offer_rate ?? t.rate, t.markup_pct, markupPct) ?? 0;
@@ -151,7 +173,7 @@ export default function CoachLabTests() {
 
       const [{ data: profs }, { data: recRows }, { data: orderRows }, { data: reportRows }, { data: subRows }] = await Promise.all([
         supabase.from("profiles").select("user_id, name, phone, avatar_url").in("user_id", userIds),
-        supabase.from("thyrocare_recommendations" as any).select("id, user_id, coach_id, test_ids, product_codes, notes, status, recommended_at").in("user_id", userIds).order("recommended_at", { ascending: false }),
+        supabase.from("thyrocare_recommendations" as any).select("id, user_id, coach_id, test_ids, product_codes, notes, status, recommended_at, external_intent, external_note").in("user_id", userIds).order("recommended_at", { ascending: false }),
         supabase.from("thyrocare_orders" as any).select("id, user_id, recommendation_id, product_codes, thyrocare_order_id, thyrocare_lead_id, status, status_detail, beneficiary_name, beneficiary_age, beneficiary_gender, mobile, email, pincode, address, collection_date, collection_slot, amount, raw_response, created_at").in("user_id", userIds).order("created_at", { ascending: false }),
         supabase.from("thyrocare_reports" as any).select("id, order_id, user_id, report_url, report_type, delivered_at, parameters").in("user_id", userIds).order("delivered_at", { ascending: false }),
         supabase.from("subscriptions" as any).select("user_id, plan_id, started_at, expires_at, status").in("user_id", userIds).eq("status", "active"),
@@ -188,6 +210,7 @@ export default function CoachLabTests() {
         reportMap[report.user_id].push(report);
       }
       setRecommendations(recMap); setOrders(orderMap); setReports(reportMap);
+      await loadExternal(userIds);
     } catch (e: any) {
       toast.error(e.message || "Unable to load lab test assignments");
     } finally {
