@@ -26,12 +26,15 @@ interface Props {
   productCodes: string[];
   /** Skip the intent step (already told the coach) and go straight to upload. */
   startAtUpload?: boolean;
+  /** Who is uploading — defaults to the patient. Coaches pass their own auth id. */
+  uploadedBy?: string | null;
   onDone?: () => void;
 }
 
 export default function ExternalTestDialog({
-  open, onClose, userId, recommendationId, productCodes, startAtUpload = false, onDone,
+  open, onClose, userId, recommendationId, productCodes, startAtUpload = false, uploadedBy, onDone,
 }: Props) {
+  const isCoach = !!uploadedBy && uploadedBy !== userId;
   const [step, setStep] = useState<"intent" | "upload">(startAtUpload ? "upload" : "intent");
   const [note, setNote] = useState("");
   const [labName, setLabName] = useState("");
@@ -76,12 +79,12 @@ export default function ExternalTestDialog({
         productCodes,
         labName,
         collectedOn,
-        uploadedBy: userId,
+        uploadedBy: uploadedBy ?? userId,
       });
       setMine((prev) => [row, ...prev]);
       setFile(null);
       if (inputRef.current) inputRef.current.value = "";
-      toast.success("Report uploaded — your coach will review it");
+      toast.success(isCoach ? "Report uploaded" : "Report uploaded — your coach will review it");
       onDone?.();
     } catch (e: any) {
       toast.error(e.message || "Upload failed");
@@ -113,12 +116,14 @@ export default function ExternalTestDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Home className="w-5 h-5 text-primary" />
-            {step === "intent" ? "Getting this test done outside?" : "Upload your report"}
+            {step === "intent" ? "Getting this test done outside?" : isCoach ? "Upload outside report" : "Upload your report"}
           </DialogTitle>
           <DialogDescription>
             {step === "intent"
               ? "No problem. Tell your coach you'll use your own lab — then upload the report here and we'll turn it into your charts and trends, exactly like an in-app test."
-              : "Upload the PDF or a clear photo of your report. Your coach will enter the values so your markers and graphs update automatically."}
+              : isCoach
+                ? "Upload the report your patient got done outside, then enter the values so their markers and charts update."
+                : "Upload the PDF or a clear photo of your report. Your coach will enter the values so your markers and graphs update automatically."}
           </DialogDescription>
         </DialogHeader>
 
