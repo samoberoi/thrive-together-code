@@ -169,7 +169,47 @@ export default function CoachFood() {
   const hasLmod = (uid: string) =>
     Boolean(checkins[uid]?.lmod) || photoSlots[uid]?.has("lmod") || photoSlots[uid]?.has("last_meal");
 
+  const pending = filtered.filter((p) => !hasFmod(p.user_id) || !hasLmod(p.user_id));
   const noCheckinCount = filtered.filter((p) => !hasFmod(p.user_id) && !hasLmod(p.user_id)).length;
+
+  const defaultNudge = (p: PatientRow | "all") => {
+    const missing = (uid: string) =>
+      !hasFmod(uid) && !hasLmod(uid) ? "your first and last meal" : !hasFmod(uid) ? "your first meal (FMOD)" : "your last meal (LMOD)";
+    if (p === "all") {
+      return `Hi! I noticed you haven't logged your meals for ${isToday ? "today" : date} yet. Please take a moment to check in — it really helps me guide you better. 🙂`;
+    }
+    const first = (p.name ?? "").split(" ")[0];
+    return `Hi${first ? " " + first : ""}! I noticed ${missing(p.user_id)} isn't logged for ${isToday ? "today" : date} yet. Please check in when you can — it helps me track your progress. 🙂`;
+  };
+
+  const openNudge = (target: PatientRow | "all") => {
+    setNudgeTarget(target);
+    setNudgeText(defaultNudge(target));
+  };
+
+  const sendNudge = async () => {
+    if (!user || !coachId || !nudgeTarget) return;
+    const text = nudgeText.trim();
+    if (!text) { toast.error("Write a message first"); return; }
+    const targets = nudgeTarget === "all" ? pending : [nudgeTarget];
+    if (targets.length === 0) { toast.info("Everyone has checked in"); setNudgeTarget(null); return; }
+    setSending(true);
+    let ok = 0;
+    for (const p of targets) {
+      try {
+        const convo = await getOrCreateConversation(p.user_id, coachId);
+        if (!convo) continue;
+        const msg = nudgeTarget === "all" ? defaultNudge(p) : text;
+        const sent = await sendMessage(convo.id, user.id, "coach", msg);
+        if (sent) { ok++; setNudged((prev) => ({ ...prev, [p.user_id]: true })); }
+      } catch { /* keep going */ }
+    }
+    setSending(false);
+    setNudgeTarget(null);
+    if (ok === 0) toast.error("Could not send the nudge");
+    else toast.success(ok === 1 ? "Nudge sent" : `Nudge sent to ${ok} patients`);
+  };
+
 
   return (
     <div className="theme-diet px-4 pt-2 pb-28 max-w-3xl mx-auto">
