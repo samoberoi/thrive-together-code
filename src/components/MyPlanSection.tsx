@@ -216,6 +216,35 @@ export default function MyPlanSection({ onBack }: MyPlanSectionProps) {
             </div>
           )}
 
+          {downgradeOptions.length > 0 && (
+            <div className="liquid-glass rounded-2xl p-5">
+              <div className="flex items-start gap-2 mb-1">
+                <TrendingDown className="w-4 h-4 shrink-0 text-muted-foreground" strokeWidth={1.8} />
+                <p className="min-w-0 text-foreground font-semibold text-sm leading-tight break-words">Move to a Lighter Plan</p>
+              </div>
+              <p className="text-muted-foreground text-xs mb-3 leading-snug break-words">
+                Starts on {formatDate(expiryDate)}, when your current plan ends.
+              </p>
+              {downgradeOptions.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => navigate("/plans")}
+                  className="w-full flex items-start justify-between gap-3 py-4 border-b border-border last:border-0"
+                >
+                  <div className="min-w-0 text-left">
+                    <p className="text-foreground text-sm font-bold leading-tight break-words">{p.name}</p>
+                    <p className="text-muted-foreground text-xs mt-0.5 leading-snug break-words">{p.tagline}</p>
+                  </div>
+                  <div className="shrink-0 flex items-center gap-2">
+                    <span className="text-primary font-bold text-sm leading-tight text-right">₹{p.monthlyPrice.toLocaleString("en-IN")}/mo</span>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground" strokeWidth={1.8} />
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+
         </div>
       </div>
     </div>
