@@ -305,6 +305,19 @@ export default function CoachFood() {
                     )}
                   </button>
 
+                  {(!fm || !lm) && (
+                    <div className="px-4 pb-3 -mt-1 flex items-center justify-end gap-2">
+                      {nudged[p.user_id] && (
+                        <span className="text-[11px] text-emerald-600 font-semibold inline-flex items-center gap-1">
+                          <Check className="w-3 h-3" /> Nudged
+                        </span>
+                      )}
+                      <Button size="sm" variant="outline" className="h-7 px-2.5 text-xs gap-1" onClick={() => openNudge(p)}>
+                        <Bell className="w-3.5 h-3.5" /> Nudge
+                      </Button>
+                    </div>
+                  )}
+
                   {open && (
                     <div className="px-4 pb-4 space-y-2">
                       {!fm && !lm && (
@@ -313,6 +326,7 @@ export default function CoachFood() {
                           <span>No check-in for {isToday ? "today" : date}. Nudge them to log their first and last meal.</span>
                         </div>
                       )}
+
                       {dayPlates.length === 0 ? (
                         <p className="text-xs text-muted-foreground">No plated meals scheduled for this day.</p>
                       ) : (
