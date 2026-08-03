@@ -1,6 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from "react";
 import { motion } from "framer-motion";
-import { Home, Users, LogOut, Timer, Pill, MessageCircle, FlaskConical, Calendar, MessageSquareWarning, Activity, Dumbbell, Flower2, Heart } from "lucide-react";
+import { Home, Users, LogOut, Timer, Pill, MessageCircle, FlaskConical, Calendar, MessageSquareWarning, Activity, Dumbbell, Flower2, Heart, Apple } from "lucide-react";
 import NotificationCenter from "@/components/NotificationCenter";
 import SoundToggle from "@/components/SoundToggle";
 import CoachCommissionCard from "@/components/CoachCommissionCard";
@@ -19,6 +19,7 @@ const CoachSupplements = lazy(() => import("./coach/CoachSupplements"));
 const CoachLabTests = lazy(() => import("./coach/CoachLabTests"));
 const CoachMeetings = lazy(() => import("./coach/CoachMeetings"));
 const CoachMove = lazy(() => import("./coach/CoachMove"));
+const CoachFood = lazy(() => import("./coach/CoachFood"));
 const CoachVideoAssignPage = lazy(() => import("./coach/CoachVideoAssignPage"));
 const CoachConsultationRequests = lazy(() => import("./coach/CoachConsultationRequests"));
 const CoachInbox = lazy(() => import("@/components/chat/CoachInbox"));
@@ -28,7 +29,7 @@ import { useAttentionCounts } from "@/hooks/useAttentionCounts";
 import AttentionBadge from "@/components/attention/AttentionBadge";
 import { RoleBottomNav, RoleTopBar, type RoleNavItem } from "@/components/shared";
 
-export type CoachTab = "home" | "patients" | "meetings" | "requests" | "messages" | "community" | "fasting" | "supplements" | "move" | "train" | "yoga" | "labtests" | "profile";
+export type CoachTab = "home" | "patients" | "meetings" | "requests" | "messages" | "community" | "fasting" | "food" | "supplements" | "move" | "train" | "yoga" | "labtests" | "profile";
 
 const navItems: { id: CoachTab; icon: React.ElementType; label: string }[] = [
   { id: "home", icon: Home, label: "Home" },
@@ -37,6 +38,7 @@ const navItems: { id: CoachTab; icon: React.ElementType; label: string }[] = [
   { id: "messages", icon: MessageCircle, label: "Messages" },
   { id: "community", icon: Heart, label: "Community" },
   { id: "fasting", icon: Timer, label: "Fasting" },
+  { id: "food", icon: Apple, label: "Food" },
   { id: "supplements", icon: Pill, label: "Supplements" },
   { id: "move", icon: Activity, label: "Move" },
   { id: "train", icon: Dumbbell, label: "Train" },
@@ -149,6 +151,7 @@ export default function CoachDashboard() {
     messages: coachMeta ? <CoachInbox coachId={coachMeta.id} openPatientId={chatPatientId} /> : null,
     community: <Community />,
     fasting: <CoachFasting />,
+    food: <CoachFood />,
     supplements: <CoachSupplements />,
     move: <CoachMove />,
     train: <CoachVideoAssignPage module="exercise" />,
