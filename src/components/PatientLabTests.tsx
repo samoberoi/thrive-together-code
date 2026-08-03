@@ -532,7 +532,7 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
               <div className="text-xs text-muted-foreground">
                 {new Date(r.recommended_at).toLocaleDateString()}
               </div>
-              <Badge variant={order || r.status === "booked" ? "default" : "secondary"} className="text-[10px]">
+              <Badge variant={order || r.status === "booked" || extDone ? "default" : "secondary"} className="text-[10px]">
                 {displayStatus}
               </Badge>
             </div>
