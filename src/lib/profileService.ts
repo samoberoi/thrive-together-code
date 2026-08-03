@@ -123,18 +123,33 @@ export async function updateProfile(userId: string, updates: Partial<ProfileRow>
   invalidateProfileCache(userId);
 
 
-  const { error } = await supabase
+  // Update first, insert only when no row exists.
+  // An upsert always issues INSERT ... ON CONFLICT, which is checked against the
+  // INSERT policy (auth.uid() = user_id) — that blocks coaches editing a patient's
+  // profile even though they hold a valid UPDATE policy.
+  let error: any = null;
+  const { data: updated, error: updateError } = await supabase
     .from("profiles" as any)
-    .upsert({ user_id: userId, ...updates } as any, { onConflict: "user_id" });
+    .update(updates as any)
+    .eq("user_id", userId)
+    .select("user_id");
+
+  if (updateError) {
+    error = updateError;
+  } else if (!updated || updated.length === 0) {
+    const { error: insertError } = await supabase
+      .from("profiles" as any)
+      .insert({ user_id: userId, ...updates } as any);
+    if (insertError) error = insertError;
+  }
 
   invalidateProfileCache(userId);
-
-
 
   if (error) {
     console.error("Failed to update profile:", error);
     return false;
   }
+
 
   const nextWeight = Number((updates as any).weight);
   if (Number.isFinite(nextWeight) && previousProfile?.weight !== nextWeight) {
