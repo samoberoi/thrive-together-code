@@ -365,9 +365,61 @@ export default function CoachFood() {
           )}
         </div>
       )}
+
+      <Dialog open={!!nudgeTarget} onOpenChange={(o) => !o && setNudgeTarget(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {nudgeTarget === "all"
+                ? `Nudge ${pending.length} patients`
+                : `Nudge ${(nudgeTarget as PatientRow | null)?.name ?? "patient"}`}
+            </DialogTitle>
+            <DialogDescription>
+              {nudgeTarget === "all"
+                ? "Each patient gets a personalised message in their chat about the meals they haven't logged."
+                : "This goes straight into your chat with the patient."}
+            </DialogDescription>
+          </DialogHeader>
+
+          {nudgeTarget !== "all" && (
+            <>
+              <Textarea
+                value={nudgeText}
+                onChange={(e) => setNudgeText(e.target.value)}
+                rows={4}
+                className="text-sm"
+              />
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  "Quick reminder — please log your meal photo when you eat 🙂",
+                  "How did your fasting window go today? Let me know.",
+                  "Missing your check-in. Everything okay?",
+                ].map((q) => (
+                  <button
+                    key={q}
+                    onClick={() => setNudgeText(q)}
+                    className="no-pill text-[11px] px-2.5 py-1 rounded-full bg-muted text-muted-foreground hover:text-foreground"
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setNudgeTarget(null)} disabled={sending}>Cancel</Button>
+            <Button onClick={sendNudge} disabled={sending} className="gap-1.5">
+              {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bell className="w-4 h-4" />}
+              Send nudge
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
 
 function Pill({ ok, label }: { ok: boolean; label: string }) {
   return (
