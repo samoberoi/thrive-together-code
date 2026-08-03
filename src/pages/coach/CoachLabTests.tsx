@@ -94,7 +94,9 @@ function orderStatus(order?: Order, recStatus?: string) {
 
 function statusClass(label: string) {
   const s = label.toLowerCase();
-  if (s.includes("result") || s.includes("done") || s.includes("complete")) return "bg-primary/15 text-primary border-primary/20";
+  if (s.includes("processing")) return "bg-amber-500/15 text-amber-600 border-amber-500/20";
+  if (s.includes("result") || s.includes("done") || s.includes("complete") || s.includes("received")) return "bg-primary/15 text-primary border-primary/20";
+
   if (s.includes("book") || s.includes("collect") || s.includes("lab") || s.includes("process")) return "bg-amber-500/15 text-amber-600 border-amber-500/20";
   if (s.includes("not yet") || s.includes("awaiting")) return "border-muted-foreground/30 text-muted-foreground";
   if (s.includes("fail") || s.includes("cancel")) return "bg-destructive/15 text-destructive border-destructive/20";
