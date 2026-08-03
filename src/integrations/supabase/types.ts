@@ -1777,6 +1777,68 @@ export type Database = {
           },
         ]
       }
+      external_lab_reports: {
+        Row: {
+          collected_on: string | null
+          created_at: string
+          file_name: string | null
+          file_path: string
+          id: string
+          lab_name: string | null
+          mime_type: string | null
+          notes: string | null
+          product_codes: string[]
+          recommendation_id: string | null
+          reviewed_at: string | null
+          status: string
+          updated_at: string
+          uploaded_by: string | null
+          user_id: string
+        }
+        Insert: {
+          collected_on?: string | null
+          created_at?: string
+          file_name?: string | null
+          file_path: string
+          id?: string
+          lab_name?: string | null
+          mime_type?: string | null
+          notes?: string | null
+          product_codes?: string[]
+          recommendation_id?: string | null
+          reviewed_at?: string | null
+          status?: string
+          updated_at?: string
+          uploaded_by?: string | null
+          user_id: string
+        }
+        Update: {
+          collected_on?: string | null
+          created_at?: string
+          file_name?: string | null
+          file_path?: string
+          id?: string
+          lab_name?: string | null
+          mime_type?: string | null
+          notes?: string | null
+          product_codes?: string[]
+          recommendation_id?: string | null
+          reviewed_at?: string | null
+          status?: string
+          updated_at?: string
+          uploaded_by?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_lab_reports_recommendation_id_fkey"
+            columns: ["recommendation_id"]
+            isOneToOne: false
+            referencedRelation: "thyrocare_recommendations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fasting_badges: {
         Row: {
           badge_emoji: string
@@ -2525,6 +2587,7 @@ export type Database = {
           created_at: string
           delta_vs_baseline: number | null
           delta_vs_previous: number | null
+          external_report_id: string | null
           id: string
           is_baseline: boolean
           observed_at: string
@@ -2547,6 +2610,7 @@ export type Database = {
           created_at?: string
           delta_vs_baseline?: number | null
           delta_vs_previous?: number | null
+          external_report_id?: string | null
           id?: string
           is_baseline?: boolean
           observed_at?: string
@@ -2569,6 +2633,7 @@ export type Database = {
           created_at?: string
           delta_vs_baseline?: number | null
           delta_vs_previous?: number | null
+          external_report_id?: string | null
           id?: string
           is_baseline?: boolean
           observed_at?: string
@@ -2588,6 +2653,13 @@ export type Database = {
           value_text?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "lab_results_external_report_id_fkey"
+            columns: ["external_report_id"]
+            isOneToOne: false
+            referencedRelation: "external_lab_reports"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "lab_results_order_id_fkey"
             columns: ["order_id"]
@@ -3979,6 +4051,9 @@ export type Database = {
         Row: {
           coach_id: string | null
           created_at: string
+          external_intent: boolean
+          external_note: string | null
+          external_requested_at: string | null
           id: string
           notes: string | null
           product_codes: string[]
@@ -3992,6 +4067,9 @@ export type Database = {
         Insert: {
           coach_id?: string | null
           created_at?: string
+          external_intent?: boolean
+          external_note?: string | null
+          external_requested_at?: string | null
           id?: string
           notes?: string | null
           product_codes?: string[]
@@ -4005,6 +4083,9 @@ export type Database = {
         Update: {
           coach_id?: string | null
           created_at?: string
+          external_intent?: boolean
+          external_note?: string | null
+          external_requested_at?: string | null
           id?: string
           notes?: string | null
           product_codes?: string[]
