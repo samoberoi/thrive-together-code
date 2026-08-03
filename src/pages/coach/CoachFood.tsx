@@ -68,6 +68,11 @@ export default function CoachFood() {
   const [photoSlots, setPhotoSlots] = useState<Record<string, Set<string>>>({});
   const [plates, setPlates] = useState<Record<string, Plate[]>>({});
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [coachId, setCoachId] = useState<string | null>(null);
+  const [nudgeTarget, setNudgeTarget] = useState<PatientRow | "all" | null>(null);
+  const [nudgeText, setNudgeText] = useState("");
+  const [sending, setSending] = useState(false);
+  const [nudged, setNudged] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (!user) return;
@@ -81,6 +86,8 @@ export default function CoachFood() {
     try {
       const { data: coach } = await supabase.from("coaches" as any).select("id").eq("user_id", user.id).maybeSingle();
       if (!coach) { setPatients([]); setLoading(false); return; }
+      setCoachId((coach as any).id);
+
 
       const { data: assignments } = await supabase
         .from("coach_assignments" as any)
