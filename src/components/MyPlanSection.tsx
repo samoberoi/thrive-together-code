@@ -1,7 +1,15 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Package, Bell, Check, ChevronRight, Crown, Sparkles, Download } from "lucide-react";
-import { fetchActiveSubscription, fetchUpgradeOptions, fetchPackageByPlanKey, type Subscription } from "@/lib/subscriptionService";
+import { ArrowLeft, Package, Bell, Check, ChevronRight, Crown, Sparkles, Download, CalendarClock, TrendingDown } from "lucide-react";
+import {
+  fetchActiveSubscription,
+  fetchUpgradeOptions,
+  fetchDowngradeOptions,
+  fetchScheduledSubscription,
+  activateDueSubscriptions,
+  fetchPackageByPlanKey,
+  type Subscription,
+} from "@/lib/subscriptionService";
 import { useNavigate } from "react-router-dom";
 import { downloadInvoice } from "@/lib/invoiceGenerator";
 import { useAuth } from "@/contexts/AuthContext";
