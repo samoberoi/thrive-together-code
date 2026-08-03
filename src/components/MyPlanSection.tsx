@@ -32,6 +32,8 @@ export default function MyPlanSection({ onBack }: MyPlanSectionProps) {
   const [coachName, setCoachName] = useState<string | undefined>();
   const [pkgDetails, setPkgDetails] = useState<{ id: string; name: string; tagline: string; features: string[] } | null>(null);
   const [upgradeOptions, setUpgradeOptions] = useState<Array<{ id: string; name: string; tagline: string; monthlyPrice: number }>>([]);
+  const [downgradeOptions, setDowngradeOptions] = useState<Array<{ id: string; name: string; tagline: string; monthlyPrice: number }>>([]);
+  const [scheduledSub, setScheduledSub] = useState<Subscription | null>(null);
 
   useEffect(() => {
     if (!authUser) {
@@ -42,13 +44,16 @@ export default function MyPlanSection({ onBack }: MyPlanSectionProps) {
 
     setLoading(true);
     (async () => {
+      await activateDueSubscriptions(authUser.id);
       const s = await fetchActiveSubscription(authUser.id);
       setSub(s);
       setLoading(false);
+      fetchScheduledSubscription(authUser.id).then(setScheduledSub);
       if (s) {
         // Defer non-critical fetches so the screen paints immediately
         fetchPackageByPlanKey(s.plan_id).then(setPkgDetails);
         fetchUpgradeOptions(s.plan_id).then(setUpgradeOptions);
+        fetchDowngradeOptions(s.plan_id).then(setDowngradeOptions);
       }
     })();
     fetchProfile(authUser.id).then((p) => {
