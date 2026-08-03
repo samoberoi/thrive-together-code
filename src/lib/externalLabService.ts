@@ -20,6 +20,15 @@ export type ExternalLabReport = {
   created_at: string;
 };
 
+export async function parseExternalReport(externalReportId: string): Promise<number> {
+  const { data, error } = await supabase.functions.invoke("external-lab-report-parse", {
+    body: { externalReportId },
+  });
+  if (error) throw error;
+  if (!data?.ok) throw new Error(data?.error || "The report could not be read");
+  return Number(data.count || 0);
+}
+
 /** Mark a coach recommendation as "patient will get this done outside". */
 export async function markExternalIntent(recommendationId: string, note?: string | null) {
   const { error } = await (supabase as any)
@@ -78,7 +87,9 @@ export async function uploadExternalReport(opts: {
     .select()
     .single();
   if (error) throw error;
-  return data as ExternalLabReport;
+  const report = data as ExternalLabReport;
+  await parseExternalReport(report.id);
+  return { ...report, status: "reviewed", reviewed_at: new Date().toISOString() };
 }
 
 export async function fetchExternalReportsForUser(userId: string): Promise<ExternalLabReport[]> {

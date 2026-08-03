@@ -84,7 +84,7 @@ export default function ExternalTestDialog({
       setMine((prev) => [row, ...prev]);
       setFile(null);
       if (inputRef.current) inputRef.current.value = "";
-      toast.success(isCoach ? "Report uploaded" : "Report uploaded — your coach will review it");
+      toast.success(`Report processed — ${isCoach ? "patient markers" : "your markers"} are now visible`);
       onDone?.();
     } catch (e: any) {
       toast.error(e.message || "Upload failed");
@@ -122,8 +122,8 @@ export default function ExternalTestDialog({
             {step === "intent"
               ? "No problem. Tell your coach you'll use your own lab — then upload the report here and we'll turn it into your charts and trends, exactly like an in-app test."
               : isCoach
-                ? "Upload the report your patient got done outside, then enter the values so their markers and charts update."
-                : "Upload the PDF or a clear photo of your report. Your coach will enter the values so your markers and graphs update automatically."}
+                ? "Upload the report your patient got done outside. Its values will be read automatically into their markers and charts."
+                : "Upload the PDF or a clear photo of your report. Its values will be read automatically into your markers and graphs."}
           </DialogDescription>
         </DialogHeader>
 
@@ -191,7 +191,7 @@ export default function ExternalTestDialog({
                       <p className="text-xs font-bold truncate">{r.file_name || "Report"}</p>
                       <p className="text-[10px] text-muted-foreground truncate">
                         {r.lab_name ? `${r.lab_name} · ` : ""}
-                        {r.status === "reviewed" ? "Values added by coach" : "Awaiting coach review"}
+                         {r.status === "reviewed" ? "Values processed" : r.status === "processing" ? "Reading values…" : r.status === "parse_failed" ? "Could not read values" : "Uploaded"}
                       </p>
                     </div>
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openReport(r)} aria-label="Open report">
