@@ -556,13 +556,65 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
               />
             )}
 
+            {(() => {
+              const recExt = extReports.filter((x) => x.recommendation_id === r.id);
+              if (!r.external_intent && recExt.length === 0) return null;
+              return (
+                <div className="rounded-2xl bg-[var(--bbdo-blue,#2563eb)]/5 ring-1 ring-primary/15 p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Home className="w-4 h-4 text-primary shrink-0" />
+                    <p className="text-xs font-black">Getting this done outside</p>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground leading-snug">
+                    {recExt.length === 0
+                      ? "Your coach knows you're using your own lab. Upload the report here once you have it and we'll turn it into your charts."
+                      : recExt.some((x) => x.status === "reviewed")
+                        ? "Your report values are in — scroll down to your markers and body map to see the graphs."
+                        : "Report received. Your coach is reviewing it and will add the values shortly."}
+                  </p>
+                  {recExt.map((x) => (
+                    <button
+                      key={x.id}
+                      onClick={() => openExternalReport(x)}
+                      className="w-full flex items-center gap-2 rounded-xl bg-background/70 ring-1 ring-border p-2.5 text-left"
+                    >
+                      <FileText className="w-4 h-4 text-primary shrink-0" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-xs font-bold truncate">{x.file_name || "Report"}</span>
+                        <span className="block text-[10px] text-muted-foreground truncate">
+                          {x.lab_name ? `${x.lab_name} · ` : ""}
+                          {x.status === "reviewed" ? "Values added" : "Awaiting coach review"}
+                        </span>
+                      </span>
+                      <ExternalLink className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    </button>
+                  ))}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full h-9 text-xs font-bold"
+                    onClick={() => setExternalRec({ rec: r, startAtUpload: true })}
+                  >
+                    <Upload className="w-3.5 h-3.5 mr-1.5" /> Upload report
+                  </Button>
+                </div>
+              );
+            })()}
 
-            <div className="flex items-center justify-between pt-1">
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
               <div className="text-sm font-black">Total ₹{total.toFixed(0)}</div>
-              {r.status !== "booked" && (
-                <Button size="sm" onClick={() => setBookingRec(r)}>Book this test</Button>
+              {r.status !== "booked" && !order && (
+                <div className="flex items-center gap-2">
+                  {!r.external_intent && (
+                    <Button size="sm" variant="outline" onClick={() => setExternalRec({ rec: r, startAtUpload: false })}>
+                      <Home className="w-3.5 h-3.5 mr-1.5" /> Doing it outside
+                    </Button>
+                  )}
+                  <Button size="sm" onClick={() => setBookingRec(r)}>Book this test</Button>
+                </div>
               )}
             </div>
+
           </motion.div>
         );
       })}
