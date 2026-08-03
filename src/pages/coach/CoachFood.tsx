@@ -1,13 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Apple, Users, Search, Check, AlertTriangle, ChevronDown, ChevronRight, Utensils } from "lucide-react";
+import { Apple, Users, Search, Check, AlertTriangle, ChevronDown, ChevronRight, Utensils, Bell, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { getOrCreateConversation, sendMessage } from "@/lib/chatService";
 import QuickFoodReference from "@/components/diet/QuickFoodReference";
 
 type View = "patients" | "reference";
+
 
 interface PatientRow {
   user_id: string;
