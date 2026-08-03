@@ -94,7 +94,9 @@ function orderStatus(order?: Order, recStatus?: string) {
 
 function statusClass(label: string) {
   const s = label.toLowerCase();
-  if (s.includes("result") || s.includes("done") || s.includes("complete")) return "bg-primary/15 text-primary border-primary/20";
+  if (s.includes("processing")) return "bg-amber-500/15 text-amber-600 border-amber-500/20";
+  if (s.includes("result") || s.includes("done") || s.includes("complete") || s.includes("received")) return "bg-primary/15 text-primary border-primary/20";
+
   if (s.includes("book") || s.includes("collect") || s.includes("lab") || s.includes("process")) return "bg-amber-500/15 text-amber-600 border-amber-500/20";
   if (s.includes("not yet") || s.includes("awaiting")) return "border-muted-foreground/30 text-muted-foreground";
   if (s.includes("fail") || s.includes("cancel")) return "bg-destructive/15 text-destructive border-destructive/20";
@@ -338,11 +340,17 @@ export default function CoachLabTests() {
             const patientExternal = extReports[patient.user_id] ?? [];
             const latestRec = recs[0];
             const latestOrder = latestRec ? patientOrders.find((o) => o.recommendation_id === latestRec.id) || patientOrders[0] : patientOrders[0];
-            const statusLabel = recs.length === 0 && !latestOrder
+            const latestRecExternal = latestRec ? patientExternal.filter((x) => x.recommendation_id === latestRec.id) : [];
+            const externalDone = latestRecExternal.length > 0;
+            const externalProcessing = externalDone && latestRecExternal.every((x) => (x.status ?? "") === "processing" || (x.status ?? "") === "uploaded");
+            const statusLabel = recs.length === 0 && !latestOrder && patientExternal.length === 0
               ? "Awaiting assignment"
-              : !latestOrder && latestRec?.external_intent
-                ? "Doing it outside"
-                : orderStatus(latestOrder, latestRec?.status);
+              : externalDone
+                ? (externalProcessing ? "Processing report" : "Report received")
+                : !latestOrder && latestRec?.external_intent
+                  ? "Doing it outside"
+                  : orderStatus(latestOrder, latestRec?.status);
+
             const assignedCodes = Array.from(new Set(recs.flatMap((r) => r.product_codes || [])));
             const isAssigning = assigningPatient === patient.user_id;
             const isExpanded = expandedPatient === patient.user_id || isAssigning;
@@ -381,7 +389,12 @@ export default function CoachLabTests() {
                         <div className="space-y-2">
                           {recs.map((rec) => {
                             const recOrder = patientOrders.find((o) => o.recommendation_id === rec.id);
-                            const recStatus = orderStatus(recOrder, rec.status);
+                            const recExtAll = patientExternal.filter((x) => x.recommendation_id === rec.id);
+                            const recExtProcessing = recExtAll.length > 0 && recExtAll.every((x) => (x.status ?? "") === "processing" || (x.status ?? "") === "uploaded");
+                            const recStatus = recExtAll.length > 0
+                              ? (recExtProcessing ? "Processing report" : "Report received")
+                              : orderStatus(recOrder, rec.status);
+
                             const items = (rec.product_codes || []).map((code) => testsByCode[code]).filter(Boolean);
                             return (
                               <div key={rec.id} className="rounded-2xl bg-muted/40 p-3 space-y-2">
@@ -391,7 +404,7 @@ export default function CoachLabTests() {
                                   {(rec.product_codes || []).filter((code) => !testsByCode[code]).map((code) => <div key={code} className="text-xs text-muted-foreground">{code}</div>)}
                                 </div>
                                 {rec.notes && <p className="text-[11px] text-muted-foreground border-l-2 border-primary pl-2 italic">{rec.notes}</p>}
-                                {!recOrder && <p className="text-[11px] text-muted-foreground">Current status: Not yet booked</p>}
+                                {!recOrder && <p className="text-[11px] text-muted-foreground">Current status: {recStatus}</p>}
                                 {recOrder && <LabOrderDetails order={recOrder} fastingRequired={items.some((t) => t.fasting_required)} reports={patientReports.filter((report) => report.order_id === recOrder.id)} userId={patient.user_id} />}
                                 {(rec.external_intent || (extReports[patient.user_id] || []).some((x) => x.recommendation_id === rec.id)) && (() => {
                                   const recExt = (extReports[patient.user_id] || []).filter((x) => x.recommendation_id === rec.id);

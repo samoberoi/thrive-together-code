@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import {
   Users, Star, Activity, AlertTriangle, TrendingUp, TrendingDown, Minus,
   Heart, UserCheck, Loader2, Bell,
-  CalendarClock, Plus, Package, Send, CheckCircle2, Search, Percent,
+  CalendarClock, Plus, Package, Send, CheckCircle2, Search, Percent, FlaskConical, FileText,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -185,11 +185,13 @@ const ALL_ACTIVITIES: ActivityKey[] = [
   "glucose", "bp", "weight", "fasting", "supplements", "exercise", "yoga", "diet",
 ];
 
-export default function CoachHome({ onViewPatient, onViewMessages }: { onViewPatient?: () => void; onViewFasting?: () => void; onViewMessages?: () => void }) {
+export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTests }: { onViewPatient?: () => void; onViewFasting?: () => void; onViewMessages?: () => void; onViewLabTests?: () => void }) {
   const { user } = useAuth();
   const [coach, setCoach] = useState<Coach | null>(null);
   const [patients, setPatients] = useState<PatientSummary[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [newLabReports, setNewLabReports] = useState<{ id: string; name: string; fileName: string | null; createdAt: string }[]>([]);
+
   const [needsScheduling, setNeedsScheduling] = useState<PatientSummary[]>([]);
   const [scheduleFor, setScheduleFor] = useState<PatientSummary | null>(null);
   const [schedulePickerOpen, setSchedulePickerOpen] = useState(false);
@@ -244,7 +246,7 @@ export default function CoachHome({ onViewPatient, onViewMessages }: { onViewPat
     await computeCommission(coachData, ((assignments as any[]) ?? []).map((a) => a.user_id));
 
     if (!assignments || assignments.length === 0) {
-      setPatients([]); setAlerts([]); setNeedsScheduling([]);
+      setPatients([]); setAlerts([]); setNeedsScheduling([]); setNewLabReports([]);
       setLoading(false); return;
     }
 
@@ -451,6 +453,27 @@ export default function CoachHome({ onViewPatient, onViewMessages }: { onViewPat
 
     setPatients(enriched);
     setAlerts(evaluateAlerts(enriched, ((recentCoachHealthAlerts as any[]) ?? []) as CoachHealthNotification[]));
+
+    // Patient-uploaded (external) lab reports the coach has not reviewed yet
+    try {
+      const { data: extRows } = await (supabase as any)
+        .from("external_lab_reports")
+        .select("id, user_id, file_name, created_at, reviewed_at")
+        .in("user_id", patientIds)
+        .is("reviewed_at", null)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      const nameById = new Map(enriched.map((p) => [p.user_id, p.name || "Patient"]));
+      setNewLabReports(((extRows as any[]) ?? []).map((r) => ({
+        id: r.id,
+        name: nameById.get(r.user_id) || "Patient",
+        fileName: r.file_name ?? null,
+        createdAt: r.created_at,
+      })));
+    } catch {
+      setNewLabReports([]);
+    }
+
 
     const { data: handledMeetings } = await supabase
       .from("coach_meetings" as any)
@@ -870,7 +893,42 @@ export default function CoachHome({ onViewPatient, onViewMessages }: { onViewPat
         </motion.div>
       )}
 
+      {/* New lab reports uploaded by patients */}
+      {newLabReports.length > 0 && (
+        <motion.button
+          type="button"
+          onClick={onViewLabTests}
+          className="liquid-glass rounded-3xl p-5 text-left w-full hover:bg-accent/40 transition-colors"
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.14 }}
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <FlaskConical className="w-5 h-5 text-primary" strokeWidth={1.8} />
+            <span className="text-foreground font-bold">Lab reports available</span>
+            <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full ml-auto">
+              {newLabReports.length} new
+            </span>
+          </div>
+          <div className="flex flex-col gap-2">
+            {newLabReports.slice(0, 4).map((r) => (
+              <div key={r.id} className="flex items-start gap-3 rounded-2xl bg-primary/5 p-3">
+                <FileText className="w-4 h-4 mt-0.5 text-primary shrink-0" strokeWidth={2} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-foreground text-sm font-semibold truncate">{r.name}</p>
+                  <p className="text-muted-foreground text-xs truncate">
+                    Report uploaded{r.fileName ? ` · ${r.fileName}` : ""} · {new Date(r.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-primary text-xs font-bold mt-3">Click here to review →</p>
+        </motion.button>
+      )}
+
       {/* Alerts */}
+
       {alerts.length > 0 && (
         <motion.div className="liquid-glass rounded-3xl p-5" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }}>
           <div className="flex items-center gap-2 mb-4">
