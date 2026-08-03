@@ -63,7 +63,7 @@ export function useAttentionCounts() {
         .eq("subscriber_id", userId),
       supabase
         .from("thyrocare_recommendations" as any)
-        .select("id", { count: "exact", head: true })
+        .select("id")
         .eq("user_id", userId)
         .neq("status", "booked"),
       supabase
