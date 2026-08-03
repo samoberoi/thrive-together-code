@@ -14,6 +14,7 @@ import LabOrderDetails from "@/components/lab/LabOrderDetails";
 import ThyrocarePoweredBy from "@/components/lab/ThyrocarePoweredBy";
 import LabBookingDialog from "@/components/lab/LabBookingDialog";
 import ExternalTestDialog from "@/components/lab/ExternalTestDialog";
+import LabHistorySection from "@/components/lab/LabHistorySection";
 import {
   fetchExternalReportsForUser,
   externalReportUrl,
