@@ -1,7 +1,15 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Package, Bell, Check, ChevronRight, Crown, Sparkles, Download } from "lucide-react";
-import { fetchActiveSubscription, fetchUpgradeOptions, fetchPackageByPlanKey, type Subscription } from "@/lib/subscriptionService";
+import { ArrowLeft, Package, Bell, Check, ChevronRight, Crown, Sparkles, Download, CalendarClock, TrendingDown } from "lucide-react";
+import {
+  fetchActiveSubscription,
+  fetchUpgradeOptions,
+  fetchDowngradeOptions,
+  fetchScheduledSubscription,
+  activateDueSubscriptions,
+  fetchPackageByPlanKey,
+  type Subscription,
+} from "@/lib/subscriptionService";
 import { useNavigate } from "react-router-dom";
 import { downloadInvoice } from "@/lib/invoiceGenerator";
 import { useAuth } from "@/contexts/AuthContext";
@@ -24,6 +32,8 @@ export default function MyPlanSection({ onBack }: MyPlanSectionProps) {
   const [coachName, setCoachName] = useState<string | undefined>();
   const [pkgDetails, setPkgDetails] = useState<{ id: string; name: string; tagline: string; features: string[] } | null>(null);
   const [upgradeOptions, setUpgradeOptions] = useState<Array<{ id: string; name: string; tagline: string; monthlyPrice: number }>>([]);
+  const [downgradeOptions, setDowngradeOptions] = useState<Array<{ id: string; name: string; tagline: string; monthlyPrice: number }>>([]);
+  const [scheduledSub, setScheduledSub] = useState<Subscription | null>(null);
 
   useEffect(() => {
     if (!authUser) {
@@ -34,13 +44,16 @@ export default function MyPlanSection({ onBack }: MyPlanSectionProps) {
 
     setLoading(true);
     (async () => {
+      await activateDueSubscriptions(authUser.id);
       const s = await fetchActiveSubscription(authUser.id);
       setSub(s);
       setLoading(false);
+      fetchScheduledSubscription(authUser.id).then(setScheduledSub);
       if (s) {
         // Defer non-critical fetches so the screen paints immediately
         fetchPackageByPlanKey(s.plan_id).then(setPkgDetails);
         fetchUpgradeOptions(s.plan_id).then(setUpgradeOptions);
+        fetchDowngradeOptions(s.plan_id).then(setDowngradeOptions);
       }
     })();
     fetchProfile(authUser.id).then((p) => {
@@ -124,6 +137,20 @@ export default function MyPlanSection({ onBack }: MyPlanSectionProps) {
             <p className="text-muted-foreground text-xs mt-1.5 leading-snug break-words">{percentUsed}% of your plan used — {daysRemaining} days remaining</p>
           </div>
 
+          {scheduledSub && (
+            <div className="liquid-glass rounded-2xl p-4 flex items-start gap-3">
+              <CalendarClock className="w-4 h-4 text-primary shrink-0 mt-0.5" strokeWidth={1.8} />
+              <div className="min-w-0">
+                <p className="text-foreground text-sm font-bold leading-snug break-words">
+                  {scheduledSub.plan_name} starts {formatDate(new Date(scheduledSub.started_at))}
+                </p>
+                <p className="text-muted-foreground text-xs mt-0.5 leading-snug break-words">
+                  Your current plan stays active until then — nothing changes today.
+                </p>
+              </div>
+            </div>
+          )}
+
           {daysRemaining <= 30 && (
             <div className="liquid-glass rounded-2xl p-4 flex items-center gap-3">
               <Bell className="w-4 h-4 text-destructive flex-shrink-0" strokeWidth={1.8} />
@@ -188,6 +215,35 @@ export default function MyPlanSection({ onBack }: MyPlanSectionProps) {
               ))}
             </div>
           )}
+
+          {downgradeOptions.length > 0 && (
+            <div className="liquid-glass rounded-2xl p-5">
+              <div className="flex items-start gap-2 mb-1">
+                <TrendingDown className="w-4 h-4 shrink-0 text-muted-foreground" strokeWidth={1.8} />
+                <p className="min-w-0 text-foreground font-semibold text-sm leading-tight break-words">Move to a Lighter Plan</p>
+              </div>
+              <p className="text-muted-foreground text-xs mb-3 leading-snug break-words">
+                Starts on {formatDate(expiryDate)}, when your current plan ends.
+              </p>
+              {downgradeOptions.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => navigate("/plans")}
+                  className="w-full flex items-start justify-between gap-3 py-4 border-b border-border last:border-0"
+                >
+                  <div className="min-w-0 text-left">
+                    <p className="text-foreground text-sm font-bold leading-tight break-words">{p.name}</p>
+                    <p className="text-muted-foreground text-xs mt-0.5 leading-snug break-words">{p.tagline}</p>
+                  </div>
+                  <div className="shrink-0 flex items-center gap-2">
+                    <span className="text-primary font-bold text-sm leading-tight text-right">₹{p.monthlyPrice.toLocaleString("en-IN")}/mo</span>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground" strokeWidth={1.8} />
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
 
         </div>
       </div>

@@ -9,9 +9,23 @@ export interface Subscription {
   duration_months: number;
   started_at: string;
   expires_at: string;
-  status: "active" | "expired" | "cancelled";
+  status: "active" | "scheduled" | "expired" | "cancelled";
+  change_type?: "new" | "upgrade" | "downgrade" | "renewal";
+  credit_applied?: number;
   created_at: string;
 }
+
+export type PlanChangeMode = "new" | "upgrade" | "downgrade" | "renewal";
+
+export interface PlanChangePreview {
+  mode: PlanChangeMode;
+  credit: number;
+  amount_due: number;
+  starts_at: string;
+  expires_at: string;
+  current_expires_at: string | null;
+}
+
 
 /**
  * Legacy plan_id values that were used before packages were seeded in the DB.
@@ -94,8 +108,82 @@ export async function createSubscription(sub: {
   return data as unknown as Subscription;
 }
 
-/** Get upgrade options for the current plan using DB packages by sort_order */
-export async function fetchUpgradeOptions(currentPlanKey: string) {
+/** Activate any scheduled (downgraded) plan whose start date has arrived. */
+export async function activateDueSubscriptions(userId?: string): Promise<void> {
+  try {
+    await (supabase as any).rpc("activate_due_subscriptions", { _user_id: userId ?? null });
+  } catch (e) {
+    console.warn("activate_due_subscriptions failed", e);
+  }
+}
+
+/** A downgrade that has been paid for and starts when the current plan ends. */
+export async function fetchScheduledSubscription(userId: string): Promise<Subscription | null> {
+  const { data, error } = await supabase
+    .from("subscriptions" as any)
+    .select("*")
+    .eq("user_id", userId)
+    .eq("status", "scheduled")
+    .order("started_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (error) {
+    console.error("Failed to fetch scheduled subscription:", error);
+    return null;
+  }
+  return data as unknown as Subscription | null;
+}
+
+/** What the change would cost and when it would start. */
+export async function previewPlanChange(input: {
+  plan_price: number;
+  duration_months: number;
+  mode: PlanChangeMode;
+}): Promise<PlanChangePreview | null> {
+  const { data, error } = await (supabase as any).rpc("preview_plan_change", {
+    _plan_price: input.plan_price,
+    _duration_months: input.duration_months,
+    _mode: input.mode,
+  });
+  if (error) {
+    console.error("Failed to preview plan change:", error);
+    return null;
+  }
+  return data as PlanChangePreview;
+}
+
+/** Upgrade (starts now, prorated) or downgrade (starts at current expiry). */
+export async function changeSubscriptionPlan(input: {
+  plan_id: string;
+  plan_name: string;
+  plan_price: number;
+  duration_months: number;
+  mode: PlanChangeMode;
+}): Promise<Subscription> {
+  const { data, error } = await (supabase as any).rpc("change_subscription_plan", {
+    _plan_id: input.plan_id,
+    _plan_name: input.plan_name,
+    _plan_price: input.plan_price,
+    _duration_months: input.duration_months,
+    _mode: input.mode,
+  });
+  if (error) {
+    console.error("Failed to change plan:", error);
+    throw new Error(error.message || "Failed to change plan");
+  }
+  return data as unknown as Subscription;
+}
+
+export interface PlanOption {
+  id: string;
+  name: string;
+  tagline: string;
+  monthlyPrice: number;
+  direction: "upgrade" | "downgrade";
+}
+
+/** All other packages relative to the current one, split into upgrades and downgrades. */
+export async function fetchPlanChangeOptions(currentPlanKey: string): Promise<PlanOption[]> {
   const normalizedPlanKey = normalizePlanKey(currentPlanKey) ?? currentPlanKey;
   const { data: pkgs } = await (supabase as any)
     .from("packages")
@@ -105,12 +193,29 @@ export async function fetchUpgradeOptions(currentPlanKey: string) {
   if (!pkgs) return [];
   const idx = pkgs.findIndex((p: any) => p.plan_key === normalizedPlanKey);
   if (idx === -1) return [];
-  return pkgs.slice(idx + 1).map((p: any) => ({
-    id: p.plan_key,
-    name: p.name as string,
-    tagline: (p.tagline ?? "") as string,
-    monthlyPrice: p.base_monthly_price as number,
-  }));
+  return pkgs
+    .filter((_: any, i: number) => i !== idx)
+    .map((p: any, i: number) => ({
+      id: p.plan_key as string,
+      name: p.name as string,
+      tagline: (p.tagline ?? "") as string,
+      monthlyPrice: p.base_monthly_price as number,
+      direction: (pkgs.findIndex((q: any) => q.plan_key === p.plan_key) > idx ? "upgrade" : "downgrade") as
+        | "upgrade"
+        | "downgrade",
+    }));
+}
+
+/** Get upgrade options for the current plan using DB packages by sort_order */
+export async function fetchUpgradeOptions(currentPlanKey: string) {
+  const all = await fetchPlanChangeOptions(currentPlanKey);
+  return all.filter((p) => p.direction === "upgrade");
+}
+
+/** Packages below the current one — a downgrade starts when the current plan ends. */
+export async function fetchDowngradeOptions(currentPlanKey: string) {
+  const all = await fetchPlanChangeOptions(currentPlanKey);
+  return all.filter((p) => p.direction === "downgrade");
 }
 
 /** Fetch a single package by plan_key for display */

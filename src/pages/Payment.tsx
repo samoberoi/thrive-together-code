@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Check, Flame, Lock, Rocket, User, Star, Gift } from "lucide-react";
 import { getUser } from "@/lib/userStore";
 import { useAuth } from "@/contexts/AuthContext";
-import { createSubscription } from "@/lib/subscriptionService";
+import { createSubscription, changeSubscriptionPlan, previewPlanChange, type PlanChangePreview } from "@/lib/subscriptionService";
 import { supabase } from "@/integrations/supabase/client";
 import { getSelectedPlan, CYCLE_LABEL } from "@/lib/packageService";
 import { autoAssignCoach, fetchAssignedCoach, coachTypeLabel, type Coach } from "@/lib/coachService";
@@ -57,6 +57,26 @@ export default function Payment() {
   const name = storedUser.profile.name ?? "Friend";
   const plan = getSelectedPlan();
   const duration = plan?.duration_months ?? 0;
+  const changeMode = plan?.change_mode ?? "new";
+  const isPlanChange = changeMode === "upgrade" || changeMode === "downgrade";
+  const [preview, setPreview] = useState<PlanChangePreview | null>(null);
+
+  useEffect(() => {
+    if (!authUser || !plan || !isPlanChange) return;
+    let cancelled = false;
+    (async () => {
+      const p = await previewPlanChange({
+        plan_price: plan.total_price,
+        duration_months: plan.duration_months,
+        mode: changeMode,
+      });
+      if (!cancelled) setPreview(p);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authUser?.id, plan?.plan_key, plan?.total_price, isPlanChange]);
 
   const coachInitials = (assignedCoach?.name ?? "Coach").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
@@ -195,6 +215,17 @@ export default function Payment() {
         // Live Razorpay flow for the ₹1 test plan only.
         await handleRazorpayPay(effectiveUser);
         await finalizePostPayment(effectiveUser);
+      } else if (isPlanChange) {
+        // Upgrade starts today with prorated credit; downgrade is scheduled for current expiry.
+        await new Promise((r) => setTimeout(r, 1200));
+        await changeSubscriptionPlan({
+          plan_id: plan.plan_key,
+          plan_name: `${plan.name} — ${CYCLE_LABEL[plan.billing_cycle]}`,
+          plan_price: plan.total_price,
+          duration_months: duration,
+          mode: changeMode,
+        });
+        await finalizePostPayment(effectiveUser);
       } else {
         // Mock flow for all other plans.
         await new Promise((r) => setTimeout(r, 1200));
@@ -253,10 +284,37 @@ export default function Payment() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-primary font-black text-xl">{plan ? `₹${plan.total_price.toLocaleString("en-IN")}` : "—"}</p>
+                  <p className="text-primary font-black text-xl">
+                    {plan
+                      ? `₹${(preview ? preview.amount_due : plan.total_price).toLocaleString("en-IN")}`
+                      : "—"}
+                  </p>
                   <p className="text-muted-foreground text-xs">{plan ? `for ${duration} month${duration > 1 ? "s" : ""}` : "Select first"}</p>
                 </div>
               </div>
+              {preview && (
+                <div className="mt-3 pt-3 border-t border-border/50 space-y-1">
+                  {preview.credit > 0 && (
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Credit for unused days</span>
+                      <span className="text-emerald-600 font-semibold">−₹{preview.credit.toLocaleString("en-IN")}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">
+                      {changeMode === "downgrade" ? "Starts on" : "Active from"}
+                    </span>
+                    <span className="text-foreground font-semibold">
+                      {new Date(preview.starts_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                    </span>
+                  </div>
+                  {changeMode === "downgrade" && (
+                    <p className="text-[11px] text-muted-foreground pt-1 leading-snug">
+                      You keep your current plan and all its benefits until then.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col gap-3 mb-8">
