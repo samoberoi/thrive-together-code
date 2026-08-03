@@ -338,11 +338,17 @@ export default function CoachLabTests() {
             const patientExternal = extReports[patient.user_id] ?? [];
             const latestRec = recs[0];
             const latestOrder = latestRec ? patientOrders.find((o) => o.recommendation_id === latestRec.id) || patientOrders[0] : patientOrders[0];
-            const statusLabel = recs.length === 0 && !latestOrder
+            const latestRecExternal = latestRec ? patientExternal.filter((x) => x.recommendation_id === latestRec.id) : [];
+            const externalDone = latestRecExternal.length > 0;
+            const externalProcessing = externalDone && latestRecExternal.every((x) => (x.status ?? "") === "processing" || (x.status ?? "") === "uploaded");
+            const statusLabel = recs.length === 0 && !latestOrder && patientExternal.length === 0
               ? "Awaiting assignment"
-              : !latestOrder && latestRec?.external_intent
-                ? "Doing it outside"
-                : orderStatus(latestOrder, latestRec?.status);
+              : externalDone
+                ? (externalProcessing ? "Processing report" : "Report received")
+                : !latestOrder && latestRec?.external_intent
+                  ? "Doing it outside"
+                  : orderStatus(latestOrder, latestRec?.status);
+
             const assignedCodes = Array.from(new Set(recs.flatMap((r) => r.product_codes || [])));
             const isAssigning = assigningPatient === patient.user_id;
             const isExpanded = expandedPatient === patient.user_id || isAssigning;
