@@ -27,22 +27,25 @@ Deno.serve(async (req) => {
   let reportId: string | null = null;
   try {
     const auth = req.headers.get("Authorization");
-    if (!auth) return json({ error: "unauthenticated" }, 401);
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const internal = req.headers.get("x-bbdo-internal") === serviceKey;
+    if (!auth && !internal) return json({ error: "unauthenticated" }, 401);
 
     const client = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      { global: { headers: { Authorization: auth } } },
+      { global: { headers: { Authorization: auth ?? "" } } },
     );
-    const { data: authData } = await client.auth.getUser();
-    if (!authData.user) return json({ error: "unauthenticated" }, 401);
+    const { data: authData } = internal ? { data: { user: null } } : await client.auth.getUser();
+    if (!internal && !authData.user) return json({ error: "unauthenticated" }, 401);
 
     const body = await req.json().catch(() => ({}));
     reportId = typeof body?.externalReportId === "string" ? body.externalReportId : null;
     if (!reportId) return json({ error: "externalReportId required" }, 400);
 
     // Reading through the caller-scoped client enforces patient/assigned-coach access.
-    const { data: report, error: reportError } = await client
+    const reportClient = internal ? admin : client;
+    const { data: report, error: reportError } = await reportClient
       .from("external_lab_reports")
       .select("id,user_id,file_path,file_name,mime_type,product_codes,collected_on")
       .eq("id", reportId)
