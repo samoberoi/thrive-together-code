@@ -13,7 +13,7 @@ import { LabTestParametersDialog } from "@/components/lab/LabTestParametersDialo
 import { patientPriceFor, useLabTestMarkup } from "@/lib/labTestMarkup";
 import { createNotification } from "@/lib/notificationService";
 import LabOrderDetails from "@/components/lab/LabOrderDetails";
-import BodyInvestigationMap from "@/components/lab/BodyInvestigationMap";
+import LabHistorySection from "@/components/lab/LabHistorySection";
 import { Activity, ChevronDown, ChevronUp, Home, FileText, ExternalLink, Upload, ClipboardEdit } from "lucide-react";
 import LabResultsEntry from "@/components/lab/LabResultsEntry";
 import ExternalTestDialog from "@/components/lab/ExternalTestDialog";
@@ -445,7 +445,7 @@ export default function CoachLabTests() {
                         </button>
                         {openInvestigation[patient.user_id] && (
                           <div className="mt-3">
-                            <BodyInvestigationMap userId={patient.user_id} patientName={patient.name} />
+                            <LabHistorySection userId={patient.user_id} patientName={patient.name} expectedProductCodes={Array.from(new Set(recs.flatMap((rc: any) => rc.product_codes || [])))} />
                           </div>
                         )}
                       </div>

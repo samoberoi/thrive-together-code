@@ -14,6 +14,7 @@ import LabOrderDetails from "@/components/lab/LabOrderDetails";
 import ThyrocarePoweredBy from "@/components/lab/ThyrocarePoweredBy";
 import LabBookingDialog from "@/components/lab/LabBookingDialog";
 import ExternalTestDialog from "@/components/lab/ExternalTestDialog";
+import LabHistorySection from "@/components/lab/LabHistorySection";
 import {
   fetchExternalReportsForUser,
   externalReportUrl,
@@ -649,6 +650,24 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
         );
       })}
 
+
+      {user && (() => {
+        const markerCodes = Array.from(new Set([
+          ...recs.flatMap((r) => r.product_codes || []),
+          ...orders.flatMap((o) => o.product_codes || []),
+          ...extReports.flatMap((x) => x.product_codes || []),
+        ]));
+        if (!markerCodes.length && reports.length === 0) return null;
+        return (
+          <div className="space-y-3 pt-2">
+            <div className="flex items-center gap-2 px-1">
+              <FlaskConical className="w-4 h-4 text-primary" />
+              <h3 className="text-sm font-black uppercase tracking-wide">Your markers</h3>
+            </div>
+            <LabHistorySection userId={user.id} expectedProductCodes={markerCodes} />
+          </div>
+        );
+      })()}
 
       <LabBookingDialog
         open={!!bookingRec}
