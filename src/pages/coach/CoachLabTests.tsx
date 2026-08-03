@@ -335,6 +335,7 @@ export default function CoachLabTests() {
             const recs = recommendations[patient.user_id] ?? [];
             const patientOrders = orders[patient.user_id] ?? [];
             const patientReports = reports[patient.user_id] ?? [];
+            const patientExternal = extReports[patient.user_id] ?? [];
             const latestRec = recs[0];
             const latestOrder = latestRec ? patientOrders.find((o) => o.recommendation_id === latestRec.id) || patientOrders[0] : patientOrders[0];
             const statusLabel = recs.length === 0 && !latestOrder
