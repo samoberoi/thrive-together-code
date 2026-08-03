@@ -659,7 +659,7 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
           if (!user) return;
           const [{ data: r }, { data: o }] = await Promise.all([
             supabase.from("thyrocare_recommendations" as any)
-              .select("id, product_codes, notes, status, recommended_at")
+              .select("id, product_codes, notes, status, recommended_at, external_intent, external_note")
               .eq("user_id", user.id).order("recommended_at", { ascending: false }),
             supabase.from("thyrocare_orders" as any)
               .select("id, recommendation_id, product_codes, thyrocare_order_id, thyrocare_lead_id, status, status_detail, beneficiary_name, beneficiary_age, beneficiary_gender, mobile, email, pincode, address, collection_date, collection_slot, amount, raw_response, created_at")
@@ -674,6 +674,20 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
           setOrdersByRec(orderMap);
         }}
       />
+
+      {user && externalRec && (
+        <ExternalTestDialog
+          open
+          onClose={() => setExternalRec(null)}
+          userId={user.id}
+          recommendationId={externalRec.rec.id || null}
+          productCodes={externalRec.rec.product_codes || []}
+          startAtUpload={externalRec.startAtUpload}
+          onDone={async () => { await Promise.all([reloadRecs(), reloadExternal()]); }}
+        />
+      )}
+
+
 
 
       <Dialog open={!!detailsTest} onOpenChange={(o) => !o && setDetailsTest(null)}>
