@@ -201,6 +201,11 @@ export default function Dashboard() {
         { event: "*", schema: "public", table: "thyrocare_recommendations", filter: `user_id=eq.${user.id}` },
         load,
       )
+      .on(
+        "postgres_changes" as any,
+        { event: "*", schema: "public", table: "external_lab_reports", filter: `user_id=eq.${user.id}` },
+        load,
+      )
       .subscribe();
     return () => {
       cancelled = true;
