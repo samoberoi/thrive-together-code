@@ -387,7 +387,12 @@ export default function CoachLabTests() {
                         <div className="space-y-2">
                           {recs.map((rec) => {
                             const recOrder = patientOrders.find((o) => o.recommendation_id === rec.id);
-                            const recStatus = orderStatus(recOrder, rec.status);
+                            const recExtAll = patientExternal.filter((x) => x.recommendation_id === rec.id);
+                            const recExtProcessing = recExtAll.length > 0 && recExtAll.every((x) => (x.status ?? "") === "processing" || (x.status ?? "") === "uploaded");
+                            const recStatus = recExtAll.length > 0
+                              ? (recExtProcessing ? "Processing report" : "Report received")
+                              : orderStatus(recOrder, rec.status);
+
                             const items = (rec.product_codes || []).map((code) => testsByCode[code]).filter(Boolean);
                             return (
                               <div key={rec.id} className="rounded-2xl bg-muted/40 p-3 space-y-2">
