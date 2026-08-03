@@ -569,9 +569,13 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
                   <p className="text-[11px] text-muted-foreground leading-snug">
                     {recExt.length === 0
                       ? "Your coach knows you're using your own lab. Upload the report here once you have it and we'll turn it into your charts."
-                      : recExt.some((x) => x.status === "reviewed")
+                       : recExt.some((x) => x.status === "reviewed")
                         ? "Your report values are in — scroll down to your markers and body map to see the graphs."
-                        : "Report received. Your coach is reviewing it and will add the values shortly."}
+                         : recExt.some((x) => x.status === "processing")
+                           ? "Report received. We are reading the marker values now."
+                           : recExt.some((x) => x.status === "parse_failed")
+                             ? "We couldn't read this report automatically. Please upload a clearer PDF or photo."
+                             : "Report received and queued for processing."}
                   </p>
                   {recExt.map((x) => (
                     <button
@@ -584,7 +588,7 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
                         <span className="block text-xs font-bold truncate">{x.file_name || "Report"}</span>
                         <span className="block text-[10px] text-muted-foreground truncate">
                           {x.lab_name ? `${x.lab_name} · ` : ""}
-                          {x.status === "reviewed" ? "Values added" : "Awaiting coach review"}
+                           {x.status === "reviewed" ? "Values processed" : x.status === "processing" ? "Reading values…" : x.status === "parse_failed" ? "Could not read values" : "Uploaded"}
                         </span>
                       </span>
                       <ExternalLink className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
