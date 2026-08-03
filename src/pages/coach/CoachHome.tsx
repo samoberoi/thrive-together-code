@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import {
   Users, Star, Activity, AlertTriangle, TrendingUp, TrendingDown, Minus,
   Heart, UserCheck, Loader2, Bell,
-  CalendarClock, Plus, Package, Send, CheckCircle2, Search, Percent,
+  CalendarClock, Plus, Package, Send, CheckCircle2, Search, Percent, FlaskConical, FileText,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
