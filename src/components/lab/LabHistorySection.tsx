@@ -11,6 +11,7 @@ import {
   type LabResult,
 } from "@/lib/labResultsService";
 import BodyInvestigationMap from "@/components/lab/BodyInvestigationMap";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
   userId: string;
@@ -36,13 +37,45 @@ function trendIcon(trend: string | null) {
   return <TrendingUp className="w-3 h-3" />;
 }
 
-type Row = { param: LabParameter | undefined; code: string; name: string; result: LabResult | undefined };
+type Row = {
+  param: LabParameter | undefined;
+  code: string;
+  name: string;
+  group: string;
+  result: LabResult | undefined;
+};
+
+type PanelMarker = { code: string; name: string; groupName: string | null };
+
+const norm = (v: string) => (v || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+/** Every marker a panel covers, straight from the partner-lab catalog payload. */
+async function fetchPanelMarkers(productCodes: string[]): Promise<PanelMarker[]> {
+  if (!productCodes.length) return [];
+  const { data } = await (supabase as any)
+    .from("thyrocare_tests")
+    .select("product_code, raw_data")
+    .in("product_code", productCodes);
+  const out: Record<string, PanelMarker> = {};
+  for (const t of ((data as any[]) || [])) {
+    const included = Array.isArray(t?.raw_data?.testsIncluded) ? t.raw_data.testsIncluded : [];
+    for (const it of included) {
+      const name = String(it?.name || it?.code || "").trim();
+      if (!name) continue;
+      const code = String(it?.code || name).trim();
+      const key = norm(code) || norm(name);
+      if (!out[key]) out[key] = { code, name, groupName: it?.groupName || null };
+    }
+  }
+  return Object.values(out);
+}
 
 export default function LabHistorySection({ userId, patientName, expectedProductCodes = [] }: Props) {
   const [loading, setLoading] = useState(true);
   const [params, setParams] = useState<LabParameter[]>([]);
   const [results, setResults] = useState<LabResult[]>([]);
   const [expected, setExpected] = useState<LabParameter[]>([]);
+  const [panelMarkers, setPanelMarkers] = useState<PanelMarker[]>([]);
 
   const codesKey = useMemo(
     () => Array.from(new Set(expectedProductCodes.filter(Boolean))).sort().join(","),
@@ -56,11 +89,13 @@ export default function LabHistorySection({ userId, patientName, expectedProduct
       fetchAllParameters(),
       fetchUserResults(userId),
       codes.length ? fetchParametersForProducts(codes).catch(() => []) : Promise.resolve([]),
+      fetchPanelMarkers(codes).catch(() => []),
     ])
-      .then(([p, r, e]) => {
+      .then(([p, r, e, pm]) => {
         setParams(p);
         setResults(r);
         setExpected(e);
+        setPanelMarkers(pm);
       })
       .finally(() => setLoading(false));
   }, [userId, codesKey]);
@@ -71,27 +106,61 @@ export default function LabHistorySection({ userId, patientName, expectedProduct
     [params],
   );
 
+  const paramsByNorm = useMemo(() => {
+    const m: Record<string, LabParameter> = {};
+    for (const p of params) {
+      m[norm(p.code)] = p;
+      if (!m[norm(p.name)]) m[norm(p.name)] = p;
+    }
+    return m;
+  }, [params]);
+
   const grouped = useMemo(() => {
     const rows: Record<string, Row> = {};
-    // Skeleton first: every marker the recommended panels cover
-    for (const p of expected) {
-      rows[p.code] = { param: p, code: p.code, name: p.name, result: latest[p.code] };
-    }
-    // Then anything that already has a value
+
+    const addSkeleton = (code: string, name: string, group: string | null, param?: LabParameter) => {
+      const key = norm(code) || norm(name);
+      if (!key) return;
+      const p = param || paramsByNorm[key] || paramsByNorm[norm(name)];
+      const result = latest[code] || (p ? latest[p.code] : undefined);
+      rows[key] = { param: p, code: p?.code || code, name: p?.name || name, group: (p?.group_name || group || "OTHER").toUpperCase(), result };
+    };
+
+    // 1. Catalog params mapped to the recommended panels (when mapping exists)
+    for (const p of expected) addSkeleton(p.code, p.name, p.group_name, p);
+    // 2. Full marker list straight from the panel definition (100 params etc.)
+    for (const m of panelMarkers) addSkeleton(m.code, m.name, m.groupName);
+    // 3. Anything that already has a value wins
     for (const code of Object.keys(latest)) {
       const r = latest[code];
-      rows[code] = { param: paramsByCode[code], code, name: r.parameter_name || code, result: r };
+      const p = paramsByCode[code] || paramsByNorm[norm(code)] || paramsByNorm[norm(r.parameter_name)];
+      const key = norm(code) || norm(r.parameter_name);
+      rows[key] = {
+        param: p,
+        code,
+        name: r.parameter_name || p?.name || code,
+        group: (p?.group_name || rows[key]?.group || "OTHER").toUpperCase(),
+        result: r,
+      };
     }
+
     const map: Record<string, Row[]> = {};
     for (const row of Object.values(rows)) {
-      const g = row.param?.group_name || "OTHER";
-      (map[g] = map[g] || []).push(row);
+      (map[row.group] = map[row.group] || []).push(row);
     }
     for (const g of Object.keys(map)) {
-      map[g].sort((a, b) => (a.param?.display_order ?? 999) - (b.param?.display_order ?? 999));
+      map[g].sort((a, b) => {
+        const oa = a.result ? 0 : 1;
+        const ob = b.result ? 0 : 1;
+        if (oa !== ob) return oa - ob;
+        const da = a.param?.display_order ?? 999;
+        const db = b.param?.display_order ?? 999;
+        if (da !== db) return da - db;
+        return a.name.localeCompare(b.name);
+      });
     }
     return Object.entries(map).sort((a, b) => a[0].localeCompare(b[0]));
-  }, [latest, paramsByCode, expected]);
+  }, [latest, paramsByCode, paramsByNorm, expected, panelMarkers]);
 
   const pendingCount = useMemo(
     () => grouped.reduce((s, [, items]) => s + items.filter((i) => !i.result).length, 0),
@@ -163,7 +232,7 @@ export default function LabHistorySection({ userId, patientName, expectedProduct
                     ? "text-destructive bg-destructive/10"
                     : "text-muted-foreground bg-muted";
               return (
-                <li key={code} className={`px-4 py-3 flex items-center gap-3 ${r ? "" : "opacity-70"}`}>
+                <li key={`${group}-${code}`} className={`px-4 py-3 flex items-center gap-3 ${r ? "" : "opacity-70"}`}>
                   <div className="min-w-0 flex-1">
                     <div className="text-sm font-semibold truncate">{r?.parameter_name || name}</div>
                     <div className="text-[10px] text-muted-foreground truncate">
