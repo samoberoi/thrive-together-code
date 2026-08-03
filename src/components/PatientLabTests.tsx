@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { FlaskConical, Check, Home, Clock, Eye } from "lucide-react";
+import { FlaskConical, Check, Home, Clock, Eye, Upload, FileText, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,12 @@ import { patientPriceFor, useLabTestMarkup } from "@/lib/labTestMarkup";
 import LabOrderDetails from "@/components/lab/LabOrderDetails";
 import ThyrocarePoweredBy from "@/components/lab/ThyrocarePoweredBy";
 import LabBookingDialog from "@/components/lab/LabBookingDialog";
+import ExternalTestDialog from "@/components/lab/ExternalTestDialog";
+import {
+  fetchExternalReportsForUser,
+  externalReportUrl,
+  type ExternalLabReport,
+} from "@/lib/externalLabService";
 
 
 type Rec = {
@@ -21,7 +27,10 @@ type Rec = {
   notes: string | null;
   status: string;
   recommended_at: string;
+  external_intent?: boolean | null;
+  external_note?: string | null;
 };
+
 
 type Order = {
   id: string;
