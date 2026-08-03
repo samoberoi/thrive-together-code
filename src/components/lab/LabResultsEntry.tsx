@@ -97,15 +97,21 @@ export default function LabResultsEntry({
           ref_high: p.ref_high,
         };
       });
-      await saveResultsForOrder({
-        userId,
-        orderId,
-        reportId,
-        observedAt: new Date(observedAt + "T08:00:00").toISOString(),
-        source: "manual",
-        rows,
-      });
+      const iso = new Date(observedAt + "T08:00:00").toISOString();
+      if (externalReportId) {
+        await saveResultsForExternalReport({ userId, externalReportId, observedAt: iso, rows });
+      } else {
+        await saveResultsForOrder({
+          userId,
+          orderId,
+          reportId,
+          observedAt: iso,
+          source: "manual",
+          rows,
+        });
+      }
       toast.success("Lab results saved");
+
       onSaved?.();
       onClose();
     } catch (e: any) {
