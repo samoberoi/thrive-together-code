@@ -299,7 +299,7 @@ export default function CoachLabTests() {
           const checked = selectedTests.has(t.id);
           return (
             <button key={t.id} onClick={() => toggleTest(t.id)} className={`w-full flex items-start gap-2.5 p-3 rounded-xl text-left text-xs transition-colors ${checked ? "bg-primary/10 ring-1 ring-primary/20" : "bg-muted/40 hover:bg-muted/70"}`}>
-              <span className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 ${checked ? "bg-primary border-primary" : "border-muted-foreground/30"}`}>{checked && <Check className="w-3 h-3 text-primary-foreground" />}</span>
+              <span className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${checked ? "bg-primary border-primary" : "border-muted-foreground/30"}`}>{checked && <Check className="w-3 h-3 text-primary-foreground" />}</span>
               <span className="flex-1 min-w-0"><span className="block font-semibold text-foreground truncate">{t.product_name}</span><span className="block text-muted-foreground mt-0.5">{t.product_code}{t.parameters_count ? ` · ${t.parameters_count} parameters` : ""}</span></span>
               {priceFor(t) > 0 && <span className="font-black text-foreground">₹{priceFor(t).toLocaleString("en-IN")}</span>}
             </button>
