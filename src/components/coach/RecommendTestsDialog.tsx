@@ -58,7 +58,7 @@ export default function RecommendTestsDialog({ open, onOpenChange, coachId, pati
   const selectedTests = tests.filter((t) => selected[t.product_code]);
 
   const submit = async () => {
-    if (selectedCodes.length === 0) return toast({ title: "Pick at least one test", variant: "destructive" });
+    if (selectedCodes.length === 0) return toast({ title: "Pick a test", variant: "destructive" });
     try {
       setSaving(true);
       const { error } = await supabase.from("thyrocare_recommendations" as any).insert({
@@ -92,7 +92,7 @@ export default function RecommendTestsDialog({ open, onOpenChange, coachId, pati
       <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2"><FlaskConical className="w-4 h-4 text-primary" /> Recommend tests</DialogTitle>
-          <DialogDescription>Pick the lab tests {patientName ?? "your patient"} should book.</DialogDescription>
+          <DialogDescription>Pick one lab test {patientName ?? "your patient"} should book.</DialogDescription>
         </DialogHeader>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -104,7 +104,7 @@ export default function RecommendTestsDialog({ open, onOpenChange, coachId, pati
               <label key={t.id} className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-muted/60 cursor-pointer">
                 <Checkbox
                   checked={!!selected[t.product_code]}
-                  onCheckedChange={(c) => setSelected((s) => ({ ...s, [t.product_code]: !!c }))}
+                  onCheckedChange={(c) => setSelected(c ? { [t.product_code]: true } : {})}
                   className="mt-0.5"
                 />
                 <div className="flex-1 min-w-0">
@@ -118,7 +118,7 @@ export default function RecommendTestsDialog({ open, onOpenChange, coachId, pati
         <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optional note for patient…" />
         <Button onClick={submit} disabled={saving} className="w-full">
           {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-          Send {selectedCodes.length > 0 ? `${selectedCodes.length} test${selectedCodes.length > 1 ? "s" : ""}` : "recommendations"}
+          Send {selectedCodes.length > 0 ? "test" : "recommendation"}
         </Button>
       </DialogContent>
     </Dialog>
