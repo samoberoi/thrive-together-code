@@ -245,13 +245,11 @@ export default function CoachLabTests() {
     return patients.filter((p) => p.name.toLowerCase().includes(q));
   }, [patients, patientSearch]);
 
+  // Only one test/package can be recommended at a time.
   const toggleTest = (id: string) => {
-    setSelectedTests((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
+    setSelectedTests((prev) => (prev.has(id) ? new Set<string>() : new Set<string>([id])));
   };
+
 
   async function sendTo(patient: Patient) {
     if (selectedTests.size === 0) return;
