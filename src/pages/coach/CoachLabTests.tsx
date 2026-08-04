@@ -474,9 +474,10 @@ export default function CoachLabTests() {
 
                     {isAssigning && (
                       <div className="mt-4 space-y-3">
-                        <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5"><FlaskConical className="w-3.5 h-3.5 text-primary" /> Select lab tests to assign</h4>
+                        <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5"><FlaskConical className="w-3.5 h-3.5 text-primary" /> Select one lab test to assign</h4>
                         {renderTestSelector()}
-                        <div className="flex items-center justify-between pt-2"><span className="text-[11px] text-muted-foreground">{selectedTests.size} test{selectedTests.size === 1 ? "" : "s"} selected</span><div className="flex gap-2"><button onClick={() => sendTo(patient)} disabled={selectedTests.size === 0 || submitting} className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-50"><Check className="w-3.5 h-3.5 inline mr-1" /> Assign ({selectedTests.size})</button><button onClick={() => { setAssigningPatient(null); setSelectedTests(new Set()); setNotes(""); }} className="px-3 py-2 rounded-xl bg-muted text-muted-foreground text-sm">Cancel</button></div></div>
+                        <div className="flex items-center justify-between pt-2"><span className="text-[11px] text-muted-foreground">{selectedTests.size === 1 ? "1 test selected" : "No test selected"}</span><div className="flex gap-2"><button onClick={() => sendTo(patient)} disabled={selectedTests.size === 0 || submitting} className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-50"><Check className="w-3.5 h-3.5 inline mr-1" /> Assign</button><button onClick={() => { setAssigningPatient(null); setSelectedTests(new Set()); setNotes(""); }} className="px-3 py-2 rounded-xl bg-muted text-muted-foreground text-sm">Cancel</button></div></div>
+
                       </div>
                     )}
                   </div>
