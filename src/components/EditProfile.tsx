@@ -21,6 +21,8 @@ import { fetchUserResults } from "@/lib/labResultsService";
 import { inferConditionsFromLabs } from "@/lib/labInferConditions";
 import AllergyAndSubPrefs from "@/components/diet/AllergyAndSubPrefs";
 import { loadDietProfile, saveDietProfile } from "@/lib/dietProfileService";
+import SymptomsChecklist from "@/components/profile/SymptomsChecklist";
+import { loadUserSymptoms, saveUserSymptoms } from "@/lib/symptomsService";
 
 
 const Field = ({ label, icon: Icon, value, onChange, placeholder, type = "text", readOnly, hint }: {
@@ -317,6 +319,10 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
   const [subPreferences, setSubPreferences] = useState<string[]>([]);
   const [allergenFoodIds, setAllergenFoodIds] = useState<string[]>([]);
 
+  // List of symptoms (user_symptoms)
+  const [symptomKeys, setSymptomKeys] = useState<string[]>([]);
+  const [symptomNotes, setSymptomNotes] = useState("");
+
   useEffect(() => {
     if (!effectiveUserId) return;
 
@@ -369,6 +375,12 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
         return next;
       });
     }).catch(() => { /* ignore — lab pull is best-effort */ });
+
+    // Load the symptom checklist for this user
+    loadUserSymptoms(effectiveUserId).then((s) => {
+      setSymptomKeys(s.symptomKeys);
+      setSymptomNotes(s.notes);
+    });
 
     // Load diet preferences + allergies so coach/user can edit allergens.
     loadDietProfile(effectiveUserId).then((dp) => {
