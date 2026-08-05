@@ -158,7 +158,7 @@ export default function CoachAssignmentSheet({
         </div>
 
 
-        <div className="flex-1 overflow-y-auto px-2 py-2">
+        <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-2">
           {loading || loadingItems ? (
             <div className="flex items-center justify-center py-16 text-muted-foreground">
               <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading…
