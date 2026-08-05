@@ -499,7 +499,14 @@ export default function CoachLabTests() {
                       </div>
                     )}
 
-                    {!isAssigning && <div className="mt-4"><button onClick={() => beginAssign(patient.user_id)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 text-primary text-sm font-semibold hover:bg-primary/20 transition-colors">{recs.length > 0 ? <Plus className="w-4 h-4" /> : <FlaskConical className="w-4 h-4" />}{recs.length > 0 ? "Add Lab Tests" : "Assign Lab Tests"}</button></div>}
+                    {!isAssigning && (openRecFor(patient.user_id) ? (
+                      <div className="mt-4 rounded-xl bg-muted/50 p-3 text-[11px] text-muted-foreground">
+                        This patient already has an active lab test. Withdraw it above before assigning a new one — only one test can be active per patient.
+                      </div>
+                    ) : (
+                      <div className="mt-4"><button onClick={() => beginAssign(patient.user_id)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 text-primary text-sm font-semibold hover:bg-primary/20 transition-colors">{recs.length > 0 ? <Plus className="w-4 h-4" /> : <FlaskConical className="w-4 h-4" />}{recs.length > 0 ? "Assign New Lab Test" : "Assign Lab Test"}</button></div>
+                    ))}
+
 
                     {isAssigning && (
                       <div className="mt-4 space-y-3">
