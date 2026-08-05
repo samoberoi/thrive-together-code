@@ -43,6 +43,8 @@ import SoundToggle from "@/components/SoundToggle";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { isAdminUser } from "@/lib/roleService";
+
 // Lazy: each admin panel is its own chunk so end users (and the admin's first
 // paint) don't download every screen up front.
 const AdminOverview = lazy(() => import("./admin/AdminOverview"));
@@ -382,6 +384,15 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   const { counts: attentionCounts } = useAttentionCounts();
   const adminInitial = (user?.email?.[0] ?? "A").toUpperCase();
+  const [adminAllowed, setAdminAllowed] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!user) { setAdminAllowed(null); return; }
+    isAdminUser(user.id).then((ok) => { if (!cancelled) setAdminAllowed(ok); });
+    return () => { cancelled = true; };
+  }, [user]);
+
 
   useEffect(() => {
     const requestedTab = getTabFromParams(searchParams);
@@ -427,7 +438,30 @@ export default function AdminDashboard() {
     setSearchParams(next);
   };
 
+  // Admin-only area: without this guard a coach/patient session can open the
+  // console and every write fails later with a raw row-level-security error.
+  if (adminAllowed === false) {
+    return (
+      <div className="h-dvh bg-background flex flex-col items-center justify-center gap-3 px-8 text-center">
+        <Shield className="w-8 h-8 text-muted-foreground" strokeWidth={1.5} />
+        <h1 className="text-lg font-black text-foreground">Admin access required</h1>
+        <p className="text-sm text-muted-foreground max-w-sm">
+          This account doesn’t have admin rights, so changes here can’t be saved. Sign in with your
+          admin account to continue.
+        </p>
+        <button
+          onClick={handleSignOut}
+          className="mt-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold"
+        >
+          Sign in as admin
+        </button>
+      </div>
+    );
+  }
+  if (adminAllowed === null) return null;
+
   return (
+
     <div className="h-dvh bg-background flex overflow-hidden">
       {/* Sidebar */}
       <aside
