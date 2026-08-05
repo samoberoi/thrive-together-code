@@ -427,7 +427,30 @@ export default function AdminDashboard() {
     setSearchParams(next);
   };
 
+  // Admin-only area: without this guard a coach/patient session can open the
+  // console and every write fails later with a raw row-level-security error.
+  if (adminAllowed === false) {
+    return (
+      <div className="h-dvh bg-background flex flex-col items-center justify-center gap-3 px-8 text-center">
+        <Shield className="w-8 h-8 text-muted-foreground" strokeWidth={1.5} />
+        <h1 className="text-lg font-black text-foreground">Admin access required</h1>
+        <p className="text-sm text-muted-foreground max-w-sm">
+          This account doesn’t have admin rights, so changes here can’t be saved. Sign in with your
+          admin account to continue.
+        </p>
+        <button
+          onClick={handleSignOut}
+          className="mt-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold"
+        >
+          Sign in as admin
+        </button>
+      </div>
+    );
+  }
+  if (adminAllowed === null) return null;
+
   return (
+
     <div className="h-dvh bg-background flex overflow-hidden">
       {/* Sidebar */}
       <aside
