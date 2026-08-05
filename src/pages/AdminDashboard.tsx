@@ -382,6 +382,15 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   const { counts: attentionCounts } = useAttentionCounts();
   const adminInitial = (user?.email?.[0] ?? "A").toUpperCase();
+  const [adminAllowed, setAdminAllowed] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!user) { setAdminAllowed(null); return; }
+    isAdminUser(user.id).then((ok) => { if (!cancelled) setAdminAllowed(ok); });
+    return () => { cancelled = true; };
+  }, [user]);
+
 
   useEffect(() => {
     const requestedTab = getTabFromParams(searchParams);
