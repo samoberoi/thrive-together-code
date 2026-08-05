@@ -44,7 +44,7 @@ export default function FoodItemDetail({
           <X className="w-5 h-5" strokeWidth={2} />
         </button>
 
-        <div className="max-w-2xl mx-auto flex gap-5 items-start">
+        <div className="max-w-2xl mx-auto flex gap-4 sm:gap-5 items-start pr-12">
           {imgUrl ? (
             <img
               src={imgUrl}
