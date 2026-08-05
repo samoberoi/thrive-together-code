@@ -44,27 +44,28 @@ export default function FoodItemDetail({
           <X className="w-5 h-5" strokeWidth={2} />
         </button>
 
-        <div className="max-w-2xl mx-auto flex gap-5 items-start">
+        <div className="max-w-2xl mx-auto flex gap-4 sm:gap-5 items-start pr-12">
           {imgUrl ? (
             <img
               src={imgUrl}
               alt={item.name}
-              className="w-24 h-24 rounded-2xl object-cover shadow-lift shrink-0 border border-white/20"
+              className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover shadow-lift shrink-0 border border-white/20"
               loading="lazy"
             />
           ) : (
-            <div className="w-24 h-24 rounded-2xl bg-white/15 backdrop-blur shrink-0 flex items-center justify-center text-3xl font-black text-white/70">
+            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-white/15 backdrop-blur shrink-0 flex items-center justify-center text-3xl font-black text-white/70">
               {item.name.charAt(0)}
             </div>
           )}
           <div className="flex-1 min-w-0">
           {filter && (
-            <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-white/80">
+            <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-white/80 truncate">
               {filter.number_label} · {filter.name}
             </p>
           )}
-          <h2 className="text-2xl font-black mt-2 leading-tight">{item.name}</h2>
-          {item.alt_name && <p className="text-sm text-white/80 mt-1">{item.alt_name}</p>}
+          <h2 className="text-xl sm:text-2xl font-black mt-1.5 leading-tight break-words">{item.name}</h2>
+          {item.alt_name && <p className="text-sm text-white/80 mt-1 break-words">{item.alt_name}</p>}
+
 
           <div className="flex flex-wrap gap-2 mt-4">
             <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-white/20 backdrop-blur">
@@ -104,7 +105,7 @@ export default function FoodItemDetail({
           <p className="text-[11px] font-bold tracking-wider uppercase text-muted-foreground mb-3">
             Nutrition (per {servingLabel})
           </p>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 keep-mobile-cols">
             <Stat icon={Wheat} label="Carbs" value={carbs} tint="bg-amber-500/10 text-amber-700" />
             <Stat icon={Beef} label="Protein" value={protein != null ? `${protein}g` : "—"} tint="bg-rose-500/10 text-rose-700" />
             <Stat icon={Droplets} label="Fat" value={fat != null ? `${fat}g` : "—"} tint="bg-blue-500/10 text-blue-700" />
