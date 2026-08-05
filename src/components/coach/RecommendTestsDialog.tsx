@@ -61,6 +61,17 @@ export default function RecommendTestsDialog({ open, onOpenChange, coachId, pati
     if (selectedCodes.length === 0) return toast({ title: "Pick a test", variant: "destructive" });
     try {
       setSaving(true);
+      const { data: openRec } = await supabase
+        .from("thyrocare_recommendations" as any)
+        .select("id")
+        .eq("user_id", patientId)
+        .in("status", ["pending", "viewed", "booked"])
+        .maybeSingle();
+      if (openRec) {
+        toast({ title: "Test already assigned", description: `${patientName ?? "This patient"} already has an active lab test. Withdraw it before assigning another.`, variant: "destructive" });
+        setSaving(false);
+        return;
+      }
       const { error } = await supabase.from("thyrocare_recommendations" as any).insert({
         coach_id: coachId,
         user_id: patientId,
@@ -68,7 +79,11 @@ export default function RecommendTestsDialog({ open, onOpenChange, coachId, pati
         product_codes: selectedCodes,
         notes: note.trim() || null,
       });
-      if (error) throw error;
+      if (error) {
+        if ((error as any).code === "23505") throw new Error(`${patientName ?? "This patient"} already has an active lab test. Withdraw it before assigning another.`);
+        throw error;
+      }
+
 
       await createNotification({
         user_id: patientId,

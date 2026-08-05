@@ -250,9 +250,28 @@ export default function CoachLabTests() {
     setSelectedTests((prev) => (prev.has(id) ? new Set<string>() : new Set<string>([id])));
   };
 
+  const OPEN_REC_STATUSES = ["pending", "viewed", "booked"];
+  const isOpenRec = (rec?: Recommendation | null) => !!rec && OPEN_REC_STATUSES.includes((rec.status || "pending").toLowerCase());
+  const openRecFor = (userId: string) => (recommendations[userId] ?? []).find((r) => isOpenRec(r)) ?? null;
+
+  async function withdrawRec(recId: string) {
+    try {
+      const { error } = await supabase.from("thyrocare_recommendations" as any).update({ status: "dismissed" }).eq("id", recId);
+      if (error) throw error;
+      toast.success("Test withdrawn — you can now assign a new one");
+      await loadData();
+    } catch (e: any) {
+      toast.error(e.message || "Could not withdraw the test");
+    }
+  }
 
   async function sendTo(patient: Patient) {
     if (selectedTests.size === 0) return;
+    const existing = openRecFor(patient.user_id);
+    if (existing) {
+      toast.error(`${patient.name} already has an active lab test. Withdraw it before assigning another.`);
+      return;
+    }
     setSubmitting(true);
     try {
       const { data: coach } = await supabase.from("coaches" as any).select("id").eq("user_id", user!.id).maybeSingle();
@@ -265,7 +284,10 @@ export default function CoachLabTests() {
         product_codes: chosenTests.map((t) => t.product_code),
         notes: notes.trim() || null,
       });
-      if (error) throw error;
+      if (error) {
+        if ((error as any).code === "23505") throw new Error(`${patient.name} already has an active lab test. Withdraw it before assigning another.`);
+        throw error;
+      }
 
       await createNotification({
         user_id: patient.user_id,
@@ -287,6 +309,7 @@ export default function CoachLabTests() {
   }
 
   const beginAssign = (patientId: string) => { setAssigningPatient(patientId); setSelectedTests(new Set()); setNotes(""); setAssignSearch(""); };
+
 
   const renderTestSelector = () => (
     <div className="space-y-3">
@@ -403,6 +426,12 @@ export default function CoachLabTests() {
                                 </div>
                                 {rec.notes && <p className="text-[11px] text-muted-foreground border-l-2 border-primary pl-2 italic">{rec.notes}</p>}
                                 {!recOrder && <p className="text-[11px] text-muted-foreground">Current status: {recStatus}</p>}
+                                {isOpenRec(rec) && !recOrder && (
+                                  <Button variant="outline" size="sm" className="h-8 w-full text-[11px]" onClick={() => withdrawRec(rec.id)}>
+                                    <X className="w-3.5 h-3.5 mr-1.5" /> Withdraw this test
+                                  </Button>
+                                )}
+
                                 {recOrder && <LabOrderDetails order={recOrder} fastingRequired={items.some((t) => t.fasting_required)} reports={patientReports.filter((report) => report.order_id === recOrder.id)} userId={patient.user_id} />}
                                 {(rec.external_intent || (extReports[patient.user_id] || []).some((x) => x.recommendation_id === rec.id)) && (() => {
                                   const recExt = (extReports[patient.user_id] || []).filter((x) => x.recommendation_id === rec.id);
@@ -470,7 +499,14 @@ export default function CoachLabTests() {
                       </div>
                     )}
 
-                    {!isAssigning && <div className="mt-4"><button onClick={() => beginAssign(patient.user_id)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 text-primary text-sm font-semibold hover:bg-primary/20 transition-colors">{recs.length > 0 ? <Plus className="w-4 h-4" /> : <FlaskConical className="w-4 h-4" />}{recs.length > 0 ? "Add Lab Tests" : "Assign Lab Tests"}</button></div>}
+                    {!isAssigning && (openRecFor(patient.user_id) ? (
+                      <div className="mt-4 rounded-xl bg-muted/50 p-3 text-[11px] text-muted-foreground">
+                        This patient already has an active lab test. Withdraw it above before assigning a new one — only one test can be active per patient.
+                      </div>
+                    ) : (
+                      <div className="mt-4"><button onClick={() => beginAssign(patient.user_id)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 text-primary text-sm font-semibold hover:bg-primary/20 transition-colors">{recs.length > 0 ? <Plus className="w-4 h-4" /> : <FlaskConical className="w-4 h-4" />}{recs.length > 0 ? "Assign New Lab Test" : "Assign Lab Test"}</button></div>
+                    ))}
+
 
                     {isAssigning && (
                       <div className="mt-4 space-y-3">
@@ -517,7 +553,7 @@ export default function CoachLabTests() {
           <SheetHeader className="px-4 pt-4 pb-2 text-left"><SheetTitle>Recommend to patient</SheetTitle><p className="text-xs text-muted-foreground">{chosenTests.length} test{chosenTests.length > 1 ? "s" : ""} · ₹{totalPrice.toLocaleString("en-IN")}</p></SheetHeader>
           <div className="px-4 pb-2"><div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><Input placeholder={`Search ${patients.length} patient${patients.length === 1 ? "" : "s"}…`} value={patientSearch} onChange={(e) => setPatientSearch(e.target.value)} className="pl-9 h-11 rounded-xl" /></div></div>
           <div className="px-4 pb-2"><Textarea placeholder="Notes for the patient (optional)…" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="resize-none rounded-xl" /></div>
-          <div className="flex-1 overflow-y-auto px-2 pb-4">{patients.length === 0 ? <div className="text-center text-sm text-muted-foreground py-10">No assigned patients yet.</div> : filteredPatients.length === 0 ? <div className="text-center text-sm text-muted-foreground py-10">No patients match "{patientSearch}".</div> : <ul className="divide-y divide-border">{filteredPatients.map((p) => <li key={p.user_id}><button disabled={submitting} onClick={() => sendTo(p)} className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-accent disabled:opacity-50 transition-colors text-left"><div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm shrink-0">{initials(p.name) || <UserIcon className="w-4 h-4" />}</div><div className="flex-1 min-w-0"><div className="font-medium text-sm truncate">{p.name}</div></div><Send className="w-4 h-4 text-muted-foreground shrink-0" /></button></li>)}</ul>}</div>
+          <div className="flex-1 overflow-y-auto px-2 pb-4">{patients.length === 0 ? <div className="text-center text-sm text-muted-foreground py-10">No assigned patients yet.</div> : filteredPatients.length === 0 ? <div className="text-center text-sm text-muted-foreground py-10">No patients match "{patientSearch}".</div> : <ul className="divide-y divide-border">{filteredPatients.map((p) => { const blocked = !!openRecFor(p.user_id); return (<li key={p.user_id}><button disabled={submitting || blocked} onClick={() => sendTo(p)} className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-accent disabled:opacity-50 transition-colors text-left"><div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm shrink-0">{initials(p.name) || <UserIcon className="w-4 h-4" />}</div><div className="flex-1 min-w-0"><div className="font-medium text-sm truncate">{p.name}</div>{blocked && <div className="text-[10px] text-muted-foreground truncate">Already has an active test</div>}</div>{blocked ? <span className="text-[10px] font-semibold text-muted-foreground shrink-0">Blocked</span> : <Send className="w-4 h-4 text-muted-foreground shrink-0" />}</button></li>); })}</ul>}</div>
         </SheetContent>
       </Sheet>
 
