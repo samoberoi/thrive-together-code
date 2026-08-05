@@ -394,7 +394,8 @@ export default function AdminSupplements() {
       </div>
 
       {/* View Switcher */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 pb-1 [&>button]:shrink-0">
+
         {(["catalog", "rules", "badges"] as View[]).map((v) => (
           <button
             key={v}
