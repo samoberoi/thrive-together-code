@@ -250,9 +250,28 @@ export default function CoachLabTests() {
     setSelectedTests((prev) => (prev.has(id) ? new Set<string>() : new Set<string>([id])));
   };
 
+  const OPEN_REC_STATUSES = ["pending", "viewed", "booked"];
+  const isOpenRec = (rec?: Recommendation | null) => !!rec && OPEN_REC_STATUSES.includes((rec.status || "pending").toLowerCase());
+  const openRecFor = (userId: string) => (recommendations[userId] ?? []).find((r) => isOpenRec(r)) ?? null;
+
+  async function withdrawRec(recId: string) {
+    try {
+      const { error } = await supabase.from("thyrocare_recommendations" as any).update({ status: "dismissed" }).eq("id", recId);
+      if (error) throw error;
+      toast.success("Test withdrawn — you can now assign a new one");
+      await loadData();
+    } catch (e: any) {
+      toast.error(e.message || "Could not withdraw the test");
+    }
+  }
 
   async function sendTo(patient: Patient) {
     if (selectedTests.size === 0) return;
+    const existing = openRecFor(patient.user_id);
+    if (existing) {
+      toast.error(`${patient.name} already has an active lab test. Withdraw it before assigning another.`);
+      return;
+    }
     setSubmitting(true);
     try {
       const { data: coach } = await supabase.from("coaches" as any).select("id").eq("user_id", user!.id).maybeSingle();
@@ -265,7 +284,10 @@ export default function CoachLabTests() {
         product_codes: chosenTests.map((t) => t.product_code),
         notes: notes.trim() || null,
       });
-      if (error) throw error;
+      if (error) {
+        if ((error as any).code === "23505") throw new Error(`${patient.name} already has an active lab test. Withdraw it before assigning another.`);
+        throw error;
+      }
 
       await createNotification({
         user_id: patient.user_id,
@@ -287,6 +309,7 @@ export default function CoachLabTests() {
   }
 
   const beginAssign = (patientId: string) => { setAssigningPatient(patientId); setSelectedTests(new Set()); setNotes(""); setAssignSearch(""); };
+
 
   const renderTestSelector = () => (
     <div className="space-y-3">
