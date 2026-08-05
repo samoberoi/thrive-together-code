@@ -105,7 +105,7 @@ export default function FoodItemDetail({
           <p className="text-[11px] font-bold tracking-wider uppercase text-muted-foreground mb-3">
             Nutrition (per {servingLabel})
           </p>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 keep-mobile-cols">
             <Stat icon={Wheat} label="Carbs" value={carbs} tint="bg-amber-500/10 text-amber-700" />
             <Stat icon={Beef} label="Protein" value={protein != null ? `${protein}g` : "—"} tint="bg-rose-500/10 text-rose-700" />
             <Stat icon={Droplets} label="Fat" value={fat != null ? `${fat}g` : "—"} tint="bg-blue-500/10 text-blue-700" />
