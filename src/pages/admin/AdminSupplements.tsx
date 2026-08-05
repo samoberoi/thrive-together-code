@@ -364,13 +364,14 @@ export default function AdminSupplements() {
 
   return (
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-black text-foreground flex items-center gap-2">
-            <Pill className="w-6 h-6 text-primary" /> Supplements
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="text-xl sm:text-2xl font-black text-foreground flex items-center gap-2">
+            <Pill className="w-6 h-6 text-primary shrink-0" /> <span className="truncate">Supplements</span>
           </h2>
           <p className="text-sm text-muted-foreground mt-1">{supplements.length} supplements · {rules.length} condition rules</p>
         </div>
+
         <div className="flex flex-wrap items-center gap-2">
           <DataToolsMenu
             pillar={SUPPLEMENTS_PILLAR}
@@ -393,7 +394,8 @@ export default function AdminSupplements() {
       </div>
 
       {/* View Switcher */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 pb-1 [&>button]:shrink-0">
+
         {(["catalog", "rules", "badges"] as View[]).map((v) => (
           <button
             key={v}

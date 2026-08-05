@@ -281,7 +281,7 @@ export default function AdminDiet() {
             <motion.div
               key={c.id}
               whileTap={{ scale: 0.99 }}
-              className={`relative text-left p-5 rounded-2xl border transition-all cursor-pointer ${active ? th.tileActive : th.tileInactive}`}
+              className={`relative text-left p-5 pb-12 rounded-2xl border transition-all cursor-pointer ${active ? th.tileActive : th.tileInactive}`}
               onClick={() => setActiveCat(c.id)}
             >
               <div className="flex items-start justify-between mb-2">
