@@ -426,6 +426,12 @@ export default function CoachLabTests() {
                                 </div>
                                 {rec.notes && <p className="text-[11px] text-muted-foreground border-l-2 border-primary pl-2 italic">{rec.notes}</p>}
                                 {!recOrder && <p className="text-[11px] text-muted-foreground">Current status: {recStatus}</p>}
+                                {isOpenRec(rec) && !recOrder && (
+                                  <Button variant="outline" size="sm" className="h-8 w-full text-[11px]" onClick={() => withdrawRec(rec.id)}>
+                                    <X className="w-3.5 h-3.5 mr-1.5" /> Withdraw this test
+                                  </Button>
+                                )}
+
                                 {recOrder && <LabOrderDetails order={recOrder} fastingRequired={items.some((t) => t.fasting_required)} reports={patientReports.filter((report) => report.order_id === recOrder.id)} userId={patient.user_id} />}
                                 {(rec.external_intent || (extReports[patient.user_id] || []).some((x) => x.recommendation_id === rec.id)) && (() => {
                                   const recExt = (extReports[patient.user_id] || []).filter((x) => x.recommendation_id === rec.id);
