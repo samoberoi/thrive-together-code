@@ -139,15 +139,18 @@ export default function AdminUsers() {
           <div className="relative w-full sm:w-72">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Search by name, phone, city, package, coach…"
+              placeholder="Search by name, phone, city…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9"
             />
           </div>
-          <ExportCsvButton filename="users" rows={filtered as any} />
-<ImportCsvButton table="profiles" onImported={() => window.location.reload()} />
+          <div className="flex items-center gap-2">
+            <ExportCsvButton filename="users" rows={filtered as any} />
+            <ImportCsvButton table="profiles" onImported={() => window.location.reload()} />
+          </div>
         </div>
+
       </div>
 
 
