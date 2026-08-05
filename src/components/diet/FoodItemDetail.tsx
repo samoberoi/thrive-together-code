@@ -49,22 +49,23 @@ export default function FoodItemDetail({
             <img
               src={imgUrl}
               alt={item.name}
-              className="w-24 h-24 rounded-2xl object-cover shadow-lift shrink-0 border border-white/20"
+              className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover shadow-lift shrink-0 border border-white/20"
               loading="lazy"
             />
           ) : (
-            <div className="w-24 h-24 rounded-2xl bg-white/15 backdrop-blur shrink-0 flex items-center justify-center text-3xl font-black text-white/70">
+            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-white/15 backdrop-blur shrink-0 flex items-center justify-center text-3xl font-black text-white/70">
               {item.name.charAt(0)}
             </div>
           )}
           <div className="flex-1 min-w-0">
           {filter && (
-            <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-white/80">
+            <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-white/80 truncate">
               {filter.number_label} · {filter.name}
             </p>
           )}
-          <h2 className="text-2xl font-black mt-2 leading-tight">{item.name}</h2>
-          {item.alt_name && <p className="text-sm text-white/80 mt-1">{item.alt_name}</p>}
+          <h2 className="text-xl sm:text-2xl font-black mt-1.5 leading-tight break-words">{item.name}</h2>
+          {item.alt_name && <p className="text-sm text-white/80 mt-1 break-words">{item.alt_name}</p>}
+
 
           <div className="flex flex-wrap gap-2 mt-4">
             <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-white/20 backdrop-blur">
