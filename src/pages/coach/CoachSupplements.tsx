@@ -458,19 +458,22 @@ export default function CoachSupplements() {
                       {condRules.map((rule) => {
                         const supp = suppMap[rule.supplement_id];
                         return (
-                          <div key={rule.id} className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-muted/50 text-xs">
+                          <div key={rule.id} className="flex flex-col sm:flex-row sm:items-center gap-1.5 py-2.5 px-3 rounded-xl bg-muted/50 text-xs">
                             <div className="flex items-center gap-2 flex-1 min-w-0">
                               <Pill className={`w-3.5 h-3.5 shrink-0 ${CATEGORY_COLORS[supp?.category ?? ""] ?? "text-muted-foreground"}`} />
                               <span className="font-semibold text-foreground truncate">{supp?.name ?? "Unknown"}</span>
                             </div>
-                            <span className="text-primary font-bold mx-2">{rule.dosage}</span>
-                            <span className="text-muted-foreground mx-2">{rule.frequency}</span>
-                            <span className="text-muted-foreground mx-2">{TIMING_ICONS[rule.timing ?? ""] ?? "⏰"} {rule.timing}</span>
-                            <Badge variant="outline" className={`text-[9px] ml-2 ${SEVERITY_COLORS[rule.severity] ?? ""}`}>
-                              {rule.severity}
-                            </Badge>
-                            <span className="text-muted-foreground ml-2">{rule.duration_weeks}w</span>
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 pl-5 sm:pl-0 shrink-0">
+                              <span className="text-primary font-bold whitespace-nowrap">{rule.dosage}</span>
+                              <span className="text-muted-foreground whitespace-nowrap">{rule.frequency}</span>
+                              <span className="text-muted-foreground whitespace-nowrap">{TIMING_ICONS[rule.timing ?? ""] ?? "⏰"} {rule.timing}</span>
+                              <Badge variant="outline" className={`text-[9px] ${SEVERITY_COLORS[rule.severity] ?? ""}`}>
+                                {rule.severity}
+                              </Badge>
+                              <span className="text-muted-foreground whitespace-nowrap">{rule.duration_weeks}w</span>
+                            </div>
                           </div>
+
                         );
                       })}
                     </div>
