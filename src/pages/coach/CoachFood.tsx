@@ -277,7 +277,7 @@ export default function CoachFood() {
                 >
                   <button
                     onClick={() => setExpanded(open ? null : p.user_id)}
-                    className="no-pill w-full flex items-center gap-3 p-4 text-left"
+                    className="no-pill w-full flex items-start gap-3 p-4 text-left"
                   >
                     <div className="w-10 h-10 rounded-full overflow-hidden bg-muted flex items-center justify-center shrink-0">
                       {p.avatar_url ? (
@@ -290,7 +290,7 @@ export default function CoachFood() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-foreground truncate">{p.name ?? "Unnamed"}</p>
-                      <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                      <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                         <Pill ok={fm} label={fm ? `FMOD ${fmtTime(checkins[p.user_id]?.fmod ?? null) ?? "logged"}` : "FMOD missing"} />
                         <Pill ok={lm} label={lm ? `LMOD ${fmtTime(checkins[p.user_id]?.lmod ?? null) ?? "logged"}` : "LMOD missing"} />
                         <span className="text-[11px] text-muted-foreground">
@@ -299,11 +299,12 @@ export default function CoachFood() {
                       </div>
                     </div>
                     {open ? (
-                      <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
+                      <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0 mt-1" />
                     ) : (
-                      <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                      <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 mt-1" />
                     )}
                   </button>
+
 
                   {(!fm || !lm) && (
                     <div className="px-4 pb-3 -mt-1 flex items-center justify-end gap-2">
