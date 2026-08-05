@@ -43,6 +43,8 @@ import SoundToggle from "@/components/SoundToggle";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { isAdminUser } from "@/lib/roleService";
+
 // Lazy: each admin panel is its own chunk so end users (and the admin's first
 // paint) don't download every screen up front.
 const AdminOverview = lazy(() => import("./admin/AdminOverview"));
