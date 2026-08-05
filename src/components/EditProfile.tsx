@@ -723,6 +723,9 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
       allergen_food_ids: allergenFoodIds,
     });
 
+    // Persist symptom checklist
+    await saveUserSymptoms(effectiveUserId, { symptomKeys, notes: symptomNotes });
+
     // Set initial score if not yet set
     if (!currentProfile?.initial_health_score && currentProfile?.initial_health_score !== 0) {
       await updateProfile(effectiveUserId, {
@@ -1377,6 +1380,24 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
             allergenFoodIds={allergenFoodIds}
             onSubChange={setSubPreferences}
             onAllergensChange={setAllergenFoodIds}
+          />
+        </motion.div>
+
+        {/* List of symptoms */}
+        <motion.div className="liquid-glass rounded-2xl p-5 space-y-3" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+          <h3 className="text-foreground font-bold text-sm flex items-start gap-2 leading-tight break-words">
+            <Activity className="w-4 h-4 shrink-0 text-primary" strokeWidth={1.8} />
+            List of Symptoms
+          </h3>
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            Tick anything currently experienced. {coachMode ? "Visible to the patient too." : "Your coach can see and update this."}
+          </p>
+          <SymptomsChecklist
+            selectedKeys={symptomKeys}
+            notes={symptomNotes}
+            gender={gender}
+            onSelectionChange={setSymptomKeys}
+            onNotesChange={setSymptomNotes}
           />
         </motion.div>
 
