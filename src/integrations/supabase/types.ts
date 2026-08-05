@@ -3943,6 +3943,77 @@ export type Database = {
         }
         Relationships: []
       }
+      symptom_categories: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          key: string
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          key: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          key?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      symptom_options: {
+        Row: {
+          category_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          key: string
+          label: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          key: string
+          label: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          key?: string
+          label?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "symptom_options_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "symptom_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       thyrocare_auth_cache: {
         Row: {
           bearer_token: string
@@ -4986,6 +5057,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_symptoms: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          symptom_keys: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          symptom_keys?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          symptom_keys?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       video_categories: {
         Row: {
