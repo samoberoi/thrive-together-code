@@ -458,19 +458,22 @@ export default function CoachSupplements() {
                       {condRules.map((rule) => {
                         const supp = suppMap[rule.supplement_id];
                         return (
-                          <div key={rule.id} className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-muted/50 text-xs">
+                          <div key={rule.id} className="flex flex-col sm:flex-row sm:items-center gap-1.5 py-2.5 px-3 rounded-xl bg-muted/50 text-xs">
                             <div className="flex items-center gap-2 flex-1 min-w-0">
                               <Pill className={`w-3.5 h-3.5 shrink-0 ${CATEGORY_COLORS[supp?.category ?? ""] ?? "text-muted-foreground"}`} />
                               <span className="font-semibold text-foreground truncate">{supp?.name ?? "Unknown"}</span>
                             </div>
-                            <span className="text-primary font-bold mx-2">{rule.dosage}</span>
-                            <span className="text-muted-foreground mx-2">{rule.frequency}</span>
-                            <span className="text-muted-foreground mx-2">{TIMING_ICONS[rule.timing ?? ""] ?? "⏰"} {rule.timing}</span>
-                            <Badge variant="outline" className={`text-[9px] ml-2 ${SEVERITY_COLORS[rule.severity] ?? ""}`}>
-                              {rule.severity}
-                            </Badge>
-                            <span className="text-muted-foreground ml-2">{rule.duration_weeks}w</span>
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 pl-5 sm:pl-0 shrink-0">
+                              <span className="text-primary font-bold whitespace-nowrap">{rule.dosage}</span>
+                              <span className="text-muted-foreground whitespace-nowrap">{rule.frequency}</span>
+                              <span className="text-muted-foreground whitespace-nowrap">{TIMING_ICONS[rule.timing ?? ""] ?? "⏰"} {rule.timing}</span>
+                              <Badge variant="outline" className={`text-[9px] ${SEVERITY_COLORS[rule.severity] ?? ""}`}>
+                                {rule.severity}
+                              </Badge>
+                              <span className="text-muted-foreground whitespace-nowrap">{rule.duration_weeks}w</span>
+                            </div>
                           </div>
+
                         );
                       })}
                     </div>
@@ -703,28 +706,31 @@ export default function CoachSupplements() {
                         }
 
                         return (
-                          <div key={item.id} className="flex items-center justify-between py-2 px-3 rounded-xl bg-muted/50 text-xs group">
+                          <div key={item.id} className="flex flex-col sm:flex-row sm:items-center gap-1.5 py-2 px-3 rounded-xl bg-muted/50 text-xs group">
                             <div className="flex items-center gap-2 flex-1 min-w-0">
                               <Pill className={`w-3.5 h-3.5 shrink-0 ${CATEGORY_COLORS[supp?.category ?? ""] ?? "text-muted-foreground"}`} />
                               <span className="font-semibold text-foreground truncate">{supp?.name ?? "Unknown"}</span>
                             </div>
-                            <span className="text-primary font-bold mx-1.5">{item.dosage}</span>
-                            <span className="text-muted-foreground mx-1.5">{item.frequency}</span>
-                            <span className="text-muted-foreground mx-1.5">{TIMING_ICONS[item.timing ?? ""] ?? ""} {item.timing}</span>
-                            <span className="text-muted-foreground mx-1.5">{item.duration_weeks ?? 12}w</span>
-                            {isEditing && (
-                              <div className="flex gap-1 ml-2">
-                                <button onClick={() => { setEditingItem(item.id); setEditItemValues({ dosage: item.dosage, frequency: item.frequency, timing: item.timing, duration_weeks: item.duration_weeks ?? 12 }); }}
-                                  className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
-                                  <Edit2 className="w-3 h-3" />
-                                </button>
-                                <button onClick={() => handleRemoveItem(item.id)}
-                                  className="p-1 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
-                                  <Trash2 className="w-3 h-3" />
-                                </button>
-                              </div>
-                            )}
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 pl-5 sm:pl-0 shrink-0">
+                              <span className="text-primary font-bold whitespace-nowrap">{item.dosage}</span>
+                              <span className="text-muted-foreground whitespace-nowrap">{item.frequency}</span>
+                              <span className="text-muted-foreground whitespace-nowrap">{TIMING_ICONS[item.timing ?? ""] ?? ""} {item.timing}</span>
+                              <span className="text-muted-foreground whitespace-nowrap">{item.duration_weeks ?? 12}w</span>
+                              {isEditing && (
+                                <div className="flex gap-1 ml-auto sm:ml-1">
+                                  <button onClick={() => { setEditingItem(item.id); setEditItemValues({ dosage: item.dosage, frequency: item.frequency, timing: item.timing, duration_weeks: item.duration_weeks ?? 12 }); }}
+                                    className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
+                                    <Edit2 className="w-3 h-3" />
+                                  </button>
+                                  <button onClick={() => handleRemoveItem(item.id)}
+                                    className="p-1 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
+
                         );
                       })}
                     </div>
