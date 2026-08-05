@@ -706,30 +706,35 @@ export default function CoachSupplements() {
                         }
 
                         return (
-                          <div key={item.id} className="flex flex-col sm:flex-row sm:items-center gap-1.5 py-2 px-3 rounded-xl bg-muted/50 text-xs group">
-                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <div key={item.id} className="flex flex-col gap-1.5 py-2 px-3 rounded-xl bg-muted/50 text-xs group">
+                            <div className="flex items-center gap-2 min-w-0">
                               <Pill className={`w-3.5 h-3.5 shrink-0 ${CATEGORY_COLORS[supp?.category ?? ""] ?? "text-muted-foreground"}`} />
-                              <span className="font-semibold text-foreground truncate">{supp?.name ?? "Unknown"}</span>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 pl-5 sm:pl-0 shrink-0">
-                              <span className="text-primary font-bold whitespace-nowrap">{item.dosage}</span>
-                              <span className="text-muted-foreground whitespace-nowrap">{item.frequency}</span>
-                              <span className="text-muted-foreground whitespace-nowrap">{TIMING_ICONS[item.timing ?? ""] ?? ""} {item.timing}</span>
-                              <span className="text-muted-foreground whitespace-nowrap">{item.duration_weeks ?? 12}w</span>
+                              <span className="font-semibold text-foreground truncate flex-1 min-w-0">{supp?.name ?? "Unknown"}</span>
                               {isEditing && (
-                                <div className="flex gap-1 ml-auto sm:ml-1">
-                                  <button onClick={() => { setEditingItem(item.id); setEditItemValues({ dosage: item.dosage, frequency: item.frequency, timing: item.timing, duration_weeks: item.duration_weeks ?? 12 }); }}
-                                    className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
-                                    <Edit2 className="w-3 h-3" />
+                                <div className="flex items-center gap-1 shrink-0 -mr-1">
+                                  <button
+                                    aria-label="Edit supplement"
+                                    onClick={() => { setEditingItem(item.id); setEditItemValues({ dosage: item.dosage, frequency: item.frequency, timing: item.timing, duration_weeks: item.duration_weeks ?? 12 }); }}
+                                    className="h-8 w-8 flex items-center justify-center rounded-lg bg-background border border-border text-muted-foreground active:scale-95 hover:text-foreground transition-all">
+                                    <Edit2 className="w-3.5 h-3.5" />
                                   </button>
-                                  <button onClick={() => handleRemoveItem(item.id)}
-                                    className="p-1 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
-                                    <Trash2 className="w-3 h-3" />
+                                  <button
+                                    aria-label="Remove supplement"
+                                    onClick={() => handleRemoveItem(item.id)}
+                                    className="h-8 w-8 flex items-center justify-center rounded-lg bg-background border border-border text-muted-foreground active:scale-95 hover:text-destructive hover:border-destructive/40 transition-all">
+                                    <Trash2 className="w-3.5 h-3.5" />
                                   </button>
                                 </div>
                               )}
                             </div>
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 pl-5">
+                              <span className="text-primary font-bold whitespace-nowrap">{item.dosage}</span>
+                              <span className="text-muted-foreground whitespace-nowrap">{item.frequency}</span>
+                              <span className="text-muted-foreground whitespace-nowrap">{TIMING_ICONS[item.timing ?? ""] ?? ""} {item.timing}</span>
+                              <span className="text-muted-foreground whitespace-nowrap">{item.duration_weeks ?? 12}w</span>
+                            </div>
                           </div>
+
 
                         );
                       })}
