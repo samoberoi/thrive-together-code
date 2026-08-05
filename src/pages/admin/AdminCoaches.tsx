@@ -205,17 +205,20 @@ export default function AdminCoaches() {
           <h1 className="text-xl sm:text-2xl font-black text-foreground">Coach Management</h1>
           <p className="text-muted-foreground text-sm">{coaches.length} coaches</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
           <div className="relative w-full sm:w-60">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input placeholder="Search coaches..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
           </div>
-          <ExportCsvButton filename="coaches" rows={coaches as any} />
-<ImportCsvButton table="coaches" onImported={() => window.location.reload()} />
-          <Button onClick={() => setShowAddForm(!showAddForm)} size="sm" className="shrink-0">
-            <Plus className="w-4 h-4 mr-1" /> Add Coach
-          </Button>
+          <div className="flex items-center gap-2">
+            <ExportCsvButton filename="coaches" rows={coaches as any} />
+            <ImportCsvButton table="coaches" onImported={() => window.location.reload()} />
+            <Button onClick={() => setShowAddForm(!showAddForm)} size="sm" className="shrink-0 ml-auto">
+              <Plus className="w-4 h-4 mr-1" /> Add Coach
+            </Button>
+          </div>
         </div>
+
       </div>
 
       {/* Add Coach Form */}
