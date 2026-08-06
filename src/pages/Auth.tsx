@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Phone, ArrowLeft, ChevronRight, ShieldCheck, User, ChevronDown, Search } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -58,6 +58,10 @@ export default function Auth() {
   const [countrySearch, setCountrySearch] = useState("");
   const [countryOpen, setCountryOpen] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const rawNext = searchParams.get("next");
+  const nextPath = rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : null;
+  const go = (route: string, options?: { replace?: boolean }) => navigate(nextPath ?? route, options);
   const filteredCountries = COUNTRIES.filter((c) => {
     const q = countrySearch.trim().toLowerCase();
     if (!q) return true;
@@ -97,7 +101,7 @@ export default function Auth() {
         if (existingSession) {
           const route = await resolvePostAuthRoute(existingSession.user.id, { missingProfileRoute: null });
           if (route) {
-            navigate(route, { replace: true });
+            go(route, { replace: true });
             return;
           }
           if (!cancelled) setSessionPreparing(false);
@@ -164,7 +168,7 @@ export default function Auth() {
         }
         if (privilegedRoute) {
           setLoading(false);
-          navigate(privilegedRoute);
+          go(privilegedRoute);
           return;
         }
         const route = activeSubscription
@@ -176,7 +180,7 @@ export default function Auth() {
           : null;
         if (route) {
           setLoading(false);
-          navigate(route);
+          go(route);
           return;
         }
         setLoading(false);
@@ -222,12 +226,12 @@ export default function Auth() {
             const [coachResult, partnerResult] = linkResults;
             if (coachResult.status === "fulfilled" && (coachResult.value as any)?.data) {
               setLoading(false);
-              navigate("/coach-dashboard");
+              go("/coach-dashboard");
               return;
             }
             if (partnerResult.status === "fulfilled" && (partnerResult.value as any)?.data) {
               setLoading(false);
-              navigate("/partner-dashboard");
+              go("/partner-dashboard");
               return;
             }
           }
@@ -314,7 +318,7 @@ export default function Auth() {
     }
 
     setLoading(false);
-    navigate("/setup/purpose");
+    go("/setup/purpose");
   };
 
   const stepIndex = step === "phone" ? 0 : step === "otp" ? 1 : 2;
