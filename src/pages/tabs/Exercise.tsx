@@ -47,7 +47,7 @@ function startOfTodayISO() {
   return d.toISOString();
 }
 
-/** Modal player that auto-logs a set when the video ends AND reports watched seconds. */
+/** Modal player that auto-logs a set once the drill is watched, and reports watched minutes. */
 function WatchModal({
   exercise,
   onClose,
@@ -56,6 +56,7 @@ function WatchModal({
 }: {
   exercise: Exercise;
   onClose: () => void;
+  /** Fired each time a full watch is credited — logs one set, modal stays open. */
   onCompleted: () => void;
   /** Fired with newly watched seconds so repeats keep counting toward minutes. */
   onProgress: (deltaSec: number, durationSec: number, completed: boolean, flush?: boolean) => void;
