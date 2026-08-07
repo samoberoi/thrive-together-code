@@ -157,7 +157,7 @@ export function useWatchCredit({
   }, [active, credit]);
 
   return {
-    watchedSec,
+    watchedSec: Math.floor(watchedSec),
     durationSec,
     requiredSec: effectiveRequired,
     progressPct: Math.min(100, Math.round((watchedSec / Math.max(1, effectiveRequired)) * 100)),
