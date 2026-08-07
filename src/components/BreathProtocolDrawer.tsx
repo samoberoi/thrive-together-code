@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle2, Loader2, Wind, X } from "lucide-react";
+import { CheckCircle2, Loader2, Lock, Wind, X } from "lucide-react";
 import { toast } from "sonner";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,9 +9,9 @@ import { BREATH_PROTOCOL_VIDEO, getBreathYoutubeId, recordBreathSession } from "
 import { isNativeIOSApp, youtubePlayerProxyUrl } from "@/lib/youtubeEmbed";
 import NativeYouTubePlayer from "@/components/exercises/NativeYouTubePlayer";
 
-// Auto-log a round once the user has effectively watched the full protocol.
+// A round only counts once the user has effectively watched the full protocol.
 // Video is 76s — credit after ~60s of watch time to allow for buffering/pause.
-const AUTO_LOG_AFTER_SEC = 60;
+const REQUIRED_WATCH_SEC = 60;
 
 export default function BreathProtocolDrawer({
   open,
@@ -26,10 +26,15 @@ export default function BreathProtocolDrawer({
   const [videoId, setVideoId] = useState(BREATH_PROTOCOL_VIDEO.youtubeId);
   const [useNativePlayer] = useState(() => isNativeIOSApp());
 
-  // Track auto-log state so we only credit one round per drawer open.
-  const watchedSecRef = useRef(0);
-  const autoLoggedRef = useRef(false);
+  // Watch tracking — the round unlocks only after enough playback time.
+  const [watchedSec, setWatchedSec] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const watchedRef = useRef(0);
+  const loggedThisRoundRef = useRef(false);
   const savingRef = useRef(false);
+
+  const unlocked = watchedSec >= REQUIRED_WATCH_SEC;
+  const remainingWatch = Math.max(0, REQUIRED_WATCH_SEC - Math.floor(watchedSec));
 
   useEffect(() => {
     let cancelled = false;
@@ -37,29 +42,38 @@ export default function BreathProtocolDrawer({
     return () => { cancelled = true; };
   }, []);
 
-  // Use the exact same proxy path as yoga/exercise videos (which work on iOS).
   const embedSrc = useMemo(
     () => youtubePlayerProxyUrl(videoId, { autoplay: false }),
     [videoId],
   );
 
-  const logRound = async (source: "manual" | "video") => {
+  const resetWatch = useCallback(() => {
+    watchedRef.current = 0;
+    loggedThisRoundRef.current = false;
+    setWatchedSec(0);
+    setPlaying(false);
+  }, []);
+
+  const logRound = useCallback(async () => {
     if (!user || savingRef.current) return false;
     if (completed) return false;
     savingRef.current = true;
     setSaving(true);
-    const ok = await recordBreathSession(user.id, source);
+    const ok = await recordBreathSession(user.id, "video");
     setSaving(false);
     savingRef.current = false;
     if (ok) {
+      loggedThisRoundRef.current = true;
       await refresh();
       const next = Math.min(goal, count + 1);
       if (next >= goal) toast.success("BBDO Breath Protocol complete for today ✨");
       else toast.success(`Round ${next} of ${goal} logged`);
+      // Next round needs its own full watch.
+      resetWatch();
       return true;
     }
     return false;
-  };
+  }, [user, completed, refresh, goal, count, resetWatch]);
 
   const onComplete = async () => {
     if (!user) { toast.error("Please sign in"); return; }
@@ -67,61 +81,62 @@ export default function BreathProtocolDrawer({
       toast.success("You've already closed today's loop 🎉");
       return;
     }
-    const ok = await logRound("manual");
-    if (ok) autoLoggedRef.current = true;
-    else toast.error("Couldn't save this round. Try again.");
+    if (!unlocked) {
+      toast.error(`Watch the full protocol first — ${remainingWatch}s to go.`);
+      return;
+    }
+    const ok = await logRound();
+    if (!ok) toast.error("Couldn't save this round. Try again.");
   };
 
   // Reset watch counters each time the drawer opens.
   useEffect(() => {
     if (!open) return;
-    watchedSecRef.current = 0;
-    autoLoggedRef.current = false;
-  }, [open]);
+    resetWatch();
+  }, [open, resetWatch]);
 
-  // Wall-clock fallback: while the drawer is open, count elapsed time and
-  // auto-log a round once we cross the threshold. Works for iframe + native.
+  // Count watch time only while the player reports playback (or, on players that
+  // don't report state, while the drawer is visible after the user hit play).
   useEffect(() => {
-    if (!open || completed) return;
+    if (!open || completed || !playing) return;
     const iv = window.setInterval(() => {
       if (document.hidden) return;
-      watchedSecRef.current += 1;
-      if (!autoLoggedRef.current && watchedSecRef.current >= AUTO_LOG_AFTER_SEC) {
-        autoLoggedRef.current = true;
-        void logRound("video");
-      }
+      watchedRef.current += 1;
+      setWatchedSec(watchedRef.current);
     }, 1000);
     return () => window.clearInterval(iv);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, completed, user]);
+  }, [open, completed, playing]);
 
-  // If the proxied YouTube player reports progress or "ended", trust that first.
+  // Trust player-reported progress / state when available.
   useEffect(() => {
     if (!open) return;
     const onMsg = (event: MessageEvent) => {
       const d = event?.data;
       if (!d || typeof d !== "object") return;
       if (d.type === "progress" && typeof d.currentTime === "number") {
-        if (d.currentTime > watchedSecRef.current) watchedSecRef.current = d.currentTime;
-        if (!autoLoggedRef.current && d.currentTime >= AUTO_LOG_AFTER_SEC) {
-          autoLoggedRef.current = true;
-          void logRound("video");
+        setPlaying(true);
+        if (d.currentTime > watchedRef.current) {
+          watchedRef.current = d.currentTime;
+          setWatchedSec(d.currentTime);
         }
-      } else if (d.type === "state" && d.state === 0) {
-        // ended
-        if (!autoLoggedRef.current) {
-          autoLoggedRef.current = true;
-          void logRound("video");
+      } else if (d.type === "state") {
+        if (d.state === 1) setPlaying(true);
+        if (d.state === 2) setPlaying(false);
+        if (d.state === 0) {
+          // ended — full watch credited, auto-log the round
+          setPlaying(false);
+          watchedRef.current = Math.max(watchedRef.current, REQUIRED_WATCH_SEC);
+          setWatchedSec(watchedRef.current);
+          if (!loggedThisRoundRef.current) void logRound();
         }
       }
     };
     window.addEventListener("message", onMsg);
     return () => window.removeEventListener("message", onMsg);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, completed, user]);
-
+  }, [open, logRound]);
 
   const progressPct = Math.min(100, Math.round((count / goal) * 100));
+  const watchPct = Math.min(100, Math.round((watchedSec / REQUIRED_WATCH_SEC) * 100));
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -188,10 +203,28 @@ export default function BreathProtocolDrawer({
           )}
         </div>
 
+        {/* Watch progress */}
+        {!completed && !unlocked && (
+          <div className="mt-3 rounded-2xl bg-muted/60 border border-border p-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[11px] font-black uppercase tracking-[0.14em] text-muted-foreground">Watch progress</span>
+              <span className="text-[11px] font-black tabular-nums text-muted-foreground">{watchPct}%</span>
+            </div>
+            <div className="mt-2 h-1.5 rounded-full bg-background overflow-hidden">
+              <motion.div
+                initial={false}
+                animate={{ width: `${watchPct}%` }}
+                transition={{ duration: 0.2, ease: "linear" }}
+                className="h-full rounded-full"
+                style={{ background: "var(--bbdo-blue)" }}
+              />
+            </div>
+          </div>
+        )}
 
         <button
           onClick={onComplete}
-          disabled={saving || completed}
+          disabled={saving || completed || !unlocked}
           className="mt-3 w-full h-14 rounded-2xl text-white font-bold text-[15px] disabled:opacity-60 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
           style={{ background: completed ? "#10B981" : "var(--bbdo-blue)" }}
         >
@@ -199,6 +232,8 @@ export default function BreathProtocolDrawer({
             <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>
           ) : completed ? (
             <><CheckCircle2 className="w-4 h-4" /> All 4 rounds done today</>
+          ) : !unlocked ? (
+            <><Lock className="w-4 h-4" /> Watch the protocol to unlock ({remainingWatch}s)</>
           ) : (
             <>Mark this round complete ({count + 1}/{goal})</>
           )}
