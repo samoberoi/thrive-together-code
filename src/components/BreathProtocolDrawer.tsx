@@ -74,6 +74,13 @@ export default function BreathProtocolDrawer({
     return false;
   }, [user, completed, refresh, goal, count, resetWatch]);
 
+  // Auto-log the round the moment the watch requirement is met — no manual tap.
+  useEffect(() => {
+    if (!open || completed || !unlocked) return;
+    if (loggedThisRoundRef.current || savingRef.current) return;
+    void logRound();
+  }, [open, completed, unlocked, logRound]);
+
 
   // Reset watch counters each time the drawer opens.
   useEffect(() => {
