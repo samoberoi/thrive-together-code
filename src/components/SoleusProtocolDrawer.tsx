@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle2, Loader2, Lock, Dumbbell, X } from "lucide-react";
+import { CheckCircle2, Loader2, Dumbbell, X } from "lucide-react";
 import { toast } from "sonner";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { useAuth } from "@/contexts/AuthContext";
@@ -32,9 +32,10 @@ export default function SoleusProtocolDrawer({
   const [watchedSec, setWatchedSec] = useState(0);
   const [playing, setPlaying] = useState(false);
   const watchedRef = useRef(0);
+  const savingRef = useRef(false);
+  const loggedThisRoundRef = useRef(false);
 
   const unlocked = watchedSec >= REQUIRED_WATCH_SEC;
-  const remainingWatch = Math.max(0, REQUIRED_WATCH_SEC - Math.floor(watchedSec));
 
   useEffect(() => {
     let cancelled = false;
@@ -49,6 +50,7 @@ export default function SoleusProtocolDrawer({
 
   const resetWatch = useCallback(() => {
     watchedRef.current = 0;
+    loggedThisRoundRef.current = false;
     setWatchedSec(0);
     setPlaying(false);
   }, []);
@@ -95,30 +97,29 @@ export default function SoleusProtocolDrawer({
     return () => window.removeEventListener("message", onMsg);
   }, [open]);
 
-  const onComplete = async () => {
-    if (!user) { toast.error("Please sign in"); return; }
-    if (completed) {
-      toast.success("You've already closed today's loop 🎉");
-      return;
-    }
-    if (!unlocked) {
-      toast.error(`Watch the drill first — ${remainingWatch}s to go.`);
-      return;
-    }
+  // Auto-log the round as soon as the watch requirement is met — no button.
+  useEffect(() => {
+    if (!open || completed || !unlocked) return;
+    if (!user || savingRef.current || loggedThisRoundRef.current) return;
+    loggedThisRoundRef.current = true;
+    savingRef.current = true;
     setSaving(true);
-    const ok = await recordSoleusSession(user.id, "video");
-    setSaving(false);
-    if (ok) {
-      await refresh();
-      const next = Math.min(goal, count + 1);
-      if (next >= goal) toast.success("Soleus Push-Ups complete for today ✨");
-      else toast.success(`Round ${next} of ${goal} logged`);
-      // Each round needs its own watch.
-      resetWatch();
-    } else {
-      toast.error("Couldn't save this round. Try again.");
-    }
-  };
+    (async () => {
+      const ok = await recordSoleusSession(user.id, "video");
+      setSaving(false);
+      savingRef.current = false;
+      if (ok) {
+        await refresh();
+        const next = Math.min(goal, count + 1);
+        if (next >= goal) toast.success("Soleus Push-Ups complete for today ✨");
+        else toast.success(`Round ${next} of ${goal} logged automatically`);
+        resetWatch();
+      } else {
+        loggedThisRoundRef.current = false;
+        toast.error("Couldn't save this round. Try again.");
+      }
+    })();
+  }, [open, completed, unlocked, user, refresh, goal, count, resetWatch]);
 
   const progressPct = Math.min(100, Math.round((count / goal) * 100));
   const watchPct = Math.min(100, Math.round((watchedSec / REQUIRED_WATCH_SEC) * 100));
@@ -206,22 +207,18 @@ export default function SoleusProtocolDrawer({
           </div>
         )}
 
-        <button
-          onClick={onComplete}
-          disabled={saving || completed || !unlocked}
-          className="mt-3 w-full h-14 rounded-2xl text-white font-bold text-[15px] disabled:opacity-60 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+        <div
+          className="mt-3 w-full min-h-14 rounded-2xl text-white font-bold text-[15px] flex items-center justify-center gap-2 px-4 text-center"
           style={{ background: completed ? "#10B981" : "var(--bbdo-blue)" }}
         >
           {saving ? (
-            <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>
+            <><Loader2 className="w-4 h-4 animate-spin" /> Logging your round…</>
           ) : completed ? (
             <><CheckCircle2 className="w-4 h-4" /> All 3 rounds done today</>
-          ) : !unlocked ? (
-            <><Lock className="w-4 h-4" /> Watch the drill to unlock ({remainingWatch}s)</>
           ) : (
-            <>Mark this round complete ({count + 1}/{goal})</>
+            <>Just watch — the round logs itself ({count + 1}/{goal})</>
           )}
-        </button>
+        </div>
 
         <p className="text-[11px] text-muted-foreground text-center mt-2 leading-snug">
           Ritual · After breakfast · After lunch · After dinner

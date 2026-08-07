@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle2, Loader2, Lock, Wind, X } from "lucide-react";
+import { CheckCircle2, Loader2, Wind, X } from "lucide-react";
 import { toast } from "sonner";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { useAuth } from "@/contexts/AuthContext";
@@ -34,7 +34,6 @@ export default function BreathProtocolDrawer({
   const savingRef = useRef(false);
 
   const unlocked = watchedSec >= REQUIRED_WATCH_SEC;
-  const remainingWatch = Math.max(0, REQUIRED_WATCH_SEC - Math.floor(watchedSec));
 
   useEffect(() => {
     let cancelled = false;
@@ -75,19 +74,13 @@ export default function BreathProtocolDrawer({
     return false;
   }, [user, completed, refresh, goal, count, resetWatch]);
 
-  const onComplete = async () => {
-    if (!user) { toast.error("Please sign in"); return; }
-    if (completed) {
-      toast.success("You've already closed today's loop 🎉");
-      return;
-    }
-    if (!unlocked) {
-      toast.error(`Watch the full protocol first — ${remainingWatch}s to go.`);
-      return;
-    }
-    const ok = await logRound();
-    if (!ok) toast.error("Couldn't save this round. Try again.");
-  };
+  // Auto-log the round the moment the watch requirement is met — no manual tap.
+  useEffect(() => {
+    if (!open || completed || !unlocked) return;
+    if (loggedThisRoundRef.current || savingRef.current) return;
+    void logRound();
+  }, [open, completed, unlocked, logRound]);
+
 
   // Reset watch counters each time the drawer opens.
   useEffect(() => {
@@ -152,6 +145,7 @@ export default function BreathProtocolDrawer({
             <X className="w-4 h-4" />
           </button>
         </DrawerHeader>
+
 
         <p className="text-[13px] text-muted-foreground leading-snug">
           {BREATH_PROTOCOL_VIDEO.description}
@@ -222,22 +216,18 @@ export default function BreathProtocolDrawer({
           </div>
         )}
 
-        <button
-          onClick={onComplete}
-          disabled={saving || completed || !unlocked}
-          className="mt-3 w-full h-14 rounded-2xl text-white font-bold text-[15px] disabled:opacity-60 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+        <div
+          className="mt-3 w-full min-h-14 rounded-2xl text-white font-bold text-[15px] flex items-center justify-center gap-2 px-4 text-center"
           style={{ background: completed ? "#10B981" : "var(--bbdo-blue)" }}
         >
           {saving ? (
-            <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>
+            <><Loader2 className="w-4 h-4 animate-spin" /> Logging your round…</>
           ) : completed ? (
             <><CheckCircle2 className="w-4 h-4" /> All 4 rounds done today</>
-          ) : !unlocked ? (
-            <><Lock className="w-4 h-4" /> Watch the protocol to unlock ({remainingWatch}s)</>
           ) : (
-            <>Mark this round complete ({count + 1}/{goal})</>
+            <>Just watch — the round logs itself ({count + 1}/{goal})</>
           )}
-        </button>
+        </div>
 
         <p className="text-[11px] text-muted-foreground text-center mt-2 leading-snug">
           Ritual · Morning · Afternoon · Evening · Night
