@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronRight, ArrowRight, TrendingDown } from "lucide-react";
+import { ChevronRight, ArrowRight } from "lucide-react";
 import SoundToggle from "@/components/SoundToggle";
 import { HeroCard } from "@/components/ui/HeroCard";
 
