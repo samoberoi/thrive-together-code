@@ -380,9 +380,12 @@ export default function Payment() {
               </div>
             )}
 
-            <motion.button onClick={handlePay} disabled={loading || authLoading || !plan} className="gradient-blue text-primary-foreground font-bold py-4 rounded-2xl glow-blue mt-auto flex items-center justify-center gap-2 disabled:opacity-50" whileTap={{ scale: 0.98 }}>
-              {loading ? (<><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Processing...</>) : (<><Rocket className="w-5 h-5" strokeWidth={1.8} /> Start My Journey</>)}
-            </motion.button>
+            <div className="ob-bottom">
+              <motion.button onClick={handlePay} disabled={loading || authLoading || !plan} className="ob-cta gradient-blue glow-blue disabled:opacity-40" whileTap={{ scale: 0.98 }}>
+                {loading ? (<><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Processing...</>) : (<><Rocket className="w-5 h-5" strokeWidth={1.8} /> Start My Journey</>)}
+              </motion.button>
+            </div>
+
           </motion.div>
         ) : (
           <motion.div key="success" className="flex flex-col flex-1 items-center justify-center text-center" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1]}}>
