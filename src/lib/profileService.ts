@@ -290,6 +290,11 @@ export function loadProfileToLocal(profile: ProfileRow) {
     }),
   };
 
+  // Existing users already have real body metrics on the server — keep syncing them.
+  if (profile.weight != null) payload.bodyStatsConfirmed = true;
+
+
+
   if (profile.clinical != null) payload.clinical = profile.clinical;
   if (profile.lifestyle != null) payload.lifestyle = profile.lifestyle;
   if (profile.deep_profiling != null) payload.deepProfiling = profile.deep_profiling;
