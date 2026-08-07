@@ -222,21 +222,28 @@ export async function syncLocalToBackend(userId: string) {
     age: local.profile.age,
     gender: local.profile.gender,
     goals: (local.profile as any).goals ?? [],
-    height: local.bodyMetrics.height,
-    weight: local.bodyMetrics.weight,
-    bmi: local.bodyMetrics.bmi,
-    bmi_category: local.bodyMetrics.bmiCategory,
-    waist: (local.bodyMetrics as any).waist,
     clinical: local.clinical,
     lifestyle: local.lifestyle,
     deep_profiling: local.deepProfiling,
     assessment: local.assessment,
   };
 
+  // Body metrics are only persisted once the user has actually submitted the
+  // BodyStats step — otherwise the slider defaults (70 kg / 170 cm) get written
+  // as if they were real values.
+  if ((local as any).bodyStatsConfirmed) {
+    updates.height = local.bodyMetrics.height;
+    updates.weight = local.bodyMetrics.weight;
+    updates.bmi = local.bodyMetrics.bmi;
+    updates.bmi_category = local.bodyMetrics.bmiCategory;
+    (updates as any).waist = (local.bodyMetrics as any).waist;
+  }
+
   // Remove undefined values
   Object.keys(updates).forEach((key) => {
     if ((updates as any)[key] === undefined) delete (updates as any)[key];
   });
+
 
   return updateProfile(userId, updates);
 }
