@@ -181,7 +181,7 @@ function WatchModal({
         const duration = Math.floor(event.data.duration || lastWatchedRef.current.duration || 0);
         lastWatchedRef.current = { watched: duration, duration, completed: true };
         reportDelta(Math.max(creditedWatchedRef.current, duration), duration, true, true);
-        onCompleted();
+        window.setTimeout(() => { firedRef.current = false; }, 1500);
       }
     };
 
