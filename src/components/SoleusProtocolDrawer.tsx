@@ -207,22 +207,18 @@ export default function SoleusProtocolDrawer({
           </div>
         )}
 
-        <button
-          onClick={onComplete}
-          disabled={saving || completed || !unlocked}
-          className="mt-3 w-full h-14 rounded-2xl text-white font-bold text-[15px] disabled:opacity-60 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+        <div
+          className="mt-3 w-full min-h-14 rounded-2xl text-white font-bold text-[15px] flex items-center justify-center gap-2 px-4 text-center"
           style={{ background: completed ? "#10B981" : "var(--bbdo-blue)" }}
         >
           {saving ? (
-            <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>
+            <><Loader2 className="w-4 h-4 animate-spin" /> Logging your round…</>
           ) : completed ? (
             <><CheckCircle2 className="w-4 h-4" /> All 3 rounds done today</>
-          ) : !unlocked ? (
-            <><Lock className="w-4 h-4" /> Watch the drill to unlock ({remainingWatch}s)</>
           ) : (
-            <>Mark this round complete ({count + 1}/{goal})</>
+            <>Just watch — the round logs itself ({count + 1}/{goal})</>
           )}
-        </button>
+        </div>
 
         <p className="text-[11px] text-muted-foreground text-center mt-2 leading-snug">
           Ritual · After breakfast · After lunch · After dinner
