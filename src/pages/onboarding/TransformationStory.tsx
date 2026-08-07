@@ -200,22 +200,7 @@ export default function TransformationStory() {
         className="px-5 shrink-0 bg-background pt-2"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + var(--bbdo-native-bottom-guard, 0px) + 18px)" }}
       >
-
-        <div className="flex items-center justify-center gap-2 mt-4">
-          {stories.map((_, i) => (
-            <motion.button
-              key={i}
-              onClick={() => setCurrent(i)}
-              className="rounded-full bg-bbdo-ink shrink-0 p-0 border-0 block"
-              animate={{ width: i === current ? 22 : 6, opacity: i === current ? 1 : 0.25 }}
-              transition={{ duration: 0.25, ease: EASE }}
-              style={{ height: 6, minHeight: 6, minWidth: 6 }}
-              aria-label={`Story ${i + 1}`}
-            />
-          ))}
-        </div>
-
-        <motion.button onClick={handleCta} whileTap={{ scale: 0.98 }} className="ob-cta gradient-blue mt-4">
+        <motion.button onClick={handleCta} whileTap={{ scale: 0.98 }} className="ob-cta gradient-blue mt-2">
           {isLast ? "I want similar results" : "Next story"}
           <ChevronRight className="h-5 w-5" />
         </motion.button>
