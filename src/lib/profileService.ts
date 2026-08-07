@@ -159,9 +159,11 @@ export async function updateProfile(userId: string, updates: Partial<ProfileRow>
     return false;
   }
 
+  if (skipHealthLogs) return true;
 
   const nextWeight = Number((updates as any).weight);
   if (Number.isFinite(nextWeight) && previousProfile?.weight !== nextWeight) {
+
     const { error: weightLogError } = await supabase.from("health_logs" as any).insert({
       user_id: userId,
       log_type: "weight",
