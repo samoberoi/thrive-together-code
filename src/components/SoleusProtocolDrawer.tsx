@@ -32,6 +32,8 @@ export default function SoleusProtocolDrawer({
   const [watchedSec, setWatchedSec] = useState(0);
   const [playing, setPlaying] = useState(false);
   const watchedRef = useRef(0);
+  const savingRef = useRef(false);
+  const loggedThisRoundRef = useRef(false);
 
   const unlocked = watchedSec >= REQUIRED_WATCH_SEC;
   const remainingWatch = Math.max(0, REQUIRED_WATCH_SEC - Math.floor(watchedSec));
