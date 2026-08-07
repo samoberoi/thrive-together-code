@@ -135,9 +135,20 @@ export async function insertOnboardingLogs(userId: string, data: {
 
   if (logs.length === 0) return;
 
+  // Onboarding writes exactly ONE baseline row per type. Any earlier rows are
+  // phantom defaults written mid-onboarding — remove them so the user never sees
+  // a fake "weight increased" delta (and no alert trigger fires against them).
+  const types = Array.from(new Set(logs.map((l) => l.log_type)));
+  await supabase
+    .from("health_logs" as any)
+    .delete()
+    .eq("user_id", userId)
+    .in("log_type", types);
+
   const { error } = await supabase
     .from("health_logs" as any)
     .insert(logs as any);
+
 
   if (error) {
     console.error("Failed to seed onboarding health logs:", error);
