@@ -137,21 +137,11 @@ export default function TransformationStory() {
       {/* Header */}
       <div className="px-5 pt-[calc(env(safe-area-inset-top)+2rem)] shrink-0">
         <HeroCard variant="navy" className="pb-6">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1 min-w-0">
-              <p className="bbdo-eyebrow text-white mb-2">Real Transformation</p>
-              <h1 className="text-white text-[22px] leading-[1.1] font-extrabold tracking-tight">
-                Reversal isn't a promise.{" "}
-                <span className="text-white/70">It's a pattern.</span>
-              </h1>
-            </div>
-            {story.duration && (
-              <div className="flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 shrink-0 mt-1">
-                <TrendingDown className="h-3.5 w-3.5 text-white" />
-                <span className="text-[11px] font-bold text-white">{story.duration}</span>
-              </div>
-            )}
-          </div>
+          <p className="bbdo-eyebrow text-white mb-2">Real Transformation</p>
+          <h1 className="text-white text-[22px] leading-[1.1] font-extrabold tracking-tight">
+            Reversal isn't a promise.{" "}
+            <span className="text-white/70">It's a pattern.</span>
+          </h1>
           <p className="text-white/65 text-[11px] font-medium mt-2">
             Story {current + 1} of {stories.length}
           </p>
