@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSoleusSessionsToday } from "@/hooks/useSoleusSessionsToday";
+import { useWatchCredit } from "@/hooks/useWatchCredit";
 import {
   SOLEUS_PROTOCOL_VIDEO,
   getSoleusVideoConfig,
@@ -13,8 +14,8 @@ import {
 import { isNativeIOSApp, youtubePlayerProxyUrl } from "@/lib/youtubeEmbed";
 import NativeYouTubePlayer from "@/components/exercises/NativeYouTubePlayer";
 
-// A round can only be marked complete after the user actually watches the drill.
-const REQUIRED_WATCH_SEC = 45;
+// A round is credited after a real watch — capped at 80% of the clip length.
+const REQUIRED_WATCH_SEC = 30;
 
 export default function SoleusProtocolDrawer({
   open,
@@ -28,14 +29,9 @@ export default function SoleusProtocolDrawer({
   const [saving, setSaving] = useState(false);
   const [videoId, setVideoId] = useState(SOLEUS_PROTOCOL_VIDEO.youtubeId);
   const [useNativePlayer] = useState(() => isNativeIOSApp());
-
-  const [watchedSec, setWatchedSec] = useState(0);
-  const [playing, setPlaying] = useState(false);
-  const watchedRef = useRef(0);
   const savingRef = useRef(false);
-  const loggedThisRoundRef = useRef(false);
-
-  const unlocked = watchedSec >= REQUIRED_WATCH_SEC;
+  const countRef = useRef(count);
+  useEffect(() => { countRef.current = count; }, [count]);
 
   useEffect(() => {
     let cancelled = false;
@@ -48,81 +44,37 @@ export default function SoleusProtocolDrawer({
     [videoId],
   );
 
-  const resetWatch = useCallback(() => {
-    watchedRef.current = 0;
-    loggedThisRoundRef.current = false;
-    setWatchedSec(0);
-    setPlaying(false);
-  }, []);
+  const resetRef = useRef<() => void>(() => {});
 
-  useEffect(() => {
-    if (!open) return;
-    resetWatch();
-  }, [open, resetWatch]);
-
-  // Tick only while playback is active.
-  useEffect(() => {
-    if (!open || completed || !playing) return;
-    const iv = window.setInterval(() => {
-      if (document.hidden) return;
-      watchedRef.current += 1;
-      setWatchedSec(watchedRef.current);
-    }, 1000);
-    return () => window.clearInterval(iv);
-  }, [open, completed, playing]);
-
-  // Prefer real player progress when the proxied player reports it.
-  useEffect(() => {
-    if (!open) return;
-    const onMsg = (event: MessageEvent) => {
-      const d = event?.data;
-      if (!d || typeof d !== "object") return;
-      if (d.type === "progress" && typeof d.currentTime === "number") {
-        setPlaying(true);
-        if (d.currentTime > watchedRef.current) {
-          watchedRef.current = d.currentTime;
-          setWatchedSec(d.currentTime);
-        }
-      } else if (d.type === "state") {
-        if (d.state === 1) setPlaying(true);
-        if (d.state === 2) setPlaying(false);
-        if (d.state === 0) {
-          setPlaying(false);
-          watchedRef.current = Math.max(watchedRef.current, REQUIRED_WATCH_SEC);
-          setWatchedSec(watchedRef.current);
-        }
-      }
-    };
-    window.addEventListener("message", onMsg);
-    return () => window.removeEventListener("message", onMsg);
-  }, [open]);
-
-  // Auto-log the round as soon as the watch requirement is met — no button.
-  useEffect(() => {
-    if (!open || completed || !unlocked) return;
-    if (!user || savingRef.current || loggedThisRoundRef.current) return;
-    loggedThisRoundRef.current = true;
+  const handleRoundWatched = useCallback(async () => {
+    if (!user || savingRef.current) return;
+    if (countRef.current >= goal) return;
     savingRef.current = true;
     setSaving(true);
-    (async () => {
-      const ok = await recordSoleusSession(user.id, "video");
-      setSaving(false);
-      savingRef.current = false;
-      if (ok) {
-        await refresh();
-        const next = Math.min(goal, count + 1);
-        if (next >= goal) toast.success("Soleus Push-Ups complete for today ✨");
-        else toast.success(`Round ${next} of ${goal} logged automatically`);
-        resetWatch();
-      } else {
-        loggedThisRoundRef.current = false;
-        toast.error("Couldn't save this round. Try again.");
-      }
-    })();
-  }, [open, completed, unlocked, user, refresh, goal, count, resetWatch]);
+    const ok = await recordSoleusSession(user.id, "video");
+    setSaving(false);
+    savingRef.current = false;
+    if (ok) {
+      await refresh();
+      const next = Math.min(goal, countRef.current + 1);
+      if (next >= goal) toast.success("Soleus Push-Ups complete for today ✨");
+      else toast.success(`Round ${next} of ${goal} logged — watch again for round ${next + 1}`);
+    } else {
+      toast.error("Couldn't save this round. Try again.");
+    }
+    // Arm the tracker for the next round either way.
+    resetRef.current();
+  }, [user, goal, refresh]);
+
+  const { watchedSec, requiredSec, progressPct: watchPct, reset } = useWatchCredit({
+    active: open && !completed,
+    videoId,
+    requiredSec: REQUIRED_WATCH_SEC,
+    onReached: handleRoundWatched,
+  });
+  useEffect(() => { resetRef.current = reset; }, [reset]);
 
   const progressPct = Math.min(100, Math.round((count / goal) * 100));
-  const watchPct = Math.min(100, Math.round((watchedSec / REQUIRED_WATCH_SEC) * 100));
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -189,11 +141,15 @@ export default function SoleusProtocolDrawer({
           )}
         </div>
 
-        {!completed && !unlocked && (
+        {!completed && (
           <div className="mt-3 rounded-2xl bg-muted/60 border border-border p-3">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[11px] font-black uppercase tracking-[0.14em] text-muted-foreground">Watch progress</span>
-              <span className="text-[11px] font-black tabular-nums text-muted-foreground">{watchPct}%</span>
+              <span className="text-[11px] font-black uppercase tracking-[0.14em] text-muted-foreground">
+                Round {Math.min(goal, count + 1)} watch
+              </span>
+              <span className="text-[11px] font-black tabular-nums text-muted-foreground">
+                {Math.min(watchedSec, requiredSec)}s / {requiredSec}s
+              </span>
             </div>
             <div className="mt-2 h-1.5 rounded-full bg-background overflow-hidden">
               <motion.div
@@ -216,7 +172,7 @@ export default function SoleusProtocolDrawer({
           ) : completed ? (
             <><CheckCircle2 className="w-4 h-4" /> All 3 rounds done today</>
           ) : (
-            <>Just watch — the round logs itself ({count + 1}/{goal})</>
+            <>Watch the drill — round {Math.min(goal, count + 1)} of {goal} logs itself</>
           )}
         </div>
 
