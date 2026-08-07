@@ -32,8 +32,11 @@ import NativeYouTubePlayer from "@/components/exercises/NativeYouTubePlayer";
 import { isNativeAndroidApp, isNativeIOSApp, isYoutubePlayerMessage, youtubePlayerProxyUrl } from "@/lib/youtubeEmbed";
 import { accumulateWatched, loadWatched, markCompleted, recordProgress, saveDuration } from "@/lib/videoProgressStore";
 import { useCoachAssignedItems } from "@/hooks/useCoachAssignedItems";
+import { useWatchCredit } from "@/hooks/useWatchCredit";
 
 const FALLBACK_SHORT_VIDEO_SEC = 120;
+// One set is credited after a real watch: the full clip, capped at 3 minutes.
+const SET_WATCH_SEC = 180;
 
 interface Props {
   packageKey: string | null;
@@ -260,7 +263,9 @@ function WatchModal({
           <div className="min-w-0">
             <p className="text-white text-sm font-black truncate">{exercise.name}</p>
             <p className="text-white/60 text-[11px]">
-              Every second you watch counts toward today's minutes.
+              {setWatchedSec >= setRequiredSec
+                ? "Set logged — keep watching for the next one."
+                : `Watch ${Math.max(0, setRequiredSec - setWatchedSec)}s more to auto-log this set (${setWatchPct}%).`}
             </p>
           </div>
           <button
@@ -878,9 +883,7 @@ export default function ExerciseTab({ packageKey }: Props) {
           exercise={watching}
           onClose={() => setWatching(null)}
           onCompleted={() => {
-            const ex = watching;
-            setWatching(null);
-            void logSetFromWatch(ex);
+            void logSetFromWatch(watching);
           }}
           onProgress={(watchedSec, durationSec, completed, flush) => {
             void saveWatchProgress(watching, watchedSec, durationSec, completed, flush);
