@@ -485,10 +485,10 @@
     min-height: 100svh;
     overflow-x: hidden;
   }
-  html.bb-native .phone-container {
-    /* Native WebView: html/body are height-locked, so the screen must be
-       exactly viewport-sized and own the scroll. `!important` defeats any
-       stray `min-h-dvh` / `min-h-screen` utility on the same element. */
+  /* Every screen owns its own scroll (web + native alike) so a tall screen
+     always scrolls even when html/body are height-locked. `!important`
+     defeats any stray `min-h-dvh` / `min-h-screen` utility on the element. */
+  .phone-container {
     height: 100svh !important;
     min-height: 100svh !important;
     max-height: 100svh !important;
@@ -517,8 +517,8 @@
     overflow-x: hidden;
     background: var(--bbdo-cream);
   }
-  html.bb-native .ob-lock,
-  html.bb-native .ob-lock.phone-container {
+  .ob-lock,
+  .ob-lock.phone-container {
     height: 100svh !important;
     min-height: 100svh !important;
     max-height: 100svh !important;
