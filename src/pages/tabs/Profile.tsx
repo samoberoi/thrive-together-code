@@ -181,6 +181,7 @@ export default function Profile({ onClose, isDark = true, onToggleTheme }: Profi
   const [planId, setPlanId] = useState<string | null>(null);
   const isPaidPlan = planId === "active" || planId === "intensive" || planId === "pro";
   const [initialScore, setInitialScore] = useState<number | null>(null);
+  const [dbGoals, setDbGoals] = useState<string[] | null>(null);
   const [memberSince, setMemberSince] = useState<string | null>(null);
   const userAvatar = storedUser?.avatarUrl;
   const [avatarUploading, setAvatarUploading] = useState(false);
