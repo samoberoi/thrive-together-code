@@ -316,24 +316,27 @@ export default function Plans() {
           })}
         </div>
 
-        <motion.button
-          onClick={handleStart}
-          disabled={!selectedId || (currentPlanKey != null && pkgs.find((p) => p.id === selectedId)?.plan_key === currentPlanKey)}
-          className="gradient-blue text-primary-foreground font-bold py-4 rounded-2xl glow-blue mt-auto flex items-center justify-center gap-2 disabled:opacity-50"
-          whileTap={{ scale: 0.98 }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-        >
-          {expiredSub
-            ? "Renew Plan"
-            : selectedDirection === "downgrade"
-            ? "Schedule Downgrade"
-            : selectedDirection === "upgrade"
-            ? "Upgrade Plan"
-            : "Start My Journey"}{" "}
-          <ChevronRight className="w-5 h-5" strokeWidth={1.5} />
-        </motion.button>
+        <div className="ob-bottom">
+          <motion.button
+            onClick={handleStart}
+            disabled={!selectedId || (currentPlanKey != null && pkgs.find((p) => p.id === selectedId)?.plan_key === currentPlanKey)}
+            className="ob-cta gradient-blue glow-blue disabled:opacity-40"
+            whileTap={{ scale: 0.98 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+          >
+            {expiredSub
+              ? "Renew Plan"
+              : selectedDirection === "downgrade"
+              ? "Schedule Downgrade"
+              : selectedDirection === "upgrade"
+              ? "Upgrade Plan"
+              : "Start My Journey"}{" "}
+            <ChevronRight className="w-5 h-5" strokeWidth={1.5} />
+          </motion.button>
+        </div>
+
         
       </motion.div>
     </div>
