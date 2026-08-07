@@ -1276,7 +1276,7 @@ export default function Profile({ onClose, isDark = true, onToggleTheme }: Profi
           lifestyle: "Change Lifestyle",
           energy: t("boostEnergy"),
         };
-        const rawGoals = ((storedUser.profile as any)?.goals ?? []) as string[];
+        const rawGoals = (dbGoals ?? ((storedUser.profile as any)?.goals ?? [])) as string[];
         const selectedGoals = Array.isArray(rawGoals) ? rawGoals.filter(Boolean) : [];
         return (
           <motion.div className="liquid-glass rounded-2xl p-4" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
