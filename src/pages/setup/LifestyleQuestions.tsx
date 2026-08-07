@@ -70,7 +70,7 @@ export default function LifestyleQuestions() {
   const sleepBg = `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--primary)) ${sleepPct}%, hsl(var(--border)) ${sleepPct}%, hsl(var(--border)) 100%)`;
 
   return (
-    <div className="phone-container min-h-dvh flex flex-col px-5 pt-14 mobile-bottom-safe overflow-y-auto bg-background">
+    <div className="phone-container h-[100svh] max-h-[100svh] flex flex-col px-5 pt-14 mobile-bottom-safe overflow-y-auto overscroll-contain bg-background">
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
           <span className="text-muted-foreground text-xs font-medium">Step 5 of 5</span>
