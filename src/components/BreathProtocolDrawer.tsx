@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle2, Loader2, Lock, Wind, X } from "lucide-react";
+import { CheckCircle2, Loader2, Wind, X } from "lucide-react";
 import { toast } from "sonner";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { useAuth } from "@/contexts/AuthContext";
@@ -34,7 +34,6 @@ export default function BreathProtocolDrawer({
   const savingRef = useRef(false);
 
   const unlocked = watchedSec >= REQUIRED_WATCH_SEC;
-  const remainingWatch = Math.max(0, REQUIRED_WATCH_SEC - Math.floor(watchedSec));
 
   useEffect(() => {
     let cancelled = false;
@@ -75,19 +74,6 @@ export default function BreathProtocolDrawer({
     return false;
   }, [user, completed, refresh, goal, count, resetWatch]);
 
-  const onComplete = async () => {
-    if (!user) { toast.error("Please sign in"); return; }
-    if (completed) {
-      toast.success("You've already closed today's loop 🎉");
-      return;
-    }
-    if (!unlocked) {
-      toast.error(`Watch the full protocol first — ${remainingWatch}s to go.`);
-      return;
-    }
-    const ok = await logRound();
-    if (!ok) toast.error("Couldn't save this round. Try again.");
-  };
 
   // Reset watch counters each time the drawer opens.
   useEffect(() => {
@@ -151,6 +137,89 @@ export default function BreathProtocolDrawer({
           <button aria-label="Close" onClick={() => onOpenChange(false)} className="no-pill w-9 h-9 rounded-full bg-muted flex items-center justify-center">
             <X className="w-4 h-4" />
           </button>
+        </DrawerHeader>
+
+        <p className="text-[13px] text-muted-foreground leading-snug">
+          {BREATH_PROTOCOL_VIDEO.description}
+        </p>
+
+        {/* Progress ring */}
+        <div className="mt-3 rounded-2xl bg-card border border-border p-3.5">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[11px] font-black uppercase tracking-[0.14em] text-muted-foreground">Today</span>
+            <span className="text-xs font-black tabular-nums" style={{ color: completed ? "#10B981" : "var(--bbdo-blue)" }}>
+              {count}/{goal} rounds
+            </span>
+          </div>
+          <div className="mt-2 h-2 rounded-full bg-muted overflow-hidden">
+            <motion.div
+              initial={false}
+              animate={{ width: `${progressPct}%` }}
+              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+              className="h-full rounded-full"
+              style={{ background: completed ? "#10B981" : "var(--bbdo-blue)" }}
+            />
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-2 leading-snug">
+            {completed
+              ? "Beautifully done — you've completed all 4 rounds today."
+              : `Watch and breathe along. ${goal - count} more round${goal - count === 1 ? "" : "s"} to close today's loop.`}
+          </p>
+        </div>
+
+        {/* Video */}
+        <div className="mt-3 rounded-2xl overflow-hidden bg-black border border-border relative" style={{ aspectRatio: "16 / 9" }}>
+          {useNativePlayer ? (
+            <NativeYouTubePlayer
+              key={videoId}
+              videoId={videoId}
+              title="BBDO Daily Breath Protocol"
+              start={0}
+            />
+          ) : (
+            <iframe
+              key={embedSrc}
+              src={embedSrc}
+              title="BBDO Daily Breath Protocol"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+              allowFullScreen
+              referrerPolicy="strict-origin-when-cross-origin"
+              className="absolute inset-0 w-full h-full"
+            />
+          )}
+        </div>
+
+        {/* Watch progress */}
+        {!completed && !unlocked && (
+          <div className="mt-3 rounded-2xl bg-muted/60 border border-border p-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[11px] font-black uppercase tracking-[0.14em] text-muted-foreground">Watch progress</span>
+              <span className="text-[11px] font-black tabular-nums text-muted-foreground">{watchPct}%</span>
+            </div>
+            <div className="mt-2 h-1.5 rounded-full bg-background overflow-hidden">
+              <motion.div
+                initial={false}
+                animate={{ width: `${watchPct}%` }}
+                transition={{ duration: 0.2, ease: "linear" }}
+                className="h-full rounded-full"
+                style={{ background: "var(--bbdo-blue)" }}
+              />
+            </div>
+          </div>
+        )}
+
+        <div
+          className="mt-3 w-full min-h-14 rounded-2xl text-white font-bold text-[15px] flex items-center justify-center gap-2 px-4 text-center"
+          style={{ background: completed ? "#10B981" : "var(--bbdo-blue)" }}
+        >
+          {saving ? (
+            <><Loader2 className="w-4 h-4 animate-spin" /> Logging your round…</>
+          ) : completed ? (
+            <><CheckCircle2 className="w-4 h-4" /> All 4 rounds done today</>
+          ) : (
+            <>Just watch — the round logs itself ({count + 1}/{goal})</>
+          )}
+        </div>
         </DrawerHeader>
 
         <p className="text-[13px] text-muted-foreground leading-snug">
