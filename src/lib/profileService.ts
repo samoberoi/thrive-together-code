@@ -120,7 +120,16 @@ export async function updateProfile(userId: string, updates: Partial<ProfileRow>
   const previousProfile = shouldCheckHealthAlert
     ? await fetchProfile(userId, { force: true })
     : null;
+  // While the user is still inside onboarding, values written to the profile are
+  // setup defaults / baselines — NOT real measurements. Writing them to
+  // health_logs makes the DB alert trigger fire (e.g. "+5 kg") before the user
+  // has even reached the dashboard. Suppress log creation until onboarding ends.
+  const onboardingDone =
+    (updates as any).onboarding_completed === true ||
+    previousProfile?.onboarding_completed === true;
+  const skipHealthLogs = shouldCheckHealthAlert && !onboardingDone;
   invalidateProfileCache(userId);
+
 
 
   // Update first, insert only when no row exists.
