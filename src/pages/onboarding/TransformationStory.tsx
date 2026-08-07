@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronRight, ArrowRight, TrendingDown } from "lucide-react";
+import { ChevronRight, ArrowRight } from "lucide-react";
 import SoundToggle from "@/components/SoundToggle";
 import { HeroCard } from "@/components/ui/HeroCard";
 
@@ -137,21 +137,11 @@ export default function TransformationStory() {
       {/* Header */}
       <div className="px-5 pt-[calc(env(safe-area-inset-top)+2rem)] shrink-0">
         <HeroCard variant="navy" className="pb-6">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1 min-w-0">
-              <p className="bbdo-eyebrow text-white mb-2">Real Transformation</p>
-              <h1 className="text-white text-[22px] leading-[1.1] font-extrabold tracking-tight">
-                Reversal isn't a promise.{" "}
-                <span className="text-white/70">It's a pattern.</span>
-              </h1>
-            </div>
-            {story.duration && (
-              <div className="flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 shrink-0 mt-1">
-                <TrendingDown className="h-3.5 w-3.5 text-white" />
-                <span className="text-[11px] font-bold text-white">{story.duration}</span>
-              </div>
-            )}
-          </div>
+          <p className="bbdo-eyebrow text-white mb-2">Real Transformation</p>
+          <h1 className="text-white text-[22px] leading-[1.1] font-extrabold tracking-tight">
+            Reversal isn't a promise.{" "}
+            <span className="text-white/70">It's a pattern.</span>
+          </h1>
           <p className="text-white/65 text-[11px] font-medium mt-2">
             Story {current + 1} of {stories.length}
           </p>
@@ -210,22 +200,7 @@ export default function TransformationStory() {
         className="px-5 shrink-0 bg-background pt-2"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + var(--bbdo-native-bottom-guard, 0px) + 18px)" }}
       >
-
-        <div className="flex items-center justify-center gap-2 mt-4">
-          {stories.map((_, i) => (
-            <motion.button
-              key={i}
-              onClick={() => setCurrent(i)}
-              className="rounded-full bg-bbdo-ink shrink-0 p-0 border-0 block"
-              animate={{ width: i === current ? 22 : 6, opacity: i === current ? 1 : 0.25 }}
-              transition={{ duration: 0.25, ease: EASE }}
-              style={{ height: 6, minHeight: 6, minWidth: 6 }}
-              aria-label={`Story ${i + 1}`}
-            />
-          ))}
-        </div>
-
-        <motion.button onClick={handleCta} whileTap={{ scale: 0.98 }} className="ob-cta gradient-blue mt-4">
+        <motion.button onClick={handleCta} whileTap={{ scale: 0.98 }} className="ob-cta gradient-blue mt-2">
           {isLast ? "I want similar results" : "Next story"}
           <ChevronRight className="h-5 w-5" />
         </motion.button>
