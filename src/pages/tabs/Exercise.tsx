@@ -195,6 +195,26 @@ function WatchModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [useAndroidSimpleEmbed, videoId]);
 
+  // Cross-platform set credit: one real watch (full clip, capped at 3 minutes)
+  // logs one set. Works on web, Android WebView and the iOS native player.
+  const onCompletedRef = useRef(onCompleted);
+  useEffect(() => { onCompletedRef.current = onCompleted; }, [onCompleted]);
+  const setResetRef = useRef<() => void>(() => {});
+  const handleSetWatched = useCallback(() => {
+    onCompletedRef.current();
+    setResetRef.current();
+  }, []);
+  const { watchedSec: setWatchedSec, requiredSec: setRequiredSec, progressPct: setWatchPct, reset: resetSetWatch } =
+    useWatchCredit({
+      active: true,
+      videoId: videoId || undefined,
+      requiredSec: SET_WATCH_SEC,
+      onReached: handleSetWatched,
+    });
+  useEffect(() => { setResetRef.current = resetSetWatch; }, [resetSetWatch]);
+
+
+
   return (
     <div
       className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4"
