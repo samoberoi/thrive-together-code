@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle2, Loader2, Lock, Dumbbell, X } from "lucide-react";
+import { CheckCircle2, Loader2, Dumbbell, X } from "lucide-react";
 import { toast } from "sonner";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { useAuth } from "@/contexts/AuthContext";
@@ -36,7 +36,6 @@ export default function SoleusProtocolDrawer({
   const loggedThisRoundRef = useRef(false);
 
   const unlocked = watchedSec >= REQUIRED_WATCH_SEC;
-  const remainingWatch = Math.max(0, REQUIRED_WATCH_SEC - Math.floor(watchedSec));
 
   useEffect(() => {
     let cancelled = false;
@@ -51,6 +50,7 @@ export default function SoleusProtocolDrawer({
 
   const resetWatch = useCallback(() => {
     watchedRef.current = 0;
+    loggedThisRoundRef.current = false;
     setWatchedSec(0);
     setPlaying(false);
   }, []);
