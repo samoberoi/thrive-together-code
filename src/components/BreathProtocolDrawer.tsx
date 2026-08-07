@@ -5,13 +5,13 @@ import { toast } from "sonner";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBreathSessionsToday } from "@/hooks/useBreathSessionsToday";
+import { useWatchCredit } from "@/hooks/useWatchCredit";
 import { BREATH_PROTOCOL_VIDEO, getBreathYoutubeId, recordBreathSession } from "@/lib/breathProtocol";
 import { isNativeIOSApp, youtubePlayerProxyUrl } from "@/lib/youtubeEmbed";
 import NativeYouTubePlayer from "@/components/exercises/NativeYouTubePlayer";
 
-// A round only counts once the user has effectively watched the full protocol.
-// Video is 76s — credit after ~60s of watch time to allow for buffering/pause.
-const REQUIRED_WATCH_SEC = 60;
+// A round counts after a real watch — capped at 80% of the clip length.
+const REQUIRED_WATCH_SEC = 45;
 
 export default function BreathProtocolDrawer({
   open,
@@ -25,15 +25,9 @@ export default function BreathProtocolDrawer({
   const [saving, setSaving] = useState(false);
   const [videoId, setVideoId] = useState(BREATH_PROTOCOL_VIDEO.youtubeId);
   const [useNativePlayer] = useState(() => isNativeIOSApp());
-
-  // Watch tracking — the round unlocks only after enough playback time.
-  const [watchedSec, setWatchedSec] = useState(0);
-  const [playing, setPlaying] = useState(false);
-  const watchedRef = useRef(0);
-  const loggedThisRoundRef = useRef(false);
   const savingRef = useRef(false);
-
-  const unlocked = watchedSec >= REQUIRED_WATCH_SEC;
+  const countRef = useRef(count);
+  useEffect(() => { countRef.current = count; }, [count]);
 
   useEffect(() => {
     let cancelled = false;
@@ -46,90 +40,36 @@ export default function BreathProtocolDrawer({
     [videoId],
   );
 
-  const resetWatch = useCallback(() => {
-    watchedRef.current = 0;
-    loggedThisRoundRef.current = false;
-    setWatchedSec(0);
-    setPlaying(false);
-  }, []);
+  const resetRef = useRef<() => void>(() => {});
 
-  const logRound = useCallback(async () => {
-    if (!user || savingRef.current) return false;
-    if (completed) return false;
+  const handleRoundWatched = useCallback(async () => {
+    if (!user || savingRef.current) return;
+    if (countRef.current >= goal) return;
     savingRef.current = true;
     setSaving(true);
     const ok = await recordBreathSession(user.id, "video");
     setSaving(false);
     savingRef.current = false;
     if (ok) {
-      loggedThisRoundRef.current = true;
       await refresh();
-      const next = Math.min(goal, count + 1);
+      const next = Math.min(goal, countRef.current + 1);
       if (next >= goal) toast.success("BBDO Breath Protocol complete for today ✨");
-      else toast.success(`Round ${next} of ${goal} logged`);
-      // Next round needs its own full watch.
-      resetWatch();
-      return true;
+      else toast.success(`Round ${next} of ${goal} logged — watch again for round ${next + 1}`);
+    } else {
+      toast.error("Couldn't save this round. Try again.");
     }
-    return false;
-  }, [user, completed, refresh, goal, count, resetWatch]);
+    resetRef.current();
+  }, [user, goal, refresh]);
 
-  // Auto-log the round the moment the watch requirement is met — no manual tap.
-  useEffect(() => {
-    if (!open || completed || !unlocked) return;
-    if (loggedThisRoundRef.current || savingRef.current) return;
-    void logRound();
-  }, [open, completed, unlocked, logRound]);
-
-
-  // Reset watch counters each time the drawer opens.
-  useEffect(() => {
-    if (!open) return;
-    resetWatch();
-  }, [open, resetWatch]);
-
-  // Count watch time only while the player reports playback (or, on players that
-  // don't report state, while the drawer is visible after the user hit play).
-  useEffect(() => {
-    if (!open || completed || !playing) return;
-    const iv = window.setInterval(() => {
-      if (document.hidden) return;
-      watchedRef.current += 1;
-      setWatchedSec(watchedRef.current);
-    }, 1000);
-    return () => window.clearInterval(iv);
-  }, [open, completed, playing]);
-
-  // Trust player-reported progress / state when available.
-  useEffect(() => {
-    if (!open) return;
-    const onMsg = (event: MessageEvent) => {
-      const d = event?.data;
-      if (!d || typeof d !== "object") return;
-      if (d.type === "progress" && typeof d.currentTime === "number") {
-        setPlaying(true);
-        if (d.currentTime > watchedRef.current) {
-          watchedRef.current = d.currentTime;
-          setWatchedSec(d.currentTime);
-        }
-      } else if (d.type === "state") {
-        if (d.state === 1) setPlaying(true);
-        if (d.state === 2) setPlaying(false);
-        if (d.state === 0) {
-          // ended — full watch credited, auto-log the round
-          setPlaying(false);
-          watchedRef.current = Math.max(watchedRef.current, REQUIRED_WATCH_SEC);
-          setWatchedSec(watchedRef.current);
-          if (!loggedThisRoundRef.current) void logRound();
-        }
-      }
-    };
-    window.addEventListener("message", onMsg);
-    return () => window.removeEventListener("message", onMsg);
-  }, [open, logRound]);
+  const { watchedSec, requiredSec, progressPct: watchPct, reset } = useWatchCredit({
+    active: open && !completed,
+    videoId,
+    requiredSec: REQUIRED_WATCH_SEC,
+    onReached: handleRoundWatched,
+  });
+  useEffect(() => { resetRef.current = reset; }, [reset]);
 
   const progressPct = Math.min(100, Math.round((count / goal) * 100));
-  const watchPct = Math.min(100, Math.round((watchedSec / REQUIRED_WATCH_SEC) * 100));
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -145,7 +85,6 @@ export default function BreathProtocolDrawer({
             <X className="w-4 h-4" />
           </button>
         </DrawerHeader>
-
 
         <p className="text-[13px] text-muted-foreground leading-snug">
           {BREATH_PROTOCOL_VIDEO.description}
@@ -198,11 +137,15 @@ export default function BreathProtocolDrawer({
         </div>
 
         {/* Watch progress */}
-        {!completed && !unlocked && (
+        {!completed && (
           <div className="mt-3 rounded-2xl bg-muted/60 border border-border p-3">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[11px] font-black uppercase tracking-[0.14em] text-muted-foreground">Watch progress</span>
-              <span className="text-[11px] font-black tabular-nums text-muted-foreground">{watchPct}%</span>
+              <span className="text-[11px] font-black uppercase tracking-[0.14em] text-muted-foreground">
+                Round {Math.min(goal, count + 1)} watch
+              </span>
+              <span className="text-[11px] font-black tabular-nums text-muted-foreground">
+                {Math.min(watchedSec, requiredSec)}s / {requiredSec}s
+              </span>
             </div>
             <div className="mt-2 h-1.5 rounded-full bg-background overflow-hidden">
               <motion.div
@@ -225,7 +168,7 @@ export default function BreathProtocolDrawer({
           ) : completed ? (
             <><CheckCircle2 className="w-4 h-4" /> All 4 rounds done today</>
           ) : (
-            <>Just watch — the round logs itself ({count + 1}/{goal})</>
+            <>Watch the protocol — round {Math.min(goal, count + 1)} of {goal} logs itself</>
           )}
         </div>
 

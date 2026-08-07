@@ -32,8 +32,11 @@ import NativeYouTubePlayer from "@/components/exercises/NativeYouTubePlayer";
 import { isNativeAndroidApp, isNativeIOSApp, isYoutubePlayerMessage, youtubePlayerProxyUrl } from "@/lib/youtubeEmbed";
 import { accumulateWatched, loadWatched, markCompleted, recordProgress, saveDuration } from "@/lib/videoProgressStore";
 import { useCoachAssignedItems } from "@/hooks/useCoachAssignedItems";
+import { useWatchCredit } from "@/hooks/useWatchCredit";
 
 const FALLBACK_SHORT_VIDEO_SEC = 120;
+// One set is credited after a real watch: the full clip, capped at 3 minutes.
+const SET_WATCH_SEC = 180;
 
 interface Props {
   packageKey: string | null;
@@ -47,7 +50,7 @@ function startOfTodayISO() {
   return d.toISOString();
 }
 
-/** Modal player that auto-logs a set when the video ends AND reports watched seconds. */
+/** Modal player that auto-logs a set once the drill is watched, and reports watched minutes. */
 function WatchModal({
   exercise,
   onClose,
@@ -56,6 +59,7 @@ function WatchModal({
 }: {
   exercise: Exercise;
   onClose: () => void;
+  /** Fired each time a full watch is credited — logs one set, modal stays open. */
   onCompleted: () => void;
   /** Fired with newly watched seconds so repeats keep counting toward minutes. */
   onProgress: (deltaSec: number, durationSec: number, completed: boolean, flush?: boolean) => void;
@@ -180,7 +184,7 @@ function WatchModal({
         const duration = Math.floor(event.data.duration || lastWatchedRef.current.duration || 0);
         lastWatchedRef.current = { watched: duration, duration, completed: true };
         reportDelta(Math.max(creditedWatchedRef.current, duration), duration, true, true);
-        onCompleted();
+        window.setTimeout(() => { firedRef.current = false; }, 1500);
       }
     };
 
@@ -193,6 +197,26 @@ function WatchModal({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [useAndroidSimpleEmbed, videoId]);
+
+  // Cross-platform set credit: one real watch (full clip, capped at 3 minutes)
+  // logs one set. Works on web, Android WebView and the iOS native player.
+  const onCompletedRef = useRef(onCompleted);
+  useEffect(() => { onCompletedRef.current = onCompleted; }, [onCompleted]);
+  const setResetRef = useRef<() => void>(() => {});
+  const handleSetWatched = useCallback(() => {
+    onCompletedRef.current();
+    setResetRef.current();
+  }, []);
+  const { watchedSec: setWatchedSec, requiredSec: setRequiredSec, progressPct: setWatchPct, reset: resetSetWatch } =
+    useWatchCredit({
+      active: true,
+      videoId: videoId || undefined,
+      requiredSec: SET_WATCH_SEC,
+      onReached: handleSetWatched,
+    });
+  useEffect(() => { setResetRef.current = resetSetWatch; }, [resetSetWatch]);
+
+
 
   return (
     <div
@@ -239,7 +263,9 @@ function WatchModal({
           <div className="min-w-0">
             <p className="text-white text-sm font-black truncate">{exercise.name}</p>
             <p className="text-white/60 text-[11px]">
-              Every second you watch counts toward today's minutes.
+              {setWatchedSec >= setRequiredSec
+                ? "Set logged — keep watching for the next one."
+                : `Watch ${Math.max(0, setRequiredSec - setWatchedSec)}s more to auto-log this set (${setWatchPct}%).`}
             </p>
           </div>
           <button
@@ -857,9 +883,7 @@ export default function ExerciseTab({ packageKey }: Props) {
           exercise={watching}
           onClose={() => setWatching(null)}
           onCompleted={() => {
-            const ex = watching;
-            setWatching(null);
-            void logSetFromWatch(ex);
+            void logSetFromWatch(watching);
           }}
           onProgress={(watchedSec, durationSec, completed, flush) => {
             void saveWatchProgress(watching, watchedSec, durationSec, completed, flush);
