@@ -113,13 +113,14 @@ export default function Diet() {
                 <UserCheck className="w-5 h-5" strokeWidth={1.6} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[11px] font-bold uppercase tracking-[0.16em]" style={{ color: "var(--pillar-diet)" }}>Awaiting your coach</p>
+                <p className="text-[11px] font-bold uppercase tracking-[0.16em]" style={{ color: "var(--pillar-diet)" }}>Awaiting first consultation</p>
                 <h3 className="text-base font-black text-foreground mt-1 leading-tight tracking-[-0.02em]">
-                  Your personalised 30-day diet plan is coming
+                  Your 30-day plan unlocks after your first consultation
                 </h3>
                 <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-                  Your coach will publish your meal-by-meal plate plan after your first consultation. It will appear here
-                  automatically. Meanwhile, explore the food reference below.
+                  Once your first consultation is done — so we can factor in allergies, preferences and health
+                  markers — your meal-by-meal plate plan appears here automatically. Meanwhile, explore the food
+                  reference below.
                 </p>
               </div>
             </div>

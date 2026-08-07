@@ -47,7 +47,8 @@ interface VideosProps {
 }
 
 export default function Videos({ packageKey }: VideosProps = {}) {
-  const isCoachManaged = packageKey === "active" || packageKey === "intensive";
+  // All paid tiers see the full yoga library (coach assignment gating removed).
+  const isCoachManaged = false;
   const { items: assignedItems, loading: assignmentsLoading } = useCoachAssignedItems("yoga", isCoachManaged);
   const [group, setGroup] = useState<(typeof videoGroups)[number]["id"]>("all");
   const [tag, setTag] = useState<(typeof videoTagFilters)[number]["id"]>("all");
