@@ -272,6 +272,7 @@ export default function Profile({ onClose, isDark = true, onToggleTheme }: Profi
       setUserMovementBadges(moveEarned || []);
       if (profile?.initial_health_score != null) setInitialScore(profile.initial_health_score);
       if (profile?.created_at) setMemberSince(profile.created_at);
+      if (Array.isArray((profile as any)?.goals)) setDbGoals((profile as any).goals as string[]);
       setCompliments(comps);
       if (comps.length > 0) markAllSeen().catch(console.error);
       void (async () => {
