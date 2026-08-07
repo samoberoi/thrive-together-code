@@ -8,6 +8,8 @@ import {
   Droplet,
   Activity,
   Heart,
+  Wind,
+  ChevronsUp,
   Sparkles,
   CheckCircle2,
   type LucideIcon,
@@ -35,6 +37,8 @@ const ICONS: Record<string, LucideIcon> = {
   yoga: Flower2,
   water: Droplet,
   diabetes: Activity,
+  breath: Wind,
+  soleus: ChevronsUp,
 };
 
 // SVG viewBox: 240x240, centered at (120, 120).
