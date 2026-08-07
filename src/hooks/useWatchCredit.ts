@@ -32,6 +32,9 @@ export function useWatchCredit({
   const durationRef = useRef(0);
   const playingRef = useRef(false);
   const reachedRef = useRef(false);
+  /** True once the proxied player (web / Android WebView) reports events. */
+  const hasPlayerEventsRef = useRef(false);
+  const lastTimeRef = useRef<number | null>(null);
   const onReachedRef = useRef(onReached);
 
   useEffect(() => { onReachedRef.current = onReached; }, [onReached]);
@@ -46,6 +49,7 @@ export function useWatchCredit({
     watchedRef.current = 0;
     reachedRef.current = false;
     playingRef.current = false;
+    lastTimeRef.current = null;
     setWatchedSec(0);
   }, []);
 
@@ -53,6 +57,13 @@ export function useWatchCredit({
     if (!(seconds > watchedRef.current)) return;
     watchedRef.current = seconds;
     setWatchedSec(seconds);
+  }, []);
+
+  /** Add real elapsed playback seconds (never counts paused/idle time). */
+  const addWatched = useCallback((delta: number) => {
+    if (!(delta > 0)) return;
+    watchedRef.current = watchedRef.current + delta;
+    setWatchedSec(watchedRef.current);
   }, []);
 
   // Reset whenever the surface becomes active.
@@ -68,12 +79,13 @@ export function useWatchCredit({
     onReachedRef.current();
   }, [active, watchedSec, effectiveRequired]);
 
-  // Player events (web + Android).
+  // Player events (web + Android WebView proxied player).
   useEffect(() => {
     if (!active) return;
     const onMsg = (event: MessageEvent) => {
       const data = event?.data;
       if (!isYoutubePlayerMessage(data, videoId)) return;
+      hasPlayerEventsRef.current = true;
 
       const d = Number(data.duration || 0);
       if (d > 0 && d !== durationRef.current) {
@@ -81,14 +93,34 @@ export function useWatchCredit({
         setDurationSec(d);
       }
 
-      if (data.type === "progress" || data.type === "ready") {
-        playingRef.current = true;
-        credit(Math.floor(Number(data.currentTime || 0)));
+      const t = Number(data.currentTime || 0);
+
+      if (data.type === "ready") {
+        // Player is loaded but NOT playing — do not credit anything yet.
+        playingRef.current = false;
+        lastTimeRef.current = null;
+        return;
+      }
+
+      if (data.type === "progress") {
+        if (!playingRef.current) {
+          // Paused / buffering / not started: keep the clock frozen.
+          lastTimeRef.current = t;
+          return;
+        }
+        const prev = lastTimeRef.current;
+        lastTimeRef.current = t;
+        if (prev == null) return;
+        const delta = t - prev;
+        // Ignore seeks/jumps — credit only plausible real-time advances.
+        if (delta > 0 && delta <= 2.5) addWatched(delta);
         return;
       }
 
       if (data.type === "state") {
+        // 1 = playing, 3 = buffering, everything else is not watching.
         playingRef.current = data.state === 1;
+        lastTimeRef.current = playingRef.current ? t : null;
         if (data.state === 0) {
           // Ended — full credit.
           credit(Math.max(watchedRef.current, durationRef.current || requiredSec, requiredSec));
@@ -97,19 +129,20 @@ export function useWatchCredit({
     };
     window.addEventListener("message", onMsg);
     return () => window.removeEventListener("message", onMsg);
-  }, [active, videoId, credit, requiredSec]);
+  }, [active, videoId, credit, addWatched, requiredSec]);
 
-  // Wall-clock fallback: covers the iOS native player (webview is backgrounded)
-  // and any player that stops posting progress.
+  // Wall-clock fallback: ONLY for the iOS native fullscreen player, where the
+  // webview is backgrounded and no postMessage progress arrives.
   useEffect(() => {
     if (!active) return;
     const iv = window.setInterval(() => {
-      const nativeOpen = isNativeVideoContextActive();
-      if (!nativeOpen && (document.hidden || !playingRef.current)) return;
-      credit(watchedRef.current + 1);
+      if (!isNativeVideoContextActive()) return;
+      if (hasPlayerEventsRef.current) return;
+      addWatched(1);
     }, 1000);
     return () => window.clearInterval(iv);
-  }, [active, credit]);
+  }, [active, addWatched]);
+
 
   // iOS native player reports the real elapsed time when it closes.
   useEffect(() => {
@@ -124,7 +157,7 @@ export function useWatchCredit({
   }, [active, credit]);
 
   return {
-    watchedSec,
+    watchedSec: Math.floor(watchedSec),
     durationSec,
     requiredSec: effectiveRequired,
     progressPct: Math.min(100, Math.round((watchedSec / Math.max(1, effectiveRequired)) * 100)),
