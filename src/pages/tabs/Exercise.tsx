@@ -258,7 +258,8 @@ function WatchModal({
 export default function ExerciseTab({ packageKey }: Props) {
   const { user } = useAuth();
   const userTier = tierForPackageKey(packageKey);
-  const isCoachManaged = packageKey === "active" || packageKey === "intensive";
+  // All paid tiers see the full exercise library (coach assignment gating removed).
+  const isCoachManaged = false;
   const { items: assignedItems, loading: assignmentsLoading } = useCoachAssignedItems("exercise", isCoachManaged);
 
   const [categories, setCategories] = useState<ExerciseCategory[]>([]);

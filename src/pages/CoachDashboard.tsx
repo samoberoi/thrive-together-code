@@ -20,7 +20,8 @@ const CoachLabTests = lazy(() => import("./coach/CoachLabTests"));
 const CoachMeetings = lazy(() => import("./coach/CoachMeetings"));
 const CoachMove = lazy(() => import("./coach/CoachMove"));
 const CoachFood = lazy(() => import("./coach/CoachFood"));
-const CoachVideoAssignPage = lazy(() => import("./coach/CoachVideoAssignPage"));
+const ExerciseTab = lazy(() => import("./tabs/Exercise"));
+const Videos = lazy(() => import("./tabs/Videos"));
 const CoachConsultationRequests = lazy(() => import("./coach/CoachConsultationRequests"));
 const CoachInbox = lazy(() => import("@/components/chat/CoachInbox"));
 
@@ -154,8 +155,8 @@ export default function CoachDashboard() {
     food: <CoachFood />,
     supplements: <CoachSupplements />,
     move: <CoachMove />,
-    train: <CoachVideoAssignPage module="exercise" />,
-    yoga: <CoachVideoAssignPage module="yoga" />,
+    train: <ExerciseTab packageKey="intensive" />,
+    yoga: <Videos packageKey="intensive" />,
     labtests: <CoachLabTests />,
     profile: <CoachProfile onSignOut={handleSignOut} onReplayTour={handleReplayTour} />,
   };
