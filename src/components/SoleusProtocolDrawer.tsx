@@ -95,30 +95,29 @@ export default function SoleusProtocolDrawer({
     return () => window.removeEventListener("message", onMsg);
   }, [open]);
 
-  const onComplete = async () => {
-    if (!user) { toast.error("Please sign in"); return; }
-    if (completed) {
-      toast.success("You've already closed today's loop 🎉");
-      return;
-    }
-    if (!unlocked) {
-      toast.error(`Watch the drill first — ${remainingWatch}s to go.`);
-      return;
-    }
+  // Auto-log the round as soon as the watch requirement is met — no button.
+  useEffect(() => {
+    if (!open || completed || !unlocked) return;
+    if (!user || savingRef.current || loggedThisRoundRef.current) return;
+    loggedThisRoundRef.current = true;
+    savingRef.current = true;
     setSaving(true);
-    const ok = await recordSoleusSession(user.id, "video");
-    setSaving(false);
-    if (ok) {
-      await refresh();
-      const next = Math.min(goal, count + 1);
-      if (next >= goal) toast.success("Soleus Push-Ups complete for today ✨");
-      else toast.success(`Round ${next} of ${goal} logged`);
-      // Each round needs its own watch.
-      resetWatch();
-    } else {
-      toast.error("Couldn't save this round. Try again.");
-    }
-  };
+    (async () => {
+      const ok = await recordSoleusSession(user.id, "video");
+      setSaving(false);
+      savingRef.current = false;
+      if (ok) {
+        await refresh();
+        const next = Math.min(goal, count + 1);
+        if (next >= goal) toast.success("Soleus Push-Ups complete for today ✨");
+        else toast.success(`Round ${next} of ${goal} logged automatically`);
+        resetWatch();
+      } else {
+        loggedThisRoundRef.current = false;
+        toast.error("Couldn't save this round. Try again.");
+      }
+    })();
+  }, [open, completed, unlocked, user, refresh, goal, count, resetWatch]);
 
   const progressPct = Math.min(100, Math.round((count / goal) * 100));
   const watchPct = Math.min(100, Math.round((watchedSec / REQUIRED_WATCH_SEC) * 100));
