@@ -19,6 +19,8 @@ export interface StoredUser {
   assessment: HealthAssessment | null;
   deepProfiling: Record<string, any> | null;
   avatarUrl: string | null;
+  /** True once the user actually submitted the BodyStats step (or has server values). */
+  bodyStatsConfirmed?: boolean;
 }
 
 const defaults: StoredUser = {
@@ -29,7 +31,9 @@ const defaults: StoredUser = {
   assessment: null,
   deepProfiling: null,
   avatarUrl: null,
+  bodyStatsConfirmed: false,
 };
+
 
 export function getUser(): StoredUser {
   try {

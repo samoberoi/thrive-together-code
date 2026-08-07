@@ -120,7 +120,16 @@ export async function updateProfile(userId: string, updates: Partial<ProfileRow>
   const previousProfile = shouldCheckHealthAlert
     ? await fetchProfile(userId, { force: true })
     : null;
+  // While the user is still inside onboarding, values written to the profile are
+  // setup defaults / baselines — NOT real measurements. Writing them to
+  // health_logs makes the DB alert trigger fire (e.g. "+5 kg") before the user
+  // has even reached the dashboard. Suppress log creation until onboarding ends.
+  const onboardingDone =
+    (updates as any).onboarding_completed === true ||
+    previousProfile?.onboarding_completed === true;
+  const skipHealthLogs = shouldCheckHealthAlert && !onboardingDone;
   invalidateProfileCache(userId);
+
 
 
   // Update first, insert only when no row exists.
@@ -150,9 +159,11 @@ export async function updateProfile(userId: string, updates: Partial<ProfileRow>
     return false;
   }
 
+  if (skipHealthLogs) return true;
 
   const nextWeight = Number((updates as any).weight);
   if (Number.isFinite(nextWeight) && previousProfile?.weight !== nextWeight) {
+
     const { error: weightLogError } = await supabase.from("health_logs" as any).insert({
       user_id: userId,
       log_type: "weight",
@@ -211,21 +222,28 @@ export async function syncLocalToBackend(userId: string) {
     age: local.profile.age,
     gender: local.profile.gender,
     goals: (local.profile as any).goals ?? [],
-    height: local.bodyMetrics.height,
-    weight: local.bodyMetrics.weight,
-    bmi: local.bodyMetrics.bmi,
-    bmi_category: local.bodyMetrics.bmiCategory,
-    waist: (local.bodyMetrics as any).waist,
     clinical: local.clinical,
     lifestyle: local.lifestyle,
     deep_profiling: local.deepProfiling,
     assessment: local.assessment,
   };
 
+  // Body metrics are only persisted once the user has actually submitted the
+  // BodyStats step — otherwise the slider defaults (70 kg / 170 cm) get written
+  // as if they were real values.
+  if ((local as any).bodyStatsConfirmed) {
+    updates.height = local.bodyMetrics.height;
+    updates.weight = local.bodyMetrics.weight;
+    updates.bmi = local.bodyMetrics.bmi;
+    updates.bmi_category = local.bodyMetrics.bmiCategory;
+    (updates as any).waist = (local.bodyMetrics as any).waist;
+  }
+
   // Remove undefined values
   Object.keys(updates).forEach((key) => {
     if ((updates as any)[key] === undefined) delete (updates as any)[key];
   });
+
 
   return updateProfile(userId, updates);
 }
@@ -271,6 +289,11 @@ export function loadProfileToLocal(profile: ProfileRow) {
       waist: profile.waist,
     }),
   };
+
+  // Existing users already have real body metrics on the server — keep syncing them.
+  if (profile.weight != null) payload.bodyStatsConfirmed = true;
+
+
 
   if (profile.clinical != null) payload.clinical = profile.clinical;
   if (profile.lifestyle != null) payload.lifestyle = profile.lifestyle;
