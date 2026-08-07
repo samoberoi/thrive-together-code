@@ -37,7 +37,7 @@ export default function BodyStats() {
     if (currentStep === 0) setCurrentStep(1);
     else {
       const { bmi, bmiCategory } = calculateBMI(heightCm, weightKg);
-      saveUser({ bodyMetrics: { height: heightCm, weight: weightKg, bmi, bmiCategory, waist: waistCm } as any });
+      saveUser({ bodyStatsConfirmed: true, bodyMetrics: { height: heightCm, weight: weightKg, bmi, bmiCategory, waist: waistCm } as any });
       navigate("/setup/clinical");
     }
   };
