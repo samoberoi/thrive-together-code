@@ -163,7 +163,8 @@ async function syncCatalog() {
         parameters_count: Number(p.noOfTestsIncluded || p.parametersCount || p.parameterCount || 0) || null,
         description: p.description || p.about || null,
         raw_data: p,
-        is_active: true,
+        // NOTE: never send is_active here — admin enable/disable state must survive a catalog sync.
+        // New rows default to is_active = false and must be enabled explicitly by an admin.
         synced_at: new Date().toISOString(),
       };
     })
