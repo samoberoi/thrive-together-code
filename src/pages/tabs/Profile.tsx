@@ -1267,14 +1267,32 @@ export default function Profile({ onClose, isDark = true, onToggleTheme }: Profi
         })}
       </motion.div>
 
-      <motion.div className="liquid-glass rounded-2xl p-4" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-        <div className="flex items-start gap-2 mb-3"><Activity className="w-4 h-4 shrink-0 text-primary" strokeWidth={1.6} /><span className="min-w-0 text-foreground font-bold text-sm leading-tight break-words">{t("yourGoals")}</span></div>
-        <div className="flex flex-wrap gap-2">
-          {[t("controlDiabetes"), t("loseWeight"), t("boostEnergy")].map((goal) => (
-            <span key={goal} className="px-3 py-1.5 bg-primary/20 border border-primary/30 rounded-full text-primary text-xs font-medium leading-tight break-words">{goal}</span>
-          ))}
-        </div>
-      </motion.div>
+      {(() => {
+        const GOAL_LABELS: Record<string, string> = {
+          diabetes: t("controlDiabetes"),
+          weight: t("loseWeight"),
+          lifestyle: "Change Lifestyle",
+          energy: t("boostEnergy"),
+        };
+        const rawGoals = ((storedUser.profile as any)?.goals ?? []) as string[];
+        const selectedGoals = Array.isArray(rawGoals) ? rawGoals.filter(Boolean) : [];
+        return (
+          <motion.div className="liquid-glass rounded-2xl p-4" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+            <div className="flex items-start gap-2 mb-3"><Activity className="w-4 h-4 shrink-0 text-primary" strokeWidth={1.6} /><span className="min-w-0 text-foreground font-bold text-sm leading-tight break-words">{t("yourGoals")}</span></div>
+            {selectedGoals.length === 0 ? (
+              <p className="text-muted-foreground text-xs leading-snug">No goals selected yet.</p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {selectedGoals.map((goal) => (
+                  <span key={goal} className="px-3 py-1.5 bg-primary/20 border border-primary/30 rounded-full text-primary text-xs font-medium leading-tight break-words">
+                    {GOAL_LABELS[goal] ?? goal}
+                  </span>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        );
+      })()}
 
       {/* ─── Achievements teaser ─── */}
       {(allBadges.length > 0 || suppBadgeDefs.length > 0 || movementBadgeDefs.length > 0) && (

@@ -93,10 +93,15 @@ export default function FoundationLabCard({ userId }: Props) {
     (async () => {
       const { data } = await supabase
         .from("thyrocare_tests" as any)
-        .select("id, product_code, product_name, offer_rate, rate, markup_pct")
+        .select("id, product_code, product_name, offer_rate, rate, markup_pct, foundation_default")
         .eq("is_active", true);
-      const list = ((data as any) || []) as { id: string; product_code: string; product_name: string; offer_rate: number | null; rate: number | null; markup_pct: number | null }[];
-      const basic = list.find((t) => (t.product_name || "").toUpperCase().includes("BASIC"));
+      const list = ((data as any) || []) as { id: string; product_code: string; product_name: string; offer_rate: number | null; rate: number | null; markup_pct: number | null; foundation_default?: boolean | null }[];
+      // Pin the BBDO package explicitly — never fuzzy-match "BASIC", which also
+      // hits unrelated Thyrocare products (e.g. "WOMEN BASIC PROFILE").
+      const basic =
+        list.find((t) => t.foundation_default === true) ||
+        list.find((t) => t.product_code === "PROJ1062518") ||
+        list.find((t) => (t.product_name || "").toUpperCase().startsWith("BYE BYE BASIC"));
       if (!cancelled && basic) {
         setBasicCode(basic.product_code);
         setBasicId(basic.id);
