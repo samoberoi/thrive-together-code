@@ -215,28 +215,32 @@ export default function TodayStepsCard({ onOpenMovement }: { onOpenMovement?: ()
         </div>
       )}
 
-      <div className="mt-3 flex gap-2">
-        <input
-          type="number"
-          inputMode="numeric"
-          min={0}
-          placeholder="Log today's steps"
-          value={val}
-          onChange={(e) => setVal(e.target.value)}
-          className="flex-1 h-10 rounded-xl border border-input bg-background px-3 text-sm"
-        />
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="h-10 px-4 rounded-xl bg-[var(--bbdo-red)] text-white text-sm font-bold inline-flex items-center gap-1.5 disabled:opacity-60"
-        >
-          <Plus className="w-4 h-4" /> {saving ? "Saving…" : "Log"}
-        </button>
-      </div>
-      {healthStepsAvailable && (
-        <p className="mt-1.5 text-[11px] text-muted-foreground">
-          No device connected or permission denied? Enter steps manually.
-        </p>
+      {!(healthStepsAvailable && healthConnected) && (
+        <>
+          <div className="mt-3 flex gap-2">
+            <input
+              type="number"
+              inputMode="numeric"
+              min={0}
+              placeholder="Log today's steps"
+              value={val}
+              onChange={(e) => setVal(e.target.value)}
+              className="flex-1 h-10 rounded-xl border border-input bg-background px-3 text-sm"
+            />
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="h-10 px-4 rounded-xl bg-[var(--bbdo-red)] text-white text-sm font-bold inline-flex items-center gap-1.5 disabled:opacity-60"
+            >
+              <Plus className="w-4 h-4" /> {saving ? "Saving…" : "Log"}
+            </button>
+          </div>
+          {healthStepsAvailable && (
+            <p className="mt-1.5 text-[11px] text-muted-foreground">
+              No device connected or permission denied? Enter steps manually.
+            </p>
+          )}
+        </>
       )}
 
     </motion.div>
