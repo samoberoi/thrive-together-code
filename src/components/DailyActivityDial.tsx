@@ -89,9 +89,6 @@ export default function DailyActivityDial({
 
   const geo = computeGeometry(Math.max(n, 1));
 
-  // Ratio to convert SVG units to % for absolutely-positioned icon chips.
-  const toPct = (svgVal: number) => (svgVal / VB) * 100;
-
   return (
     <motion.div
       className={`liquid-glass rounded-3xl relative overflow-hidden ${
