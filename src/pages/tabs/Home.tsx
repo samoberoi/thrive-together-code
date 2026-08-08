@@ -1536,7 +1536,10 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
             label: "Fasting",
             ratio: fastingRatio,
             color: "#0F1A3D",
-            hint: fastingTarget ? `${Math.min(fastingElapsedStatic, fastingTarget).toFixed(1)} / ${fastingTarget}h` : undefined,
+            hint: [
+              fmodDoneToday ? "FMOD ✓" : "FMOD pending",
+              fastingTarget ? `${Math.min(fastingElapsedStatic, fastingTarget).toFixed(1)} / ${fastingTarget}h` : (lmodDoneToday ? "LMOD ✓" : "LMOD pending"),
+            ].join(" · "),
           });
         }
         if (hasActiveSupplements) {
