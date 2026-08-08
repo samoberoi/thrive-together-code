@@ -227,14 +227,39 @@ async function attachPushListenersOnce() {
   }
 }
 
+const PUSH_PROMPT_ASKED_KEY = "bbdo_push_prompt_asked";
+
+function hasAskedPushPermission(): boolean {
+  try {
+    return localStorage.getItem(PUSH_PROMPT_ASKED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markPushPromptAsked() {
+  try {
+    localStorage.setItem(PUSH_PROMPT_ASKED_KEY, "1");
+  } catch {
+    /* ignore */
+  }
+}
+
 /**
  * Call once after the user is signed in. Safe to call again — listeners are
  * only attached the first time; permission is re-checked without prompting
  * if already granted.
+ *
+ * IMPORTANT (Android): the OS permission sheet steals window focus, which fires
+ * `appStateChange` again. Re-prompting on every resume created a prompt →
+ * resume → prompt loop that made the status bar / system UI flicker. So we ask
+ * at most once per install unless the user explicitly taps "Enable notifications"
+ * (`interactive: true`).
  */
-export async function registerNativePush(userId: string): Promise<
-  { ok: true; token?: string } | { ok: false; reason: string }
-> {
+export async function registerNativePush(
+  userId: string,
+  opts: { interactive?: boolean } = {},
+): Promise<{ ok: true; token?: string } | { ok: false; reason: string }> {
   if (!isNativePushSupported()) {
     return { ok: false, reason: "not_native" };
   }
@@ -251,7 +276,9 @@ export async function registerNativePush(userId: string): Promise<
     await attachPushListenersOnce();
 
     let perm = await PushNotifications.checkPermissions();
-    if (perm.receive === "prompt" || perm.receive === "prompt-with-rationale") {
+    const canPrompt = perm.receive === "prompt" || perm.receive === "prompt-with-rationale";
+    if (canPrompt && (opts.interactive || !hasAskedPushPermission())) {
+      markPushPromptAsked();
       perm = await PushNotifications.requestPermissions();
     }
     if (perm.receive !== "granted") {
@@ -260,16 +287,21 @@ export async function registerNativePush(userId: string): Promise<
 
     await refreshIosNotificationAuthorization();
 
-    // Same iOS permission family, but request it explicitly so local health
-    // alerts can show a banner + system beep immediately after an abnormal log.
+    // Same iOS permission family. Only ever request when the push permission is
+    // already granted (above) — never as a second prompt after a denial.
     try {
       let localPerm = await LocalNotifications.checkPermissions();
-      if (localPerm.display === "prompt" || localPerm.display === "prompt-with-rationale") {
+      if (
+        (localPerm.display === "prompt" || localPerm.display === "prompt-with-rationale") &&
+        (opts.interactive || !hasAskedPushPermission())
+      ) {
+        markPushPromptAsked();
         localPerm = await LocalNotifications.requestPermissions();
       }
     } catch (err) {
       console.warn("[push] local alert permission setup failed", err);
     }
+
 
     // Android channels are immutable after first creation. Use a fresh channel
     // id and the phone's default notification sound so lock-screen pushes beep
