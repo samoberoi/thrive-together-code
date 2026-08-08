@@ -106,16 +106,17 @@ export function evaluateHealthAlert(log: Partial<HealthAlertLog>, prevWeight?: n
 async function ensureLocalAlertPermission(): Promise<boolean> {
   if (!Capacitor.isNativePlatform()) return false;
   try {
-    let perm = await LocalNotifications.checkPermissions();
-    if (perm.display === "prompt" || perm.display === "prompt-with-rationale") {
-      perm = await LocalNotifications.requestPermissions();
-    }
+    const perm = await LocalNotifications.checkPermissions();
+    // Never prompt from here — a background alert opening the OS permission
+    // sheet caused a prompt/resume flicker loop on Android. The prompt is owned
+    // by the push registration flow (and the Profile "enable" button).
     return perm.display === "granted";
   } catch (err) {
     console.warn("local alert permission failed", err);
     return false;
   }
 }
+
 
 async function ensureAndroidAlertChannel() {
   if (Capacitor.getPlatform() !== "android" || localChannelReady) return;
