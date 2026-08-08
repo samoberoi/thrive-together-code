@@ -157,7 +157,7 @@ export default function TransformationStory() {
             className="flex flex-col"
           >
             {/* Before / After collage — identical frame for every story */}
-            <div className="relative w-full aspect-[5/4] max-h-[34dvh] mx-auto rounded-2xl overflow-hidden bbdo-surface-card bg-bbdo-ink/5">
+            <div className="relative w-full aspect-[5/4] max-h-[29dvh] mx-auto rounded-2xl overflow-hidden bbdo-surface-card bg-bbdo-ink/5">
               <img
                 src={story.image}
                 alt={`${story.name} before and after transformation`}
@@ -184,7 +184,7 @@ export default function TransformationStory() {
               ))}
             </div>
 
-            <p className="text-[12.5px] italic leading-[1.45] text-bbdo-inksoft mt-2.5 pb-1">
+            <p className="text-[12.5px] italic leading-[1.45] text-bbdo-inksoft mt-2 pb-2">
               "{story.quote}"
             </p>
           </motion.div>
