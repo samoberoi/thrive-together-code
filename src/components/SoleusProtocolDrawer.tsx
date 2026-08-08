@@ -14,7 +14,7 @@ import {
 import { isNativeIOSApp, youtubePlayerProxyUrl } from "@/lib/youtubeEmbed";
 import NativeYouTubePlayer from "@/components/exercises/NativeYouTubePlayer";
 
-// A round is credited after a real watch — capped at 80% of the clip length.
+// A round is credited only after the clip is watched to the end (95% of its length).
 const REQUIRED_WATCH_SEC = 30;
 
 export default function SoleusProtocolDrawer({
@@ -172,7 +172,7 @@ export default function SoleusProtocolDrawer({
           ) : completed ? (
             <><CheckCircle2 className="w-4 h-4" /> All 3 rounds done today</>
           ) : (
-            <>Watch the drill — round {Math.min(goal, count + 1)} of {goal} logs itself</>
+            <>Finish the full video to log round {Math.min(goal, count + 1)} of {goal}</>
           )}
         </div>
 

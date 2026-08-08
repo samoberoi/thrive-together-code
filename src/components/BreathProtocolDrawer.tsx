@@ -10,7 +10,7 @@ import { BREATH_PROTOCOL_VIDEO, getBreathYoutubeId, recordBreathSession } from "
 import { isNativeIOSApp, youtubePlayerProxyUrl } from "@/lib/youtubeEmbed";
 import NativeYouTubePlayer from "@/components/exercises/NativeYouTubePlayer";
 
-// A round counts after a real watch — capped at 80% of the clip length.
+// A round counts only after the clip is watched to the end (95% of its length).
 const REQUIRED_WATCH_SEC = 45;
 
 export default function BreathProtocolDrawer({
@@ -168,7 +168,7 @@ export default function BreathProtocolDrawer({
           ) : completed ? (
             <><CheckCircle2 className="w-4 h-4" /> All 4 rounds done today</>
           ) : (
-            <>Watch the protocol — round {Math.min(goal, count + 1)} of {goal} logs itself</>
+            <>Finish the full video to log round {Math.min(goal, count + 1)} of {goal}</>
           )}
         </div>
 

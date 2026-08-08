@@ -46,36 +46,36 @@ const VB = 240;
 const CENTER = VB / 2;
 
 /**
- * Compute geometry so any ring count (1..10+) fits without overlap.
- * - Rings live between INNER_RESERVED and OUTER_RADIUS.
- * - Stroke and gap scale down as `n` grows.
- * - Icon chips sit on a track outside the outermost ring.
- * - Tick marks sit outside the icon track.
+ * Compute geometry so any ring count (1..10+) fits inside the viewBox.
+ * Everything is derived OUTWARD-IN from the tick track so the icon chips
+ * always sit on one clean circle just outside the outermost ring and never
+ * spill outside the dial.
  */
 function computeGeometry(n: number) {
-  const OUTER_RADIUS = 88; // center of outermost ring
-  const INNER_RESERVED = 40; // room for the center readout — must clear the biggest text
+  const tickOuter = 118; // hard edge of the viewBox (240/2 = 120)
+  const tickInner = tickOuter - 8;
+
+  const iconChip = n <= 5 ? 30 : n <= 7 ? 26 : 23;
+  const iconRadius = tickInner - iconChip / 2 - 5;
 
   // Base stroke tapers with ring count so rings never crowd each other.
   let stroke =
     n <= 2 ? 14 : n <= 3 ? 12 : n <= 4 ? 10 : n <= 5 ? 9 : n <= 6 ? 8 : n <= 7 ? 7 : n <= 8 ? 6 : 5;
 
+  const OUTER_RADIUS = iconRadius - iconChip / 2 - stroke / 2 - 5;
+  const INNER_RESERVED = n >= 8 ? 32 : 38; // room for the center readout
+
   const span = OUTER_RADIUS - INNER_RESERVED;
   let gap = n > 1 ? span / (n - 1) : 0;
 
-  // Guarantee non-overlap: gap must exceed stroke + 1px breathing room.
-  if (n > 1 && gap < stroke + 1) {
-    while (stroke > 4 && gap < stroke + 1) stroke -= 1;
+  // Guarantee non-overlap: gap must clear the stroke width.
+  if (n > 1 && gap < stroke + 0.5) {
+    while (stroke > 3 && gap < stroke + 0.5) stroke -= 1;
   }
-
-  const iconChip = n <= 5 ? 30 : n <= 7 ? 28 : 24;
-  const iconOffset = stroke / 2 + iconChip / 2 + 4;
-  const iconRadius = OUTER_RADIUS + iconOffset;
-  const tickInner = iconRadius + iconChip / 2 + 4;
-  const tickOuter = tickInner + 8;
 
   return { OUTER_RADIUS, INNER_RESERVED, stroke, gap, iconChip, iconRadius, tickInner, tickOuter };
 }
+
 
 export default function DailyActivityDial({
   items,
@@ -88,9 +88,6 @@ export default function DailyActivityDial({
   const allDone = n > 0 && done === n;
 
   const geo = computeGeometry(Math.max(n, 1));
-
-  // Ratio to convert SVG units to % for absolutely-positioned icon chips.
-  const toPct = (svgVal: number) => (svgVal / VB) * 100;
 
   return (
     <motion.div
@@ -237,50 +234,42 @@ export default function DailyActivityDial({
                 {allDone ? "COMPLETE" : "PILLARS"}
               </text>
             </g>
-          </svg>
 
-          {/* Icon chips positioned around the outer dial */}
-          {safe.map((it, i) => {
-            const angle = (i / Math.max(n, 1)) * Math.PI * 2 - Math.PI / 2;
-            const x = CENTER + Math.cos(angle) * geo.iconRadius;
-            const y = CENTER + Math.sin(angle) * geo.iconRadius;
-            const Icon = ICONS[it.key] ?? Heart;
-            const complete = it.ratio >= 1;
-            return (
-              <motion.div
-                key={`chip-${it.key}`}
-                className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-white flex items-center justify-center border"
-                style={{
-                  left: `${toPct(x)}%`,
-                  top: `${toPct(y)}%`,
-                  width: `${(geo.iconChip / VB) * 100}%`,
-                  height: `${(geo.iconChip / VB) * 100}%`,
-                  borderColor: complete ? it.color : "hsl(var(--border))",
-                  boxShadow: complete
-                    ? `0 4px 10px ${it.color}55, 0 1px 2px rgba(15,26,61,0.08)`
-                    : "0 1px 3px rgba(15,26,61,0.08)",
-                }}
-                initial={{ opacity: 0, scale: 0.6 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{
-                  delay: 0.3 + Math.min(i, 6) * 0.04,
-                  duration: 0.22,
-                  ease: [0.22, 1, 0.36, 1],
-                }}
-                title={`${it.label}${it.hint ? ` · ${it.hint}` : ""}`}
-              >
-                <Icon
-                  style={{
-                    color: complete ? it.color : "#94A3B8",
-                    width: "55%",
-                    height: "55%",
-                  }}
-                  strokeWidth={2.4}
-                />
-              </motion.div>
-            );
-          })}
+            {/* Icon chips — drawn inside the SVG so they always sit exactly on
+                the same circle as the rings, on every screen size. */}
+            {safe.map((it, i) => {
+              const angle = (i / Math.max(n, 1)) * Math.PI * 2 - Math.PI / 2;
+              const x = CENTER + Math.cos(angle) * geo.iconRadius;
+              const y = CENTER + Math.sin(angle) * geo.iconRadius;
+              const Icon = ICONS[it.key] ?? Heart;
+              const complete = it.ratio >= 1;
+              const r = geo.iconChip / 2;
+              const glyph = geo.iconChip * 0.52;
+              return (
+                <g key={`chip-${it.key}`}>
+                  <title>{`${it.label}${it.hint ? ` · ${it.hint}` : ""}`}</title>
+                  <circle
+                    cx={x}
+                    cy={y}
+                    r={r}
+                    fill="#ffffff"
+                    stroke={complete ? it.color : "hsl(var(--border))"}
+                    strokeWidth={complete ? 1.6 : 1}
+                  />
+                  <Icon
+                    x={x - glyph / 2}
+                    y={y - glyph / 2}
+                    width={glyph}
+                    height={glyph}
+                    color={complete ? it.color : "#94A3B8"}
+                    strokeWidth={2.4}
+                  />
+                </g>
+              );
+            })}
+          </svg>
         </div>
+
 
         {/* Legend */}
         <div className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-x-4 gap-y-2">

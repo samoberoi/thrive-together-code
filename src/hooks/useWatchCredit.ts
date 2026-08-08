@@ -39,11 +39,13 @@ export function useWatchCredit({
 
   useEffect(() => { onReachedRef.current = onReached; }, [onReached]);
 
+  // A round only counts once the clip has essentially been watched end to end.
   const effectiveRequired = (() => {
     const d = durationSec;
-    if (d > 0) return Math.max(8, Math.min(requiredSec, Math.round(d * 0.8)));
+    if (d > 0) return Math.max(8, Math.round(d * 0.95));
     return requiredSec;
   })();
+
 
   const reset = useCallback(() => {
     watchedRef.current = 0;
@@ -71,13 +73,15 @@ export function useWatchCredit({
     if (active) reset();
   }, [active, reset]);
 
-  // Fire once the requirement is met.
+  // Fire once the requirement is met (never on a zero-watch surface).
   useEffect(() => {
     if (!active || reachedRef.current) return;
+    if (watchedSec <= 0) return;
     if (watchedSec < effectiveRequired) return;
     reachedRef.current = true;
     onReachedRef.current();
   }, [active, watchedSec, effectiveRequired]);
+
 
   // Player events (web + Android WebView proxied player).
   useEffect(() => {
@@ -122,10 +126,17 @@ export function useWatchCredit({
         playingRef.current = data.state === 1;
         lastTimeRef.current = playingRef.current ? t : null;
         if (data.state === 0) {
-          // Ended — full credit.
-          credit(Math.max(watchedRef.current, durationRef.current || requiredSec, requiredSec));
+          // Ended — credit the full clip, but ONLY if real playback happened.
+          // A freshly-cued player can emit stale/ended states; those must not
+          // hand out a free round.
+          const d = durationRef.current || 0;
+          const playedEnough = watchedRef.current > 0 && (d === 0 || watchedRef.current >= d * 0.5);
+          if (playedEnough) {
+            credit(Math.max(watchedRef.current, d || requiredSec, requiredSec));
+          }
         }
       }
+
     };
     window.addEventListener("message", onMsg);
     return () => window.removeEventListener("message", onMsg);
