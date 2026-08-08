@@ -73,13 +73,15 @@ export function useWatchCredit({
     if (active) reset();
   }, [active, reset]);
 
-  // Fire once the requirement is met.
+  // Fire once the requirement is met (never on a zero-watch surface).
   useEffect(() => {
     if (!active || reachedRef.current) return;
+    if (watchedSec <= 0) return;
     if (watchedSec < effectiveRequired) return;
     reachedRef.current = true;
     onReachedRef.current();
   }, [active, watchedSec, effectiveRequired]);
+
 
   // Player events (web + Android WebView proxied player).
   useEffect(() => {
