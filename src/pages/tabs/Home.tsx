@@ -1876,7 +1876,7 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
                     {canBreak ? "Log first meal (FMOD)" : `FMOD unlocks in ${h}h ${m}m`}
                   </button>
                 );
-              ) : (() => {
+              })() : (() => {
                 const elapsedH = fastingStartTime
                   ? (Date.now() - fastingStartTime.getTime()) / (1000 * 60 * 60)
                   : 0;
