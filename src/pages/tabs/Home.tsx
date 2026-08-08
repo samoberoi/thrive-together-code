@@ -1513,11 +1513,15 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
       {(() => {
         const suppTaken = suppTakenCount;
         const suppTotal = suppTotalCount;
-        const fastingRatio = isFastingDone
-          ? 1
-          : fastingTarget > 0
-            ? Math.min(1, fastingElapsedStatic / fastingTarget)
+        // Fasting ring has two halves: FMOD (first meal) fills 50% instantly,
+        // the fasting window after LMOD fills the remaining 50%.
+        const fmodHalf = fmodDoneToday ? 0.5 : 0;
+        const fastHalf = fastingTarget > 0
+          ? 0.5 * Math.min(1, fastingElapsedStatic / fastingTarget)
+          : lmodDoneToday
+            ? 0.5
             : 0;
+        const fastingRatio = isFastingDone ? 1 : Math.min(1, fmodHalf + fastHalf);
         const waterRatio = Math.min(1, waterGlasses / 8);
         const exerciseRatio = EXERCISE_DAILY_GOAL > 0
           ? Math.min(1, completedExercisesToday / EXERCISE_DAILY_GOAL)
@@ -1532,7 +1536,10 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
             label: "Fasting",
             ratio: fastingRatio,
             color: "#0F1A3D",
-            hint: fastingTarget ? `${Math.min(fastingElapsedStatic, fastingTarget).toFixed(1)} / ${fastingTarget}h` : undefined,
+            hint: [
+              fmodDoneToday ? "FMOD ✓" : "FMOD pending",
+              fastingTarget ? `${Math.min(fastingElapsedStatic, fastingTarget).toFixed(1)} / ${fastingTarget}h` : (lmodDoneToday ? "LMOD ✓" : "LMOD pending"),
+            ].join(" · "),
           });
         }
         if (hasActiveSupplements) {
