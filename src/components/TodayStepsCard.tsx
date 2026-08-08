@@ -49,16 +49,19 @@ export default function TodayStepsCard({ onOpenMovement }: { onOpenMovement?: ()
     try {
       const steps = await syncTodaySteps();
       if (steps == null) {
+        setHealthConnected(false);
         const message = `${healthSourceLabel()} is not available on this device`;
         setHealthSyncError(message);
         if (showToast) toast.error(message);
         return;
       }
+      setHealthConnected(true);
       await logTodaySteps(user.id, steps);
       if (showToast) toast.success(`Synced ${steps.toLocaleString("en-IN")} ${healthSourceLabel()} steps`);
       window.dispatchEvent(new CustomEvent("health-log-saved"));
       await load();
     } catch (error: any) {
+      setHealthConnected(false);
       const message = error?.message || `Couldn't sync ${healthSourceLabel()} steps`;
       setHealthSyncError(message);
       if (showToast) toast.error(message);
