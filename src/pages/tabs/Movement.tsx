@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchProfile } from "@/lib/profileService";
 import { getUserStreakStartDate } from "@/lib/globalStreak";
-import { canUseNativeHealth } from "@/lib/healthProvider";
+import { canUseNativeHealth, isHealthStepsConnected } from "@/lib/healthProvider";
 import { healthSourceLabel } from "@/lib/platformLabels";
 
 import {
