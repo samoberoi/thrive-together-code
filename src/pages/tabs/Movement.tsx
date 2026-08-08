@@ -92,6 +92,8 @@ export default function MovementTab() {
   const maxBar = Math.max(targetSteps, ...history.map((h) => h.steps), 1);
   const earnedCodes = new Set(badgesEarned.map((b) => b.badge_code));
   const nextLevel = personalLevels.find((l) => l.level_number === (level?.level_number ?? 0) + 1) ?? null;
+  // When the phone/watch is actively delivering steps, manual entry is hidden so it can't be overridden.
+  const deviceSyncing = canUseNativeHealth() && isHealthStepsConnected();
 
   return (
     <div className="theme-move px-4 md:px-6 pt-3 md:pt-8 pb-8 space-y-5">
