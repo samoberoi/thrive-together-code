@@ -70,8 +70,13 @@ function setHealthStepsConnected(connected: boolean) {
 
 export async function syncTodaySteps(): Promise<number | null> {
   let steps: number | null = null;
-  if (isIOS()) steps = await syncTodayStepsFromAppleHealth();
-  else if (isAndroid()) steps = await syncTodayStepsFromHealthConnect();
+  try {
+    if (isIOS()) steps = await syncTodayStepsFromAppleHealth();
+    else if (isAndroid()) steps = await syncTodayStepsFromHealthConnect();
+  } catch (e) {
+    setHealthStepsConnected(false);
+    throw e;
+  }
   setHealthStepsConnected(steps != null);
   return steps;
 }
