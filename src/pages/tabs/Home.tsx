@@ -1876,11 +1876,26 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
                     {canBreak ? "Log first meal (FMOD)" : `FMOD unlocks in ${h}h ${m}m`}
                   </button>
                 );
-              })() : (
-                <p className="text-[11px] text-muted-foreground text-center">
-                  Fasting in progress — log tomorrow's first meal to end it.
-                </p>
-              )}
+              })() : (() => {
+                const elapsedH = fastingStartTime
+                  ? (Date.now() - fastingStartTime.getTime()) / (1000 * 60 * 60)
+                  : 0;
+                const remainingH = Math.max(0, fastingTarget - elapsedH);
+                const rh = Math.floor(remainingH);
+                const rm = Math.floor((remainingH - rh) * 60);
+                return (
+                  <div className="rounded-2xl bg-muted/60 px-3 py-2.5 text-center">
+                    <p className="text-[12px] font-bold text-foreground">
+                      Fasting window in progress · {fastingTarget}h
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground leading-snug">
+                      {fastingStartTime && remainingH > 0
+                        ? `Your first meal (FMOD) unlocks in ${rh}h ${rm}m, once the ${fastingTarget}h fasting window completes.`
+                        : `Your first meal (FMOD) unlocks once the ${fastingTarget}h fasting window completes.`}
+                    </p>
+                  </div>
+                );
+              })()}
             </div>
           )}
           {(fastingState === "none" || fastingState === "eating") && (
