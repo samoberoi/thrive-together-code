@@ -50,10 +50,35 @@ export function canUseNativeHealth(): boolean {
 /** Alias kept for legacy callers that still check "Apple Health steps". */
 export const canUseHealthSteps = canUseNativeHealth;
 
+const STEPS_SOURCE_KEY = "bbdo:health_steps_connected";
+
+/** True when the device's health app is actually delivering step data. */
+export function isHealthStepsConnected(): boolean {
+  if (!canUseNativeHealth()) return false;
+  try {
+    return localStorage.getItem(STEPS_SOURCE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function setHealthStepsConnected(connected: boolean) {
+  try {
+    localStorage.setItem(STEPS_SOURCE_KEY, connected ? "1" : "0");
+  } catch {}
+}
+
 export async function syncTodaySteps(): Promise<number | null> {
-  if (isIOS()) return syncTodayStepsFromAppleHealth();
-  if (isAndroid()) return syncTodayStepsFromHealthConnect();
-  return null;
+  let steps: number | null = null;
+  try {
+    if (isIOS()) steps = await syncTodayStepsFromAppleHealth();
+    else if (isAndroid()) steps = await syncTodayStepsFromHealthConnect();
+  } catch (e) {
+    setHealthStepsConnected(false);
+    throw e;
+  }
+  setHealthStepsConnected(steps != null);
+  return steps;
 }
 
 export async function fetchHealthSnapshot(): Promise<HealthSnapshot | null> {

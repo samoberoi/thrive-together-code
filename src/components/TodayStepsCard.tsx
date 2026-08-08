@@ -5,7 +5,7 @@ import { Footprints, Plus, ChevronRight, Flame, RefreshCw, Watch } from "lucide-
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchProfile } from "@/lib/profileService";
-import { canUseNativeHealth, syncTodaySteps } from "@/lib/healthProvider";
+import { canUseNativeHealth, isHealthStepsConnected, syncTodaySteps } from "@/lib/healthProvider";
 import { healthSourceLabel } from "@/lib/platformLabels";
 import {
   fetchMovementOverview,
@@ -23,6 +23,7 @@ export default function TodayStepsCard({ onOpenMovement }: { onOpenMovement?: ()
   const [syncingHealth, setSyncingHealth] = useState(false);
   const [healthSyncError, setHealthSyncError] = useState<string | null>(null);
   const healthStepsAvailable = canUseNativeHealth();
+  const [healthConnected, setHealthConnected] = useState(() => isHealthStepsConnected());
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -48,16 +49,19 @@ export default function TodayStepsCard({ onOpenMovement }: { onOpenMovement?: ()
     try {
       const steps = await syncTodaySteps();
       if (steps == null) {
+        setHealthConnected(false);
         const message = `${healthSourceLabel()} is not available on this device`;
         setHealthSyncError(message);
         if (showToast) toast.error(message);
         return;
       }
+      setHealthConnected(true);
       await logTodaySteps(user.id, steps);
       if (showToast) toast.success(`Synced ${steps.toLocaleString("en-IN")} ${healthSourceLabel()} steps`);
       window.dispatchEvent(new CustomEvent("health-log-saved"));
       await load();
     } catch (error: any) {
+      setHealthConnected(false);
       const message = error?.message || `Couldn't sync ${healthSourceLabel()} steps`;
       setHealthSyncError(message);
       if (showToast) toast.error(message);
@@ -211,28 +215,32 @@ export default function TodayStepsCard({ onOpenMovement }: { onOpenMovement?: ()
         </div>
       )}
 
-      <div className="mt-3 flex gap-2">
-        <input
-          type="number"
-          inputMode="numeric"
-          min={0}
-          placeholder="Log today's steps"
-          value={val}
-          onChange={(e) => setVal(e.target.value)}
-          className="flex-1 h-10 rounded-xl border border-input bg-background px-3 text-sm"
-        />
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="h-10 px-4 rounded-xl bg-[var(--bbdo-red)] text-white text-sm font-bold inline-flex items-center gap-1.5 disabled:opacity-60"
-        >
-          <Plus className="w-4 h-4" /> {saving ? "Saving…" : "Log"}
-        </button>
-      </div>
-      {healthStepsAvailable && (
-        <p className="mt-1.5 text-[11px] text-muted-foreground">
-          No device connected or permission denied? Enter steps manually.
-        </p>
+      {!(healthStepsAvailable && healthConnected) && (
+        <>
+          <div className="mt-3 flex gap-2">
+            <input
+              type="number"
+              inputMode="numeric"
+              min={0}
+              placeholder="Log today's steps"
+              value={val}
+              onChange={(e) => setVal(e.target.value)}
+              className="flex-1 h-10 rounded-xl border border-input bg-background px-3 text-sm"
+            />
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="h-10 px-4 rounded-xl bg-[var(--bbdo-red)] text-white text-sm font-bold inline-flex items-center gap-1.5 disabled:opacity-60"
+            >
+              <Plus className="w-4 h-4" /> {saving ? "Saving…" : "Log"}
+            </button>
+          </div>
+          {healthStepsAvailable && (
+            <p className="mt-1.5 text-[11px] text-muted-foreground">
+              No device connected or permission denied? Enter steps manually.
+            </p>
+          )}
+        </>
       )}
 
     </motion.div>

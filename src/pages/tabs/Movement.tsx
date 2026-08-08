@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchProfile } from "@/lib/profileService";
 import { getUserStreakStartDate } from "@/lib/globalStreak";
-import { canUseNativeHealth } from "@/lib/healthProvider";
+import { canUseNativeHealth, isHealthStepsConnected } from "@/lib/healthProvider";
 import { healthSourceLabel } from "@/lib/platformLabels";
 
 import {
@@ -92,6 +92,8 @@ export default function MovementTab() {
   const maxBar = Math.max(targetSteps, ...history.map((h) => h.steps), 1);
   const earnedCodes = new Set(badgesEarned.map((b) => b.badge_code));
   const nextLevel = personalLevels.find((l) => l.level_number === (level?.level_number ?? 0) + 1) ?? null;
+  // When the phone/watch is actively delivering steps, manual entry is hidden so it can't be overridden.
+  const deviceSyncing = canUseNativeHealth() && isHealthStepsConnected();
 
   return (
     <div className="theme-move px-4 md:px-6 pt-3 md:pt-8 pb-8 space-y-5">
@@ -155,33 +157,39 @@ export default function MovementTab() {
           <div className="mt-4 rounded-2xl border border-border bg-background px-3 py-2.5 flex items-center gap-2">
             <Watch className="h-4 w-4 shrink-0 text-primary" />
             <p className="text-[12px] font-semibold text-muted-foreground">
-              {healthSourceLabel()} syncs your steps automatically
+              {deviceSyncing
+                ? `${healthSourceLabel()} syncs your steps automatically`
+                : `${healthSourceLabel()} isn't connected — log your steps manually below`}
             </p>
           </div>
         )}
 
-        <div className="mt-3 flex gap-2">
-          <input
-            type="number"
-            inputMode="numeric"
-            min={0}
-            placeholder="Log steps for today"
-            value={inputSteps}
-            onChange={(e) => setInputSteps(e.target.value)}
-            className="flex-1 h-10 rounded-xl border border-input bg-background px-3 text-sm"
-          />
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="h-10 px-4 rounded-xl bg-[var(--bbdo-red)] text-white text-sm font-bold inline-flex items-center gap-1.5 disabled:opacity-60"
-          >
-            <Plus className="w-4 h-4" /> {saving ? "Saving…" : "Log"}
-          </button>
-        </div>
-        {canUseNativeHealth() && (
-          <p className="mt-1.5 text-[11px] text-muted-foreground">
-            No device connected or permission denied? Enter your steps manually above.
-          </p>
+        {!deviceSyncing && (
+          <>
+            <div className="mt-3 flex gap-2">
+              <input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                placeholder="Log steps for today"
+                value={inputSteps}
+                onChange={(e) => setInputSteps(e.target.value)}
+                className="flex-1 h-10 rounded-xl border border-input bg-background px-3 text-sm"
+              />
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="h-10 px-4 rounded-xl bg-[var(--bbdo-red)] text-white text-sm font-bold inline-flex items-center gap-1.5 disabled:opacity-60"
+              >
+                <Plus className="w-4 h-4" /> {saving ? "Saving…" : "Log"}
+              </button>
+            </div>
+            {canUseNativeHealth() && (
+              <p className="mt-1.5 text-[11px] text-muted-foreground">
+                No device connected or permission denied? Enter your steps manually above.
+              </p>
+            )}
+          </>
         )}
 
       </div>
