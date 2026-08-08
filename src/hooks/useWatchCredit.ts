@@ -39,11 +39,13 @@ export function useWatchCredit({
 
   useEffect(() => { onReachedRef.current = onReached; }, [onReached]);
 
+  // A round only counts once the clip has essentially been watched end to end.
   const effectiveRequired = (() => {
     const d = durationSec;
-    if (d > 0) return Math.max(8, Math.min(requiredSec, Math.round(d * 0.8)));
+    if (d > 0) return Math.max(8, Math.round(d * 0.95));
     return requiredSec;
   })();
+
 
   const reset = useCallback(() => {
     watchedRef.current = 0;
