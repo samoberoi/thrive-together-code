@@ -126,10 +126,17 @@ export function useWatchCredit({
         playingRef.current = data.state === 1;
         lastTimeRef.current = playingRef.current ? t : null;
         if (data.state === 0) {
-          // Ended — full credit.
-          credit(Math.max(watchedRef.current, durationRef.current || requiredSec, requiredSec));
+          // Ended — credit the full clip, but ONLY if real playback happened.
+          // A freshly-cued player can emit stale/ended states; those must not
+          // hand out a free round.
+          const d = durationRef.current || 0;
+          const playedEnough = watchedRef.current > 0 && (d === 0 || watchedRef.current >= d * 0.5);
+          if (playedEnough) {
+            credit(Math.max(watchedRef.current, d || requiredSec, requiredSec));
+          }
         }
       }
+
     };
     window.addEventListener("message", onMsg);
     return () => window.removeEventListener("message", onMsg);
