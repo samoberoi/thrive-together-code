@@ -46,36 +46,36 @@ const VB = 240;
 const CENTER = VB / 2;
 
 /**
- * Compute geometry so any ring count (1..10+) fits without overlap.
- * - Rings live between INNER_RESERVED and OUTER_RADIUS.
- * - Stroke and gap scale down as `n` grows.
- * - Icon chips sit on a track outside the outermost ring.
- * - Tick marks sit outside the icon track.
+ * Compute geometry so any ring count (1..10+) fits inside the viewBox.
+ * Everything is derived OUTWARD-IN from the tick track so the icon chips
+ * always sit on one clean circle just outside the outermost ring and never
+ * spill outside the dial.
  */
 function computeGeometry(n: number) {
-  const OUTER_RADIUS = 88; // center of outermost ring
-  const INNER_RESERVED = 40; // room for the center readout — must clear the biggest text
+  const tickOuter = 118; // hard edge of the viewBox (240/2 = 120)
+  const tickInner = tickOuter - 8;
+
+  const iconChip = n <= 5 ? 30 : n <= 7 ? 26 : 23;
+  const iconRadius = tickInner - iconChip / 2 - 5;
 
   // Base stroke tapers with ring count so rings never crowd each other.
   let stroke =
     n <= 2 ? 14 : n <= 3 ? 12 : n <= 4 ? 10 : n <= 5 ? 9 : n <= 6 ? 8 : n <= 7 ? 7 : n <= 8 ? 6 : 5;
 
+  const OUTER_RADIUS = iconRadius - iconChip / 2 - stroke / 2 - 5;
+  const INNER_RESERVED = n >= 8 ? 32 : 38; // room for the center readout
+
   const span = OUTER_RADIUS - INNER_RESERVED;
   let gap = n > 1 ? span / (n - 1) : 0;
 
-  // Guarantee non-overlap: gap must exceed stroke + 1px breathing room.
-  if (n > 1 && gap < stroke + 1) {
-    while (stroke > 4 && gap < stroke + 1) stroke -= 1;
+  // Guarantee non-overlap: gap must clear the stroke width.
+  if (n > 1 && gap < stroke + 0.5) {
+    while (stroke > 3 && gap < stroke + 0.5) stroke -= 1;
   }
-
-  const iconChip = n <= 5 ? 30 : n <= 7 ? 28 : 24;
-  const iconOffset = stroke / 2 + iconChip / 2 + 4;
-  const iconRadius = OUTER_RADIUS + iconOffset;
-  const tickInner = iconRadius + iconChip / 2 + 4;
-  const tickOuter = tickInner + 8;
 
   return { OUTER_RADIUS, INNER_RESERVED, stroke, gap, iconChip, iconRadius, tickInner, tickOuter };
 }
+
 
 export default function DailyActivityDial({
   items,
