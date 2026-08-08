@@ -348,7 +348,7 @@ export async function registerNativePushWithToast(userId: string) {
     toast.info("Push notifications require the native mobile app.");
     return;
   }
-  const res = await registerNativePush(userId);
+  const res = await registerNativePush(userId, { interactive: true });
   if (res.ok === true) {
     if (res.token) {
       toast.success("Push notifications enabled for this phone");
