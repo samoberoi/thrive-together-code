@@ -237,50 +237,42 @@ export default function DailyActivityDial({
                 {allDone ? "COMPLETE" : "PILLARS"}
               </text>
             </g>
-          </svg>
 
-          {/* Icon chips positioned around the outer dial */}
-          {safe.map((it, i) => {
-            const angle = (i / Math.max(n, 1)) * Math.PI * 2 - Math.PI / 2;
-            const x = CENTER + Math.cos(angle) * geo.iconRadius;
-            const y = CENTER + Math.sin(angle) * geo.iconRadius;
-            const Icon = ICONS[it.key] ?? Heart;
-            const complete = it.ratio >= 1;
-            return (
-              <motion.div
-                key={`chip-${it.key}`}
-                className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-white flex items-center justify-center border"
-                style={{
-                  left: `${toPct(x)}%`,
-                  top: `${toPct(y)}%`,
-                  width: `${(geo.iconChip / VB) * 100}%`,
-                  height: `${(geo.iconChip / VB) * 100}%`,
-                  borderColor: complete ? it.color : "hsl(var(--border))",
-                  boxShadow: complete
-                    ? `0 4px 10px ${it.color}55, 0 1px 2px rgba(15,26,61,0.08)`
-                    : "0 1px 3px rgba(15,26,61,0.08)",
-                }}
-                initial={{ opacity: 0, scale: 0.6 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{
-                  delay: 0.3 + Math.min(i, 6) * 0.04,
-                  duration: 0.22,
-                  ease: [0.22, 1, 0.36, 1],
-                }}
-                title={`${it.label}${it.hint ? ` · ${it.hint}` : ""}`}
-              >
-                <Icon
-                  style={{
-                    color: complete ? it.color : "#94A3B8",
-                    width: "55%",
-                    height: "55%",
-                  }}
-                  strokeWidth={2.4}
-                />
-              </motion.div>
-            );
-          })}
+            {/* Icon chips — drawn inside the SVG so they always sit exactly on
+                the same circle as the rings, on every screen size. */}
+            {safe.map((it, i) => {
+              const angle = (i / Math.max(n, 1)) * Math.PI * 2 - Math.PI / 2;
+              const x = CENTER + Math.cos(angle) * geo.iconRadius;
+              const y = CENTER + Math.sin(angle) * geo.iconRadius;
+              const Icon = ICONS[it.key] ?? Heart;
+              const complete = it.ratio >= 1;
+              const r = geo.iconChip / 2;
+              const glyph = geo.iconChip * 0.52;
+              return (
+                <g key={`chip-${it.key}`}>
+                  <title>{`${it.label}${it.hint ? ` · ${it.hint}` : ""}`}</title>
+                  <circle
+                    cx={x}
+                    cy={y}
+                    r={r}
+                    fill="#ffffff"
+                    stroke={complete ? it.color : "hsl(var(--border))"}
+                    strokeWidth={complete ? 1.6 : 1}
+                  />
+                  <Icon
+                    x={x - glyph / 2}
+                    y={y - glyph / 2}
+                    width={glyph}
+                    height={glyph}
+                    color={complete ? it.color : "#94A3B8"}
+                    strokeWidth={2.4}
+                  />
+                </g>
+              );
+            })}
+          </svg>
         </div>
+
 
         {/* Legend */}
         <div className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-x-4 gap-y-2">
