@@ -29,7 +29,7 @@ const stories: Story[] = [
     city: "Dehradun (INDIA)",
     duration: "7 months",
     image: soniaImg,
-    quote: "Post pregnancy diabetes. Medicine-free today.",
+    quote: "Post-pregnancy diabetes — medicine-free today.",
     metrics: [
       { label: "HbA1c", before: "9.8%", after: "5.5%" },
       { label: "Weight", before: "71 kg", after: "57 kg" },
@@ -43,7 +43,7 @@ const stories: Story[] = [
     city: "Dubai (UAE)",
     duration: "15 months",
     image: muneerImg,
-    quote: "Reduced insulin from 120 units to 8 — and got my confidence back.",
+    quote: "Insulin down from 120 units to 8. Confidence back.",
     metrics: [
       { label: "HbA1c", before: "8.1%", after: "5.7%" },
       { label: "Weight", before: "80 kg", after: "71 kg" },
@@ -56,8 +56,7 @@ const stories: Story[] = [
     age: 61,
     city: "Ludhiana (INDIA)",
     image: jagadishImg,
-    quote:
-      "A diabetic for 26 years, if I could do this at this age, anyone can. Hats off to Col. Gautam Guha and his platform BBDO.",
+    quote: "Diabetic for 26 years. If I can do it at this age, anyone can.",
     metrics: [
       { label: "HbA1c", before: "8.2%", after: "5.2%" },
       { label: "Weight", before: "81 kg", after: "63 kg" },
@@ -70,8 +69,7 @@ const stories: Story[] = [
     age: 49,
     city: "Meerut (INDIA)",
     image: pravinImg,
-    quote:
-      "Happy to have reversed my dyslipidemia and NASH — feel in better state of mind and body. Confidence is back.",
+    quote: "Reversed my dyslipidemia and NASH. Mind and body feel new.",
     metrics: [
       { label: "HbA1c", before: "9.0%", after: "5.6%" },
       { label: "Weight", before: "121 kg", after: "90 kg" },
@@ -84,8 +82,7 @@ const stories: Story[] = [
     age: 47,
     city: "Pune (INDIA)",
     image: swatiImg,
-    quote:
-      "Happy to regain control of my health. My hypertensive medicine has also been discontinued.",
+    quote: "Back in control of my health — BP medicine discontinued too.",
     metrics: [
       { label: "HbA1c", before: "7.4%", after: "5.4%" },
       { label: "Weight", before: "67 kg", after: "55 kg" },
@@ -108,7 +105,7 @@ const EASE = [0.22, 1, 0.36, 1] as const;
 
 function Metric({ label, before, after }: { label: string; before: string; after: string }) {
   return (
-    <div className="flex flex-col items-center gap-1 py-2.5 px-1 text-center">
+    <div className="flex flex-col items-center gap-1 py-2 px-1 text-center">
       <p className="text-[0.55rem] font-semibold uppercase tracking-[0.12em] text-bbdo-inksoft">{label}</p>
       <span className="text-bbdo-blue text-base font-black leading-none">{after}</span>
       <div className="flex items-center gap-1">
@@ -135,21 +132,21 @@ export default function TransformationStory() {
       <SoundToggle />
 
       {/* Header */}
-      <div className="px-5 pt-[calc(env(safe-area-inset-top)+2rem)] shrink-0">
-        <HeroCard variant="navy" className="pb-6">
-          <p className="bbdo-eyebrow text-white mb-2">Real Transformation</p>
-          <h1 className="text-white text-[22px] leading-[1.1] font-extrabold tracking-tight">
-            Reversal isn't a promise.{" "}
+      <div className="px-5 pt-[calc(env(safe-area-inset-top)+1.25rem)] shrink-0">
+        <HeroCard variant="navy" className="pb-4">
+          <p className="bbdo-eyebrow text-white mb-1">Real Transformation</p>
+          <h1 className="text-white text-[17px] leading-[1.15] font-extrabold tracking-tight">
+            Reversal isn't luck.{" "}
             <span className="text-white/70">It's a pattern.</span>
           </h1>
-          <p className="text-white/65 text-[11px] font-medium mt-2">
+          <p className="text-white/65 text-[10px] font-medium mt-1">
             Story {current + 1} of {stories.length}
           </p>
         </HeroCard>
       </div>
 
       {/* Body */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-5 pt-4">
+      <div className="flex-1 min-h-0 overflow-y-auto px-5 pt-3">
         <AnimatePresence initial={false} mode="wait">
           <motion.div
             key={current}
@@ -160,7 +157,7 @@ export default function TransformationStory() {
             className="flex flex-col"
           >
             {/* Before / After collage — identical frame for every story */}
-            <div className="relative w-full aspect-[5/4] rounded-2xl overflow-hidden bbdo-surface-card bg-bbdo-ink/5">
+            <div className="relative w-full aspect-[5/4] max-h-[34dvh] mx-auto rounded-2xl overflow-hidden bbdo-surface-card bg-bbdo-ink/5">
               <img
                 src={story.image}
                 alt={`${story.name} before and after transformation`}
@@ -176,18 +173,18 @@ export default function TransformationStory() {
               </span>
             </div>
 
-            <h2 className="text-bbdo-ink text-[20px] leading-[1.15] font-extrabold tracking-tight mt-4">
+            <h2 className="text-bbdo-ink text-[18px] leading-[1.15] font-extrabold tracking-tight mt-3">
               {story.name}
             </h2>
-            <p className="text-bbdo-inksoft text-xs mt-1">Age {story.age} · {story.city}</p>
+            <p className="text-bbdo-inksoft text-[11px] mt-0.5">Age {story.age} · {story.city}</p>
 
-            <div className="grid grid-cols-4 rounded-2xl sub-card sub-card-tight mt-3 p-0">
+            <div className="grid grid-cols-4 rounded-2xl sub-card sub-card-tight mt-2.5 p-0">
               {story.metrics.map((m) => (
                 <Metric key={m.label} {...m} />
               ))}
             </div>
 
-            <p className="text-[13px] italic leading-[1.5] text-bbdo-inksoft mt-3 pb-2">
+            <p className="text-[12.5px] italic leading-[1.45] text-bbdo-inksoft mt-2.5 pb-1">
               "{story.quote}"
             </p>
           </motion.div>
@@ -200,7 +197,7 @@ export default function TransformationStory() {
         className="px-5 shrink-0 bg-background pt-2"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + var(--bbdo-native-bottom-guard, 0px) + 18px)" }}
       >
-        <motion.button onClick={handleCta} whileTap={{ scale: 0.98 }} className="ob-cta gradient-blue mt-2">
+        <motion.button onClick={handleCta} whileTap={{ scale: 0.98 }} className="ob-cta gradient-blue mt-1">
           {isLast ? "I want similar results" : "Next story"}
           <ChevronRight className="h-5 w-5" />
         </motion.button>
