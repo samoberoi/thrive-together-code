@@ -23,6 +23,7 @@ export default function TodayStepsCard({ onOpenMovement }: { onOpenMovement?: ()
   const [syncingHealth, setSyncingHealth] = useState(false);
   const [healthSyncError, setHealthSyncError] = useState<string | null>(null);
   const healthStepsAvailable = canUseNativeHealth();
+  const [healthConnected, setHealthConnected] = useState(() => isHealthStepsConnected());
 
   const load = useCallback(async () => {
     if (!user) return;
