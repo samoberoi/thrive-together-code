@@ -220,10 +220,20 @@ function GlobalRealtimeAlerts() {
           // Clear the OS notification tray and resync badge to the real count.
           void PushNotifications.removeAllDeliveredNotifications().catch(() => {});
           void syncBadge({ force: true });
-          void registerNativePush(user.id).catch((error) => {
-            console.warn("[push] resume registration failed", error);
-          });
+          // Only refresh the token when permission is already granted. Calling
+          // the registration path on every resume could re-open the OS
+          // permission sheet, which itself triggers another resume → the
+          // status-bar/system-UI flicker loop seen when permission is denied.
+          void PushNotifications.checkPermissions()
+            .then((perm) => {
+              if (perm.receive !== "granted") return;
+              return registerNativePush(user.id);
+            })
+            .catch((error) => {
+              console.warn("[push] resume registration failed", error);
+            });
         }
+
       }).then((l) => {
         appListener = l;
       });
