@@ -434,7 +434,20 @@ export default function UserFasting({ packageKey }: { packageKey?: string | null
   const badgeLevel = getBadgeLevel(earnedBadges, allBadges);
 
   if (!userProto || !protocol || !weekPlan) {
-    const isFoundation = !packageKey || packageKey === "foundation";
+    const normalizedKey = packageKey === "starter" ? "foundation" : packageKey === "pro" ? "intensive" : packageKey;
+    const isFoundation = !normalizedKey || normalizedKey === "foundation";
+    // Tier gating: Foundation sees only the Foundation Care Plan, Active sees
+    // Foundation + Active, Intensive sees all three.
+    const TIER_RANK: Record<string, number> = { foundation: 1, active: 2, intensive: 3 };
+    const protoRank = (name: string) => {
+      const n = name.toLowerCase();
+      if (n.includes("foundation")) return 1;
+      if (n.includes("active")) return 2;
+      if (n.includes("intensive")) return 3;
+      return 1;
+    };
+    const maxRank = TIER_RANK[normalizedKey ?? "foundation"] ?? 1;
+    const visibleProtos = availableProtos.filter((p) => protoRank(p.protocol_name) <= maxRank);
     const handleStart = async (protoId: string) => {
       if (!user) return;
       setStartingProtoId(protoId);
@@ -462,9 +475,9 @@ export default function UserFasting({ packageKey }: { packageKey?: string | null
                 : "Your coach will design your personalised fasting protocol during your first one-on-one consultation. You'll see the full plan here right after the meeting."}
             </p>
           </div>
-          {isFoundation && availableProtos.length > 0 && (
+          {isFoundation && visibleProtos.length > 0 && (
             <div className="space-y-2.5">
-              {availableProtos.map((p) => {
+              {visibleProtos.map((p) => {
                 const isStarting = startingProtoId === p.id;
                 return (
                   <div key={p.id} className="rounded-2xl bg-muted/40 p-3 flex items-center justify-between gap-3">
