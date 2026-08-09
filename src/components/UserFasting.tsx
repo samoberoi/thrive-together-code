@@ -434,7 +434,20 @@ export default function UserFasting({ packageKey }: { packageKey?: string | null
   const badgeLevel = getBadgeLevel(earnedBadges, allBadges);
 
   if (!userProto || !protocol || !weekPlan) {
-    const isFoundation = !packageKey || packageKey === "foundation";
+    const normalizedKey = packageKey === "starter" ? "foundation" : packageKey === "pro" ? "intensive" : packageKey;
+    const isFoundation = !normalizedKey || normalizedKey === "foundation";
+    // Tier gating: Foundation sees only the Foundation Care Plan, Active sees
+    // Foundation + Active, Intensive sees all three.
+    const TIER_RANK: Record<string, number> = { foundation: 1, active: 2, intensive: 3 };
+    const protoRank = (name: string) => {
+      const n = name.toLowerCase();
+      if (n.includes("foundation")) return 1;
+      if (n.includes("active")) return 2;
+      if (n.includes("intensive")) return 3;
+      return 1;
+    };
+    const maxRank = TIER_RANK[normalizedKey ?? "foundation"] ?? 1;
+    const visibleProtos = availableProtos.filter((p) => protoRank(p.protocol_name) <= maxRank);
     const handleStart = async (protoId: string) => {
       if (!user) return;
       setStartingProtoId(protoId);
