@@ -462,9 +462,9 @@ export default function UserFasting({ packageKey }: { packageKey?: string | null
                 : "Your coach will design your personalised fasting protocol during your first one-on-one consultation. You'll see the full plan here right after the meeting."}
             </p>
           </div>
-          {isFoundation && availableProtos.length > 0 && (
+          {isFoundation && visibleProtos.length > 0 && (
             <div className="space-y-2.5">
-              {availableProtos.map((p) => {
+              {visibleProtos.map((p) => {
                 const isStarting = startingProtoId === p.id;
                 return (
                   <div key={p.id} className="rounded-2xl bg-muted/40 p-3 flex items-center justify-between gap-3">
