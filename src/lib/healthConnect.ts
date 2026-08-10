@@ -128,7 +128,7 @@ async function ensureAvailableAndAuthorized(): Promise<boolean> {
 }
 
 function startOfToday() { const d = new Date(); d.setHours(0, 0, 0, 0); return d; }
-function endOfToday()   { const d = new Date(); d.setHours(23, 59, 59, 999); return d; }
+function endOfToday()   { return new Date(); }
 function daysAgo(n: number) { const d = new Date(); d.setDate(d.getDate() - n); return d; }
 
 async function aggregate(type: RecordType, start: Date, end: Date): Promise<any | null> {
