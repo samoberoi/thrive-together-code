@@ -157,20 +157,22 @@ export default function TransformationStory() {
             className="flex flex-col"
           >
             {/* Before / After collage — identical frame for every story */}
-            <div className="relative w-full aspect-[5/4] max-h-[29dvh] mx-auto rounded-2xl overflow-hidden bbdo-surface-card bg-bbdo-ink/5">
+            <div className="relative w-full aspect-[5/4] mx-auto rounded-2xl overflow-hidden bbdo-surface-card bg-bbdo-ink/5">
               <img
                 src={story.image}
                 alt={`${story.name} before and after transformation`}
                 loading="eager"
                 decoding="async"
-                className="absolute inset-0 h-full w-full object-contain"
+                className="absolute inset-0 h-full w-full object-cover"
               />
-              <span className="absolute bottom-2 left-2 rounded-full bg-bbdo-ink/85 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white">
-                Before
-              </span>
-              <span className="absolute bottom-2 right-2 rounded-full bg-bbdo-blue px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white">
-                After
-              </span>
+              <div className="absolute inset-x-0 bottom-0 grid grid-cols-2 p-2 pointer-events-none">
+                <span className="justify-self-center rounded-full bg-bbdo-ink/85 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white">
+                  Before
+                </span>
+                <span className="justify-self-center rounded-full bg-bbdo-blue px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white">
+                  After
+                </span>
+              </div>
             </div>
 
             <h2 className="text-bbdo-ink text-[18px] leading-[1.15] font-extrabold tracking-tight mt-3">
