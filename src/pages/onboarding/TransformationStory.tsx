@@ -163,12 +163,12 @@ export default function TransformationStory() {
                 alt={`${story.name} before and after transformation`}
                 loading="eager"
                 decoding="async"
-                className="absolute inset-0 h-full w-full object-cover"
+                className="absolute inset-0 h-full w-full object-contain"
               />
-              <span className="absolute top-2 left-2 rounded-full bg-bbdo-ink/85 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white">
+              <span className="absolute bottom-2 left-2 rounded-full bg-bbdo-ink/85 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white">
                 Before
               </span>
-              <span className="absolute top-2 right-2 rounded-full bg-bbdo-blue px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white">
+              <span className="absolute bottom-2 right-2 rounded-full bg-bbdo-blue px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white">
                 After
               </span>
             </div>
