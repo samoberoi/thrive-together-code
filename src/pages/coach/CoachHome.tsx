@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { coachTypeLabel, resolveCurrentCoach, type Coach } from "@/lib/coachService";
 import { createNotification } from "@/lib/notificationService";
+import { meetingTypeLabel } from "@/lib/meetingService";
 import { toast } from "sonner";
 import ScheduleMeetingDialog from "@/components/coach/ScheduleMeetingDialog";
 import PatientDailySummaryDialog from "@/components/coach/PatientDailySummaryDialog";
