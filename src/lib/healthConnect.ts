@@ -186,13 +186,57 @@ function last<T = any>(records: any[] | null): T | undefined {
   return records[records.length - 1] as T;
 }
 
-export async function syncTodayStepsFromHealthConnect(): Promise<number | null> {
-  const ok = await ensureAvailableAndAuthorized();
-  if (!ok) return null;
-  const recs = await aggregate("Steps", startOfToday(), endOfToday());
-  const total = sumStepsDeduped(recs);
-  return total != null ? Math.max(0, Math.round(total)) : 0;
+/** Read Steps only — never blocked by other data types being un-granted. */
+async function ensureStepsPermission(): Promise<void> {
+  const status = await HealthConnect.checkAvailability();
+  if (status.availability === "NotSupported") {
+    throw new Error("Health Connect is not supported on this Android device.");
+  }
+  if (status.availability === "NotInstalled") {
+    throw new Error("Install or update Health Connect, then allow step permissions.");
+  }
+  const stepsOnly = { read: ["Steps"] as RecordType[], write: [] as RecordType[] };
+  const perms = await HealthConnect.checkHealthPermissions(stepsOnly);
+  if (perms?.hasAllPermissions) return;
+  const requested = await HealthConnect.requestHealthPermissions(stepsOnly);
+  if (!requested?.hasAllPermissions) {
+    throw new Error("Allow the Steps permission in Health Connect to sync your steps.");
+  }
 }
+
+async function readAllSteps(start: Date, end: Date): Promise<any[]> {
+  const records: any[] = [];
+  let pageToken: string | undefined;
+  for (let i = 0; i < 20; i++) {
+    const res: any = await (HealthConnect as any).readRecords({
+      type: "Steps",
+      timeRangeFilter: {
+        type: "between",
+        startTime: start.toISOString(),
+        endTime: end.toISOString(),
+      },
+      pageSize: 1000,
+      pageToken,
+    });
+    records.push(...(res?.records ?? []));
+    pageToken = res?.pageToken || undefined;
+    if (!pageToken) break;
+  }
+  return records;
+}
+
+export async function syncTodayStepsFromHealthConnect(): Promise<number | null> {
+  await ensureStepsPermission();
+  // Health Connect rejects/ignores ranges that end in the future on some OEMs.
+  const end = new Date();
+  const recs = await readAllSteps(startOfToday(), end);
+  const deduped = sumStepsDeduped(recs) ?? 0;
+  if (deduped > 0) return Math.max(0, Math.round(deduped));
+  // Fallback: some providers write records without usable dataOrigin metadata.
+  const total = sum(recs, "count") ?? 0;
+  return Math.max(0, Math.round(total));
+}
+
 
 export async function fetchHealthConnectSnapshot(): Promise<HealthSnapshot | null> {
   const ok = await ensureAvailableAndAuthorized();
