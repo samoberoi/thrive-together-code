@@ -173,7 +173,14 @@ export default function CoachLabTests() {
       ]);
 
       if (testsError) toast.error(testsError.message || "Unable to load active lab tests");
-      setTests(((t as any) || []) as Test[]);
+      const testRank = (name?: string) => {
+        const n = (name || "").toUpperCase();
+        if (n.includes("BASIC")) return 0;
+        if (n.includes("PLUS")) return 1;
+        if (n.includes("ADVANCED")) return 2;
+        return 3;
+      };
+      setTests(([...(((t as any) || []) as Test[])]).sort((a, b) => testRank(a.product_name) - testRank(b.product_name) || (a.product_name || "").localeCompare(b.product_name || "")));
 
       const userIds = ((assigns as any[]) || []).map((a) => a.user_id);
       if (!userIds.length) {
