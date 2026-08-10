@@ -826,6 +826,34 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
         </motion.div>
       )}
 
+      {/* Upcoming meetings — booked sessions stay visible instead of vanishing */}
+      {upcomingMeetings.length > 0 && (
+        <motion.div className="liquid-glass rounded-3xl p-5" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+          <div className="flex items-center gap-2 mb-3">
+            <CalendarClock className="w-4 h-4 text-primary" strokeWidth={1.8} />
+            <span className="text-foreground font-bold text-sm">Upcoming meetings</span>
+            <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full ml-auto no-break">
+              {upcomingMeetings.length}
+            </span>
+          </div>
+          <div className="space-y-2">
+            {upcomingMeetings.map((m) => (
+              <div key={`${m.user_id}-${m.scheduledAt}`} className="flex items-center gap-3 p-3 rounded-2xl bg-card/70">
+                <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <span className="text-primary font-bold text-xs">{(m.name || "?")[0].toUpperCase()}</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-foreground font-semibold text-sm truncate">{m.name}</p>
+                  <p className="text-muted-foreground text-[11px]">
+                    {meetingTypeLabel(m.type as any)} · {new Date(m.scheduledAt).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
 
       {/* Patient Tracking — compact single row */}
       {patients.length > 0 && (
