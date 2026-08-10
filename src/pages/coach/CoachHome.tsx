@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { coachTypeLabel, resolveCurrentCoach, type Coach } from "@/lib/coachService";
 import { createNotification } from "@/lib/notificationService";
+import { meetingTypeLabel } from "@/lib/meetingService";
 import { toast } from "sonner";
 import ScheduleMeetingDialog from "@/components/coach/ScheduleMeetingDialog";
 import PatientDailySummaryDialog from "@/components/coach/PatientDailySummaryDialog";
@@ -193,6 +194,7 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
   const [newLabReports, setNewLabReports] = useState<{ id: string; name: string; fileName: string | null; createdAt: string }[]>([]);
 
   const [needsScheduling, setNeedsScheduling] = useState<PatientSummary[]>([]);
+  const [upcomingMeetings, setUpcomingMeetings] = useState<{ user_id: string; name: string; scheduledAt: string; type: string }[]>([]);
   const [scheduleFor, setScheduleFor] = useState<PatientSummary | null>(null);
   const [schedulePickerOpen, setSchedulePickerOpen] = useState(false);
   const [completedSessions, setCompletedSessions] = useState(0);
@@ -246,7 +248,7 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
     await computeCommission(coachData, ((assignments as any[]) ?? []).map((a) => a.user_id));
 
     if (!assignments || assignments.length === 0) {
-      setPatients([]); setAlerts([]); setNeedsScheduling([]); setNewLabReports([]);
+      setPatients([]); setAlerts([]); setNeedsScheduling([]); setNewLabReports([]); setUpcomingMeetings([]);
       setLoading(false); return;
     }
 
@@ -477,12 +479,37 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
 
     const { data: handledMeetings } = await supabase
       .from("coach_meetings" as any)
-      .select("user_id, status")
+      .select("user_id, status, scheduled_at, meeting_type")
       .eq("coach_id", (coachData as any).id)
       .in("status", ["scheduled", "completed"]);
-    const handledIds = new Set(((handledMeetings as any[]) ?? []).map((m) => m.user_id));
-    setCompletedSessions(((handledMeetings as any[]) ?? []).filter((m) => m.status === "completed").length);
+    const rows = ((handledMeetings as any[]) ?? []);
+    setCompletedSessions(rows.filter((m) => m.status === "completed").length);
+    // A patient is "handled" only if they have a completed meeting, or a scheduled one
+    // that has not already lapsed (grace: 2h after start). A stale scheduled meeting that
+    // never happened must come back into the action list instead of disappearing forever.
+    const graceIso = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+    const handledIds = new Set(
+      rows
+        .filter((m) => m.status === "completed" || (m.scheduled_at ?? "") >= graceIso)
+        .map((m) => m.user_id),
+    );
     setNeedsScheduling(enriched.filter((p) => !handledIds.has(p.user_id)));
+
+    // Upcoming (not yet lapsed) meetings, so newly booked patients stay visible on Home.
+    const nameById2 = new Map(enriched.map((p) => [p.user_id, p.name || "Patient"]));
+    setUpcomingMeetings(
+      rows
+        .filter((m) => m.status === "scheduled" && (m.scheduled_at ?? "") >= graceIso)
+        .sort((a, b) => String(a.scheduled_at).localeCompare(String(b.scheduled_at)))
+        .slice(0, 6)
+        .map((m) => ({
+          user_id: m.user_id,
+          name: nameById2.get(m.user_id) || "Patient",
+          scheduledAt: m.scheduled_at,
+          type: m.meeting_type ?? "consultation",
+        })),
+    );
+
 
 
 
@@ -796,6 +823,34 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
                 </button>
               );
             })}
+          </div>
+        </motion.div>
+      )}
+
+      {/* Upcoming meetings — booked sessions stay visible instead of vanishing */}
+      {upcomingMeetings.length > 0 && (
+        <motion.div className="liquid-glass rounded-3xl p-5" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+          <div className="flex items-center gap-2 mb-3">
+            <CalendarClock className="w-4 h-4 text-primary" strokeWidth={1.8} />
+            <span className="text-foreground font-bold text-sm">Upcoming meetings</span>
+            <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full ml-auto no-break">
+              {upcomingMeetings.length}
+            </span>
+          </div>
+          <div className="space-y-2">
+            {upcomingMeetings.map((m) => (
+              <div key={`${m.user_id}-${m.scheduledAt}`} className="flex items-center gap-3 p-3 rounded-2xl bg-card/70">
+                <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <span className="text-primary font-bold text-xs">{(m.name || "?")[0].toUpperCase()}</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-foreground font-semibold text-sm truncate">{m.name}</p>
+                  <p className="text-muted-foreground text-[11px]">
+                    {meetingTypeLabel(m.type as any)} · {new Date(m.scheduledAt).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
         </motion.div>
       )}
