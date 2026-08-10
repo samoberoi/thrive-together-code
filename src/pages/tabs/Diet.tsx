@@ -129,16 +129,7 @@ export default function Diet() {
 
         {isPrebuiltPlan && !awaitingCoach && <DietPlatingCalendar />}
 
-        <ActionCard
-          onClick={() => setMode("reference")}
-          icon={BookOpen}
-          title="Quick Food Reference"
-          subtitle="13 categories · ~240 foods"
-          desc="Carbs, protein, GI, portion sizes and metabolic guidance at a glance."
-          color="var(--pillar-diet)"
-          delay={0.05}
-        />
-        {isBuildYourOwnPlan && (
+        {isPaid && (
           <ActionCard
             onClick={() => setMode("plate")}
             icon={UtensilsCrossed}
@@ -146,9 +137,19 @@ export default function Diet() {
             subtitle="6 steps · ~90 seconds"
             desc="We walk you through the 6 Metabolic Essentials and generate a balanced plate with full nutrition breakdown."
             color="var(--pillar-diet)"
-            delay={0.1}
+            delay={0.05}
           />
         )}
+        <ActionCard
+          onClick={() => setMode("reference")}
+          icon={BookOpen}
+          title="Quick Food Reference"
+          subtitle="13 categories · ~240 foods"
+          desc="Carbs, protein, GI, portion sizes and metabolic guidance at a glance."
+          color="var(--pillar-diet)"
+          delay={0.1}
+        />
+
         {isBuildYourOwnPlan && (
           <motion.button
             onClick={() => setMode("saved")}
