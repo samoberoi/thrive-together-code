@@ -477,12 +477,37 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
 
     const { data: handledMeetings } = await supabase
       .from("coach_meetings" as any)
-      .select("user_id, status")
+      .select("user_id, status, scheduled_at, meeting_type")
       .eq("coach_id", (coachData as any).id)
       .in("status", ["scheduled", "completed"]);
-    const handledIds = new Set(((handledMeetings as any[]) ?? []).map((m) => m.user_id));
-    setCompletedSessions(((handledMeetings as any[]) ?? []).filter((m) => m.status === "completed").length);
+    const rows = ((handledMeetings as any[]) ?? []);
+    setCompletedSessions(rows.filter((m) => m.status === "completed").length);
+    // A patient is "handled" only if they have a completed meeting, or a scheduled one
+    // that has not already lapsed (grace: 2h after start). A stale scheduled meeting that
+    // never happened must come back into the action list instead of disappearing forever.
+    const graceIso = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+    const handledIds = new Set(
+      rows
+        .filter((m) => m.status === "completed" || (m.scheduled_at ?? "") >= graceIso)
+        .map((m) => m.user_id),
+    );
     setNeedsScheduling(enriched.filter((p) => !handledIds.has(p.user_id)));
+
+    // Upcoming (not yet lapsed) meetings, so newly booked patients stay visible on Home.
+    const nameById2 = new Map(enriched.map((p) => [p.user_id, p.name || "Patient"]));
+    setUpcomingMeetings(
+      rows
+        .filter((m) => m.status === "scheduled" && (m.scheduled_at ?? "") >= graceIso)
+        .sort((a, b) => String(a.scheduled_at).localeCompare(String(b.scheduled_at)))
+        .slice(0, 6)
+        .map((m) => ({
+          user_id: m.user_id,
+          name: nameById2.get(m.user_id) || "Patient",
+          scheduledAt: m.scheduled_at,
+          type: m.meeting_type ?? "consultation",
+        })),
+    );
+
 
 
 
