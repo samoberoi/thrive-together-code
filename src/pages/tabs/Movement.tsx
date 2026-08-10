@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Footprints, Flame, Trophy, Target, Plus, TrendingUp, Sparkles, ChevronRight, CheckCircle2, Lock, Watch } from "lucide-react";
+import { Footprints, Flame, Trophy, Target, TrendingUp, Sparkles, ChevronRight, CheckCircle2, Lock, Watch } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchProfile } from "@/lib/profileService";
@@ -10,7 +10,6 @@ import { healthSourceLabel } from "@/lib/platformLabels";
 
 import {
   fetchMovementOverview,
-  logTodaySteps,
   type MovementOverview,
 } from "@/lib/movementUserService";
 
@@ -28,8 +27,6 @@ export default function MovementTab() {
   const [data, setData] = useState<MovementOverview | null>(null);
   const [startDate, setStartDate] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [inputSteps, setInputSteps] = useState("");
-  const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -56,24 +53,6 @@ export default function MovementTab() {
   }, [user]);
 
   useEffect(() => { load(); }, [load]);
-
-  const handleSave = async () => {
-    if (!user) return;
-    const n = Math.max(0, Math.round(Number(inputSteps)));
-    if (!n) return toast.error("Enter today's step count");
-    setSaving(true);
-    try {
-      await logTodaySteps(user.id, n);
-      toast.success(`Logged ${fmtSteps(n)} steps for today`);
-      setInputSteps("");
-      window.dispatchEvent(new CustomEvent("health-log-saved"));
-      await load();
-    } catch (e: any) {
-      toast.error(e?.message || "Couldn't save steps");
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const ratio = useMemo(() => {
     if (!data || !data.targetSteps) return 0;

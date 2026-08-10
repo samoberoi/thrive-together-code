@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { App as CapApp } from "@capacitor/app";
 import { motion } from "framer-motion";
-import { Footprints, Plus, ChevronRight, Flame, RefreshCw, Watch } from "lucide-react";
+import { Footprints, ChevronRight, Flame, RefreshCw, Watch } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchProfile } from "@/lib/profileService";
@@ -18,8 +18,6 @@ const HEALTH_SYNC_INTERVAL_MS = 5 * 60_000;
 export default function TodayStepsCard({ onOpenMovement }: { onOpenMovement?: () => void }) {
   const { user } = useAuth();
   const [data, setData] = useState<MovementOverview | null>(null);
-  const [val, setVal] = useState("");
-  const [saving, setSaving] = useState(false);
   const [syncingHealth, setSyncingHealth] = useState(false);
   const [healthSyncError, setHealthSyncError] = useState<string | null>(null);
   const healthStepsAvailable = canUseNativeHealth();
@@ -117,23 +115,6 @@ export default function TodayStepsCard({ onOpenMovement }: { onOpenMovement?: ()
   const today = data?.todaySteps || 0;
   const ratio = Math.min(1, target ? today / target : 0);
   const hit = today >= target;
-
-  const handleSave = async () => {
-    const n = Math.max(0, Math.round(Number(val)));
-    if (!n) return toast.error("Enter your step count");
-    setSaving(true);
-    try {
-      await logTodaySteps(user.id, n);
-      toast.success(`Logged ${n.toLocaleString("en-IN")} steps`);
-      setVal("");
-      window.dispatchEvent(new CustomEvent("health-log-saved"));
-      await load();
-    } catch (e: any) {
-      toast.error(e?.message || "Couldn't save steps");
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const handleHealthSync = async () => {
     await syncHealthSteps(true);
