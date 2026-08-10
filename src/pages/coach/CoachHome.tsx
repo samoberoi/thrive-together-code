@@ -248,7 +248,7 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
     await computeCommission(coachData, ((assignments as any[]) ?? []).map((a) => a.user_id));
 
     if (!assignments || assignments.length === 0) {
-      setPatients([]); setAlerts([]); setNeedsScheduling([]); setNewLabReports([]);
+      setPatients([]); setAlerts([]); setNeedsScheduling([]); setNewLabReports([]); setUpcomingMeetings([]);
       setLoading(false); return;
     }
 
