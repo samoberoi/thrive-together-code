@@ -187,7 +187,7 @@ function last<T = any>(records: any[] | null): T | undefined {
 }
 
 /** Read Steps only — never blocked by other data types being un-granted. */
-async function ensureStepsPermission(): Promise<void> {
+async function ensureStepsPermission(allowPrompt = true): Promise<void> {
   const status = await HealthConnect.checkAvailability();
   if (status.availability === "NotSupported") {
     throw new Error("Health Connect is not supported on this Android device.");
@@ -198,6 +198,11 @@ async function ensureStepsPermission(): Promise<void> {
   const stepsOnly = { read: ["Steps"] as RecordType[], write: [] as RecordType[] };
   const perms = await HealthConnect.checkHealthPermissions(stepsOnly);
   if (perms?.hasAllPermissions) return;
+  if (!allowPrompt) {
+    // Never open the system permission screen from a background/auto sync —
+    // it steals window focus and causes the status bar to flicker in a loop.
+    throw new Error("Allow the Steps permission in Health Connect to sync your steps.");
+  }
   const requested = await HealthConnect.requestHealthPermissions(stepsOnly);
   if (!requested?.hasAllPermissions) {
     throw new Error("Allow the Steps permission in Health Connect to sync your steps.");
@@ -225,8 +230,10 @@ async function readAllSteps(start: Date, end: Date): Promise<any[]> {
   return records;
 }
 
-export async function syncTodayStepsFromHealthConnect(): Promise<number | null> {
-  await ensureStepsPermission();
+export async function syncTodayStepsFromHealthConnect(
+  opts?: { allowPrompt?: boolean },
+): Promise<number | null> {
+  await ensureStepsPermission(opts?.allowPrompt ?? false);
   // Health Connect rejects/ignores ranges that end in the future on some OEMs.
   const end = new Date();
   const recs = await readAllSteps(startOfToday(), end);
