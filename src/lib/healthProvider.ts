@@ -68,17 +68,31 @@ function setHealthStepsConnected(connected: boolean) {
   } catch {}
 }
 
-export async function syncTodaySteps(): Promise<number | null> {
-  let steps: number | null = null;
-  try {
-    if (isIOS()) steps = await syncTodayStepsFromAppleHealth();
-    else if (isAndroid()) steps = await syncTodayStepsFromHealthConnect();
-  } catch (e) {
-    setHealthStepsConnected(false);
-    throw e;
-  }
-  setHealthStepsConnected(steps != null);
-  return steps;
+let stepsSyncInFlight: Promise<number | null> | null = null;
+
+/**
+ * Sync today's steps from the device health store.
+ * `allowPrompt` must only be true for an explicit user action (tapping sync);
+ * automatic syncs never open the OS permission screen, which would steal focus
+ * and make the system UI flicker.
+ */
+export async function syncTodaySteps(opts?: { allowPrompt?: boolean }): Promise<number | null> {
+  if (stepsSyncInFlight) return stepsSyncInFlight;
+  const allowPrompt = opts?.allowPrompt ?? false;
+  const run = (async () => {
+    let steps: number | null = null;
+    try {
+      if (isIOS()) steps = await syncTodayStepsFromAppleHealth();
+      else if (isAndroid()) steps = await syncTodayStepsFromHealthConnect({ allowPrompt });
+    } catch (e) {
+      setHealthStepsConnected(false);
+      throw e;
+    }
+    setHealthStepsConnected(steps != null);
+    return steps;
+  })();
+  stepsSyncInFlight = run.finally(() => { stepsSyncInFlight = null; });
+  return stepsSyncInFlight;
 }
 
 export async function fetchHealthSnapshot(): Promise<HealthSnapshot | null> {

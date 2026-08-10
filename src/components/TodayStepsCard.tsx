@@ -45,7 +45,7 @@ export default function TodayStepsCard({ onOpenMovement }: { onOpenMovement?: ()
     setSyncingHealth(true);
     setHealthSyncError(null);
     try {
-      const steps = await syncTodaySteps();
+      const steps = await syncTodaySteps({ allowPrompt: showToast });
       if (steps == null) {
         setHealthConnected(false);
         const message = `${healthSourceLabel()} is not available on this device`;
@@ -79,11 +79,18 @@ export default function TodayStepsCard({ onOpenMovement }: { onOpenMovement?: ()
 
   useEffect(() => {
     if (!user || !healthStepsAvailable) return;
+    let lastSyncAt = 0;
+    const syncIfStale = () => {
+      const now = Date.now();
+      if (now - lastSyncAt < 30_000) return;
+      lastSyncAt = now;
+      void syncHealthSteps(false);
+    };
     const sub = CapApp.addListener("appStateChange", ({ isActive }) => {
-      if (isActive) void syncHealthSteps(false);
+      if (isActive) syncIfStale();
     });
     const onVisibilityChange = () => {
-      if (document.visibilityState === "visible") void syncHealthSteps(false);
+      if (document.visibilityState === "visible") syncIfStale();
     };
     document.addEventListener("visibilitychange", onVisibilityChange);
     return () => {
