@@ -193,6 +193,7 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
   const [newLabReports, setNewLabReports] = useState<{ id: string; name: string; fileName: string | null; createdAt: string }[]>([]);
 
   const [needsScheduling, setNeedsScheduling] = useState<PatientSummary[]>([]);
+  const [upcomingMeetings, setUpcomingMeetings] = useState<{ user_id: string; name: string; scheduledAt: string; type: string }[]>([]);
   const [scheduleFor, setScheduleFor] = useState<PatientSummary | null>(null);
   const [schedulePickerOpen, setSchedulePickerOpen] = useState(false);
   const [completedSessions, setCompletedSessions] = useState(0);
