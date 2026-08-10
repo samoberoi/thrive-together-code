@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { App as CapApp } from "@capacitor/app";
 import { motion } from "framer-motion";
-import { Footprints, Plus, ChevronRight, Flame, RefreshCw, Watch } from "lucide-react";
+import { Footprints, ChevronRight, Flame, RefreshCw, Watch } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchProfile } from "@/lib/profileService";
@@ -18,8 +18,6 @@ const HEALTH_SYNC_INTERVAL_MS = 5 * 60_000;
 export default function TodayStepsCard({ onOpenMovement }: { onOpenMovement?: () => void }) {
   const { user } = useAuth();
   const [data, setData] = useState<MovementOverview | null>(null);
-  const [val, setVal] = useState("");
-  const [saving, setSaving] = useState(false);
   const [syncingHealth, setSyncingHealth] = useState(false);
   const [healthSyncError, setHealthSyncError] = useState<string | null>(null);
   const healthStepsAvailable = canUseNativeHealth();
@@ -118,23 +116,6 @@ export default function TodayStepsCard({ onOpenMovement }: { onOpenMovement?: ()
   const ratio = Math.min(1, target ? today / target : 0);
   const hit = today >= target;
 
-  const handleSave = async () => {
-    const n = Math.max(0, Math.round(Number(val)));
-    if (!n) return toast.error("Enter your step count");
-    setSaving(true);
-    try {
-      await logTodaySteps(user.id, n);
-      toast.success(`Logged ${n.toLocaleString("en-IN")} steps`);
-      setVal("");
-      window.dispatchEvent(new CustomEvent("health-log-saved"));
-      await load();
-    } catch (e: any) {
-      toast.error(e?.message || "Couldn't save steps");
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const handleHealthSync = async () => {
     await syncHealthSteps(true);
   };
@@ -213,34 +194,6 @@ export default function TodayStepsCard({ onOpenMovement }: { onOpenMovement?: ()
             </p>
           )}
         </div>
-      )}
-
-      {!(healthStepsAvailable && healthConnected) && (
-        <>
-          <div className="mt-3 flex gap-2">
-            <input
-              type="number"
-              inputMode="numeric"
-              min={0}
-              placeholder="Log today's steps"
-              value={val}
-              onChange={(e) => setVal(e.target.value)}
-              className="flex-1 h-10 rounded-xl border border-input bg-background px-3 text-sm"
-            />
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="h-10 px-4 rounded-xl bg-[var(--bbdo-red)] text-white text-sm font-bold inline-flex items-center gap-1.5 disabled:opacity-60"
-            >
-              <Plus className="w-4 h-4" /> {saving ? "Saving…" : "Log"}
-            </button>
-          </div>
-          {healthStepsAvailable && (
-            <p className="mt-1.5 text-[11px] text-muted-foreground">
-              No device connected or permission denied? Enter steps manually.
-            </p>
-          )}
-        </>
       )}
 
     </motion.div>
