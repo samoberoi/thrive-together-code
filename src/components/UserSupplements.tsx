@@ -9,7 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import {
   fetchUserPlan, fetchPlanItems, fetchSupplements, createUserPlan, addPlanItem, removePlanItem,
-  fetchTodayTracking, toggleTracking, fetchTrackingHistory,
+  fetchTodayTracking, toggleTracking, fetchTrackingHistory, localSupplementDateKey,
   CATEGORY_COLORS, CATEGORY_BG,
   type UserSupplementPlan, type PlanItem, type Supplement, type SupplementTracking, type VegType
 } from "@/lib/supplementService";
@@ -39,7 +39,7 @@ export default function UserSupplements({ simpleMode = false }: { simpleMode?: b
   const [earnedBadges, setEarnedBadges] = useState<UserSupplementBadge[]>([]);
   const [streak, setStreak] = useState({ currentStreak: 0, longestStreak: 0 });
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = localSupplementDateKey();
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -177,7 +177,7 @@ export default function UserSupplements({ simpleMode = false }: { simpleMode?: b
   const last7 = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - (6 - i));
-    const ds = d.toISOString().split("T")[0];
+    const ds = localSupplementDateKey(d);
     const dayTracking = weekHistory.filter((t) => t.date === ds);
     const taken = dayTracking.filter((t) => t.taken).length;
     const pct = totalItems > 0 ? Math.round((taken / totalItems) * 100) : 0;

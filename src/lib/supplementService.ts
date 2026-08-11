@@ -209,6 +209,10 @@ export async function updatePlanItem(id: string, updates: Partial<PlanItem>) {
 }
 
 // ─── Tracking ─────────────────────────
+export function localSupplementDateKey(date = new Date()): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
 export async function fetchTodayTracking(userId: string, date: string): Promise<SupplementTracking[]> {
   const { data, error } = await supabase
     .from("user_supplement_tracking" as any)
@@ -238,7 +242,7 @@ export async function fetchTrackingHistory(userId: string, days = 7): Promise<Su
     .from("user_supplement_tracking" as any)
     .select("*")
     .eq("user_id", userId)
-    .gte("date", since.toISOString().split("T")[0])
+    .gte("date", localSupplementDateKey(since))
     .order("date", { ascending: false });
   if (error) throw error;
   return (data as any) ?? [];
