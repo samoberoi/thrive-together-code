@@ -105,6 +105,7 @@ export default function UserSupplements({ simpleMode = false }: { simpleMode?: b
         setTodayTracking((prev) => [...prev, { id: "", user_id: user.id, plan_item_id: planItemId, date: today, taken: newVal, notes: null }]);
       }
       if (newVal) toast.success("Supplement taken");
+      window.dispatchEvent(new CustomEvent("supplement-tracking-saved"));
     } catch (e: any) { toast.error(e.message); }
   };
 
@@ -138,6 +139,7 @@ export default function UserSupplements({ simpleMode = false }: { simpleMode?: b
             try {
               await removePlanItem(planItemId);
               toast.success("Removed from your list");
+              window.dispatchEvent(new CustomEvent("supplement-plan-changed"));
               await load();
             } catch (e: any) { toast.error(e.message); }
           }}
@@ -521,6 +523,7 @@ function FoundationSupplementBrowser({
         duration_weeks: weeks,
       });
       toast.success(`${s.name} added for ${weeks} weeks`);
+      window.dispatchEvent(new CustomEvent("supplement-plan-changed"));
       await onChanged();
     } catch (e: any) {
       toast.error(e.message || "Couldn't add supplement");
@@ -539,6 +542,7 @@ function FoundationSupplementBrowser({
     try {
       await removePlanItem(planItemId);
       toast.success(`${s.name} removed from your list`);
+      window.dispatchEvent(new CustomEvent("supplement-plan-changed"));
       await onChanged();
     } catch (e: any) {
       toast.error(e.message || "Couldn't remove supplement");

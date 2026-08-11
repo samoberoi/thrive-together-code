@@ -154,10 +154,18 @@ export default function CoachActivityRings() {
     window.addEventListener("health-log-saved", h);
     window.addEventListener("breath-session-saved", h);
     window.addEventListener("soleus-session-saved", h);
+    window.addEventListener("supplement-tracking-saved", h);
+    window.addEventListener("fasting-log-saved", h);
+    window.addEventListener("supplement-plan-changed", h);
+    window.addEventListener("fasting-protocol-changed", h);
     return () => {
       window.removeEventListener("health-log-saved", h);
       window.removeEventListener("breath-session-saved", h);
       window.removeEventListener("soleus-session-saved", h);
+      window.removeEventListener("supplement-tracking-saved", h);
+      window.removeEventListener("fasting-log-saved", h);
+      window.removeEventListener("supplement-plan-changed", h);
+      window.removeEventListener("fasting-protocol-changed", h);
     };
   }, [load]);
 

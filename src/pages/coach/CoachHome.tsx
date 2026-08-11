@@ -21,6 +21,7 @@ import CoachActivityNudgeDialog, {
 } from "@/components/coach/CoachActivityNudgeDialog";
 import CoachReviewsDialog from "@/components/coach/CoachReviewsDialog";
 import CoachActivityRings from "@/components/coach/CoachActivityRings";
+import CoachSelfCheckins from "@/components/coach/CoachSelfCheckins";
 
 
 
@@ -1052,6 +1053,9 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
           </div>
         </motion.div>
       )}
+
+      {/* My own check-ins — supplements + fasting (only when they exist) */}
+      <CoachSelfCheckins />
 
       {/* All clear */}
       {alerts.length === 0 && patients.length > 0 && (

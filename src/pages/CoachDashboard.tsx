@@ -26,6 +26,7 @@ const CoachConsultationRequests = lazy(() => import("./coach/CoachConsultationRe
 const CoachInbox = lazy(() => import("@/components/chat/CoachInbox"));
 
 import NotificationsPanel from "@/components/NotificationsPanel";
+import LogFAB from "@/components/LogFAB";
 import { useAttentionCounts } from "@/hooks/useAttentionCounts";
 import AttentionBadge from "@/components/attention/AttentionBadge";
 import { RoleBottomNav, RoleTopBar, type RoleNavItem } from "@/components/shared";
@@ -274,6 +275,10 @@ export default function CoachDashboard() {
             selectTab(tab);
             setNotificationsOpen(false);
           }}
+          onFABPress={() => {
+            const fabBtn = document.querySelector('[data-fab-trigger]') as HTMLButtonElement | null;
+            fabBtn?.click();
+          }}
           items={navItems.map((n) => ({
             id: n.id,
             icon: n.icon,
@@ -281,6 +286,20 @@ export default function CoachDashboard() {
             badge: tabAttentionCounts[n.id] ?? 0,
           }))}
         />
+
+        {/* Desktop-only quick-log FAB */}
+        <button
+          onClick={() => {
+            const fabBtn = document.querySelector('[data-fab-trigger]') as HTMLButtonElement | null;
+            fabBtn?.click();
+          }}
+          aria-label="Quick log"
+          className="hidden md:flex fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full items-center justify-center text-white shadow-lift active:scale-[0.98] transition-transform hover:opacity-90"
+          style={{ background: "var(--bbdo-red)" }}
+        >
+          <Activity className="w-6 h-6" strokeWidth={2} />
+        </button>
+        <LogFAB exercisePath="/coach-dashboard?tab=train" />
       </div>
     </div>
   );
