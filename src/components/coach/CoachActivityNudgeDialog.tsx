@@ -47,6 +47,8 @@ export default function CoachActivityNudgeDialog({
   const [nudging, setNudging] = useState<string | "all" | null>(null);
   if (!open) return null;
   const meta = ACTIVITY_META[activity];
+  const completionPct = totalApplicable > 0 ? Math.round((doneCount / totalApplicable) * 100) : 0;
+
 
   const nudgeOne = async (p: PendingPatient) => {
     setNudging(p.user_id);
