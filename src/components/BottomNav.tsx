@@ -72,12 +72,14 @@ export default function BottomNav({
   onFABPress,
   visibleTabs,
   attentionCounts,
+  packageKey,
 }: {
   activeTab: Tab;
   setActiveTab: (tab: Tab) => void;
   onFABPress?: () => void;
   visibleTabs?: Tab[];
   attentionCounts?: Partial<Record<Tab, number>>;
+  packageKey?: string | null;
 }) {
   const { t } = useLanguage();
   const [expanded, setExpanded] = useState(false);
@@ -172,7 +174,7 @@ export default function BottomNav({
             <div className="grid grid-cols-3 gap-2">
               {allowed.map((id) => renderTab(id, { inSheet: true }))}
             </div>
-            <ExpertConnectBar className="mt-3" context="the app" />
+            <ExpertConnectBar className="mt-3" packageKey={packageKey} context="the app" />
           </div>
         </DrawerContent>
       </Drawer>
