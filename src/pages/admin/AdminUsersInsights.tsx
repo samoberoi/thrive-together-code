@@ -226,27 +226,27 @@ export default function AdminUsersInsights() {
   }
 
   return (
-    <div className="min-h-dvh bg-background">
+    <div className="h-[100svh] max-h-[100svh] overflow-y-auto overscroll-y-contain bg-background">
       {/* Ambient hero background */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-secondary/5 to-transparent pointer-events-none" />
         <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-32 -left-32 w-96 h-96 rounded-full bg-secondary/10 blur-3xl pointer-events-none" />
 
-        <div className="relative max-w-7xl mx-auto px-6 pt-8 pb-10">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-[calc(env(safe-area-inset-top)+1rem)] sm:pt-8 pb-6 sm:pb-10">
           <button
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
+            onClick={() => navigate("/admin-dashboard")}
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-5"
           >
             <ArrowLeft className="w-4 h-4" /> Back to dashboard
           </button>
 
           <div className="flex items-end justify-between gap-6 flex-wrap">
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary mb-3">
                 <Sparkles className="w-3.5 h-3.5" /> Member Intelligence
               </div>
-              <h1 className="text-4xl sm:text-5xl font-black text-foreground leading-[1.05] tracking-tight">
+              <h1 className="text-[clamp(24px,7vw,44px)] font-black text-foreground leading-[1.05] tracking-tight">
                 Total Users <span className="text-primary">·</span>{" "}
                 <CountUp value={totalUsers} />
               </h1>
@@ -255,7 +255,7 @@ export default function AdminUsersInsights() {
               </p>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3 w-full sm:w-auto">
               <HeroStat icon={AlertTriangle} label="Need attention" value={totals.high + totals.medium} tone="text-destructive" bg="bg-destructive/10" />
               <HeroStat icon={Heart} label="Healthy" value={totals.healthy} tone="text-emerald-600" bg="bg-emerald-500/10" />
               <HeroStat icon={UserCheck} label="With coach" value={totals.coached} tone="text-secondary" bg="bg-secondary/10" />
@@ -264,7 +264,8 @@ export default function AdminUsersInsights() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 pb-16 space-y-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-[calc(env(safe-area-inset-bottom)+4rem)] space-y-6 sm:space-y-8">
+
         {/* Plan category cards */}
         <div className="grid md:grid-cols-3 gap-4">
           {(Object.keys(PLAN_META) as PlanKey[]).map((k, idx) => {
