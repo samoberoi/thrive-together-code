@@ -423,11 +423,16 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
       const hasFasting = fastProtoSet.has(a.user_id);
       const hasSupp = suppPlanSet.has(a.user_id);
 
+      const waterGlasses = Math.max(0, Math.round(waterByUser.get(a.user_id) ?? 0));
+      const soleusRounds = soleusByUser.get(a.user_id) ?? 0;
+      const breathRounds = breathByUser.get(a.user_id) ?? 0;
+
       const applicable: Record<ActivityKey, boolean> = {
         glucose: true, bp: true, weight: true,
         fasting: hasFasting,
         supplements: hasSupp,
         exercise: true, yoga: true, diet: true,
+        water: true, soleus: true, breath: true,
       };
       const activities: Record<ActivityKey, boolean> = {
         glucose: glucoseSet.has(a.user_id),
@@ -438,7 +443,16 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
         exercise: exSet.has(a.user_id),
         yoga: yogaSet.has(a.user_id),
         diet: dietSet.has(a.user_id),
+        water: waterGlasses >= WATER_GLASS_GOAL,
+        soleus: soleusRounds >= SOLEUS_GOAL,
+        breath: breathRounds >= BREATH_GOAL,
       };
+      const progress: Partial<Record<ActivityKey, { text: string; ratio: number }>> = {
+        water: { text: `${waterGlasses}/${WATER_GLASS_GOAL} glasses`, ratio: Math.min(1, waterGlasses / WATER_GLASS_GOAL) },
+        soleus: { text: `${soleusRounds}/${SOLEUS_GOAL} rounds`, ratio: Math.min(1, soleusRounds / SOLEUS_GOAL) },
+        breath: { text: `${breathRounds}/${BREATH_GOAL} rounds`, ratio: Math.min(1, breathRounds / BREATH_GOAL) },
+      };
+
 
       let applicableCount = 0;
       let doneCount = 0;
