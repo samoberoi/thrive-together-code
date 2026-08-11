@@ -458,8 +458,9 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
                     <div className="min-w-0">
                       <p className="text-sm font-black tracking-tight leading-tight break-words">{t.product_name}</p>
                       <p className="text-[11px] text-muted-foreground mt-0.5">
-                        {count > 0 ? `${count} parameters` : "Curated panel"} · {t.fasting_required ? "fasting" : "no fasting"}
+                        Free home collection · 10–11 hrs fasting
                       </p>
+
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-base font-black tabular-nums">{price > 0 ? `₹${price.toLocaleString("en-IN")}` : "—"}</p>
