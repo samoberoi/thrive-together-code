@@ -392,6 +392,7 @@ export default function UserFasting({ packageKey, selfServe = false }: { package
         toast.success(`Fast ended: ${Math.round(hoursFasted * 10) / 10}h`);
       } else {
         toast.success(`First meal tracked at ${formatTime12(hour, minute)}`);
+        window.dispatchEvent(new CustomEvent("fasting-log-saved"));
       }
       if (mealPhotoFile) await processPhotoAndSave("fmod");
       load();
@@ -413,6 +414,7 @@ export default function UserFasting({ packageKey, selfServe = false }: { package
         compliance_status: "pending",
       });
       toast.success("Last meal tracked — fasting has begun!");
+    window.dispatchEvent(new CustomEvent("fasting-log-saved"));
       if (mealPhotoFile) await processPhotoAndSave("lmod");
       load();
     } catch (e: any) { toast.error(e.message); }
@@ -454,6 +456,7 @@ export default function UserFasting({ packageKey, selfServe = false }: { package
       try {
         await assignProtocolToUser(user.id, protoId, user.id, today);
         toast.success("Your 24-week journey has begun");
+        window.dispatchEvent(new CustomEvent("fasting-protocol-changed"));
         await load();
       } catch (e: any) {
         toast.error(e.message ?? "Couldn't start plan");
