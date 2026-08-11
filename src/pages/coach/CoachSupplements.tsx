@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Pill, Plus, Check, X, Pause, Play, Edit2, Trash2,
-  ChevronDown, ChevronRight, Clock, Users, HeartPulse
+  ChevronDown, ChevronRight, Clock, Users, HeartPulse, Loader2
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,7 +12,7 @@ import CoachPatientIdentity from "@/components/coach/CoachPatientIdentity";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import {
   fetchSupplements, fetchConditionRules, fetchUserPlan, fetchPlanItems,
-  createUserPlan, addPlanItem, removePlanItem, updatePlanItem, updateUserPlanStatus, fetchTrackingHistory,
+  createUserPlan, addPlanItem, addPlanItems, removePlanItem, updatePlanItem, updateUserPlanStatus, fetchTrackingHistory,
   CONDITION_LABELS, CONDITION_ICONS, CONDITION_COLORS, SEVERITY_COLORS,
   CATEGORY_COLORS, CATEGORY_BG, TIMING_ICONS,
   type Supplement, type ConditionRule, type UserSupplementPlan, type PlanItem, type SupplementTracking
@@ -53,6 +53,9 @@ export default function CoachSupplements() {
   // Patient list search + expansion
   const [patientSearch, setPatientSearch] = useState("");
   const [expandedPatient, setExpandedPatient] = useState<string | null>(null);
+  // Submit lock — prevents double-tap duplicate inserts
+  const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
 
   useEffect(() => { if (user) loadData(); }, [user]);
 
@@ -68,11 +71,12 @@ export default function CoachSupplements() {
       if (!assignments) return;
 
       const userIds = (assignments as any[]).map((a: any) => a.user_id);
-      const { data: profiles } = await supabase
-        .from("profiles").select("user_id, name, phone, avatar_url").in("user_id", userIds);
+      const [{ data: profiles }, supps, condRules] = await Promise.all([
+        supabase.from("profiles").select("user_id, name, phone, avatar_url").in("user_id", userIds),
+        fetchSupplements(),
+        fetchConditionRules(),
+      ]);
       setPatients((profiles as any) ?? []);
-
-      const [supps, condRules] = await Promise.all([fetchSupplements(), fetchConditionRules()]);
       setSupplements(supps.filter((s) => s.is_active));
       setRules(condRules.filter((r) => r.is_active));
 
@@ -80,21 +84,32 @@ export default function CoachSupplements() {
       const itemMap: Record<string, PlanItem[]> = {};
       const trackMap: Record<string, SupplementTracking[]> = {};
 
-      for (const uid of userIds) {
+      // Parallel per-patient fetches instead of sequential waterfall
+      await Promise.all(userIds.map(async (uid) => {
         const plan = await fetchUserPlan(uid);
         planMap[uid] = plan;
         if (plan) {
-          const items = await fetchPlanItems(plan.id);
+          const [items, tracking] = await Promise.all([
+            fetchPlanItems(plan.id),
+            fetchTrackingHistory(uid, 7),
+          ]);
           itemMap[uid] = items;
-          const tracking = await fetchTrackingHistory(uid, 7);
           trackMap[uid] = tracking;
         }
-      }
+      }));
       setPatientPlans(planMap);
       setPatientItems(itemMap);
       setPatientTracking(trackMap);
     } catch (e: any) { toast.error(e.message); }
     setLoading(false);
+  };
+
+  /** Refresh only one patient's plan data — instant compared to a full reload. */
+  const refreshPatient = async (uid: string) => {
+    const plan = await fetchUserPlan(uid);
+    const items = plan ? await fetchPlanItems(plan.id) : [];
+    setPatientPlans((prev) => ({ ...prev, [uid]: plan }));
+    setPatientItems((prev) => ({ ...prev, [uid]: items }));
   };
 
   const suppMap = Object.fromEntries(supplements.map((s) => [s.id, s]));
@@ -120,8 +135,28 @@ export default function CoachSupplements() {
     }
   };
 
+  const buildItems = (planId: string) =>
+    Array.from(selectedRules)
+      .map((ruleId) => {
+        const rule = rules.find((r) => r.id === ruleId);
+        if (!rule) return null;
+        return {
+          plan_id: planId,
+          supplement_id: rule.supplement_id,
+          dosage: rule.dosage,
+          frequency: rule.frequency,
+          timing: rule.timing ?? "with meal",
+          remarks: rule.remarks,
+          duration_weeks: ruleDurations[ruleId] ?? rule.duration_weeks,
+        };
+      })
+      .filter(Boolean) as any[];
+
   const handleAssignPlan = async (userId: string) => {
     if (!user || selectedRules.size === 0) return;
+    if (submittingRef.current) return;      // hard lock against double-submit
+    submittingRef.current = true;
+    setSubmitting(true);
     try {
       const planId = await createUserPlan({
         user_id: userId,
@@ -130,51 +165,39 @@ export default function CoachSupplements() {
         start_date: new Date().toISOString().split("T")[0],
       } as any);
 
-      for (const ruleId of selectedRules) {
-        const rule = rules.find((r) => r.id === ruleId);
-        if (!rule) continue;
-        await addPlanItem({
-          plan_id: planId,
-          supplement_id: rule.supplement_id,
-          dosage: rule.dosage,
-          frequency: rule.frequency,
-          timing: rule.timing ?? "with meal",
-          remarks: rule.remarks,
-          duration_weeks: ruleDurations[ruleId] ?? rule.duration_weeks,
-        });
-      }
+      await addPlanItems(buildItems(planId));
 
       toast.success("Supplement plan assigned!");
       setAssigningPatient(null);
       setSelectedRules(new Set());
       setRuleDurations({});
-      loadData();
+      await refreshPatient(userId);
     } catch (e: any) { toast.error(e.message); }
+    finally {
+      submittingRef.current = false;
+      setSubmitting(false);
+    }
   };
 
   const handleAddToExistingPlan = async (userId: string, planId: string) => {
     if (!user || selectedRules.size === 0) return;
+    if (submittingRef.current) return;      // hard lock against double-submit
+    submittingRef.current = true;
+    setSubmitting(true);
     try {
-      for (const ruleId of selectedRules) {
-        const rule = rules.find((r) => r.id === ruleId);
-        if (!rule) continue;
-        await addPlanItem({
-          plan_id: planId,
-          supplement_id: rule.supplement_id,
-          dosage: rule.dosage,
-          frequency: rule.frequency,
-          timing: rule.timing ?? "with meal",
-          remarks: rule.remarks,
-          duration_weeks: ruleDurations[ruleId] ?? rule.duration_weeks,
-        });
-      }
+      await addPlanItems(buildItems(planId));
       toast.success("Supplements added to plan!");
       setAddingToPatient(null);
       setSelectedRules(new Set());
       setRuleDurations({});
-      loadData();
+      await refreshPatient(userId);
     } catch (e: any) { toast.error(e.message); }
+    finally {
+      submittingRef.current = false;
+      setSubmitting(false);
+    }
   };
+
 
   const handleRemoveItem = async (itemId: string) => {
     try {
@@ -808,6 +831,7 @@ export default function CoachSupplements() {
         const open = !!activeUserId;
 
         const close = () => {
+          if (submittingRef.current) return; // don't close mid-save
           setAssigningPatient(null);
           setAddingToPatient(null);
           setSelectedRules(new Set());
@@ -839,21 +863,23 @@ export default function CoachSupplements() {
                 <div className="flex gap-2">
                   <button
                     onClick={close}
-                    className="px-4 py-2.5 rounded-xl bg-muted text-muted-foreground text-sm font-semibold"
+                    disabled={submitting}
+                    className="px-4 py-2.5 rounded-xl bg-muted text-muted-foreground text-sm font-semibold disabled:opacity-50"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={() => {
-                      if (!activeUserId) return;
+                      if (!activeUserId || submitting) return;
                       if (isAdd && activePlan) handleAddToExistingPlan(activeUserId, activePlan.id);
                       else handleAssignPlan(activeUserId);
                     }}
-                    disabled={selectedRules.size === 0}
+                    disabled={selectedRules.size === 0 || submitting}
+                    aria-busy={submitting}
                     className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-50 inline-flex items-center gap-1.5"
                   >
-                    <Check className="w-4 h-4" />
-                    {isAdd ? `Add (${selectedRules.size})` : `Assign (${selectedRules.size})`}
+                    {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                    {submitting ? "Saving…" : isAdd ? `Add (${selectedRules.size})` : `Assign (${selectedRules.size})`}
                   </button>
                 </div>
               </div>
