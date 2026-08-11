@@ -831,6 +831,7 @@ export default function CoachSupplements() {
         const open = !!activeUserId;
 
         const close = () => {
+          if (submittingRef.current) return; // don't close mid-save
           setAssigningPatient(null);
           setAddingToPatient(null);
           setSelectedRules(new Set());
