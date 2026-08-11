@@ -124,13 +124,23 @@ export default function PatientActionGrid({ coachId, patientId, patientName }: P
     }
   };
 
+  // Already assigned → jump into that module on this patient's detail row
+  // (pencil / pause / detail live there). Nothing assigned → assign dialog.
+  const MODULE_FOR: Partial<Record<Exclude<Dlg, null>, CoachModuleTab>> = {
+    tests: "labtests",
+    supps: "supplements",
+    fasting: "fasting",
+  };
+
   const Tile = ({
     id, icon: Icon, label, value,
   }: { id: Exclude<Dlg, null>; icon: typeof Pill; label: string; value: string | null }) => {
     const done = !!value;
+    const target = MODULE_FOR[id];
     return (
       <button
-        onClick={() => setDlg(id)}
+        onClick={() => (done && target ? openCoachPatientModule(target, patientId) : setDlg(id))}
+
         className={`liquid-glass rounded-2xl py-3 px-2.5 flex flex-col items-center gap-1 text-center hover:bg-primary/5 ${
           done ? "ring-1 ring-success/40" : ""
         }`}
