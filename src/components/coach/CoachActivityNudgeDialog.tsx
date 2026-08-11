@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 export type ActivityKey =
   | "glucose" | "bp" | "weight" | "fasting" | "supplements"
-  | "exercise" | "yoga" | "diet";
+  | "exercise" | "yoga" | "diet" | "water" | "soleus" | "breath";
 
 export const ACTIVITY_META: Record<ActivityKey, { label: string; nudge: string; emoji: string }> = {
   glucose:     { label: "Fasting glucose",     nudge: "Please log your fasting glucose today — even a quick reading helps us stay on top of your progress.", emoji: "🩸" },
@@ -17,13 +17,19 @@ export const ACTIVITY_META: Record<ActivityKey, { label: string; nudge: string; 
   exercise:    { label: "Exercise",            nudge: "A short workout today keeps momentum going. Even 10 minutes counts!", emoji: "🏋️" },
   yoga:        { label: "Yoga & stress",       nudge: "Take a few minutes for your yoga / stress practice today. It compounds.", emoji: "🧘" },
   diet:        { label: "Diet log",            nudge: "Please log today's meals so we can review your plate quality.", emoji: "🍽️" },
+  water:       { label: "Water",               nudge: "Hydration check — please finish your 8 glasses of water today.", emoji: "💧" },
+  soleus:      { label: "Soleus push-ups",     nudge: "Don't miss your soleus push-ups today — 3 rounds after meals blunts glucose spikes.", emoji: "🦵" },
+  breath:      { label: "4-7-8 breathing",     nudge: "Complete your 4-7-8 breathing rounds today — 76 seconds is all it takes.", emoji: "🌬️" },
 };
 
 export interface PendingPatient {
   user_id: string;
   name: string | null;
   avatar_url: string | null;
+  progress?: string | null;
+  ratio?: number | null;
 }
+
 
 interface Props {
   open: boolean;
