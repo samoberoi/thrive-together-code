@@ -59,6 +59,14 @@ export default function CoachSupplements() {
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
 
+  // "Manage" from a patient profile lands directly on that patient's detail.
+  useCoachPatientFocus("supplements", (patientId) => {
+    setView("patients");
+    setPatientSearch("");
+    setExpandedPatient(patientId);
+  });
+
+
   useEffect(() => { if (user) loadData(); }, [user]);
 
   const loadData = async () => {
