@@ -41,9 +41,13 @@ export async function fetchUserProgress(userId: string): Promise<UserMovementPro
   return (data as any) ?? null;
 }
 
+/** Minimum daily step target for coaches (lead by example). */
+export const COACH_MIN_DAILY_STEPS = 7500;
+
 export async function ensureUserProgress(
   userId: string,
   profile: { bmiCategory?: string | null; activityLevel?: string | null; age?: number | null; weightKg?: number | null; heightCm?: number | null },
+  opts?: { minTargetSteps?: number },
 ): Promise<{ progress: UserMovementProgress; level: MovementLevel | null; targetSteps: number }> {
   let progress = await fetchUserProgress(userId);
   const [cfg, levels] = await Promise.all([getMovementConfig(), listMovementLevels()]);
