@@ -21,12 +21,14 @@ function readCachedPackageKey(): string | null {
   }
 }
 
-function openWhatsApp(context?: string) {
-  const text = encodeURIComponent(
-    context ? `Hi BBDO team, I need help with ${context}.` : "Hi BBDO team, I need help.",
-  );
+export const EXPERT_CONNECT_MESSAGE =
+  "Hello Colonel Gautam Guha. I've joined the BBDO Foundation Care Plan and would like to request an Expert Connect. Thank you.";
+
+function openWhatsApp(_context?: string) {
+  const text = encodeURIComponent(EXPERT_CONNECT_MESSAGE);
   window.open(`https://wa.me/${EXPERT_CONNECT_NUMBER}?text=${text}`, "_blank", "noopener,noreferrer");
 }
+
 
 /**
  * Expert Connect — WhatsApp support bar shown only for Package 1 (foundation) users.
