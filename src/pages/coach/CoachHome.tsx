@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
 import {
   Users, Star, Activity, AlertTriangle, TrendingUp, TrendingDown, Minus,
@@ -197,6 +197,9 @@ const WATER_GLASS_GOAL = 8;
 const SOLEUS_GOAL = 3;
 const BREATH_GOAL = 4;
 
+const localDateKey = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+
 
 export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTests }: { onViewPatient?: () => void; onViewFasting?: () => void; onViewMessages?: () => void; onViewLabTests?: () => void }) {
   const { user } = useAuth();
@@ -219,6 +222,7 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
   const [commissionOpen, setCommissionOpen] = useState(false);
   const [commissionInfo, setCommissionInfo] = useState<CommissionSummary | null>(null);
   const [reviewsOpen, setReviewsOpen] = useState(false);
+  const loadSequence = useRef(0);
 
 
   useEffect(() => {
@@ -272,11 +276,13 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
 
   const loadData = async (opts?: { silent?: boolean }) => {
     if (!user) return;
+    const sequence = ++loadSequence.current;
     if (!opts?.silent) setLoading(true);
 
 
     const coachData = await resolveCurrentCoach(user);
 
+    if (sequence !== loadSequence.current) return;
     if (!coachData) { setLoading(false); return; }
     setCoach(coachData as unknown as Coach);
 
@@ -299,7 +305,9 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     const todayIso = todayStart.toISOString();
-    const todayDate = todayStart.toISOString().slice(0, 10);
+    // Date-only tracking columns store the patient's local calendar day. Using
+    // toISOString() here shifts India midnight to the previous UTC date.
+    const todayDate = localDateKey(todayStart);
     const recentHealthAlertIso = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
 
     // Fetch everything in parallel across all patients (single queries, not per-patient loops)
@@ -382,6 +390,8 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
         .select("user_id").in("user_id", patientIds).gte("session_at", todayIso),
 
     ]);
+
+    if (sequence !== loadSequence.current) return;
 
     const suppPlanSet = new Set(((activePlans as any[]) ?? []).map((r) => r.user_id));
     const fastProtoSet = new Set(((activeProtocols as any[]) ?? []).map((r) => r.user_id));
