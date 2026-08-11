@@ -222,6 +222,7 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
   const [commissionOpen, setCommissionOpen] = useState(false);
   const [commissionInfo, setCommissionInfo] = useState<CommissionSummary | null>(null);
   const [reviewsOpen, setReviewsOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const loadSequence = useRef(0);
 
 
