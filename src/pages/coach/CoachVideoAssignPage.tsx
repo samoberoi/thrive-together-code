@@ -15,6 +15,7 @@ import type { AssignmentModule } from "@/lib/coachVideoAssignmentService";
 interface Patient {
   user_id: string;
   name: string;
+  phone: string;
   avatar_url: string | null;
 }
 
