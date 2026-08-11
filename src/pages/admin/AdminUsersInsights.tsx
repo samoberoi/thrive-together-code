@@ -3,10 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, Users as UsersIcon, AlertTriangle, Heart, UserCheck, Search,
-  Sparkles, Activity, ShieldCheck, Crown, Leaf, Phone, ChevronRight,
+  Sparkles, Activity, ShieldCheck, Crown, Leaf, Phone, ChevronRight, MessageCircle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { whatsappCallUrl } from "@/lib/coachAvailability";
 import { cn } from "@/lib/utils";
+
 
 type PlanKey = "foundation" | "active" | "intensive";
 type Severity = "high" | "medium" | "ok";
@@ -226,27 +228,27 @@ export default function AdminUsersInsights() {
   }
 
   return (
-    <div className="min-h-dvh bg-background">
+    <div className="h-[100svh] max-h-[100svh] overflow-y-auto overscroll-y-contain bg-background">
       {/* Ambient hero background */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-secondary/5 to-transparent pointer-events-none" />
         <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-32 -left-32 w-96 h-96 rounded-full bg-secondary/10 blur-3xl pointer-events-none" />
 
-        <div className="relative max-w-7xl mx-auto px-6 pt-8 pb-10">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-[calc(env(safe-area-inset-top)+1rem)] sm:pt-8 pb-6 sm:pb-10">
           <button
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
+            onClick={() => navigate("/admin-dashboard")}
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-5"
           >
             <ArrowLeft className="w-4 h-4" /> Back to dashboard
           </button>
 
           <div className="flex items-end justify-between gap-6 flex-wrap">
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary mb-3">
                 <Sparkles className="w-3.5 h-3.5" /> Member Intelligence
               </div>
-              <h1 className="text-4xl sm:text-5xl font-black text-foreground leading-[1.05] tracking-tight">
+              <h1 className="text-[clamp(24px,7vw,44px)] font-black text-foreground leading-[1.05] tracking-tight">
                 Total Users <span className="text-primary">·</span>{" "}
                 <CountUp value={totalUsers} />
               </h1>
@@ -255,7 +257,7 @@ export default function AdminUsersInsights() {
               </p>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3 w-full sm:w-auto">
               <HeroStat icon={AlertTriangle} label="Need attention" value={totals.high + totals.medium} tone="text-destructive" bg="bg-destructive/10" />
               <HeroStat icon={Heart} label="Healthy" value={totals.healthy} tone="text-emerald-600" bg="bg-emerald-500/10" />
               <HeroStat icon={UserCheck} label="With coach" value={totals.coached} tone="text-secondary" bg="bg-secondary/10" />
@@ -264,7 +266,8 @@ export default function AdminUsersInsights() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 pb-16 space-y-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-[calc(env(safe-area-inset-bottom)+4rem)] space-y-6 sm:space-y-8">
+
         {/* Plan category cards */}
         <div className="grid md:grid-cols-3 gap-4">
           {(Object.keys(PLAN_META) as PlanKey[]).map((k, idx) => {
@@ -373,13 +376,21 @@ export default function AdminUsersInsights() {
           transition={{ duration: 0.22 }}
           className="rounded-3xl bg-card border border-border overflow-hidden"
         >
-          <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-primary" />
-              <h3 className="font-bold text-foreground">{PLAN_META[activeTab].label} members</h3>
+          <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-border flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2 min-w-0">
+              <ShieldCheck className="w-4 h-4 text-primary shrink-0" />
+              <h3 className="font-bold text-foreground text-sm sm:text-base truncate">{PLAN_META[activeTab].label} members</h3>
             </div>
-            <span className="text-xs text-muted-foreground">{filtered.length} showing</span>
+            <div className="flex items-center gap-2 shrink-0">
+              {activeTab === "foundation" && (
+                <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-600">
+                  WhatsApp nudge only
+                </span>
+              )}
+              <span className="text-xs text-muted-foreground">{filtered.length} showing</span>
+            </div>
           </div>
+
 
           {filtered.length === 0 ? (
             <div className="py-16 text-center text-sm text-muted-foreground">No members match these filters</div>
@@ -409,7 +420,7 @@ export default function AdminUsersInsights() {
                       {r.lastSeen && <span>· Last log {timeAgo(r.lastSeen)}</span>}
                     </div>
                   </div>
-                  <div className="text-right hidden sm:block max-w-[260px]">
+                  <div className="text-right hidden lg:block max-w-[260px]">
                     <p className={cn(
                       "text-xs font-semibold",
                       r.severity === "high" ? "text-destructive" : r.severity === "medium" ? "text-amber-600" : "text-emerald-600"
@@ -417,7 +428,20 @@ export default function AdminUsersInsights() {
                       {r.reason}
                     </p>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                  {r.phone ? (
+                    <a
+                      href={whatsappCallUrl(r.phone, `Hi ${r.name}, this is the BBDO team checking in on your progress.`)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1.5 rounded-full bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 transition-colors"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" /> Chat
+                    </a>
+                  ) : (
+                    <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                  )}
+
                 </motion.li>
               ))}
             </ul>
@@ -457,7 +481,7 @@ export default function AdminUsersInsights() {
 
 function HeroStat({ icon: Icon, label, value, tone, bg }: { icon: any; label: string; value: number; tone: string; bg: string }) {
   return (
-    <div className="rounded-2xl bg-card border border-border p-3 min-w-[120px]">
+    <div className="rounded-2xl bg-card border border-border p-3 min-w-0">
       <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center mb-2", bg)}>
         <Icon className={cn("w-4 h-4", tone)} strokeWidth={2} />
       </div>
