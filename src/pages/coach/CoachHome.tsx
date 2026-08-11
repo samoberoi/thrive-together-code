@@ -343,6 +343,11 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
         .gte("created_at", recentHealthAlertIso)
         .order("created_at", { ascending: false })
         .limit(30),
+      supabase.from("user_soleus_sessions" as any)
+        .select("user_id").in("user_id", patientIds).gte("session_at", todayIso),
+      supabase.from("user_breath_sessions" as any)
+        .select("user_id").in("user_id", patientIds).gte("session_at", todayIso),
+
     ]);
 
     const suppPlanSet = new Set(((activePlans as any[]) ?? []).map((r) => r.user_id));
