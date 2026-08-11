@@ -67,9 +67,11 @@ export default function DietPlatingCalendar() {
     const storedDiet = list[0]?.plate_data?.diet
       ? normalizeDietPreference(list[0].plate_data.diet)
       : null;
+    const planVersion = Number(list[0]?.plate_data?.v ?? 1);
     const stale =
       list.length === 0 ||
       !latestStart ||
+      planVersion < 2 ||
       latestStart < today && !storedDiet ||
       (storedDiet && storedDiet !== normalizedPref);
     if (stale) {
