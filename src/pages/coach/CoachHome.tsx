@@ -751,6 +751,30 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
             <p className="text-muted-foreground text-[10px] font-medium mt-1 truncate">Sessions</p>
           </div>
         </button>
+        <button
+          onClick={() =>
+            document.getElementById("coach-pending-meetings")?.scrollIntoView({ behavior: "smooth", block: "start" })
+          }
+          className={`col-span-2 rounded-2xl p-2 transition-colors min-w-0 h-[66px] flex items-center gap-2 text-left ${
+            needsScheduling.length > 0
+              ? "bg-destructive/10 ring-1 ring-destructive/25 hover:bg-destructive/15"
+              : "liquid-glass hover:bg-accent/40"
+          }`}
+          title="Patients awaiting a scheduled meeting"
+        >
+          <CalendarClock
+            className={`w-5 h-5 shrink-0 ${needsScheduling.length > 0 ? "text-destructive" : "text-muted-foreground"}`}
+            strokeWidth={1.8}
+          />
+          <div className="min-w-0">
+            <p className={`stat-number text-lg leading-none ${needsScheduling.length > 0 ? "text-destructive" : "text-foreground"}`}>
+              {needsScheduling.length}
+            </p>
+            <p className={`text-[10px] font-medium mt-1 truncate ${needsScheduling.length > 0 ? "text-destructive/80" : "text-muted-foreground"}`}>
+              Pending meetings
+            </p>
+          </div>
+        </button>
       </motion.div>
 
 
