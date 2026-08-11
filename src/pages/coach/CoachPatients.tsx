@@ -459,6 +459,9 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
           )}
         </motion.div>
 
+        <PatientDietSymptomsSummary userId={selectedPatient.user_id} refreshKey={summaryRefresh} />
+
+
 
         {/* Coach actions */}
         {coachId && (
