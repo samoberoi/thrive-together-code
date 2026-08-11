@@ -17,6 +17,8 @@ import {
   fetchTrackingForUser,
   upsertTracking,
 } from "@/lib/fastingService";
+import MealTimePickerSheet from "@/components/fasting/MealTimePickerSheet";
+
 
 const todayKey = () => {
   const d = new Date();
@@ -41,6 +43,8 @@ export default function CoachSelfCheckins() {
   const [fmodAt, setFmodAt] = useState<string | null>(null);
   const [lmodAt, setLmodAt] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [mealPickerFor, setMealPickerFor] = useState<"fmod" | "lmod" | null>(null);
+
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -104,10 +108,9 @@ export default function CoachSelfCheckins() {
     }
   };
 
-  const logMeal = async (meal: "fmod" | "lmod") => {
+  const logMeal = async (meal: "fmod" | "lmod", iso: string) => {
     if (!user || busy) return;
-    const nowISO = new Date().toISOString();
-    if (meal === "lmod" && fmodAt && new Date(nowISO) <= new Date(fmodAt)) {
+    if (meal === "lmod" && fmodAt && new Date(iso) <= new Date(fmodAt)) {
       toast.error("Last meal must be after your first meal");
       return;
     }
@@ -116,9 +119,10 @@ export default function CoachSelfCheckins() {
       await upsertTracking({
         user_id: user.id,
         date: todayKey(),
-        [meal === "fmod" ? "fmod_actual_time" : "lmod_actual_time"]: nowISO,
+        [meal === "fmod" ? "fmod_actual_time" : "lmod_actual_time"]: iso,
       } as any);
-      if (meal === "fmod") setFmodAt(nowISO); else setLmodAt(nowISO);
+      if (meal === "fmod") setFmodAt(iso); else setLmodAt(iso);
+      setMealPickerFor(null);
       toast.success(meal === "fmod" ? "First meal logged" : "Last meal logged — fasting begins!");
       window.dispatchEvent(new CustomEvent("fasting-log-saved"));
     } catch (e: any) {
@@ -127,6 +131,7 @@ export default function CoachSelfCheckins() {
       setBusy(false);
     }
   };
+
 
   if (!user) return null;
   if (items.length === 0 && !hasProtocol) return null;
@@ -201,7 +206,7 @@ export default function CoachSelfCheckins() {
           </div>
           <div className="grid grid-cols-2 gap-2">
             <button
-              onClick={() => logMeal("fmod")}
+              onClick={() => setMealPickerFor("fmod")}
               disabled={busy || !!fmodAt}
               className={`rounded-2xl p-3 flex items-center gap-2 text-left transition-colors disabled:opacity-100 ${
                 fmodAt ? "bg-success/10" : "bg-muted/60"
@@ -216,7 +221,7 @@ export default function CoachSelfCheckins() {
               </span>
             </button>
             <button
-              onClick={() => logMeal("lmod")}
+              onClick={() => setMealPickerFor("lmod")}
               disabled={busy || !!lmodAt}
               className={`rounded-2xl p-3 flex items-center gap-2 text-left transition-colors disabled:opacity-100 ${
                 lmodAt ? "bg-success/10" : "bg-muted/60"
@@ -233,6 +238,16 @@ export default function CoachSelfCheckins() {
           </div>
         </div>
       )}
+
+      {mealPickerFor && (
+        <MealTimePickerSheet
+          meal={mealPickerFor}
+          confirmLabel="Log meal"
+          onConfirm={(iso) => logMeal(mealPickerFor, iso)}
+          onCancel={() => setMealPickerFor(null)}
+        />
+      )}
     </motion.div>
+
   );
 }

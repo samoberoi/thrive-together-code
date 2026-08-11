@@ -203,6 +203,8 @@ export default function UserFasting({ packageKey, selfServe = false }: { package
   const [yesterdayFasting, setYesterdayFasting] = useState<FastingTracking | null>(null);
   const [loading, setLoading] = useState(true);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [showLmodPicker, setShowLmodPicker] = useState(false);
+
   const [availableProtos, setAvailableProtos] = useState<FastingProtocol[]>([]);
   const [startingProtoId, setStartingProtoId] = useState<string | null>(null);
 
@@ -399,13 +401,19 @@ export default function UserFasting({ packageKey, selfServe = false }: { package
     } catch (e: any) { toast.error(e.message); }
   };
 
-  const trackLMOD = async () => {
+  const trackLMOD = async (hour?: number, minute?: number) => {
     if (!user) return;
     const now = new Date();
+    if (hour != null && minute != null) now.setHours(hour, minute, 0, 0);
+    if (now.getTime() > Date.now()) {
+      toast.error("Last meal time can't be in the future");
+      return;
+    }
     if (fmodTime && now.getTime() <= fmodTime.getTime()) {
       toast.error("Last meal must be after your first meal");
       return;
     }
+    setShowLmodPicker(false);
     try {
       await upsertTracking({
         user_id: user.id,
@@ -415,6 +423,7 @@ export default function UserFasting({ packageKey, selfServe = false }: { package
       });
       toast.success("Last meal tracked — fasting has begun!");
     window.dispatchEvent(new CustomEvent("fasting-log-saved"));
+
       if (mealPhotoFile) await processPhotoAndSave("lmod");
       load();
     } catch (e: any) { toast.error(e.message); }
@@ -700,13 +709,22 @@ export default function UserFasting({ packageKey, selfServe = false }: { package
               </div>
             )}
 
-            <button
-              onClick={trackLMOD}
-              disabled={analyzingPhoto}
-              className="flex items-center gap-2 px-8 py-3 rounded-2xl bg-primary text-primary-foreground font-bold text-sm mx-auto disabled:opacity-50"
-            >
-              <UtensilsCrossed className="w-4 h-4" /> Track LMOD & Start Fasting
-            </button>
+            {showLmodPicker ? (
+              <TimePicker
+                label="When did you have your last meal?"
+                onSelect={(h, m) => trackLMOD(h, m)}
+                onCancel={() => setShowLmodPicker(false)}
+              />
+            ) : (
+              <button
+                onClick={() => setShowLmodPicker(true)}
+                disabled={analyzingPhoto}
+                className="flex items-center gap-2 px-8 py-3 rounded-2xl bg-primary text-primary-foreground font-bold text-sm mx-auto disabled:opacity-50"
+              >
+                <UtensilsCrossed className="w-4 h-4" /> Track LMOD & Start Fasting
+              </button>
+            )}
+
           </motion.div>
         )}
 
