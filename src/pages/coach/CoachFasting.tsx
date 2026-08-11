@@ -154,12 +154,12 @@ export default function CoachFasting() {
       </div>
 
       {/* Tab switcher */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 overflow-x-auto -mx-4 px-4 pb-1 no-scrollbar">
         {(["patients", "mine", "protocols"] as View[]).map((v) => (
           <button
             key={v}
             onClick={() => setView(v)}
-            className={`px-4 py-2 rounded-2xl text-sm font-semibold transition-colors ${
+            className={`shrink-0 whitespace-nowrap px-3.5 py-2 rounded-2xl text-[13px] font-semibold transition-colors ${
               view === v ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
             }`}
           >
@@ -171,7 +171,7 @@ export default function CoachFasting() {
         ))}
       </div>
 
-      {view === "mine" && <UserFasting packageKey="intensive" />}
+      {view === "mine" && <UserFasting packageKey="intensive" selfServe />}
 
       {/* Protocols View */}
       {view === "protocols" && (

@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import TodayStepsCard from "@/components/TodayStepsCard";
 import CoachPatientIdentity from "@/components/coach/CoachPatientIdentity";
 import { toast } from "sonner";
 import {
@@ -40,6 +41,7 @@ type PatientRow = {
 export default function CoachMove() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [view, setView] = useState<"patients" | "mine">("patients");
   const [patients, setPatients] = useState<PatientRow[]>([]);
   const [search, setSearch] = useState("");
   const [cfg, setCfg] = useState<MovementConfig | null>(null);
@@ -205,6 +207,27 @@ export default function CoachMove() {
         <p className="text-sm text-muted-foreground mt-1">Review and adjust each patient's daily step goal.</p>
       </div>
 
+      <div className="flex gap-2 overflow-x-auto -mx-4 px-4 sm:-mx-6 sm:px-6 pb-1 no-scrollbar">
+        {([
+          { id: "patients" as const, label: `Patients (${patients.length})`, Icon: Activity },
+          { id: "mine" as const, label: "My Movement", Icon: Footprints },
+        ]).map(({ id, label, Icon }) => (
+          <button
+            key={id}
+            onClick={() => setView(id)}
+            className={`shrink-0 whitespace-nowrap inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-[13px] font-semibold transition-colors ${
+              view === id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Icon className="w-4 h-4" /> {label}
+          </button>
+        ))}
+      </div>
+
+      {view === "mine" ? (
+        <TodayStepsCard />
+      ) : (
+      <>
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
@@ -214,6 +237,7 @@ export default function CoachMove() {
           className="pl-9 h-11 rounded-2xl"
         />
       </div>
+
 
       {patients.length === 0 ? (
         <div className="liquid-glass rounded-3xl p-10 text-center text-muted-foreground">No patients assigned yet.</div>
@@ -305,6 +329,8 @@ export default function CoachMove() {
             );
           })}
         </div>
+      )}
+      </>
       )}
     </div>
   );

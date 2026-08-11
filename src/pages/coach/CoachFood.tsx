@@ -216,7 +216,7 @@ export default function CoachFood() {
 
   return (
     <div className="theme-diet px-4 pt-2 pb-28 max-w-3xl mx-auto">
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center gap-2 mb-4 overflow-x-auto -mx-4 px-4 no-scrollbar">
         <TabBtn active={view === "patients"} onClick={() => setView("patients")} icon={Users} label="Patient check-ins" />
         <TabBtn active={view === "reference"} onClick={() => setView("reference")} icon={Apple} label="Food library" />
         <TabBtn active={view === "mine"} onClick={() => setView("mine")} icon={UtensilsCrossed} label="My Plates" />
@@ -447,7 +447,7 @@ function TabBtn({
   return (
     <button
       onClick={onClick}
-      className={`no-pill flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+      className={`no-pill shrink-0 whitespace-nowrap flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl text-[13px] font-semibold transition-colors ${
         active ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-accent"
       }`}
     >

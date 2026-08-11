@@ -193,7 +193,7 @@ function MealPhotoCapture({
   );
 }
 
-export default function UserFasting({ packageKey }: { packageKey?: string | null } = {}) {
+export default function UserFasting({ packageKey, selfServe = false }: { packageKey?: string | null; selfServe?: boolean } = {}) {
   const { user } = useAuth();
   const [userProto, setUserProto] = useState<UserProtocol | null>(null);
   const [protocol, setProtocol] = useState<FastingProtocol | null>(null);
@@ -435,7 +435,7 @@ export default function UserFasting({ packageKey }: { packageKey?: string | null
 
   if (!userProto || !protocol || !weekPlan) {
     const normalizedKey = packageKey === "starter" ? "foundation" : packageKey === "pro" ? "intensive" : packageKey;
-    const isFoundation = !normalizedKey || normalizedKey === "foundation";
+    const isFoundation = selfServe || !normalizedKey || normalizedKey === "foundation";
     // Tier gating: Foundation sees only the Foundation Care Plan, Active sees
     // Foundation + Active, Intensive sees all three.
     const TIER_RANK: Record<string, number> = { foundation: 1, active: 2, intensive: 3 };
