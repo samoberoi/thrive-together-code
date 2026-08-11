@@ -5763,6 +5763,7 @@ export type Database = {
         Returns: {
           avatar_url: string
           avg_rating: number
+          bbdo_community_exp: number
           bio: string
           city: string
           coach_type: Database["public"]["Enums"]["coach_type"]
@@ -5776,7 +5777,6 @@ export type Database = {
           specialization: string
           total_consultations: number
           total_ratings: number
-          years_experience: number
         }[]
       }
       get_bmi_category: {
