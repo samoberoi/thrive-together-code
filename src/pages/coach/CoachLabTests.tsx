@@ -127,6 +127,15 @@ export default function CoachLabTests() {
   const [expandedPatient, setExpandedPatient] = useState<string | null>(null);
   const markupPct = useLabTestMarkup();
 
+  // "Manage" from a patient profile lands directly on that patient's detail.
+  useCoachPatientFocus("labtests", (patientId) => {
+    setView("patients");
+    setPatientSearch("");
+    setExpandedPatient(patientId);
+  });
+
+
+
   const [extReports, setExtReports] = useState<Record<string, ExternalLabReport[]>>({});
   const [markerRevision, setMarkerRevision] = useState(0);
   const [entryTarget, setEntryTarget] = useState<{ userId: string; report: ExternalLabReport } | null>(null);
