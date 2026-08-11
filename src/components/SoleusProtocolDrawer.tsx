@@ -27,11 +27,14 @@ export default function SoleusProtocolDrawer({
   const { user } = useAuth();
   const { count, goal, completed, refresh } = useSoleusSessionsToday();
   const [saving, setSaving] = useState(false);
+  const [armed, setArmed] = useState(true);
   const [videoId, setVideoId] = useState(SOLEUS_PROTOCOL_VIDEO.youtubeId);
   const [useNativePlayer] = useState(() => isNativeIOSApp());
   const savingRef = useRef(false);
   const countRef = useRef(count);
   useEffect(() => { countRef.current = count; }, [count]);
+  useEffect(() => { if (open) setArmed(true); }, [open]);
+
 
   useEffect(() => {
     let cancelled = false;
