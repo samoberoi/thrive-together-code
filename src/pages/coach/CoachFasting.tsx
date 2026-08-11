@@ -301,34 +301,36 @@ export default function CoachFasting() {
 
               return (
                 <motion.div key={patient.user_id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="liquid-glass rounded-3xl">
-                  <button
-                    type="button"
-                    onClick={() => setExpandedPatient(isExpanded && !isAssigning ? null : patient.user_id)}
-                    className="w-full text-left p-4 sm:p-5"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center overflow-hidden shrink-0">
-                          {patient.avatar_url ? <img src={patient.avatar_url} alt="" className="w-10 h-10 rounded-2xl object-cover" /> : <span className="text-primary font-bold text-sm">{(patient.name ?? "?")[0].toUpperCase()}</span>}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="font-bold text-foreground text-sm truncate">{patient.name || "Unnamed"}</h3>
-                            {planLabel && <Badge variant="outline" className="text-[9px] border-primary/30 text-primary bg-primary/5">{planLabel}</Badge>}
-                          </div>
-                          <p className="text-[10px] text-muted-foreground truncate">
-                            {patient.phone || "No phone"}
-                            {up && proto && <> · {proto.protocol_name} · Wk {currentWeek}/{proto.total_weeks}</>}
-                            {up && <> · <Flame className="inline w-2.5 h-2.5" /> {streak.currentStreak}d</>}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <Badge variant="outline" className={`text-[10px] ${statusChip.cls}`}>{statusChip.text}</Badge>
-                        {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
-                      </div>
-                    </div>
-                  </button>
+                  <div className="p-4 sm:p-5">
+                    <CoachPatientIdentity
+                      name={patient.name}
+                      phone={patient.phone}
+                      avatarUrl={patient.avatar_url}
+                      meta={
+                        <>
+                          {up && proto && <>{proto.protocol_name} · Wk {currentWeek}/{proto.total_weeks} · </>}
+                          {up && <><Flame className="inline w-3 h-3" /> {streak.currentStreak}d</>}
+                        </>
+                      }
+                      badges={
+                        <>
+                          {planLabel && <Badge variant="outline" className="text-[10px] border-primary/30 text-primary bg-primary/5">{planLabel}</Badge>}
+                          <Badge variant="outline" className={`text-[10px] ${statusChip.cls}`}>{statusChip.text}</Badge>
+                        </>
+                      }
+                      actions={
+                        <button
+                          type="button"
+                          onClick={() => setExpandedPatient(isExpanded && !isAssigning ? null : patient.user_id)}
+                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-muted-foreground px-2.5 py-1.5 rounded-lg bg-muted/60"
+                        >
+                          {isExpanded ? "Hide" : "Details"}
+                          {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                        </button>
+                      }
+                    />
+                  </div>
+
 
                   {isExpanded && (
                     <div className="px-4 sm:px-5 pb-5 -mt-1">
