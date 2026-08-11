@@ -482,6 +482,10 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
               <Pill className="w-4.5 h-4.5 text-primary" />
               <span className="text-[11px] font-bold text-foreground">Supplements</span>
             </button>
+            <button onClick={() => setActionDlg("fasting")} className="liquid-glass rounded-2xl py-3 px-2 flex flex-col items-center gap-1 hover:bg-primary/5">
+              <Timer className="w-4.5 h-4.5 text-primary" />
+              <span className="text-[11px] font-bold text-foreground">Fasting</span>
+            </button>
           </motion.div>
         )}
 
@@ -499,6 +503,11 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
               open={actionDlg === "supps"} onOpenChange={(b) => !b && setActionDlg(null)}
               coachId={coachId} patientId={selectedPatient.user_id} patientName={selectedPatient.name ?? undefined}
             />
+            <AssignFastingDialog
+              open={actionDlg === "fasting"} onOpenChange={(b) => !b && setActionDlg(null)}
+              coachId={coachId} patientId={selectedPatient.user_id} patientName={selectedPatient.name ?? undefined}
+            />
+
           </>
         )}
 
