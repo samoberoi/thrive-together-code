@@ -68,11 +68,12 @@ export default function CoachSupplements() {
       if (!assignments) return;
 
       const userIds = (assignments as any[]).map((a: any) => a.user_id);
-      const { data: profiles } = await supabase
-        .from("profiles").select("user_id, name, phone, avatar_url").in("user_id", userIds);
+      const [{ data: profiles }, supps, condRules] = await Promise.all([
+        supabase.from("profiles").select("user_id, name, phone, avatar_url").in("user_id", userIds),
+        fetchSupplements(),
+        fetchConditionRules(),
+      ]);
       setPatients((profiles as any) ?? []);
-
-      const [supps, condRules] = await Promise.all([fetchSupplements(), fetchConditionRules()]);
       setSupplements(supps.filter((s) => s.is_active));
       setRules(condRules.filter((r) => r.is_active));
 
@@ -80,21 +81,32 @@ export default function CoachSupplements() {
       const itemMap: Record<string, PlanItem[]> = {};
       const trackMap: Record<string, SupplementTracking[]> = {};
 
-      for (const uid of userIds) {
+      // Parallel per-patient fetches instead of sequential waterfall
+      await Promise.all(userIds.map(async (uid) => {
         const plan = await fetchUserPlan(uid);
         planMap[uid] = plan;
         if (plan) {
-          const items = await fetchPlanItems(plan.id);
+          const [items, tracking] = await Promise.all([
+            fetchPlanItems(plan.id),
+            fetchTrackingHistory(uid, 7),
+          ]);
           itemMap[uid] = items;
-          const tracking = await fetchTrackingHistory(uid, 7);
           trackMap[uid] = tracking;
         }
-      }
+      }));
       setPatientPlans(planMap);
       setPatientItems(itemMap);
       setPatientTracking(trackMap);
     } catch (e: any) { toast.error(e.message); }
     setLoading(false);
+  };
+
+  /** Refresh only one patient's plan data — instant compared to a full reload. */
+  const refreshPatient = async (uid: string) => {
+    const plan = await fetchUserPlan(uid);
+    const items = plan ? await fetchPlanItems(plan.id) : [];
+    setPatientPlans((prev) => ({ ...prev, [uid]: plan }));
+    setPatientItems((prev) => ({ ...prev, [uid]: items }));
   };
 
   const suppMap = Object.fromEntries(supplements.map((s) => [s.id, s]));
@@ -120,8 +132,28 @@ export default function CoachSupplements() {
     }
   };
 
+  const buildItems = (planId: string) =>
+    Array.from(selectedRules)
+      .map((ruleId) => {
+        const rule = rules.find((r) => r.id === ruleId);
+        if (!rule) return null;
+        return {
+          plan_id: planId,
+          supplement_id: rule.supplement_id,
+          dosage: rule.dosage,
+          frequency: rule.frequency,
+          timing: rule.timing ?? "with meal",
+          remarks: rule.remarks,
+          duration_weeks: ruleDurations[ruleId] ?? rule.duration_weeks,
+        };
+      })
+      .filter(Boolean) as any[];
+
   const handleAssignPlan = async (userId: string) => {
     if (!user || selectedRules.size === 0) return;
+    if (submittingRef.current) return;      // hard lock against double-submit
+    submittingRef.current = true;
+    setSubmitting(true);
     try {
       const planId = await createUserPlan({
         user_id: userId,
@@ -130,51 +162,39 @@ export default function CoachSupplements() {
         start_date: new Date().toISOString().split("T")[0],
       } as any);
 
-      for (const ruleId of selectedRules) {
-        const rule = rules.find((r) => r.id === ruleId);
-        if (!rule) continue;
-        await addPlanItem({
-          plan_id: planId,
-          supplement_id: rule.supplement_id,
-          dosage: rule.dosage,
-          frequency: rule.frequency,
-          timing: rule.timing ?? "with meal",
-          remarks: rule.remarks,
-          duration_weeks: ruleDurations[ruleId] ?? rule.duration_weeks,
-        });
-      }
+      await addPlanItems(buildItems(planId));
 
       toast.success("Supplement plan assigned!");
       setAssigningPatient(null);
       setSelectedRules(new Set());
       setRuleDurations({});
-      loadData();
+      await refreshPatient(userId);
     } catch (e: any) { toast.error(e.message); }
+    finally {
+      submittingRef.current = false;
+      setSubmitting(false);
+    }
   };
 
   const handleAddToExistingPlan = async (userId: string, planId: string) => {
     if (!user || selectedRules.size === 0) return;
+    if (submittingRef.current) return;      // hard lock against double-submit
+    submittingRef.current = true;
+    setSubmitting(true);
     try {
-      for (const ruleId of selectedRules) {
-        const rule = rules.find((r) => r.id === ruleId);
-        if (!rule) continue;
-        await addPlanItem({
-          plan_id: planId,
-          supplement_id: rule.supplement_id,
-          dosage: rule.dosage,
-          frequency: rule.frequency,
-          timing: rule.timing ?? "with meal",
-          remarks: rule.remarks,
-          duration_weeks: ruleDurations[ruleId] ?? rule.duration_weeks,
-        });
-      }
+      await addPlanItems(buildItems(planId));
       toast.success("Supplements added to plan!");
       setAddingToPatient(null);
       setSelectedRules(new Set());
       setRuleDurations({});
-      loadData();
+      await refreshPatient(userId);
     } catch (e: any) { toast.error(e.message); }
+    finally {
+      submittingRef.current = false;
+      setSubmitting(false);
+    }
   };
+
 
   const handleRemoveItem = async (itemId: string) => {
     try {
