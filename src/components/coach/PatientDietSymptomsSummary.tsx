@@ -149,6 +149,7 @@ export default function PatientDietSymptomsSummary({ userId, refreshKey }: Props
       .channel(`patient-summary-${userId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "user_diet_profiles", filter: `user_id=eq.${userId}` }, () => load())
       .on("postgres_changes", { event: "*", schema: "public", table: "user_symptoms", filter: `user_id=eq.${userId}` }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "profiles", filter: `user_id=eq.${userId}` }, () => load())
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
@@ -163,8 +164,9 @@ export default function PatientDietSymptomsSummary({ userId, refreshKey }: Props
       transition={{ delay: 0.07 }}
     >
       <p className="text-xs font-bold tracking-wider uppercase text-muted-foreground mb-3">
-        Diet, allergies &amp; symptoms
+        Diet, ailments &amp; symptoms
       </p>
+
 
       {loading ? (
         <div className="flex items-center justify-center py-6">
