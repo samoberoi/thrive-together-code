@@ -131,7 +131,33 @@ export default function RoleBottomNav<TId extends string>({
             boxShadow: "0 -6px 20px -12px rgba(15,26,61,0.18)",
           }}
         >
-          {primary.map(renderDockTab)}
+          {/* Left tabs */}
+          {primary.slice(0, LEFT_SLOTS).map(renderDockTab)}
+
+          {/* Center FAB — identical topology to the end-user dock */}
+          {onFABPress && (
+            <div className="flex-1 flex items-center justify-center">
+              <motion.button
+                onClick={onFABPress}
+                aria-label="Quick log"
+                whileTap={{ scale: 0.92 }}
+                transition={{ duration: 0.14, ease: [0.22, 1, 0.36, 1] }}
+                className="shrink-0 w-11 h-11 -mt-3 rounded-full flex items-center justify-center"
+                style={{
+                  background: "var(--bbdo-red, #EA6A5E)",
+                  color: "#fff",
+                  boxShadow: "0 6px 14px -4px rgba(234,106,94,0.55)",
+                  border: "3px solid #ffffff",
+                }}
+              >
+                <Plus className="w-5 h-5" strokeWidth={2.4} />
+              </motion.button>
+            </div>
+          )}
+
+          {/* Right tabs */}
+          {primary.slice(LEFT_SLOTS).map(renderDockTab)}
+
           {hasOverflow && (
             <motion.button
               key="more"
@@ -146,24 +172,8 @@ export default function RoleBottomNav<TId extends string>({
               <AttentionBadge count={overflowUnread} className="absolute right-1 top-1" />
             </motion.button>
           )}
-          {onFABPress && (
-            <motion.button
-              key="quick-log"
-              onClick={onFABPress}
-              aria-label="Quick log"
-              whileTap={{ scale: 0.9 }}
-              transition={{ duration: 0.14, ease: [0.22, 1, 0.36, 1] }}
-              className="relative flex-1 h-11 flex items-center justify-center"
-            >
-              <span
-                className="w-10 h-10 rounded-full flex items-center justify-center text-white shadow-lift"
-                style={{ background: "var(--bbdo-red)" }}
-              >
-                <Plus className="w-5 h-5" strokeWidth={2.4} />
-              </span>
-            </motion.button>
-          )}
           {extra}
+
         </div>
       </AppBottomBar>
 
