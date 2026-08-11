@@ -18,7 +18,9 @@ import {
   type Supplement, type ConditionRule, type UserSupplementPlan, type PlanItem, type SupplementTracking
 } from "@/lib/supplementService";
 
-type View = "protocols" | "patients";
+import UserSupplements from "@/components/UserSupplements";
+
+type View = "protocols" | "patients" | "mine";
 
 function ConditionFlatIcon({ className = "w-4 h-4" }: { className?: string }) {
   return <HeartPulse className={className} strokeWidth={1.75} />;
@@ -426,7 +428,7 @@ export default function CoachSupplements() {
 
       {/* Tab switcher */}
       <div className="flex gap-2">
-        {(["patients", "protocols"] as View[]).map((v) => (
+        {(["patients", "mine", "protocols"] as View[]).map((v) => (
           <button
             key={v}
             onClick={() => setView(v)}
@@ -435,12 +437,18 @@ export default function CoachSupplements() {
             }`}
           >
             <span className="inline-flex items-center gap-1.5">
-              {v === "protocols" ? <Pill className="w-4 h-4" /> : <Users className="w-4 h-4" />}
-              {v === "protocols" ? `Condition Protocols (${Object.keys(conditionGroups).length})` : `Patients (${patients.length})`}
+              {v === "patients" ? <Users className="w-4 h-4" /> : <Pill className="w-4 h-4" />}
+              {v === "protocols"
+                ? `Condition Protocols (${Object.keys(conditionGroups).length})`
+                : v === "mine"
+                  ? "My Supplements"
+                  : `Patients (${patients.length})`}
             </span>
           </button>
         ))}
       </div>
+
+      {view === "mine" && <UserSupplements />}
 
       {/* ─── Protocols View ─── */}
       {view === "protocols" && (

@@ -19,7 +19,9 @@ import LabResultsEntry from "@/components/lab/LabResultsEntry";
 import ExternalTestDialog from "@/components/lab/ExternalTestDialog";
 import { fetchExternalReportsForUsers, externalReportUrl, parseExternalReport, type ExternalLabReport } from "@/lib/externalLabService";
 
-type View = "patients" | "tests";
+import PatientLabTests from "@/components/PatientLabTests";
+
+type View = "patients" | "tests" | "mine";
 
 type Test = {
   id: string;
@@ -350,10 +352,22 @@ export default function CoachLabTests() {
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-1">
-        {([{ id: "patients" as const, label: `👥 Patients (${patients.length})` }, { id: "tests" as const, label: `🧪 Test Catalog (${tests.length})` }]).map((item) => (
+        {([{ id: "patients" as const, label: `👥 Patients (${patients.length})` }, { id: "mine" as const, label: "🩺 My Tests" }, { id: "tests" as const, label: `🧪 Test Catalog (${tests.length})` }]).map((item) => (
           <button key={item.id} onClick={() => setView(item.id)} className={`px-4 py-2 rounded-2xl text-sm font-semibold whitespace-nowrap transition-colors ${view === item.id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>{item.label}</button>
         ))}
       </div>
+
+      {view === "mine" && (
+        <div className="space-y-4">
+          <div className="liquid-glass rounded-2xl p-4">
+            <p className="text-sm font-black text-foreground">Book your own test</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Same panels your patients get — book at home collection and your report lands here.
+            </p>
+          </div>
+          <PatientLabTests alwaysShow foundationMode />
+        </div>
+      )}
 
       {view === "patients" && (
         <div className="space-y-3">

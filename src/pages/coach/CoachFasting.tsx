@@ -19,7 +19,9 @@ import {
 } from "@/lib/fastingService";
 import { calculateStreak, fetchBadgeDefinitions, fetchUserBadges, type FastingBadge } from "@/lib/streakService";
 
-type View = "protocols" | "patients";
+import UserFasting from "@/components/UserFasting";
+
+type View = "protocols" | "patients" | "mine";
 
 export default function CoachFasting() {
   const { user } = useAuth();
@@ -153,7 +155,7 @@ export default function CoachFasting() {
 
       {/* Tab switcher */}
       <div className="flex gap-2">
-        {(["patients", "protocols"] as View[]).map((v) => (
+        {(["patients", "mine", "protocols"] as View[]).map((v) => (
           <button
             key={v}
             onClick={() => setView(v)}
@@ -162,12 +164,14 @@ export default function CoachFasting() {
             }`}
           >
             <span className="inline-flex items-center gap-1.5">
-              {v === "patients" ? <Users className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
-              {v === "patients" ? `Patients (${patients.length})` : "Protocols"}
+              {v === "patients" ? <Users className="w-4 h-4" /> : v === "mine" ? <Timer className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
+              {v === "patients" ? `Patients (${patients.length})` : v === "mine" ? "My Fasting" : "Protocols"}
             </span>
           </button>
         ))}
       </div>
+
+      {view === "mine" && <UserFasting />}
 
       {/* Protocols View */}
       {view === "protocols" && (
