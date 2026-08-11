@@ -24,6 +24,8 @@ import { PushNotifications } from "@capacitor/push-notifications";
 import { getNotificationSoundSettings } from "@/lib/notificationSoundService";
 import { playNotificationSound } from "@/lib/soundEngine";
 import { fireRealtimeHealthNotificationAlert, sendLocalHealthAlert } from "@/lib/healthAlerts";
+import { ensureNativeHealthPermission } from "@/lib/healthPermissionBootstrap";
+
 import { currentPlatform, isNativePushSupported, registerNativePush } from "@/lib/nativePush";
 import { resolvePostAuthRoute, resolveProtectedAccess } from "@/lib/accessControl";
 
