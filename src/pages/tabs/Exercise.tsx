@@ -33,6 +33,7 @@ import { isNativeAndroidApp, isNativeIOSApp, isYoutubePlayerMessage, youtubePlay
 import { accumulateWatched, loadWatched, markCompleted, recordProgress, saveDuration } from "@/lib/videoProgressStore";
 import { useCoachAssignedItems } from "@/hooks/useCoachAssignedItems";
 import { useWatchCredit } from "@/hooks/useWatchCredit";
+import ExpertConnectBar from "@/components/support/ExpertConnectBar";
 
 const FALLBACK_SHORT_VIDEO_SEC = 120;
 // One set is credited after a real watch: the full clip, capped at 3 minutes.
@@ -498,6 +499,7 @@ export default function ExerciseTab({ packageKey }: Props) {
 
   return (
     <div className="theme-exercise px-4 md:px-6 pt-3 md:pt-8 pb-10 space-y-4">
+      <ExpertConnectBar context="my training" />
       {/* HERO — BBDO Soleus Push-Ups (matches yoga hero look & feel) */}
       <motion.button
         onClick={() => setSoleusOpen(true)}

@@ -7,6 +7,7 @@ import SavedPlates from "@/components/diet/SavedPlates";
 import DietPlatingCalendar from "@/components/diet/DietPlatingCalendar";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import ExpertConnectBar from "@/components/support/ExpertConnectBar";
 
 type Mode = "hub" | "reference" | "plate" | "saved";
 
@@ -82,6 +83,7 @@ export default function Diet() {
 
   return (
     <div className="theme-diet px-5 pt-2 pb-28 max-w-3xl mx-auto">
+      <ExpertConnectBar className="mb-4" context="my food plan" />
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}

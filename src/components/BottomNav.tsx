@@ -7,6 +7,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import AttentionBadge from "@/components/attention/AttentionBadge";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { AppBottomBar } from "@/components/layout/AppBottomBar";
+import ExpertConnectBar from "@/components/support/ExpertConnectBar";
 
 const ICON_FOR: Record<Tab, AppIconName> = {
   home: "home",
@@ -171,6 +172,7 @@ export default function BottomNav({
             <div className="grid grid-cols-3 gap-2">
               {allowed.map((id) => renderTab(id, { inSheet: true }))}
             </div>
+            <ExpertConnectBar className="mt-3" context="the app" />
           </div>
         </DrawerContent>
       </Drawer>

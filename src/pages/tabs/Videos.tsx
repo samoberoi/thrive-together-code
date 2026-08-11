@@ -20,6 +20,7 @@ import { useBreathSessionsToday } from "@/hooks/useBreathSessionsToday";
 import { BREATH_PROTOCOL_VIDEO } from "@/lib/breathProtocol";
 import { useCoachAssignedItems } from "@/hooks/useCoachAssignedItems";
 import { EmptyState } from "@/components/shared";
+import ExpertConnectBar from "@/components/support/ExpertConnectBar";
 
 const VIDEO_ICON_MAP: Record<string, LucideIcon> = {
   Activity,
@@ -153,6 +154,9 @@ export default function Videos({ packageKey }: VideosProps = {}) {
 
   return (
     <div className="flex flex-col gap-4 pt-4 md:pt-6 pb-6">
+      <div className="mx-5">
+        <ExpertConnectBar context="yoga" />
+      </div>
 
       {/* HERO — BBDO Daily Breath Protocol (big, prominent) */}
       <div className="mx-5">

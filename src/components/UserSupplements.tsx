@@ -14,6 +14,7 @@ import {
   type UserSupplementPlan, type PlanItem, type Supplement, type SupplementTracking, type VegType
 } from "@/lib/supplementService";
 
+import ExpertConnectBar from "@/components/support/ExpertConnectBar";
 import {
   fetchSupplementBadgeDefinitions, fetchUserSupplementBadges,
   getSupplementBadgeLevel, calculateSupplementStreak,
@@ -184,6 +185,7 @@ export default function UserSupplements({ simpleMode = false }: { simpleMode?: b
 
   return (
     <div className="p-6 space-y-5">
+      <ExpertConnectBar context="my supplements" />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
