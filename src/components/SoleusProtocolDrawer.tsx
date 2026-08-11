@@ -146,7 +146,7 @@ export default function SoleusProtocolDrawer({
           )}
         </div>
 
-        {!completed && (
+        {!completed && armed && (
           <div className="mt-3 rounded-2xl bg-muted/60 border border-border p-3">
             <div className="flex items-center justify-between gap-2">
               <span className="text-[11px] font-black uppercase tracking-[0.14em] text-muted-foreground">
@@ -168,18 +168,29 @@ export default function SoleusProtocolDrawer({
           </div>
         )}
 
-        <div
-          className="mt-3 w-full min-h-14 rounded-2xl text-white font-bold text-[15px] flex items-center justify-center gap-2 px-4 text-center"
-          style={{ background: completed ? "#10B981" : "var(--bbdo-blue)" }}
-        >
-          {saving ? (
-            <><Loader2 className="w-4 h-4 animate-spin" /> Logging your round…</>
-          ) : completed ? (
-            <><CheckCircle2 className="w-4 h-4" /> All 3 rounds done today</>
-          ) : (
-            <>Finish the full video to log round {Math.min(goal, count + 1)} of {goal}</>
-          )}
-        </div>
+        {!completed && !armed && !saving ? (
+          <button
+            onClick={() => { reset(); setArmed(true); }}
+            className="no-pill mt-3 w-full min-h-14 rounded-2xl text-white font-bold text-[15px] flex items-center justify-center gap-2 px-4 text-center"
+            style={{ background: "var(--bbdo-blue)" }}
+          >
+            Start round {Math.min(goal, count + 1)} of {goal}
+          </button>
+        ) : (
+          <div
+            className="mt-3 w-full min-h-14 rounded-2xl text-white font-bold text-[15px] flex items-center justify-center gap-2 px-4 text-center"
+            style={{ background: completed ? "#10B981" : "var(--bbdo-blue)" }}
+          >
+            {saving ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Logging your round…</>
+            ) : completed ? (
+              <><CheckCircle2 className="w-4 h-4" /> All 3 rounds done today</>
+            ) : (
+              <>Finish the full video to log round {Math.min(goal, count + 1)} of {goal}</>
+            )}
+          </div>
+        )}
+
 
         <p className="text-[11px] text-muted-foreground text-center mt-2 leading-snug">
           Ritual · After breakfast · After lunch · After dinner
