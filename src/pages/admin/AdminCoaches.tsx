@@ -33,7 +33,7 @@ const packageLabel = (type: string) => {
 const emptyCoach: Partial<Coach> = {
   name: "", phone: "", email: "", coach_type: "active_reset" as any,
   coach_packages: ["active_reset"] as any,
-  specialization: "", qualification: "", bio: "", years_experience: 0,
+  specialization: "", qualification: "", bio: "", bbdo_community_exp: 0,
   commission_percent: 0, languages: [], city: "", state: "", pincode: "",
   address_line1: "", address_line2: "", bank_name: "", bank_account_number: "",
   bank_ifsc: "", aadhaar_card: "", pan_card: "", emergency_contact_name: "",
@@ -148,7 +148,7 @@ export default function AdminCoaches() {
       specialization: newCoach.specialization || null,
       qualification: newCoach.qualification || null,
       bio: newCoach.bio || null,
-      years_experience: newCoach.years_experience || 0,
+      bbdo_community_exp: newCoach.bbdo_community_exp || 0,
       commission_percent: newCoach.commission_percent || 10,
       languages: newCoach.languages || [],
       city: newCoach.city || null,
@@ -333,7 +333,7 @@ export default function AdminCoaches() {
                             <InfoCell label="Phone" value={coach.phone} />
                             <InfoCell label="Email" value={coach.email || "—"} />
                             <InfoCell label="Packages" value={((coach as any).coach_packages?.length ? (coach as any).coach_packages : [coach.coach_type]).map((p: string) => packageLabel(p)).join(", ")} />
-                            <InfoCell label="Experience" value={`${coach.years_experience} yrs`} />
+                            <InfoCell label="Experience" value={`${coach.bbdo_community_exp} yrs`} />
                             <InfoCell label="Commission" value={`${coach.commission_percent || 0}%`} />
                             <InfoCell label="Start Date" value={coach.start_date ? new Date(coach.start_date).toLocaleDateString("en-IN") : "—"} />
                             <InfoCell label="Qualification" value={coach.qualification || "—"} />
@@ -462,7 +462,7 @@ function CoachFormFields({
       </div>
       <FormField label="Specialization" value={data.specialization || ""} onChange={(v) => set("specialization", v)} />
       <FormField label="Qualification" value={data.qualification || ""} onChange={(v) => set("qualification", v)} />
-      <FormField label="Years Experience" value={String(data.years_experience || 0)} onChange={(v) => set("years_experience", parseInt(v) || 0)} type="number" />
+      <FormField label="Years Experience" value={String(data.bbdo_community_exp || 0)} onChange={(v) => set("bbdo_community_exp", parseInt(v) || 0)} type="number" />
       <div>
         <label className="text-xs font-medium text-muted-foreground mb-1 block">Commission Model</label>
         <select

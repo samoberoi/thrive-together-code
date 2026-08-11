@@ -396,7 +396,7 @@ export default function CoachProfile({ onSignOut, onReplayTour }: { onSignOut: (
         </div>
         <div className="liquid-glass rounded-2xl p-4 text-center">
           <Clock className="w-5 h-5 text-primary mx-auto mb-1.5" strokeWidth={1.8} />
-          <p className="stat-number text-2xl text-foreground">{coach.years_experience}</p>
+          <p className="stat-number text-2xl text-foreground">{coach.bbdo_community_exp}</p>
           <p className="text-muted-foreground text-[10px] font-medium">Years exp</p>
         </div>
       </motion.div>
