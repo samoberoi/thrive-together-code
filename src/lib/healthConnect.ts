@@ -230,19 +230,101 @@ async function readAllSteps(start: Date, end: Date): Promise<any[]> {
   return records;
 }
 
+function ms(v: any): number {
+  const t = new Date(v).getTime();
+  return Number.isFinite(t) ? t : NaN;
+}
+
+/**
+ * Keep only the portion of each record that falls inside [start, end].
+ * Records that straddle midnight (common with watch syncs) are pro-rated
+ * instead of being dropped entirely.
+ */
+function clipRecordsToRange(records: any[], start: Date, end: Date): any[] {
+  const s = start.getTime();
+  const e = end.getTime();
+  const out: any[] = [];
+  for (const r of records) {
+    const rs = ms(r?.startTime);
+    const re = ms(r?.endTime ?? r?.startTime);
+    const count = Number(r?.count ?? 0);
+    if (!Number.isFinite(rs) || !Number.isFinite(re) || count <= 0) continue;
+    const os = Math.max(rs, s);
+    const oe = Math.min(re, e);
+    if (oe <= os) continue;
+    const span = Math.max(1, re - rs);
+    const ratio = span > 0 ? Math.min(1, (oe - os) / span) : 1;
+    out.push({ ...r, count: Math.round(count * ratio) });
+  }
+  return out;
+}
+
+export type StepsSyncDiagnostics = {
+  rawRecords: number;
+  usedRecords: number;
+  origins: Record<string, number>;
+  windowStart: string;
+  windowEnd: string;
+  widened: boolean;
+};
+
+let lastDiagnostics: StepsSyncDiagnostics | null = null;
+export function getLastStepsDiagnostics() {
+  return lastDiagnostics;
+}
+
 export async function syncTodayStepsFromHealthConnect(
   opts?: { allowPrompt?: boolean },
 ): Promise<number | null> {
   await ensureStepsPermission(opts?.allowPrompt ?? false);
   // Health Connect rejects/ignores ranges that end in the future on some OEMs.
+  const start = startOfToday();
   const end = new Date();
-  const recs = await readAllSteps(startOfToday(), end);
-  const deduped = sumStepsDeduped(recs) ?? 0;
+
+  let raw = await readAllSteps(start, end);
+  let widened = false;
+  if (raw.length === 0) {
+    // Some OEMs / watch bridges write records with UTC-shifted or long-span
+    // windows that a strict "since local midnight" filter misses entirely.
+    // Read a wider window and clip it back to today ourselves.
+    widened = true;
+    raw = await readAllSteps(daysAgo(2), end);
+  }
+
+  const scoped = clipRecordsToRange(raw, start, end);
+
+  const perOrigin: Record<string, number> = {};
+  for (const r of scoped) {
+    const k = originOf(r);
+    perOrigin[k] = (perOrigin[k] ?? 0) + Number(r?.count ?? 0);
+  }
+
+  lastDiagnostics = {
+    rawRecords: raw.length,
+    usedRecords: scoped.length,
+    origins: perOrigin,
+    windowStart: start.toISOString(),
+    windowEnd: end.toISOString(),
+    widened,
+  };
+
+  if (raw.length === 0) {
+    throw new Error(
+      "Health Connect has no step records yet. Open your watch/health app, sync it, and make sure it's allowed to write Steps to Health Connect.",
+    );
+  }
+
+  const deduped = sumStepsDeduped(scoped) ?? 0;
   if (deduped > 0) return Math.max(0, Math.round(deduped));
   // Fallback: some providers write records without usable dataOrigin metadata.
-  const total = sum(recs, "count") ?? 0;
-  return Math.max(0, Math.round(total));
+  const total = sum(scoped, "count") ?? 0;
+  if (total > 0) return Math.max(0, Math.round(total));
+
+  // Records exist, but none overlap today — genuinely 0 steps so far today.
+  return 0;
+
 }
+
 
 
 export async function fetchHealthConnectSnapshot(): Promise<HealthSnapshot | null> {

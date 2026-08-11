@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchProfile } from "@/lib/profileService";
 import { canUseNativeHealth, isHealthStepsConnected, syncTodaySteps } from "@/lib/healthProvider";
+import { getLastStepsDiagnostics } from "@/lib/healthConnect";
+
 import { healthSourceLabel } from "@/lib/platformLabels";
 import {
   fetchMovementOverview,
@@ -55,7 +57,19 @@ export default function TodayStepsCard({ onOpenMovement }: { onOpenMovement?: ()
       }
       setHealthConnected(true);
       await logTodaySteps(user.id, steps);
-      if (showToast) toast.success(`Synced ${steps.toLocaleString("en-IN")} ${healthSourceLabel()} steps`);
+      if (showToast) {
+        if (steps > 0) {
+          toast.success(`Synced ${steps.toLocaleString("en-IN")} ${healthSourceLabel()} steps`);
+        } else {
+          const diag = getLastStepsDiagnostics();
+          toast.message(`No steps recorded yet today`, {
+            description: diag?.rawRecords
+              ? `${healthSourceLabel()} has ${diag.rawRecords} step record(s), but none for today yet. Sync your watch app first.`
+              : `Make sure your watch/health app is allowed to write Steps to ${healthSourceLabel()}.`,
+          });
+        }
+      }
+
       window.dispatchEvent(new CustomEvent("health-log-saved"));
       await load();
     } catch (error: any) {
