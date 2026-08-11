@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import TodayStepsCard from "@/components/TodayStepsCard";
 import CoachPatientIdentity from "@/components/coach/CoachPatientIdentity";
 import { toast } from "sonner";
 import {
@@ -327,6 +328,8 @@ export default function CoachMove() {
             );
           })}
         </div>
+      )}
+      </>
       )}
     </div>
   );
