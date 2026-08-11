@@ -493,7 +493,12 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
         .filter((m) => m.status === "completed" || (m.scheduled_at ?? "") >= graceIso)
         .map((m) => m.user_id),
     );
-    setNeedsScheduling(enriched.filter((p) => !handledIds.has(p.user_id)));
+    // Longest-waiting patient first (SLA), newest at the bottom.
+    setNeedsScheduling(
+      enriched
+        .filter((p) => !handledIds.has(p.user_id))
+        .sort((a, b) => new Date(a.assigned_at).getTime() - new Date(b.assigned_at).getTime()),
+    );
 
     // Upcoming (not yet lapsed) meetings, so newly booked patients stay visible on Home.
     const nameById2 = new Map(enriched.map((p) => [p.user_id, p.name || "Patient"]));
