@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, ArrowRight, Check, Minus, Plus, Save, Sparkles, Edit3,
@@ -322,8 +323,8 @@ export default function BuildMyPlate({ onClose, onSaved }: { onClose: () => void
 
   // ────────── REVIEW MODE ──────────
   if (mode === "review") {
-    return (
-      <div className="fixed inset-0 z-[60] bg-background overflow-y-auto">
+    return createPortal(
+      <div className="fixed inset-0 z-[1000] bg-background overflow-y-auto">
         <header className="px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 flex items-center gap-2 max-w-3xl mx-auto">
           <button onClick={back} className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center active:scale-95">
             <ArrowLeft className="w-5 h-5" strokeWidth={2} />
@@ -402,13 +403,14 @@ export default function BuildMyPlate({ onClose, onSaved }: { onClose: () => void
         <AnimatePresence>
           {openItem && <FoodItemDetail item={openItem} filter={filters.find((f) => f.id === openItem.filter_id) || null} onClose={() => setOpenItem(null)} />}
         </AnimatePresence>
-      </div>
+      </div>,
+      document.body,
     );
   }
 
   // ────────── BUILD MODE ──────────
-  return (
-    <div className="fixed inset-0 z-[60] bg-background overflow-hidden flex flex-col">
+  return createPortal(
+    <div className="fixed inset-0 z-[1000] bg-background overflow-hidden flex flex-col">
       {/* Header */}
       <header className="px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 border-b border-border/60 bg-background">
         <div className="flex items-center gap-2 max-w-3xl mx-auto">
@@ -515,7 +517,7 @@ export default function BuildMyPlate({ onClose, onSaved }: { onClose: () => void
       </div>
 
       {/* Sticky live macro bar + nav */}
-      <div className="shrink-0 relative z-10 bg-background/95 backdrop-blur border-t border-border/60">
+      <div className="shrink-0 relative z-20 bg-background border-t border-border shadow-[0_-8px_24px_hsl(var(--foreground)/0.08)]">
         {selections.length > 0 && (
           <div className="px-4 pt-2 pb-1 max-w-3xl mx-auto flex items-center gap-2 overflow-x-auto scrollbar-hide">
             <span className={`text-[10px] font-black px-2 py-1 rounded-full whitespace-nowrap capitalize ${riskColor}`}>
@@ -528,11 +530,11 @@ export default function BuildMyPlate({ onClose, onSaved }: { onClose: () => void
             <MiniMacro label="kcal" value={`${totals.kcal}`} />
           </div>
         )}
-        <div className="px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] max-w-3xl mx-auto flex gap-2">
-          <button onClick={next} className="h-12 px-4 rounded-2xl bg-muted text-foreground font-bold text-sm flex items-center gap-1 active:scale-[0.98]">
+        <div className="px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] max-w-3xl mx-auto flex gap-2">
+          <button type="button" onClick={next} className="h-12 px-5 rounded-2xl border border-border bg-muted text-foreground font-bold text-sm flex items-center gap-1 active:scale-[0.98]">
             Skip
           </button>
-          <button onClick={next} className="flex-1 h-12 rounded-2xl bg-[var(--bbdo-red)] text-white font-black flex items-center justify-center gap-2 active:scale-[0.99] shadow-lift">
+          <button type="button" onClick={next} className="flex-1 h-12 rounded-2xl bg-[var(--bbdo-red)] text-white font-black flex items-center justify-center gap-2 active:scale-[0.99] shadow-lift">
             {step === sections.length - 1 ? "Preview plate" : "Continue"}
             <ArrowRight className="w-4 h-4" strokeWidth={2} />
           </button>
@@ -599,7 +601,8 @@ export default function BuildMyPlate({ onClose, onSaved }: { onClose: () => void
       <AnimatePresence>
         {openItem && <FoodItemDetail item={openItem} filter={filters.find((f) => f.id === openItem.filter_id) || null} onClose={() => setOpenItem(null)} />}
       </AnimatePresence>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
