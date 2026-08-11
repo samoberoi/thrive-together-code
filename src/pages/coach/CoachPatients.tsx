@@ -17,6 +17,8 @@ import AssignFastingDialog from "@/components/coach/AssignFastingDialog";
 import PatientVitalsCard from "@/components/coach/PatientVitalsCard";
 import PatientProfileEditor from "@/components/coach/PatientProfileEditor";
 import PatientDietSymptomsSummary from "@/components/coach/PatientDietSymptomsSummary";
+import PatientActionGrid from "@/components/coach/PatientActionGrid";
+
 
 
 type LogTab = "diabetes" | "bp" | "weight" | "fasting" | "supps";
