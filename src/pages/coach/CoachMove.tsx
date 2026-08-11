@@ -41,6 +41,7 @@ type PatientRow = {
 export default function CoachMove() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [view, setView] = useState<"patients" | "mine">("patients");
   const [patients, setPatients] = useState<PatientRow[]>([]);
   const [search, setSearch] = useState("");
   const [cfg, setCfg] = useState<MovementConfig | null>(null);
