@@ -6,6 +6,8 @@ import ScheduleMeetingDialog from "@/components/coach/ScheduleMeetingDialog";
 import RecommendTestsDialog from "@/components/coach/RecommendTestsDialog";
 import RecommendSupplementsDialog from "@/components/coach/RecommendSupplementsDialog";
 import AssignFastingDialog from "@/components/coach/AssignFastingDialog";
+import { openCoachPatientModule, type CoachModuleTab } from "@/lib/coachNav";
+
 
 type Dlg = "meeting" | "tests" | "supps" | "fasting" | null;
 
