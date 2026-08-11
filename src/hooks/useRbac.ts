@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { RbacAction } from "@/lib/rbacModules";
 import type { PermissionRow } from "@/lib/rbacService";
+import { cachePackageKey } from "@/components/support/ExpertConnectBar";
 
 interface Cache {
   isAdmin: boolean;
@@ -113,6 +114,7 @@ export function useRbac() {
       }
 
       if (!cancelled) {
+        cachePackageKey(packageKey);
         setCache({ isAdmin: false, isCoach, isChannelPartner, packageKey, perms });
         setLoading(false);
       }
