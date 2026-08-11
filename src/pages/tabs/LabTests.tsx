@@ -1,11 +1,9 @@
 import PatientLabTests from "@/components/PatientLabTests";
 import AppErrorBoundary from "@/components/AppErrorBoundary";
-import ExpertConnectBar from "@/components/support/ExpertConnectBar";
 
 export default function LabTestsTab({ foundationMode = false }: { foundationMode?: boolean } = {}) {
   return (
     <div className="theme-supplements px-4 md:px-6 pt-3 md:pt-8 space-y-5">
-      <ExpertConnectBar context="my lab tests" />
       {!foundationMode && (
         <div
           className="rounded-2xl p-5 md:p-6 text-white shadow-card relative overflow-hidden"

@@ -1,30 +1,49 @@
 import { MessageCircle } from "lucide-react";
-import { useRbac } from "@/hooks/useRbac";
 
 export const EXPERT_CONNECT_NUMBER = "919220421100";
 
+const CACHE_KEY = "bbdo_package_key";
+
+export function cachePackageKey(key: string | null) {
+  try {
+    if (key) localStorage.setItem(CACHE_KEY, key);
+    else localStorage.removeItem(CACHE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+function readCachedPackageKey(): string | null {
+  try {
+    return localStorage.getItem(CACHE_KEY);
+  } catch {
+    return null;
+  }
+}
+
 function openWhatsApp(context?: string) {
   const text = encodeURIComponent(
-    context
-      ? `Hi BBDO team, I need help with ${context}.`
-      : "Hi BBDO team, I need help.",
+    context ? `Hi BBDO team, I need help with ${context}.` : "Hi BBDO team, I need help.",
   );
   window.open(`https://wa.me/${EXPERT_CONNECT_NUMBER}?text=${text}`, "_blank", "noopener,noreferrer");
 }
 
 /**
- * Expert Connect — WhatsApp support bar.
- * Only rendered for Package 1 (foundation) users.
+ * Expert Connect — WhatsApp support bar shown only for Package 1 (foundation) users.
+ * Resolves the tier synchronously (prop first, then cached value) so it renders
+ * in the same frame as the "All sections" sheet — no pop-in.
  */
 export default function ExpertConnectBar({
+  packageKey,
   context,
   className = "",
 }: {
+  packageKey?: string | null;
   context?: string;
   className?: string;
 }) {
-  const { packageKey } = useRbac();
-  const isFoundation = packageKey === "foundation" || packageKey === "starter";
+  const key = packageKey ?? readCachedPackageKey();
+  const isFoundation = key === "foundation" || key === "starter";
   if (!isFoundation) return null;
 
   return (

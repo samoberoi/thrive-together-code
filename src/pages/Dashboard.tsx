@@ -470,7 +470,7 @@ export default function Dashboard() {
         </main>
 
         <div className="md:hidden">
-          <BottomNav activeTab={activeTab} setActiveTab={handleTabChange} onFABPress={openFAB} visibleTabs={tabs} attentionCounts={tabAttentionCounts} />
+          <BottomNav activeTab={activeTab} setActiveTab={handleTabChange} onFABPress={openFAB} visibleTabs={tabs} attentionCounts={tabAttentionCounts} packageKey={packageKey} />
         </div>
 
         {/* Desktop-only quick-log FAB */}
