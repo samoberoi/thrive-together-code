@@ -187,7 +187,7 @@ export default function CoachVideoAssignPage({ module }: Props) {
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase();
     if (!query) return patients;
-    return patients.filter((p) => p.name.toLowerCase().includes(query));
+    return patients.filter((p) => p.name.toLowerCase().includes(query) || (p.phone || "").toLowerCase().includes(query));
   }, [patients, q]);
 
   const Icon = module === "yoga" ? Flower2 : Dumbbell;
