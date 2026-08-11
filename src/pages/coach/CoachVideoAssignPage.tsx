@@ -222,42 +222,34 @@ export default function CoachVideoAssignPage({ module }: Props) {
       ) : (
         <>
           <Input
-            placeholder="Search patient…"
+            placeholder="Search patient by name or phone…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
-          <ul className="space-y-2">
+          <ul className="space-y-3">
             {filtered.map((p) => {
               const count = assignedCounts[p.user_id] ?? 0;
               return (
-                <li
-                  key={p.user_id}
-                  className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-3"
-                >
-                  <div className="w-10 h-10 rounded-full bg-muted overflow-hidden flex items-center justify-center shrink-0">
-                    {p.avatar_url ? (
-                      <img src={p.avatar_url} alt={p.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-primary font-black text-xs">
-                        {(p.name?.[0] ?? "P").toUpperCase()}
-                      </span>
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold truncate">{p.name}</p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {count > 0 ? (
-                        <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                          <CheckCircle2 className="w-3 h-3" /> {count} assigned
+                <li key={p.user_id} className="rounded-2xl border border-border bg-card px-4 py-3.5">
+                  <CoachPatientIdentity
+                    name={p.name}
+                    phone={p.phone}
+                    avatarUrl={p.avatar_url}
+                    badges={
+                      count > 0 ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                          <CheckCircle2 className="w-3.5 h-3.5" /> {count} assigned
                         </span>
                       ) : (
-                        <span className="text-amber-600 dark:text-amber-400">Awaiting your plan</span>
-                      )}
-                    </p>
-                  </div>
-                  <Button size="sm" variant={count > 0 ? "outline" : "default"} onClick={() => setSelectedPatient(p)}>
-                    {count > 0 ? "Edit" : "Assign"}
-                  </Button>
+                        <span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400">Awaiting your plan</span>
+                      )
+                    }
+                    actions={
+                      <Button size="sm" variant={count > 0 ? "outline" : "default"} onClick={() => setSelectedPatient(p)}>
+                        {count > 0 ? "Edit" : "Assign"}
+                      </Button>
+                    }
+                  />
                 </li>
               );
             })}
