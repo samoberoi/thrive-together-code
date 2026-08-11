@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import TodayStepsCard from "@/components/TodayStepsCard";
+import AppleHealthSnapshotCard from "@/components/AppleHealthSnapshotCard";
 import { COACH_MIN_DAILY_STEPS } from "@/lib/movementUserService";
 import CoachPatientIdentity from "@/components/coach/CoachPatientIdentity";
 import { toast } from "sonner";
@@ -226,7 +227,10 @@ export default function CoachMove() {
       </div>
 
       {view === "mine" ? (
-        <TodayStepsCard minTargetSteps={COACH_MIN_DAILY_STEPS} />
+        <div className="space-y-4">
+          <TodayStepsCard minTargetSteps={COACH_MIN_DAILY_STEPS} />
+          <AppleHealthSnapshotCard />
+        </div>
       ) : (
       <>
       <div className="relative">
