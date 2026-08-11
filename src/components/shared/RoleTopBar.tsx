@@ -4,7 +4,7 @@ import logoImg from "@/assets/logo.png";
 
 interface Props {
   /** Short role label shown next to the mark, e.g. "Coach", "Admin", "Partner". */
-  roleLabel: string;
+  roleLabel?: string;
   /** Optional avatar image URL for the profile button. */
   avatarUrl?: string | null;
   /** Fallback initial rendered when no avatar is set. */
@@ -26,7 +26,7 @@ interface Props {
  * Sticky at top of the scroll container so it never blocks scroll.
  */
 export default function RoleTopBar({
-  roleLabel,
+  roleLabel: _roleLabel,
   avatarUrl,
   avatarInitial = "U",
   profileActive = false,
@@ -38,27 +38,14 @@ export default function RoleTopBar({
   return (
     <div
       className={cn(
-        "md:hidden sticky top-0 z-30 bg-background/85 backdrop-blur-xl flex items-center justify-between px-5 pb-3",
+        "md:hidden sticky top-0 z-30 bg-background/85 backdrop-blur-xl flex items-center justify-between px-5 pb-2",
         className,
       )}
       style={{
-        borderBottom: "1px solid hsl(var(--border))",
-        paddingTop: "calc(env(safe-area-inset-top) + 0.75rem)",
+        paddingTop: "max(env(safe-area-inset-top), 0.75rem)",
       }}
     >
-      <div className="flex items-center gap-2.5 min-w-0">
-        <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-sm">
-          <img src={logoImg} alt="BBDO" className="w-6 h-6 object-contain" />
-        </div>
-        <div className="flex flex-col min-w-0">
-          <span className="text-foreground font-black text-[15px] leading-none tracking-tight truncate">
-            bye bye
-          </span>
-          <span className="text-muted-foreground text-[10px] leading-tight mt-0.5 truncate">
-            {roleLabel}
-          </span>
-        </div>
-      </div>
+      <img src={logoImg} alt="BBDO" className="h-11 w-auto object-contain shrink-0" />
       <div className="flex items-center gap-2 shrink-0">
         {right}
         <NotificationCenter unreadCount={notificationCount} />
