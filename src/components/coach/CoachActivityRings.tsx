@@ -7,7 +7,10 @@ import { useBreathSessionsToday } from "@/hooks/useBreathSessionsToday";
 import { useSoleusSessionsToday } from "@/hooks/useSoleusSessionsToday";
 import { useDailyYogaMinutes } from "@/hooks/useAppSettings";
 import { getTodayYogaMinutes } from "@/lib/yogaProgressService";
-import { fetchMovementOverview, COACH_MIN_DAILY_STEPS } from "@/lib/movementUserService";
+import { fetchMovementOverview, logTodaySteps, COACH_MIN_DAILY_STEPS } from "@/lib/movementUserService";
+import { canUseNativeHealth, syncTodaySteps, requestNativeHealthAuthorization } from "@/lib/healthProvider";
+import { healthSourceLabel } from "@/lib/platformLabels";
+import { toast } from "sonner";
 import { fetchProfile } from "@/lib/profileService";
 import { fetchUserProtocol, fetchTrackingForUser } from "@/lib/fastingService";
 
@@ -112,6 +115,39 @@ export default function CoachActivityRings() {
   }, [user]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Pull steps from Apple Health / Health Connect for the coach too.
+  const [needsHealth, setNeedsHealth] = useState(false);
+  const [connecting, setConnecting] = useState(false);
+
+  const syncSteps = useCallback(async (allowPrompt: boolean) => {
+    if (!user || !canUseNativeHealth()) return;
+    try {
+      const steps = await syncTodaySteps({ allowPrompt });
+      if (steps == null) { setNeedsHealth(true); return; }
+      setNeedsHealth(false);
+      await logTodaySteps(user.id, steps);
+      await load();
+    } catch {
+      setNeedsHealth(true);
+    }
+  }, [load, user]);
+
+  useEffect(() => { void syncSteps(false); }, [syncSteps]);
+
+  const connectHealth = async () => {
+    setConnecting(true);
+    try {
+      const state = await requestNativeHealthAuthorization();
+      if (!state.authorized && state.message) toast.message(state.message);
+      await syncSteps(true);
+    } catch (e: any) {
+      toast.error(e?.message || "Couldn't connect your health app");
+    } finally {
+      setConnecting(false);
+    }
+  };
+
 
   useEffect(() => {
     const h = () => load();
