@@ -7,7 +7,7 @@ export interface Coach {
   description: string | null;
   specialization: string | null;
   coach_type: "starter_reset" | "active_reset" | "pro_transformation";
-  years_experience: number;
+  bbdo_community_exp: number;
   total_consultations: number;
   avg_rating: number;
   total_ratings: number;
@@ -39,7 +39,7 @@ export interface Coach {
   working_timezone?: string | null;
 }
 
-const COACH_PUBLIC_SELECT = "id, name, phone, bio, description, specialization, coach_type, years_experience, total_consultations, avg_rating, total_ratings, avatar_url, languages, qualification, city, is_active";
+const COACH_PUBLIC_SELECT = "id, name, phone, bio, description, specialization, coach_type, bbdo_community_exp, total_consultations, avg_rating, total_ratings, avatar_url, languages, qualification, city, is_active";
 
 export interface CoachAssignment {
   id: string;
@@ -106,7 +106,7 @@ export async function fetchAssignedCoach(userId: string): Promise<Coach | null> 
       description: row.description ?? null,
       specialization: row.specialization ?? null,
       coach_type: row.coach_type ?? "active_reset",
-      years_experience: row.years_experience ?? 0,
+      bbdo_community_exp: row.bbdo_community_exp ?? 0,
       total_consultations: row.total_consultations ?? 0,
       avg_rating: Number(row.avg_rating ?? 5),
       total_ratings: row.total_ratings ?? 0,
