@@ -741,9 +741,9 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
               {detailsTest?.product_name}
             </DialogTitle>
             <DialogDescription>
-              {detailsTest?.fasting_required ? "Fasting required (8–10 hours). " : "No fasting required. "}
-              Home sample collection included.
+              Free home collection · 10–11 hrs fasting
             </DialogDescription>
+
           </DialogHeader>
           {detailsTest && (() => {
             const price = patientPriceFor(detailsTest.offer_rate ?? detailsTest.rate, detailsTest.markup_pct, markupPct) ?? 0;
