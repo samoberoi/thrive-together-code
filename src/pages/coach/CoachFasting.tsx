@@ -20,6 +20,8 @@ import {
 import { calculateStreak, fetchBadgeDefinitions, fetchUserBadges, type FastingBadge } from "@/lib/streakService";
 
 import UserFasting from "@/components/UserFasting";
+import { useCoachPatientFocus } from "@/lib/coachNav";
+
 
 type View = "protocols" | "patients" | "mine";
 
