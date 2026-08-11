@@ -382,7 +382,6 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
         </motion.div>
       ) : basicTest && (() => {
         const { price, original, showStrike } = renderPriceRow(basicTest);
-        const count = basicTest.parameters_count || (Array.isArray(basicTest?.raw_data?.testsIncluded) ? basicTest.raw_data.testsIncluded.length : 0);
         return (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
@@ -411,10 +410,10 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
                   <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/80">Recommended test</p>
                   <h5 className="text-base md:text-lg font-black leading-tight">{basicTest.product_name}</h5>
                   <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-[11px] text-white/85">
-                    {count > 0 && <span className="inline-flex items-center gap-1"><Check className="w-3 h-3" /> {count} parameters</span>}
                     <span className="inline-flex items-center gap-1"><Home className="w-3 h-3" /> Free home collection</span>
-                    <span className="inline-flex items-center gap-1"><Clock className="w-3 h-3" /> {basicTest.fasting_required ? "8–10 hr fasting" : "No fasting"}</span>
+                    <span className="inline-flex items-center gap-1"><Clock className="w-3 h-3" /> 10–11 hrs fasting</span>
                   </div>
+
                 </div>
               </div>
               <div className="flex flex-col items-start md:items-end gap-2 shrink-0">
@@ -445,7 +444,6 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
           <div className="grid gap-3 md:grid-cols-2">
             {otherTests.map((t, idx) => {
               const { price, original, showStrike } = renderPriceRow(t);
-              const count = t.parameters_count || (Array.isArray(t?.raw_data?.testsIncluded) ? t.raw_data.testsIncluded.length : 0);
               return (
                 <motion.div
                   key={t.product_code}
@@ -458,8 +456,9 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
                     <div className="min-w-0">
                       <p className="text-sm font-black tracking-tight leading-tight break-words">{t.product_name}</p>
                       <p className="text-[11px] text-muted-foreground mt-0.5">
-                        {count > 0 ? `${count} parameters` : "Curated panel"} · {t.fasting_required ? "fasting" : "no fasting"}
+                        Free home collection · 10–11 hrs fasting
                       </p>
+
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-base font-black tabular-nums">{price > 0 ? `₹${price.toLocaleString("en-IN")}` : "—"}</p>
@@ -538,14 +537,14 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
             </div>
             <ul className="space-y-2">
               {items.map((t, i) => {
-                const count = t.parameters_count || (Array.isArray(t?.raw_data?.testsIncluded) ? t.raw_data.testsIncluded.length : 0);
                 return (
                   <li key={i} className="rounded-xl bg-muted/40 ring-1 ring-border p-2.5 flex items-center justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-bold leading-tight break-words">{t.product_name}</p>
                       <p className="text-[11px] text-muted-foreground mt-0.5">
-                        {count > 0 ? `${count} parameters` : "Curated panel"} · {t.fasting_required ? "fasting" : "no fasting"}
+                        Free home collection · 10–11 hrs fasting
                       </p>
+
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <span className="text-sm font-black tabular-nums">{priceOf(t) > 0 ? `₹${priceOf(t).toLocaleString("en-IN")}` : "-"}</span>
@@ -739,19 +738,13 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
               {detailsTest?.product_name}
             </DialogTitle>
             <DialogDescription>
-              {detailsTest?.fasting_required ? "Fasting required (8–10 hours). " : "No fasting required. "}
-              Home sample collection included.
+              Free home collection · 10–11 hrs fasting
             </DialogDescription>
+
           </DialogHeader>
           {detailsTest && (() => {
             const price = patientPriceFor(detailsTest.offer_rate ?? detailsTest.rate, detailsTest.markup_pct, markupPct) ?? 0;
             const original = Number(detailsTest.rate || 0);
-            const included: IncludedTest[] = Array.isArray(detailsTest?.raw_data?.testsIncluded) ? detailsTest.raw_data.testsIncluded : [];
-            const groups: Record<string, IncludedTest[]> = {};
-            for (const it of included) {
-              const g = it.groupName || "Others";
-              (groups[g] ||= []).push(it);
-            }
             return (
               <div className="space-y-4">
                 <div className="rounded-2xl p-4 text-white" style={{ background: "var(--bbdo-gradient)" }}>
@@ -762,34 +755,12 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
                       <p className="text-sm line-through text-white/70">₹{original.toLocaleString("en-IN")}</p>
                     )}
                   </div>
-                  <p className="text-xs text-white/85 mt-1">
-                    {(detailsTest.parameters_count || included.length) > 0
-                      ? `${detailsTest.parameters_count || included.length} parameters included`
-                      : "Curated panel"}
-                  </p>
+                  <p className="text-xs text-white/85 mt-1">Free home collection · 10–11 hrs fasting</p>
                 </div>
-
-                {included.length > 0 ? (
-                  <div className="space-y-3">
-                    {Object.entries(groups).map(([g, items]) => (
-                      <div key={g}>
-                        <p className="text-[11px] font-black uppercase tracking-wide text-muted-foreground mb-1.5">{g}</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {items.map((it, i) => (
-                            <Badge key={i} variant="secondary" className="text-[11px] font-medium">
-                              {it.name || it.code}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">Detailed parameter list will appear here after the next sync.</p>
-                )}
               </div>
             );
           })()}
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setDetailsTest(null)}>Close</Button>
             <Button onClick={() => { if (detailsTest) { startFoundationBooking(detailsTest); setDetailsTest(null); } }}>

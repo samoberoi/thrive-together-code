@@ -215,8 +215,8 @@ export default function LabOrderDetails({ order, fastingRequired, reports = [], 
             <div className="mt-2 rounded-lg bg-amber-500/10 border border-amber-500/30 p-2.5 text-xs text-amber-700 dark:text-amber-300 flex gap-2">
               <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
               <div>
-                <strong>Fasting required:</strong> No food or drinks (except water) for at least 8–10
-                hours before collection. Continue prescribed medications unless your doctor says
+                <strong>Fasting required:</strong> No food or drinks (except water) for at least 10–11
+                hrs before collection. Continue prescribed medications unless your doctor says
                 otherwise.
               </div>
             </div>
