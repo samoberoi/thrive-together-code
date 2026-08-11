@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 export type ActivityKey =
   | "glucose" | "bp" | "weight" | "fasting" | "supplements"
-  | "exercise" | "yoga" | "diet";
+  | "exercise" | "yoga" | "diet" | "water" | "soleus" | "breath";
 
 export const ACTIVITY_META: Record<ActivityKey, { label: string; nudge: string; emoji: string }> = {
   glucose:     { label: "Fasting glucose",     nudge: "Please log your fasting glucose today — even a quick reading helps us stay on top of your progress.", emoji: "🩸" },
@@ -17,13 +17,19 @@ export const ACTIVITY_META: Record<ActivityKey, { label: string; nudge: string; 
   exercise:    { label: "Exercise",            nudge: "A short workout today keeps momentum going. Even 10 minutes counts!", emoji: "🏋️" },
   yoga:        { label: "Yoga & stress",       nudge: "Take a few minutes for your yoga / stress practice today. It compounds.", emoji: "🧘" },
   diet:        { label: "Diet log",            nudge: "Please log today's meals so we can review your plate quality.", emoji: "🍽️" },
+  water:       { label: "Water",               nudge: "Hydration check — please finish your 8 glasses of water today.", emoji: "💧" },
+  soleus:      { label: "Soleus push-ups",     nudge: "Don't miss your soleus push-ups today — 3 rounds after meals blunts glucose spikes.", emoji: "🦵" },
+  breath:      { label: "4-7-8 breathing",     nudge: "Complete your 4-7-8 breathing rounds today — 76 seconds is all it takes.", emoji: "🌬️" },
 };
 
 export interface PendingPatient {
   user_id: string;
   name: string | null;
   avatar_url: string | null;
+  progress?: string | null;
+  ratio?: number | null;
 }
+
 
 interface Props {
   open: boolean;
@@ -41,6 +47,8 @@ export default function CoachActivityNudgeDialog({
   const [nudging, setNudging] = useState<string | "all" | null>(null);
   if (!open) return null;
   const meta = ACTIVITY_META[activity];
+  const completionPct = totalApplicable > 0 ? Math.round((doneCount / totalApplicable) * 100) : 0;
+
 
   const nudgeOne = async (p: PendingPatient) => {
     setNudging(p.user_id);
@@ -103,11 +111,21 @@ export default function CoachActivityNudgeDialog({
               <p className="text-muted-foreground text-xs">
                 {doneCount} of {totalApplicable} completed today · {pending.length} pending
               </p>
+              <div className="mt-2 flex items-center gap-2">
+                <div className="h-1.5 flex-1 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${completionPct === 100 ? "bg-success" : completionPct >= 70 ? "bg-warning" : "bg-destructive"}`}
+                    style={{ width: `${completionPct}%` }}
+                  />
+                </div>
+                <span className="text-[11px] font-bold text-foreground tabular-nums">{completionPct}%</span>
+              </div>
             </div>
-            <button onClick={onClose} className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center">
+            <button onClick={onClose} className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center self-start">
               <X className="w-4 h-4" />
             </button>
           </div>
+
 
           {pending.length > 0 && (
             <div className="px-5 pt-4">
@@ -142,9 +160,25 @@ export default function CoachActivityNudgeDialog({
                         <span className="text-primary font-bold text-xs">{(p.name ?? "?")[0].toUpperCase()}</span>
                       )}
                     </div>
-                    <p className="flex-1 min-w-0 text-foreground font-semibold text-sm truncate">
-                      {p.name ?? "Patient"}
-                    </p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-foreground font-semibold text-sm truncate">
+                        {p.name ?? "Patient"}
+                      </p>
+                      {p.progress && (
+                        <div className="mt-1 flex items-center gap-1.5">
+                          <div className="h-1 w-16 rounded-full bg-muted overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-primary"
+                              style={{ width: `${Math.round((p.ratio ?? 0) * 100)}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] font-semibold text-muted-foreground truncate">
+                            {p.progress}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
                     <button
                       onClick={() => nudgeOne(p)}
                       disabled={nudging === p.user_id}

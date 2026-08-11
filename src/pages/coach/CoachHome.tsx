@@ -50,6 +50,8 @@ interface PatientSummary {
   hasSuppPlan: boolean;
   activities: Record<ActivityKey, boolean>;
   applicable: Record<ActivityKey, boolean>;
+  progress?: Partial<Record<ActivityKey, { text: string; ratio: number }>>;
+
   doneCount: number;
   applicableCount: number;
   onTrack: boolean;
@@ -187,7 +189,13 @@ function evaluateAlerts(patients: PatientSummary[], healthNotifications: CoachHe
 
 const ALL_ACTIVITIES: ActivityKey[] = [
   "glucose", "bp", "weight", "fasting", "supplements", "exercise", "yoga", "diet",
+  "water", "soleus", "breath",
 ];
+
+const WATER_GLASS_GOAL = 8;
+const SOLEUS_GOAL = 3;
+const BREATH_GOAL = 4;
+
 
 export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTests }: { onViewPatient?: () => void; onViewFasting?: () => void; onViewMessages?: () => void; onViewLabTests?: () => void }) {
   const { user } = useAuth();
@@ -279,7 +287,10 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
       { data: latestBp },
       { data: recentWeights },
       { data: recentCoachHealthAlerts },
+      { data: soleusRows },
+      { data: breathRows },
     ] = await Promise.all([
+
       supabase.from("profiles" as any)
         .select("user_id, name, phone, avatar_url, age, gender, weight, bmi, bmi_category, initial_health_score, assessment")
         .in("user_id", patientIds),
@@ -334,6 +345,11 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
         .gte("created_at", recentHealthAlertIso)
         .order("created_at", { ascending: false })
         .limit(30),
+      supabase.from("user_soleus_sessions" as any)
+        .select("user_id").in("user_id", patientIds).gte("session_at", todayIso),
+      supabase.from("user_breath_sessions" as any)
+        .select("user_id").in("user_id", patientIds).gte("session_at", todayIso),
+
     ]);
 
     const suppPlanSet = new Set(((activePlans as any[]) ?? []).map((r) => r.user_id));
@@ -346,11 +362,26 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
     const glucoseSet = new Set<string>();
     const bpSet = new Set<string>();
     const weightSet = new Set<string>();
+    const waterByUser = new Map<string, number>();
     (hLogsToday as any[] | null)?.forEach((l) => {
       if (l.log_type === "diabetes" && (l.glucose_morning != null || l.glucose_evening != null)) glucoseSet.add(l.user_id);
       if (l.log_type === "bp" && l.bp_systolic != null) bpSet.add(l.user_id);
       if (l.log_type === "weight" && l.weight_kg != null) weightSet.add(l.user_id);
+      // Water glasses are stored as deltas in weight_kg on log_type "water"
+      if (l.log_type === "water" && l.weight_kg != null) {
+        waterByUser.set(l.user_id, (waterByUser.get(l.user_id) ?? 0) + Number(l.weight_kg));
+      }
     });
+
+    const soleusByUser = new Map<string, number>();
+    ((soleusRows as any[]) ?? []).forEach((r) => {
+      soleusByUser.set(r.user_id, (soleusByUser.get(r.user_id) ?? 0) + 1);
+    });
+    const breathByUser = new Map<string, number>();
+    ((breathRows as any[]) ?? []).forEach((r) => {
+      breathByUser.set(r.user_id, (breathByUser.get(r.user_id) ?? 0) + 1);
+    });
+
 
     const fastingSet = new Set<string>();
     (fastTodayRows as any[] | null)?.forEach((r) => {
@@ -394,11 +425,16 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
       const hasFasting = fastProtoSet.has(a.user_id);
       const hasSupp = suppPlanSet.has(a.user_id);
 
+      const waterGlasses = Math.max(0, Math.round(waterByUser.get(a.user_id) ?? 0));
+      const soleusRounds = soleusByUser.get(a.user_id) ?? 0;
+      const breathRounds = breathByUser.get(a.user_id) ?? 0;
+
       const applicable: Record<ActivityKey, boolean> = {
         glucose: true, bp: true, weight: true,
         fasting: hasFasting,
         supplements: hasSupp,
         exercise: true, yoga: true, diet: true,
+        water: true, soleus: true, breath: true,
       };
       const activities: Record<ActivityKey, boolean> = {
         glucose: glucoseSet.has(a.user_id),
@@ -409,7 +445,16 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
         exercise: exSet.has(a.user_id),
         yoga: yogaSet.has(a.user_id),
         diet: dietSet.has(a.user_id),
+        water: waterGlasses >= WATER_GLASS_GOAL,
+        soleus: soleusRounds >= SOLEUS_GOAL,
+        breath: breathRounds >= BREATH_GOAL,
       };
+      const progress: Partial<Record<ActivityKey, { text: string; ratio: number }>> = {
+        water: { text: `${waterGlasses}/${WATER_GLASS_GOAL} glasses`, ratio: Math.min(1, waterGlasses / WATER_GLASS_GOAL) },
+        soleus: { text: `${soleusRounds}/${SOLEUS_GOAL} rounds`, ratio: Math.min(1, soleusRounds / SOLEUS_GOAL) },
+        breath: { text: `${breathRounds}/${BREATH_GOAL} rounds`, ratio: Math.min(1, breathRounds / BREATH_GOAL) },
+      };
+
 
       let applicableCount = 0;
       let doneCount = 0;
@@ -450,6 +495,8 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
         hasSuppPlan: hasSupp,
         activities,
         applicable,
+        progress,
+
         doneCount,
         applicableCount,
         onTrack,
@@ -621,7 +668,14 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
         const s = map.get(k)!;
         s.applicable++;
         if (p.activities[k]) s.done++;
-        else s.pending.push({ user_id: p.user_id, name: p.name, avatar_url: p.avatar_url });
+        else s.pending.push({
+          user_id: p.user_id,
+          name: p.name,
+          avatar_url: p.avatar_url,
+          progress: p.progress?.[k]?.text ?? null,
+          ratio: p.progress?.[k]?.ratio ?? 0,
+        });
+
       }
     }
     return map;
