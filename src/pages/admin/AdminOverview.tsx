@@ -11,6 +11,7 @@ import ExportCsvButton from "@/components/admin/ExportCsvButton";
 import { useNavigate } from "react-router-dom";
 import { format, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 
 interface Profile { user_id: string; name: string | null; phone: string | null; }
@@ -54,6 +55,17 @@ export default function AdminOverview() {
   const [activeAssignments, setActiveAssignments] = useState<number>(0);
   const [attention, setAttention] = useState<AttentionItem[]>([]);
   const navigate = useNavigate();
+  const { greeting } = useLanguage();
+  const [adminName, setAdminName] = useState<string>("");
+
+  useEffect(() => {
+    (async () => {
+      const { data: auth } = await supabase.auth.getUser();
+      if (!auth?.user) return;
+      const { data } = await supabase.from("profiles").select("name").eq("user_id", auth.user.id).maybeSingle();
+      setAdminName(((data as any)?.name || "").split(" ")[0]);
+    })();
+  }, []);
 
 
   useEffect(() => { load(); }, [range]);
@@ -222,7 +234,9 @@ export default function AdminOverview() {
     <div className="p-4 sm:p-6 space-y-5 sm:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-black text-foreground leading-tight">Dashboard Overview</h1>
+          <h1 className="text-[clamp(22px,6.5vw,32px)] leading-[1.15] font-semibold tracking-[-0.03em] text-foreground break-words">
+            {greeting || "Good morning"}, {adminName || "Admin"} <span className="inline-block">👋</span>
+          </h1>
           <p className="text-muted-foreground text-xs sm:text-sm mt-1">
             Revenue, renewals & risk · <span className="font-semibold text-foreground">{range.label}</span>
           </p>
