@@ -217,7 +217,7 @@ export default function CoachSelfCheckins() {
               </span>
             </button>
             <button
-              onClick={() => logMeal("lmod")}
+              onClick={() => setMealPickerFor("lmod")}
               disabled={busy || !!lmodAt}
               className={`rounded-2xl p-3 flex items-center gap-2 text-left transition-colors disabled:opacity-100 ${
                 lmodAt ? "bg-success/10" : "bg-muted/60"
