@@ -59,13 +59,18 @@ export default function PatientDietSymptomsSummary({ userId, refreshKey }: Props
   const [allergens, setAllergens] = useState<string[]>([]);
   const [symptoms, setSymptoms] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
+  const [ailments, setAilments] = useState<string[]>([]);
 
   const load = useCallback(async () => {
-    const [diet, sym, catalog] = await Promise.all([
+    const [diet, sym, catalog, prof] = await Promise.all([
       loadDietProfile(userId),
       loadUserSymptoms(userId),
       fetchSymptomCatalog(),
+      supabase.from("profiles").select("clinical,deep_profiling,gender").eq("user_id", userId).maybeSingle(),
     ]);
+
+    setAilments(deriveAilments((prof as any)?.data));
+
 
     const prefsArr = ((diet as any)?.diet_preferences as string[] | null) || [];
     const single = diet?.diet_preference ? [diet.diet_preference] : [];
