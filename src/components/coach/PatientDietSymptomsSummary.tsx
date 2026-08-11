@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Loader2, Salad, ShieldAlert, Stethoscope } from "lucide-react";
+import { HeartPulse, Loader2, Salad, ShieldAlert, Stethoscope } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { loadDietProfile } from "@/lib/dietProfileService";
 import { fetchSymptomCatalog, loadUserSymptoms } from "@/lib/symptomsService";
