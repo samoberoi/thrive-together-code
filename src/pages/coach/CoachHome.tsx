@@ -697,6 +697,11 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
         </motion.div>
       )}
 
+      {/* Coach's own daily rings — walk the talk */}
+      <CoachActivityRings />
+
+
+
       {/* Dashboard — Patients / Commission / Rating / Sessions (2×2, always) */}
       <motion.div className="grid grid-cols-[repeat(2,minmax(0,1fr))] gap-2 w-full" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
         <button
