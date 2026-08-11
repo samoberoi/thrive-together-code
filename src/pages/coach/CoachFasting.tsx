@@ -171,7 +171,7 @@ export default function CoachFasting() {
         ))}
       </div>
 
-      {view === "mine" && <UserFasting />}
+      {view === "mine" && <UserFasting packageKey="intensive" />}
 
       {/* Protocols View */}
       {view === "protocols" && (
