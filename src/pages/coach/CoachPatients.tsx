@@ -469,48 +469,14 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
 
 
         {/* Coach actions */}
-        {coachId && (
-          <motion.div className="grid grid-cols-3 gap-2" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
-            <button onClick={() => setActionDlg("meeting")} className="liquid-glass rounded-2xl py-3 px-2 flex flex-col items-center gap-1 hover:bg-primary/5">
-              <Calendar className="w-4.5 h-4.5 text-primary" />
-              <span className="text-[11px] font-bold text-foreground">Meeting</span>
-            </button>
-            <button onClick={() => setActionDlg("tests")} className="liquid-glass rounded-2xl py-3 px-2 flex flex-col items-center gap-1 hover:bg-primary/5">
-              <FlaskConical className="w-4.5 h-4.5 text-primary" />
-              <span className="text-[11px] font-bold text-foreground">Tests</span>
-            </button>
-            <button onClick={() => setActionDlg("supps")} className="liquid-glass rounded-2xl py-3 px-2 flex flex-col items-center gap-1 hover:bg-primary/5">
-              <Pill className="w-4.5 h-4.5 text-primary" />
-              <span className="text-[11px] font-bold text-foreground">Supplements</span>
-            </button>
-            <button onClick={() => setActionDlg("fasting")} className="liquid-glass rounded-2xl py-3 px-2 flex flex-col items-center gap-1 hover:bg-primary/5">
-              <Timer className="w-4.5 h-4.5 text-primary" />
-              <span className="text-[11px] font-bold text-foreground">Fasting</span>
-            </button>
-          </motion.div>
-        )}
-
         {coachId && selectedPatient && (
-          <>
-            <ScheduleMeetingDialog
-              open={actionDlg === "meeting"} onOpenChange={(b) => !b && setActionDlg(null)}
-              coachId={coachId} patientId={selectedPatient.user_id} patientName={selectedPatient.name ?? undefined}
-            />
-            <RecommendTestsDialog
-              open={actionDlg === "tests"} onOpenChange={(b) => !b && setActionDlg(null)}
-              coachId={coachId} patientId={selectedPatient.user_id} patientName={selectedPatient.name ?? undefined}
-            />
-            <RecommendSupplementsDialog
-              open={actionDlg === "supps"} onOpenChange={(b) => !b && setActionDlg(null)}
-              coachId={coachId} patientId={selectedPatient.user_id} patientName={selectedPatient.name ?? undefined}
-            />
-            <AssignFastingDialog
-              open={actionDlg === "fasting"} onOpenChange={(b) => !b && setActionDlg(null)}
-              coachId={coachId} patientId={selectedPatient.user_id} patientName={selectedPatient.name ?? undefined}
-            />
-
-          </>
+          <PatientActionGrid
+            coachId={coachId}
+            patientId={selectedPatient.user_id}
+            patientName={selectedPatient.name}
+          />
         )}
+
 
         {/* Apple Health vitals + trends */}
         {selectedPatient && <PatientVitalsCard patientId={selectedPatient.user_id} />}
