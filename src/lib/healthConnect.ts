@@ -225,19 +225,15 @@ export async function syncTodayStepsFromHealthConnect(
   opts?: { allowPrompt?: boolean },
 ): Promise<number | null> {
   await ensureStepsPermission(opts?.allowPrompt ?? false);
-  // Health Connect rejects/ignores ranges that end in the future on some OEMs.
   const start = startOfToday();
   const end = new Date();
 
-  let raw = await readAllSteps(start, end);
-  let widened = false;
-  if (raw.length === 0) {
-    // Some OEMs / watch bridges write records with UTC-shifted or long-span
-    // windows that a strict "since local midnight" filter misses entirely.
-    // Read a wider window and clip it back to today ourselves.
-    widened = true;
-    raw = await readAllSteps(daysAgo(2), end);
-  }
+  // Health Connect's "between" filter only returns records whose *start* falls
+  // inside the window, so a watch bridge that writes one long record spanning
+  // midnight (or back-fills with a shifted offset) is invisible to a strict
+  // midnight->now read. Always read a wider window and clip to today ourselves.
+  const raw = await readAllSteps(daysAgo(2), end);
+  const widened = true;
 
   const scoped = clipRecordsToRange(raw, start, end);
 
@@ -261,6 +257,7 @@ export async function syncTodayStepsFromHealthConnect(
       "Health Connect has no step records yet. Open your watch/health app, sync it, and make sure it's allowed to write Steps to Health Connect.",
     );
   }
+
 
   const deduped = sumStepsDeduped(scoped) ?? 0;
   if (deduped > 0) return Math.max(0, Math.round(deduped));
