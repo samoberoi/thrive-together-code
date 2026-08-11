@@ -14,8 +14,8 @@ import {
   type UserSupplementPlan, type PlanItem, type Supplement, type SupplementTracking, type VegType
 } from "@/lib/supplementService";
 
-import {
 import ExpertConnectBar from "@/components/support/ExpertConnectBar";
+import {
   fetchSupplementBadgeDefinitions, fetchUserSupplementBadges,
   getSupplementBadgeLevel, calculateSupplementStreak,
   checkAndAwardSupplementBadges,
