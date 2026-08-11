@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, Plus } from "lucide-react";
 import AttentionBadge from "@/components/attention/AttentionBadge";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { AppBottomBar } from "@/components/layout/AppBottomBar";
@@ -19,6 +19,8 @@ interface Props<TId extends string> {
   onSelect: (id: TId) => void;
   primarySlots?: number;
   extra?: React.ReactNode;
+  /** Optional quick-log "+" button rendered inside the dock. */
+  onFABPress?: () => void;
 }
 
 /**
@@ -35,6 +37,7 @@ export default function RoleBottomNav<TId extends string>({
   onSelect,
   primarySlots = 5,
   extra,
+  onFABPress,
 }: Props<TId>) {
   const [expanded, setExpanded] = useState(false);
 
@@ -141,6 +144,23 @@ export default function RoleBottomNav<TId extends string>({
             >
               <MoreHorizontal className="w-5 h-5" strokeWidth={1.9} />
               <AttentionBadge count={overflowUnread} className="absolute right-1 top-1" />
+            </motion.button>
+          )}
+          {onFABPress && (
+            <motion.button
+              key="quick-log"
+              onClick={onFABPress}
+              aria-label="Quick log"
+              whileTap={{ scale: 0.9 }}
+              transition={{ duration: 0.14, ease: [0.22, 1, 0.36, 1] }}
+              className="relative flex-1 h-11 flex items-center justify-center"
+            >
+              <span
+                className="w-10 h-10 rounded-full flex items-center justify-center text-white shadow-lift"
+                style={{ background: "var(--bbdo-red)" }}
+              >
+                <Plus className="w-5 h-5" strokeWidth={2.4} />
+              </span>
             </motion.button>
           )}
           {extra}

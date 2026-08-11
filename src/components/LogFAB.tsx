@@ -39,7 +39,8 @@ function formatCurrentDateTime(): string {
   });
 }
 
-export default function LogFAB(_props: { packageKey?: string | null }) {
+export default function LogFAB(props: { packageKey?: string | null; exercisePath?: string }) {
+  const exercisePath = props.exercisePath ?? "/dashboard?tab=exercise";
   const { user } = useAuth();
   const navigate = useNavigate();
   const storedUser = useUserStore();
@@ -336,7 +337,7 @@ export default function LogFAB(_props: { packageKey?: string | null }) {
               key="exercise-shortcut"
               onClick={() => {
                 setOpen(false);
-                navigate("/dashboard?tab=exercise");
+                navigate(exercisePath);
               }}
               whileTap={{ scale: 0.97 }}
               transition={{ duration: 0.12, ease: [0.22, 1, 0.36, 1] }}
