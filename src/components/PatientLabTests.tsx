@@ -382,7 +382,6 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
         </motion.div>
       ) : basicTest && (() => {
         const { price, original, showStrike } = renderPriceRow(basicTest);
-        const count = basicTest.parameters_count || (Array.isArray(basicTest?.raw_data?.testsIncluded) ? basicTest.raw_data.testsIncluded.length : 0);
         return (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
@@ -445,7 +444,6 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
           <div className="grid gap-3 md:grid-cols-2">
             {otherTests.map((t, idx) => {
               const { price, original, showStrike } = renderPriceRow(t);
-              const count = t.parameters_count || (Array.isArray(t?.raw_data?.testsIncluded) ? t.raw_data.testsIncluded.length : 0);
               return (
                 <motion.div
                   key={t.product_code}
@@ -539,7 +537,6 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
             </div>
             <ul className="space-y-2">
               {items.map((t, i) => {
-                const count = t.parameters_count || (Array.isArray(t?.raw_data?.testsIncluded) ? t.raw_data.testsIncluded.length : 0);
                 return (
                   <li key={i} className="rounded-xl bg-muted/40 ring-1 ring-border p-2.5 flex items-center justify-between gap-2">
                     <div className="min-w-0 flex-1">
