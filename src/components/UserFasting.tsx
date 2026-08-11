@@ -23,7 +23,6 @@ import {
   fetchUserBadges, getBadgeLevel, type FastingBadge, type UserFastingBadge
 } from "@/lib/streakService";
 import FastingMilestoneProgress from "@/components/fasting/FastingMilestoneProgress";
-import ExpertConnectBar from "@/components/support/ExpertConnectBar";
 
 /* ── Live elapsed timer ── */
 function LiveTimer({ startTime, className = "" }: { startTime: Date; className?: string }) {
@@ -537,7 +536,6 @@ export default function UserFasting({ packageKey }: { packageKey?: string | null
 
   return (
     <div className="p-6 space-y-5">
-      <ExpertConnectBar context="my fasting protocol" />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
