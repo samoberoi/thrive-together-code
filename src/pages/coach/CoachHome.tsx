@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import {
   Users, Star, Activity, AlertTriangle, TrendingUp, TrendingDown, Minus,
   Heart, UserCheck, Loader2, Bell,
-  CalendarClock, Clock, Plus, Package, Send, CheckCircle2, Search, Percent, FlaskConical, FileText,
+  CalendarClock, Clock, Plus, Package, Send, CheckCircle2, Search, Percent, FlaskConical, FileText, RefreshCw,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -222,6 +222,7 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
   const [commissionOpen, setCommissionOpen] = useState(false);
   const [commissionInfo, setCommissionInfo] = useState<CommissionSummary | null>(null);
   const [reviewsOpen, setReviewsOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const loadSequence = useRef(0);
 
 
@@ -1010,10 +1011,24 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
           <div className="flex items-center gap-2 mb-2.5">
             <CheckCircle2 className="w-4 h-4 text-primary" strokeWidth={1.8} />
             <span className="text-foreground font-bold text-sm">Activity Tracking</span>
-            <span className="ml-auto text-[10px] text-muted-foreground font-medium">
+            <button
+              onClick={async () => {
+                if (refreshing) return;
+                setRefreshing(true);
+                try { await loadData({ silent: true }); } finally { setRefreshing(false); }
+              }}
+              disabled={refreshing}
+              className="ml-auto inline-flex items-center gap-1 h-7 px-2.5 rounded-full bg-muted hover:bg-accent text-[10px] font-bold text-foreground disabled:opacity-60"
+              aria-label="Refresh activity tracking"
+            >
+              <RefreshCw className={`w-3 h-3 ${refreshing ? "animate-spin" : ""}`} />
+              {refreshing ? "Refreshing" : "Refresh"}
+            </button>
+            <span className="text-[10px] text-muted-foreground font-medium">
               Tap to nudge
             </span>
           </div>
+
           <div className="grid grid-cols-[repeat(2,minmax(0,1fr))] min-[520px]:grid-cols-[repeat(4,minmax(0,1fr))] gap-1.5 w-full">
 
             {ALL_ACTIVITIES.map((k) => {
