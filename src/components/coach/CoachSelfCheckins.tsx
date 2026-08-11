@@ -104,10 +104,9 @@ export default function CoachSelfCheckins() {
     }
   };
 
-  const logMeal = async (meal: "fmod" | "lmod") => {
+  const logMeal = async (meal: "fmod" | "lmod", iso: string) => {
     if (!user || busy) return;
-    const nowISO = new Date().toISOString();
-    if (meal === "lmod" && fmodAt && new Date(nowISO) <= new Date(fmodAt)) {
+    if (meal === "lmod" && fmodAt && new Date(iso) <= new Date(fmodAt)) {
       toast.error("Last meal must be after your first meal");
       return;
     }
@@ -116,9 +115,10 @@ export default function CoachSelfCheckins() {
       await upsertTracking({
         user_id: user.id,
         date: todayKey(),
-        [meal === "fmod" ? "fmod_actual_time" : "lmod_actual_time"]: nowISO,
+        [meal === "fmod" ? "fmod_actual_time" : "lmod_actual_time"]: iso,
       } as any);
-      if (meal === "fmod") setFmodAt(nowISO); else setLmodAt(nowISO);
+      if (meal === "fmod") setFmodAt(iso); else setLmodAt(iso);
+      setMealPickerFor(null);
       toast.success(meal === "fmod" ? "First meal logged" : "Last meal logged — fasting begins!");
       window.dispatchEvent(new CustomEvent("fasting-log-saved"));
     } catch (e: any) {
@@ -127,6 +127,7 @@ export default function CoachSelfCheckins() {
       setBusy(false);
     }
   };
+
 
   if (!user) return null;
   if (items.length === 0 && !hasProtocol) return null;
