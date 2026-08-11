@@ -28,12 +28,14 @@ const PRETTY: Record<string, string> = {
 const pretty = (s: string) =>
   PRETTY[s] || s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
-function Chips({ items, tone }: { items: string[]; tone: "blue" | "red" | "muted" }) {
+function Chips({ items, tone }: { items: string[]; tone: "blue" | "red" | "muted" | "amber" }) {
   const cls =
     tone === "blue"
       ? "text-[var(--bbdo-blue)] bg-[var(--bbdo-blue)]/10"
       : tone === "red"
       ? "text-destructive bg-destructive/10"
+      : tone === "amber"
+      ? "text-warning bg-warning/10"
       : "text-foreground bg-muted";
   return (
     <div className="flex flex-wrap gap-1.5 mt-1.5">
