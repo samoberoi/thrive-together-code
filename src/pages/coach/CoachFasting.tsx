@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
+import CoachPatientIdentity from "@/components/coach/CoachPatientIdentity";
 import {
   fetchProtocols, fetchWeeklyPlans, assignProtocolToUser,
   updateUserProtocolStatus, fetchTrackingForUser,
