@@ -862,21 +862,23 @@ export default function CoachSupplements() {
                 <div className="flex gap-2">
                   <button
                     onClick={close}
-                    className="px-4 py-2.5 rounded-xl bg-muted text-muted-foreground text-sm font-semibold"
+                    disabled={submitting}
+                    className="px-4 py-2.5 rounded-xl bg-muted text-muted-foreground text-sm font-semibold disabled:opacity-50"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={() => {
-                      if (!activeUserId) return;
+                      if (!activeUserId || submitting) return;
                       if (isAdd && activePlan) handleAddToExistingPlan(activeUserId, activePlan.id);
                       else handleAssignPlan(activeUserId);
                     }}
-                    disabled={selectedRules.size === 0}
+                    disabled={selectedRules.size === 0 || submitting}
+                    aria-busy={submitting}
                     className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-50 inline-flex items-center gap-1.5"
                   >
-                    <Check className="w-4 h-4" />
-                    {isAdd ? `Add (${selectedRules.size})` : `Assign (${selectedRules.size})`}
+                    {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                    {submitting ? "Saving…" : isAdd ? `Add (${selectedRules.size})` : `Assign (${selectedRules.size})`}
                   </button>
                 </div>
               </div>
