@@ -1386,6 +1386,152 @@ export type Database = {
           },
         ]
       }
+      coupon_campaigns: {
+        Row: {
+          active: boolean
+          coupon_count: number
+          created_at: string
+          created_by: string | null
+          description: string | null
+          discount_type: string
+          discount_value: number
+          end_date: string | null
+          id: string
+          is_limited: boolean
+          max_redemptions_per_coupon: number
+          name: string
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          coupon_count?: number
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          end_date?: string | null
+          id?: string
+          is_limited?: boolean
+          max_redemptions_per_coupon?: number
+          name: string
+          start_date?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          coupon_count?: number
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          end_date?: string | null
+          id?: string
+          is_limited?: boolean
+          max_redemptions_per_coupon?: number
+          name?: string
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      coupon_redemptions: {
+        Row: {
+          campaign_id: string
+          code: string
+          coupon_id: string
+          created_at: string
+          discount_amount: number | null
+          final_amount: number | null
+          id: string
+          original_amount: number | null
+          plan_key: string | null
+          user_id: string
+        }
+        Insert: {
+          campaign_id: string
+          code: string
+          coupon_id: string
+          created_at?: string
+          discount_amount?: number | null
+          final_amount?: number | null
+          id?: string
+          original_amount?: number | null
+          plan_key?: string | null
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string
+          code?: string
+          coupon_id?: string
+          created_at?: string
+          discount_amount?: number | null
+          final_amount?: number | null
+          id?: string
+          original_amount?: number | null
+          plan_key?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_redemptions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "coupon_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_redemptions_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupons: {
+        Row: {
+          active: boolean
+          campaign_id: string
+          code: string
+          created_at: string
+          id: string
+          max_redemptions: number | null
+          redeemed_count: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          campaign_id: string
+          code: string
+          created_at?: string
+          id?: string
+          max_redemptions?: number | null
+          redeemed_count?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          campaign_id?: string
+          code?: string
+          created_at?: string
+          id?: string
+          max_redemptions?: number | null
+          redeemed_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupons_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "coupon_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       device_push_tokens: {
         Row: {
           app_version: string | null
@@ -5763,6 +5909,10 @@ export type Database = {
         Returns: undefined
       }
       email_exists: { Args: { _email: string }; Returns: boolean }
+      generate_coupons: {
+        Args: { _campaign_id: string; _count: number; _prefix?: string }
+        Returns: number
+      }
       generate_diet_plating: {
         Args: { _diet?: string; _user_id: string }
         Returns: number
@@ -5919,6 +6069,10 @@ export type Database = {
         Args: { _template_id: string }
         Returns: undefined
       }
+      redeem_coupon: {
+        Args: { _amount: number; _code: string; _plan_key?: string }
+        Returns: Json
+      }
       refresh_gamification_for_user: {
         Args: { _day?: string; _user_id: string }
         Returns: undefined
@@ -5988,6 +6142,10 @@ export type Database = {
       }
       swap_diet_plate: {
         Args: { _plate_id: string; _seed?: number }
+        Returns: Json
+      }
+      validate_coupon: {
+        Args: { _amount: number; _code: string }
         Returns: Json
       }
     }

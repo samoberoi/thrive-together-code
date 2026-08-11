@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Flame, Lock, Rocket, User, Star, Gift } from "lucide-react";
+import { Check, Flame, Lock, Rocket, User, Star, Gift, Ticket } from "lucide-react";
 import { getUser } from "@/lib/userStore";
 import { useAuth } from "@/contexts/AuthContext";
 import { createSubscription, changeSubscriptionPlan, previewPlanChange, type PlanChangePreview } from "@/lib/subscriptionService";
@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getSelectedPlan, CYCLE_LABEL } from "@/lib/packageService";
 import { autoAssignCoach, fetchAssignedCoach, coachTypeLabel, type Coach } from "@/lib/coachService";
 import { sendWelcomeNotification } from "@/lib/notificationService";
+import { validateCoupon, redeemCoupon, type CouponValidation } from "@/lib/couponService";
 import logoImg from "@/assets/logo.png";
 
 declare global {
@@ -60,6 +61,31 @@ export default function Payment() {
   const changeMode = plan?.change_mode ?? "new";
   const isPlanChange = changeMode === "upgrade" || changeMode === "downgrade";
   const [preview, setPreview] = useState<PlanChangePreview | null>(null);
+  const [couponCode, setCouponCode] = useState("");
+  const [couponStatus, setCouponStatus] = useState<"idle" | "applying" | "valid" | "invalid">("idle");
+  const [couponMessage, setCouponMessage] = useState("");
+  const [coupon, setCoupon] = useState<CouponValidation | null>(null);
+
+  const baseAmount = preview ? preview.amount_due : (plan?.total_price ?? 0);
+  const couponDiscount = coupon?.valid ? Number(coupon.discount_amount ?? 0) : 0;
+  const payableAmount = Math.max(baseAmount - couponDiscount, 0);
+
+  const applyCoupon = async () => {
+    const code = couponCode.trim();
+    if (!code) return;
+    setCouponStatus("applying");
+    setCouponMessage("");
+    const res = await validateCoupon(code, baseAmount);
+    if (!res.valid) {
+      setCoupon(null);
+      setCouponStatus("invalid");
+      setCouponMessage(res.reason ?? "Invalid coupon code");
+      return;
+    }
+    setCoupon(res);
+    setCouponStatus("valid");
+    setCouponMessage(`${res.name} applied — you save ₹${Number(res.discount_amount ?? 0).toLocaleString("en-IN")}`);
+  };
 
   useEffect(() => {
     if (!authUser || !plan || !isPlanChange) return;
@@ -130,6 +156,10 @@ export default function Payment() {
 
   const finalizePostPayment = async (user: PaymentUser) => {
     if (!plan) return;
+    if (coupon?.valid && coupon.code) {
+      const res = await redeemCoupon(coupon.code, baseAmount, plan.plan_key);
+      if (!res.valid) console.warn("Coupon could not be recorded:", res.reason);
+    }
     if (plan.assigns_coach !== false) {
       await autoAssignCoach(user.id, plan.plan_key);
       const c = await fetchAssignedCoach(user.id);
@@ -221,7 +251,7 @@ export default function Payment() {
         await changeSubscriptionPlan({
           plan_id: plan.plan_key,
           plan_name: `${plan.name} — ${CYCLE_LABEL[plan.billing_cycle]}`,
-          plan_price: plan.total_price,
+          plan_price: payableAmount,
           duration_months: duration,
           mode: changeMode,
         });
@@ -238,7 +268,7 @@ export default function Payment() {
           user_id: effectiveUser.id,
           plan_id: plan.plan_key,
           plan_name: `${plan.name} — ${CYCLE_LABEL[plan.billing_cycle]}`,
-          plan_price: plan.total_price,
+          plan_price: payableAmount,
           duration_months: duration,
           started_at: now.toISOString(),
           expires_at: expiresAt.toISOString(),
@@ -285,9 +315,7 @@ export default function Payment() {
                 </div>
                 <div className="text-right">
                   <p className="text-primary font-black text-xl">
-                    {plan
-                      ? `₹${(preview ? preview.amount_due : plan.total_price).toLocaleString("en-IN")}`
-                      : "—"}
+                    {plan ? `₹${payableAmount.toLocaleString("en-IN")}` : "—"}
                   </p>
                   <p className="text-muted-foreground text-xs">{plan ? `for ${duration} month${duration > 1 ? "s" : ""}` : "Select first"}</p>
                 </div>
@@ -369,6 +397,53 @@ export default function Payment() {
               )}
             </div>
 
+
+            {/* Discount coupon */}
+            <div className="mb-4">
+              <div className="liquid-glass rounded-2xl px-4 py-3 flex items-center gap-3">
+                <Ticket className="w-4 h-4 text-primary shrink-0" strokeWidth={1.8} />
+                <input
+                  type="text"
+                  placeholder="Discount coupon (optional)"
+                  value={couponCode}
+                  onChange={(e) => {
+                    setCouponCode(e.target.value.toUpperCase());
+                    if (couponStatus !== "idle") { setCouponStatus("idle"); setCouponMessage(""); setCoupon(null); }
+                  }}
+                  disabled={couponStatus === "valid"}
+                  className="flex-1 bg-transparent text-foreground font-medium text-sm outline-none placeholder:text-muted-foreground min-w-0 uppercase disabled:opacity-70"
+                />
+                {couponStatus === "valid" ? (
+                  <button
+                    type="button"
+                    onClick={() => { setCoupon(null); setCouponStatus("idle"); setCouponMessage(""); setCouponCode(""); }}
+                    className="text-xs font-semibold text-muted-foreground"
+                  >
+                    Remove
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={applyCoupon}
+                    disabled={!couponCode.trim() || couponStatus === "applying"}
+                    className="text-primary text-xs font-semibold disabled:opacity-40"
+                  >
+                    {couponStatus === "applying" ? "Checking..." : "Apply"}
+                  </button>
+                )}
+              </div>
+              {couponMessage && (
+                <p className={`text-xs mt-2 ml-1 ${couponStatus === "valid" ? "text-success" : "text-destructive"}`}>
+                  {couponStatus === "valid" && <Check className="w-3.5 h-3.5 inline mr-1" />}{couponMessage}
+                </p>
+              )}
+              {couponDiscount > 0 && (
+                <div className="flex items-center justify-between text-xs mt-2 px-1">
+                  <span className="text-muted-foreground line-through">₹{baseAmount.toLocaleString("en-IN")}</span>
+                  <span className="text-emerald-600 font-semibold">You pay ₹{payableAmount.toLocaleString("en-IN")}</span>
+                </div>
+              )}
+            </div>
 
             <p className="text-muted-foreground text-xs text-center mb-3 flex items-center justify-center gap-1.5">
               <Lock className="w-3 h-3" strokeWidth={1.8} /> Secured with 256-bit encryption. Cancel anytime.
