@@ -5567,10 +5567,19 @@ export type Database = {
           newly_awarded: number
         }[]
       }
+      bbdo_diet_pools: {
+        Args: { _diet?: string; _user_id: string }
+        Returns: Json
+      }
       bbdo_food_filter_id: { Args: { _names: string[] }; Returns: string }
       bbdo_normalize_diet_preference: {
         Args: { _diet: string }
         Returns: string
+      }
+      bbdo_pick: { Args: { _arr: Json; _i: number }; Returns: Json }
+      bbdo_plate_from_pools: {
+        Args: { _diet: string; _idx: number; _pools: Json; _slot: string }
+        Returns: Json
       }
       bbdo_user_diet_gating: {
         Args: { _user_id: string }

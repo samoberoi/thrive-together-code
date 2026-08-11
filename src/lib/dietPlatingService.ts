@@ -25,11 +25,23 @@ export function normalizeDietPreference(value: string | null | undefined): strin
 }
 
 export async function fetchPlatingForUser(userId: string) {
-  const { data, error } = await supabase
+  // Only pull the newest 30-day plan — older plans stay in the table but are
+  // dead weight on the wire and were the main cause of the slow Food tab.
+  const { data: latest } = await supabase
     .from("diet_platings")
-    .select("*")
+    .select("plan_start_date")
     .eq("user_id", userId)
     .order("plan_start_date", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const planStart = (latest as any)?.plan_start_date as string | undefined;
+  if (!planStart) return [] as DietPlating[];
+
+  const { data, error } = await supabase
+    .from("diet_platings")
+    .select("id,user_id,plan_start_date,day_index,meal_slot,plate_data,calories")
+    .eq("user_id", userId)
+    .eq("plan_start_date", planStart)
     .order("day_index", { ascending: true })
     .order("meal_slot", { ascending: true });
   if (error) return [] as DietPlating[];
