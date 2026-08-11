@@ -537,6 +537,7 @@ export default function UserFasting({ packageKey }: { packageKey?: string | null
 
   return (
     <div className="p-6 space-y-5">
+      <ExpertConnectBar context="my fasting protocol" />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

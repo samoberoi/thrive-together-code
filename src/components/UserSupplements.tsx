@@ -185,6 +185,7 @@ export default function UserSupplements({ simpleMode = false }: { simpleMode?: b
 
   return (
     <div className="p-6 space-y-5">
+      <ExpertConnectBar context="my supplements" />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
