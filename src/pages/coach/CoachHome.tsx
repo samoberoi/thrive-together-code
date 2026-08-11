@@ -493,6 +493,8 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
         hasSuppPlan: hasSupp,
         activities,
         applicable,
+        progress,
+
         doneCount,
         applicableCount,
         onTrack,
