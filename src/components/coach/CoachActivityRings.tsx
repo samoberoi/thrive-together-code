@@ -50,7 +50,7 @@ export default function CoachActivityRings() {
         age: (p as any)?.age ?? null,
         weightKg: (p as any)?.weight ?? null,
         heightCm: (p as any)?.height ?? null,
-      });
+      }, { minTargetSteps: COACH_MIN_DAILY_STEPS });
       setMovement({
         ratio: ov.targetSteps > 0 ? Math.min(1, ov.todaySteps / ov.targetSteps) : 0,
         hint: `${(ov.todaySteps || 0).toLocaleString("en-IN")} / ${(ov.targetSteps || 0).toLocaleString("en-IN")} steps`,

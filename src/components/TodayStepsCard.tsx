@@ -17,7 +17,7 @@ import {
 
 const HEALTH_SYNC_INTERVAL_MS = 5 * 60_000;
 
-export default function TodayStepsCard({ onOpenMovement }: { onOpenMovement?: () => void }) {
+export default function TodayStepsCard({ onOpenMovement, minTargetSteps }: { onOpenMovement?: () => void; minTargetSteps?: number }) {
   const { user } = useAuth();
   const [data, setData] = useState<MovementOverview | null>(null);
   const [syncingHealth, setSyncingHealth] = useState(false);
@@ -35,10 +35,10 @@ export default function TodayStepsCard({ onOpenMovement }: { onOpenMovement?: ()
         age: (p as any)?.age ?? null,
         weightKg: (p as any)?.weight ?? null,
         heightCm: (p as any)?.height ?? null,
-      });
+      }, { minTargetSteps });
       setData(ov);
     } catch {}
-  }, [user]);
+  }, [user, minTargetSteps]);
 
   useEffect(() => { load(); }, [load]);
 

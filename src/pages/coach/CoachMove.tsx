@@ -225,7 +225,7 @@ export default function CoachMove() {
       </div>
 
       {view === "mine" ? (
-        <TodayStepsCard />
+        <TodayStepsCard minTargetSteps={COACH_MIN_DAILY_STEPS} />
       ) : (
       <>
       <div className="relative">
