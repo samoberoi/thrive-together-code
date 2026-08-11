@@ -116,7 +116,14 @@ export function useWatchCredit({
         lastTimeRef.current = t;
         if (prev == null) return;
         const delta = t - prev;
-        // Ignore seeks/jumps — credit only plausible real-time advances.
+        // Restart / loop / rewind: this is a NEW playthrough — start over so a
+        // looping video left unattended can never stack multiple rounds.
+        if (delta < -1.5) {
+          watchedRef.current = 0;
+          setWatchedSec(0);
+          return;
+        }
+        // Ignore seeks/jumps forward — credit only plausible real-time advances.
         if (delta > 0 && delta <= 2.5) addWatched(delta);
         return;
       }
@@ -136,6 +143,7 @@ export function useWatchCredit({
           }
         }
       }
+
 
     };
     window.addEventListener("message", onMsg);

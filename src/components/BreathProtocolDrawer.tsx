@@ -23,11 +23,14 @@ export default function BreathProtocolDrawer({
   const { user } = useAuth();
   const { count, goal, completed, refresh } = useBreathSessionsToday();
   const [saving, setSaving] = useState(false);
+  const [armed, setArmed] = useState(true);
   const [videoId, setVideoId] = useState(BREATH_PROTOCOL_VIDEO.youtubeId);
   const [useNativePlayer] = useState(() => isNativeIOSApp());
   const savingRef = useRef(false);
   const countRef = useRef(count);
   useEffect(() => { countRef.current = count; }, [count]);
+  useEffect(() => { if (open) setArmed(true); }, [open]);
+
 
   useEffect(() => {
     let cancelled = false;
@@ -58,15 +61,18 @@ export default function BreathProtocolDrawer({
     } else {
       toast.error("Couldn't save this round. Try again.");
     }
+    // Require an explicit tap before the next round can be credited.
+    setArmed(false);
     resetRef.current();
   }, [user, goal, refresh]);
 
   const { watchedSec, requiredSec, progressPct: watchPct, reset } = useWatchCredit({
-    active: open && !completed,
+    active: open && !completed && armed,
     videoId,
     requiredSec: REQUIRED_WATCH_SEC,
     onReached: handleRoundWatched,
   });
+
   useEffect(() => { resetRef.current = reset; }, [reset]);
 
   const progressPct = Math.min(100, Math.round((count / goal) * 100));
@@ -137,7 +143,7 @@ export default function BreathProtocolDrawer({
         </div>
 
         {/* Watch progress */}
-        {!completed && (
+        {!completed && armed && (
           <div className="mt-3 rounded-2xl bg-muted/60 border border-border p-3">
             <div className="flex items-center justify-between gap-2">
               <span className="text-[11px] font-black uppercase tracking-[0.14em] text-muted-foreground">
@@ -159,18 +165,29 @@ export default function BreathProtocolDrawer({
           </div>
         )}
 
-        <div
-          className="mt-3 w-full min-h-14 rounded-2xl text-white font-bold text-[15px] flex items-center justify-center gap-2 px-4 text-center"
-          style={{ background: completed ? "#10B981" : "var(--bbdo-blue)" }}
-        >
-          {saving ? (
-            <><Loader2 className="w-4 h-4 animate-spin" /> Logging your round…</>
-          ) : completed ? (
-            <><CheckCircle2 className="w-4 h-4" /> All 4 rounds done today</>
-          ) : (
-            <>Finish the full video to log round {Math.min(goal, count + 1)} of {goal}</>
-          )}
-        </div>
+        {!completed && !armed && !saving ? (
+          <button
+            onClick={() => { reset(); setArmed(true); }}
+            className="no-pill mt-3 w-full min-h-14 rounded-2xl text-white font-bold text-[15px] flex items-center justify-center gap-2 px-4 text-center"
+            style={{ background: "var(--bbdo-blue)" }}
+          >
+            Start round {Math.min(goal, count + 1)} of {goal}
+          </button>
+        ) : (
+          <div
+            className="mt-3 w-full min-h-14 rounded-2xl text-white font-bold text-[15px] flex items-center justify-center gap-2 px-4 text-center"
+            style={{ background: completed ? "#10B981" : "var(--bbdo-blue)" }}
+          >
+            {saving ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Logging your round…</>
+            ) : completed ? (
+              <><CheckCircle2 className="w-4 h-4" /> All 4 rounds done today</>
+            ) : (
+              <>Finish the full video to log round {Math.min(goal, count + 1)} of {goal}</>
+            )}
+          </div>
+        )}
+
 
         <p className="text-[11px] text-muted-foreground text-center mt-2 leading-snug">
           Ritual · Morning · Afternoon · Evening · Night
