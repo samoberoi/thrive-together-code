@@ -105,6 +105,7 @@ export default function CoachVideoAssignPage({ module }: Props) {
         return {
           user_id: uid,
           name: nm,
+          phone,
           avatar_url: p?.avatar_url ?? null,
         };
       });
