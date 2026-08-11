@@ -109,11 +109,21 @@ export default function CoachActivityNudgeDialog({
               <p className="text-muted-foreground text-xs">
                 {doneCount} of {totalApplicable} completed today · {pending.length} pending
               </p>
+              <div className="mt-2 flex items-center gap-2">
+                <div className="h-1.5 flex-1 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${completionPct === 100 ? "bg-success" : completionPct >= 70 ? "bg-warning" : "bg-destructive"}`}
+                    style={{ width: `${completionPct}%` }}
+                  />
+                </div>
+                <span className="text-[11px] font-bold text-foreground tabular-nums">{completionPct}%</span>
+              </div>
             </div>
-            <button onClick={onClose} className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center">
+            <button onClick={onClose} className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center self-start">
               <X className="w-4 h-4" />
             </button>
           </div>
+
 
           {pending.length > 0 && (
             <div className="px-5 pt-4">
