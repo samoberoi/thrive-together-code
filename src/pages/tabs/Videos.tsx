@@ -20,6 +20,7 @@ import { useBreathSessionsToday } from "@/hooks/useBreathSessionsToday";
 import { BREATH_PROTOCOL_VIDEO } from "@/lib/breathProtocol";
 import { useCoachAssignedItems } from "@/hooks/useCoachAssignedItems";
 import { EmptyState } from "@/components/shared";
+import ExpertConnectBar from "@/components/support/ExpertConnectBar";
 
 const VIDEO_ICON_MAP: Record<string, LucideIcon> = {
   Activity,

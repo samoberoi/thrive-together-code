@@ -1,5 +1,6 @@
 import PatientLabTests from "@/components/PatientLabTests";
 import AppErrorBoundary from "@/components/AppErrorBoundary";
+import ExpertConnectBar from "@/components/support/ExpertConnectBar";
 
 export default function LabTestsTab({ foundationMode = false }: { foundationMode?: boolean } = {}) {
   return (

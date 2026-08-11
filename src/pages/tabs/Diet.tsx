@@ -7,6 +7,7 @@ import SavedPlates from "@/components/diet/SavedPlates";
 import DietPlatingCalendar from "@/components/diet/DietPlatingCalendar";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import ExpertConnectBar from "@/components/support/ExpertConnectBar";
 
 type Mode = "hub" | "reference" | "plate" | "saved";
 

@@ -33,6 +33,7 @@ import { isNativeAndroidApp, isNativeIOSApp, isYoutubePlayerMessage, youtubePlay
 import { accumulateWatched, loadWatched, markCompleted, recordProgress, saveDuration } from "@/lib/videoProgressStore";
 import { useCoachAssignedItems } from "@/hooks/useCoachAssignedItems";
 import { useWatchCredit } from "@/hooks/useWatchCredit";
+import ExpertConnectBar from "@/components/support/ExpertConnectBar";
 
 const FALLBACK_SHORT_VIDEO_SEC = 120;
 // One set is credited after a real watch: the full clip, capped at 3 minutes.

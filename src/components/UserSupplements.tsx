@@ -15,6 +15,7 @@ import {
 } from "@/lib/supplementService";
 
 import {
+import ExpertConnectBar from "@/components/support/ExpertConnectBar";
   fetchSupplementBadgeDefinitions, fetchUserSupplementBadges,
   getSupplementBadgeLevel, calculateSupplementStreak,
   checkAndAwardSupplementBadges,
