@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/shared";
 import CoachAssignmentSheet, { type AssignableItem } from "@/components/coach/CoachAssignmentSheet";
+import CoachPatientIdentity from "@/components/coach/CoachPatientIdentity";
 import { listExercises } from "@/lib/exerciseService";
 import { videos as staticYogaVideos } from "@/lib/exerciseData";
 import { fetchVideoMetadataOverrides } from "@/lib/videoMetadataService";
