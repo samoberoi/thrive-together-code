@@ -6,6 +6,7 @@ import {
   CalendarClock, Clock, Plus, Package, Send, CheckCircle2, Search, Percent, FlaskConical, FileText,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { coachTypeLabel, resolveCurrentCoach, type Coach } from "@/lib/coachService";
 import { createNotification } from "@/lib/notificationService";
@@ -728,31 +729,17 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
 
   return (
     <div className="flex flex-col gap-3 px-4 sm:px-5 pt-3 pb-4">
-      {/* Coach hero — avatar, name, specialization + coach-type chip.
-          No redundant "Good to see you" line; the name IS the greeting. */}
-      {coach && (
-        <motion.div
-          className="flex items-center gap-4 pt-1"
-          initial={{ opacity: 0, y: -6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <img
-            src={coach.avatar_url || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=120&h=120&fit=crop&crop=face"}
-            alt={coach.name}
-            className="w-14 h-14 rounded-2xl object-cover flex-shrink-0 ring-1 ring-border"
-          />
-          <div className="flex-1 min-w-0">
-            <h1 className="text-[22px] sm:text-2xl leading-tight font-black tracking-[-0.02em] text-foreground no-break truncate">
-              {coach.name}
-            </h1>
-            <p className="text-muted-foreground text-xs mt-0.5 truncate">{coach.specialization}</p>
-            <span className="inline-block text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20 mt-1.5 no-break">
-              {coachTypeLabel(coach.coach_type)}
-            </span>
-          </div>
-        </motion.div>
-      )}
+      {/* Greeting — same topology as the patient home screen */}
+      <motion.div
+        className="pt-1 pb-1"
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <h1 className="text-[clamp(22px,6.5vw,32px)] leading-[1.15] font-semibold tracking-[-0.03em] text-foreground break-words">
+          {greeting || "Good morning"}, {(coach?.name || "Coach").split(" ")[0]} <span className="inline-block">👋</span>
+        </h1>
+      </motion.div>
 
       {/* Coach's own daily rings — walk the talk */}
       <CoachActivityRings />
