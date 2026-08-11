@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { useConfirm } from "@/components/ConfirmProvider";
 import ExportCsvButton from "@/components/admin/ExportCsvButton";
 import {
@@ -88,17 +89,13 @@ export default function AdminCoupons() {
         const made = await generateCoupons(camp.id, count);
         toast.success(`${made} coupon codes generated`);
       } else {
-        const made = await generateCoupons(camp.id, 1);
-        await updateCampaign(camp.id, { max_redemptions_per_coupon: 0 } as any);
-        // unlimited: a single shared code with no redemption cap
+        // Unlimited: one shared code with no redemption cap.
+        await generateCoupons(camp.id, 1);
         const [c] = await fetchCoupons(camp.id);
         if (c) {
-          await (await import("@/integrations/supabase/client")).supabase
-            .from("coupons" as any)
-            .update({ max_redemptions: null } as any)
-            .eq("id", c.id);
+          await (supabase as any).from("coupons").update({ max_redemptions: null }).eq("id", c.id);
         }
-        toast.success(made ? "Shared unlimited coupon created" : "Campaign created");
+        toast.success("Shared unlimited coupon created");
       }
       resetForm();
       setCreating(false);
