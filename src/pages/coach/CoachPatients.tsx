@@ -4,16 +4,12 @@ import {
   Users, ArrowLeft, Clock, Activity, Droplets, Heart, Phone,
   Weight, FileText, Loader2, ChevronRight, Flame, Trophy,
   Shield, ShieldAlert, ShieldCheck, TrendingDown, TrendingUp, Minus,
-  Pill, Timer, MessageCircle, Calendar, FlaskConical, CheckCircle2, Pencil
+  Pill, Timer, MessageCircle, CheckCircle2, Pencil
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveCurrentCoach } from "@/lib/coachService";
 import { calculateSupplementStreak } from "@/lib/supplementBadgeService";
-import ScheduleMeetingDialog from "@/components/coach/ScheduleMeetingDialog";
-import RecommendTestsDialog from "@/components/coach/RecommendTestsDialog";
-import RecommendSupplementsDialog from "@/components/coach/RecommendSupplementsDialog";
-import AssignFastingDialog from "@/components/coach/AssignFastingDialog";
 import PatientVitalsCard from "@/components/coach/PatientVitalsCard";
 import PatientProfileEditor from "@/components/coach/PatientProfileEditor";
 import PatientDietSymptomsSummary from "@/components/coach/PatientDietSymptomsSummary";
@@ -153,7 +149,6 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
   const [fastingLogs, setFastingLogs] = useState<any[]>([]);
   const [suppTrackingLogs, setSuppTrackingLogs] = useState<any[]>([]);
   const [coachId, setCoachId] = useState<string | null>(null);
-  const [actionDlg, setActionDlg] = useState<null | "meeting" | "tests" | "supps" | "fasting">(null);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [summaryRefresh, setSummaryRefresh] = useState(0);
 
