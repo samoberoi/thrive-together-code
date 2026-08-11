@@ -135,6 +135,15 @@ export default function CoachActivityRings() {
 
   useEffect(() => { void syncSteps(false); }, [syncSteps]);
 
+  // The OS health sheet is requested globally right after login; when the user
+  // grants it, pull steps immediately without needing the manual button.
+  useEffect(() => {
+    const h = () => { setNeedsHealth(false); void syncSteps(false); };
+    window.addEventListener("health-permission-granted", h);
+    return () => window.removeEventListener("health-permission-granted", h);
+  }, [syncSteps]);
+
+
   const connectHealth = async () => {
     setConnecting(true);
     try {
