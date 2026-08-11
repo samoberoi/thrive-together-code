@@ -135,8 +135,8 @@ export default function RecommendTestsDialog({ open, onOpenChange, coachId, pati
                   className="mt-0.5"
                 />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{t.product_name}</p>
-                  <p className="text-xs text-muted-foreground">{t.product_code}{t.category ? ` • ${t.category}` : ""}</p>
+                  <p className="text-sm font-medium text-foreground">{t.product_name}</p>
+                  <p className="text-xs text-muted-foreground">Free home collection · 10–11 hrs fasting</p>
                 </div>
               </label>
             ))}
