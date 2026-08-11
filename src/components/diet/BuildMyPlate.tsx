@@ -323,7 +323,7 @@ export default function BuildMyPlate({ onClose, onSaved }: { onClose: () => void
   // ────────── REVIEW MODE ──────────
   if (mode === "review") {
     return (
-      <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
+      <div className="fixed inset-0 z-[60] bg-background overflow-y-auto">
         <header className="px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 flex items-center gap-2 max-w-3xl mx-auto">
           <button onClick={back} className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center active:scale-95">
             <ArrowLeft className="w-5 h-5" strokeWidth={2} />
@@ -408,7 +408,7 @@ export default function BuildMyPlate({ onClose, onSaved }: { onClose: () => void
 
   // ────────── BUILD MODE ──────────
   return (
-    <div className="fixed inset-0 z-50 bg-background overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-[60] bg-background overflow-hidden flex flex-col">
       {/* Header */}
       <header className="px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 border-b border-border/60 bg-background">
         <div className="flex items-center gap-2 max-w-3xl mx-auto">
@@ -434,7 +434,7 @@ export default function BuildMyPlate({ onClose, onSaved }: { onClose: () => void
       </header>
 
       {/* Body */}
-      <div className="flex-1 overflow-y-auto pb-32">
+      <div className="flex-1 min-h-0 overflow-y-auto pb-6">
         <div className="max-w-3xl mx-auto px-4 py-5">
           <motion.div key={step} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease: EASE }}>
             <div className="flex flex-wrap items-center gap-2">
@@ -515,7 +515,7 @@ export default function BuildMyPlate({ onClose, onSaved }: { onClose: () => void
       </div>
 
       {/* Sticky live macro bar + nav */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t border-border/60">
+      <div className="shrink-0 relative z-10 bg-background/95 backdrop-blur border-t border-border/60">
         {selections.length > 0 && (
           <div className="px-4 pt-2 pb-1 max-w-3xl mx-auto flex items-center gap-2 overflow-x-auto scrollbar-hide">
             <span className={`text-[10px] font-black px-2 py-1 rounded-full whitespace-nowrap capitalize ${riskColor}`}>
