@@ -1,0 +1,84 @@
+import { describe, expect, it } from "vitest";
+import {
+  clipRecordsToRange,
+  startOfLocalDay,
+  sumStepsDeduped,
+} from "@/lib/healthStepsMath";
+
+const rec = (startTime: string, endTime: string, count: number, origin = "com.samsung.health") => ({
+  startTime,
+  endTime,
+  count,
+  metadata: { dataOrigin: origin },
+});
+
+describe("step math is timezone-agnostic", () => {
+  it("startOfLocalDay is local midnight on the device", () => {
+    const now = new Date();
+    const s = startOfLocalDay(now);
+    expect(s.getHours()).toBe(0);
+    expect(s.getMinutes()).toBe(0);
+    expect(s.getDate()).toBe(now.getDate());
+    expect(s.getTime()).toBeLessThanOrEqual(now.getTime());
+  });
+
+  it("counts records written with any zone offset, as long as the instant is today", () => {
+    // Same absolute instant, expressed three different ways.
+    const start = startOfLocalDay();
+    const midMorning = new Date(start.getTime() + 9 * 3600_000);
+    const noon = new Date(start.getTime() + 12 * 3600_000);
+    const now = new Date(start.getTime() + 13 * 3600_000);
+
+    const records = [
+      rec(midMorning.toISOString(), noon.toISOString(), 4000), // UTC "Z" form
+      rec(
+        new Date(midMorning).toString() as any, // locale form
+        new Date(noon).toString() as any,
+        0,
+      ),
+    ];
+    const scoped = clipRecordsToRange(records, start, now);
+    expect(sumStepsDeduped(scoped)).toBe(4000);
+  });
+
+  it("pro-rates a record that straddles local midnight", () => {
+    const start = startOfLocalDay();
+    const now = new Date(start.getTime() + 6 * 3600_000);
+    // 22:00 yesterday -> 02:00 today = 4h span, 2h inside today.
+    const records = [
+      rec(
+        new Date(start.getTime() - 2 * 3600_000).toISOString(),
+        new Date(start.getTime() + 2 * 3600_000).toISOString(),
+        1000,
+      ),
+    ];
+    const scoped = clipRecordsToRange(records, start, now);
+    expect(scoped[0].count).toBe(500);
+  });
+
+  it("drops records entirely outside today", () => {
+    const start = startOfLocalDay();
+    const now = new Date(start.getTime() + 6 * 3600_000);
+    const records = [
+      rec(
+        new Date(start.getTime() - 30 * 3600_000).toISOString(),
+        new Date(start.getTime() - 26 * 3600_000).toISOString(),
+        9999,
+      ),
+    ];
+    expect(clipRecordsToRange(records, start, now)).toHaveLength(0);
+  });
+
+  it("de-dupes multiple contributing apps instead of summing them", () => {
+    const start = startOfLocalDay();
+    const now = new Date(start.getTime() + 8 * 3600_000);
+    const a = new Date(start.getTime() + 1 * 3600_000).toISOString();
+    const b = new Date(start.getTime() + 2 * 3600_000).toISOString();
+    const records = [
+      rec(a, b, 3000, "com.google.android.apps.fitness"),
+      rec(a, b, 3100, "com.samsung.health"),
+    ];
+    const scoped = clipRecordsToRange(records, start, now);
+    expect(sumStepsDeduped(scoped)).toBe(3100);
+  });
+});
