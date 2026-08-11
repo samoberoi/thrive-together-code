@@ -203,6 +203,23 @@ export default function PatientDietSymptomsSummary({ userId, refreshKey }: Props
           </div>
 
           <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-xl bg-warning/10 flex items-center justify-center shrink-0">
+              <HeartPulse className="w-4 h-4 text-warning" strokeWidth={2} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-black text-foreground leading-tight">
+                Ailments{ailments.length ? ` · ${ailments.length}` : ""}
+              </p>
+              {ailments.length ? (
+                <Chips items={ailments} tone="amber" />
+              ) : (
+                <p className="text-xs text-muted-foreground mt-0.5">None reported</p>
+              )}
+            </div>
+          </div>
+
+
+          <div className="flex items-start gap-3">
             <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center shrink-0">
               <Stethoscope className="w-4 h-4 text-foreground" strokeWidth={2} />
             </div>
