@@ -8,7 +8,7 @@ import { useSoleusSessionsToday } from "@/hooks/useSoleusSessionsToday";
 import { useDailyYogaMinutes } from "@/hooks/useAppSettings";
 import { getTodayYogaMinutes } from "@/lib/yogaProgressService";
 import { fetchMovementOverview, logTodaySteps, COACH_MIN_DAILY_STEPS } from "@/lib/movementUserService";
-import { canUseNativeHealth, syncTodaySteps, requestNativeHealthAuthorization } from "@/lib/healthProvider";
+import { canUseNativeHealth, syncTodaySteps } from "@/lib/healthProvider";
 import { healthSourceLabel } from "@/lib/platformLabels";
 import { toast } from "sonner";
 import { fetchProfile } from "@/lib/profileService";
@@ -144,14 +144,14 @@ export default function CoachActivityRings() {
   }, [syncSteps]);
 
 
+  // Identical to the patient flow: one tap runs the normal steps sync, which
+  // asks Health Connect / Apple Health for the Steps permission only.
   const connectHealth = async () => {
     setConnecting(true);
     try {
-      const state = await requestNativeHealthAuthorization();
-      if (!state.authorized && state.message) toast.message(state.message);
       await syncSteps(true);
     } catch (e: any) {
-      toast.error(e?.message || "Couldn't connect your health app");
+      toast.error(e?.message || "Couldn't sync your health app");
     } finally {
       setConnecting(false);
     }
@@ -223,7 +223,7 @@ export default function CoachActivityRings() {
           disabled={connecting}
           className="w-full rounded-2xl bg-primary text-primary-foreground text-[13px] font-bold py-3 disabled:opacity-60"
         >
-          {connecting ? "Connecting…" : `Allow ${healthSourceLabel()} to count my steps`}
+          {connecting ? "Syncing…" : `Sync steps from ${healthSourceLabel()}`}
         </button>
       )}
     </div>
