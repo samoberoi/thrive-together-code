@@ -238,6 +238,16 @@ export default function CoachSelfCheckins() {
           </div>
         </div>
       )}
+
+      {mealPickerFor && (
+        <MealTimePickerSheet
+          meal={mealPickerFor}
+          confirmLabel="Log meal"
+          onConfirm={(iso) => logMeal(mealPickerFor, iso)}
+          onCancel={() => setMealPickerFor(null)}
+        />
+      )}
     </motion.div>
+
   );
 }
