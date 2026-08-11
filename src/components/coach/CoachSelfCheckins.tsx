@@ -41,6 +41,8 @@ export default function CoachSelfCheckins() {
   const [fmodAt, setFmodAt] = useState<string | null>(null);
   const [lmodAt, setLmodAt] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [mealPickerFor, setMealPickerFor] = useState<"fmod" | "lmod" | null>(null);
+
 
   const load = useCallback(async () => {
     if (!user) return;
