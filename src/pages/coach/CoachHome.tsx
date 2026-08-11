@@ -668,7 +668,14 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
         const s = map.get(k)!;
         s.applicable++;
         if (p.activities[k]) s.done++;
-        else s.pending.push({ user_id: p.user_id, name: p.name, avatar_url: p.avatar_url });
+        else s.pending.push({
+          user_id: p.user_id,
+          name: p.name,
+          avatar_url: p.avatar_url,
+          progress: p.progress?.[k]?.text ?? null,
+          ratio: p.progress?.[k]?.ratio ?? 0,
+        });
+
       }
     }
     return map;
