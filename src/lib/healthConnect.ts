@@ -3,6 +3,13 @@ import { HealthConnect } from "capacitor-health-connect";
 import type { HealthConnectAvailability, RecordType } from "capacitor-health-connect";
 import type { HealthSnapshot } from "@/lib/appleHealth";
 import { logStartupEvent, reportStartupError } from "@/lib/startupDiagnostics";
+import {
+  clipRecordsToRange,
+  originOf,
+  startOfLocalDay,
+  sumField as sum,
+  sumStepsDeduped,
+} from "@/lib/healthStepsMath";
 
 /** True on native Android where Health Connect can (potentially) run. */
 export function canUseHealthConnect() {
@@ -127,7 +134,7 @@ async function ensureAvailableAndAuthorized(): Promise<boolean> {
   return true;
 }
 
-function startOfToday() { const d = new Date(); d.setHours(0, 0, 0, 0); return d; }
+function startOfToday() { return startOfLocalDay(); }
 function endOfToday()   { return new Date(); }
 function daysAgo(n: number) { const d = new Date(); d.setDate(d.getDate() - n); return d; }
 
@@ -148,38 +155,7 @@ async function aggregate(type: RecordType, start: Date, end: Date): Promise<any 
   }
 }
 
-function sum(records: any[] | null, key: string): number | undefined {
-  if (!records || records.length === 0) return undefined;
-  return records.reduce((acc, r) => acc + Number(r?.[key] ?? 0), 0);
-}
 
-function originOf(r: any): string {
-  return String(
-    r?.metadata?.dataOrigin?.packageName ??
-      r?.metadata?.dataOrigin ??
-      r?.dataOrigin?.packageName ??
-      r?.dataOrigin ??
-      "unknown",
-  );
-}
-
-/**
- * Health Connect returns raw Steps records from every contributing app
- * (Google Fit, Samsung Health, phone sensor, Fitbit, etc.). Summing across
- * sources double- or triple-counts steps. Group by dataOrigin and use the
- * single largest source as the authoritative count for the range.
- */
-function sumStepsDeduped(records: any[] | null): number | undefined {
-  if (!records || records.length === 0) return undefined;
-  const perOrigin = new Map<string, number>();
-  for (const r of records) {
-    const key = originOf(r);
-    perOrigin.set(key, (perOrigin.get(key) ?? 0) + Number(r?.count ?? 0));
-  }
-  let max = 0;
-  for (const v of perOrigin.values()) if (v > max) max = v;
-  return max;
-}
 
 function last<T = any>(records: any[] | null): T | undefined {
   if (!records || records.length === 0) return undefined;
@@ -230,34 +206,6 @@ async function readAllSteps(start: Date, end: Date): Promise<any[]> {
   return records;
 }
 
-function ms(v: any): number {
-  const t = new Date(v).getTime();
-  return Number.isFinite(t) ? t : NaN;
-}
-
-/**
- * Keep only the portion of each record that falls inside [start, end].
- * Records that straddle midnight (common with watch syncs) are pro-rated
- * instead of being dropped entirely.
- */
-function clipRecordsToRange(records: any[], start: Date, end: Date): any[] {
-  const s = start.getTime();
-  const e = end.getTime();
-  const out: any[] = [];
-  for (const r of records) {
-    const rs = ms(r?.startTime);
-    const re = ms(r?.endTime ?? r?.startTime);
-    const count = Number(r?.count ?? 0);
-    if (!Number.isFinite(rs) || !Number.isFinite(re) || count <= 0) continue;
-    const os = Math.max(rs, s);
-    const oe = Math.min(re, e);
-    if (oe <= os) continue;
-    const span = Math.max(1, re - rs);
-    const ratio = span > 0 ? Math.min(1, (oe - os) / span) : 1;
-    out.push({ ...r, count: Math.round(count * ratio) });
-  }
-  return out;
-}
 
 export type StepsSyncDiagnostics = {
   rawRecords: number;
