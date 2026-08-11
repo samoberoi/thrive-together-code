@@ -182,6 +182,16 @@ export async function addPlanItem(item: Partial<PlanItem>) {
   if (error) throw error;
 }
 
+/** Insert many plan items in a single round-trip (fast, atomic). */
+export async function addPlanItems(items: Partial<PlanItem>[]) {
+  if (!items.length) return;
+  const { error } = await supabase
+    .from("user_supplement_plan_items" as any)
+    .insert(items as any);
+  if (error) throw error;
+}
+
+
 export async function removePlanItem(id: string) {
   const { error } = await supabase
     .from("user_supplement_plan_items" as any)
