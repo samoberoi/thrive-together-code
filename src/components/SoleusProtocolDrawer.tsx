@@ -65,16 +65,18 @@ export default function SoleusProtocolDrawer({
     } else {
       toast.error("Couldn't save this round. Try again.");
     }
-    // Arm the tracker for the next round either way.
+    // Require an explicit tap before the next round can be credited.
+    setArmed(false);
     resetRef.current();
   }, [user, goal, refresh]);
 
   const { watchedSec, requiredSec, progressPct: watchPct, reset } = useWatchCredit({
-    active: open && !completed,
+    active: open && !completed && armed,
     videoId,
     requiredSec: REQUIRED_WATCH_SEC,
     onReached: handleRoundWatched,
   });
+
   useEffect(() => { resetRef.current = reset; }, [reset]);
 
   const progressPct = Math.min(100, Math.round((count / goal) * 100));
