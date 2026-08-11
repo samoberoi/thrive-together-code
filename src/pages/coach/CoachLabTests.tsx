@@ -351,9 +351,9 @@ export default function CoachLabTests() {
         <p className="text-muted-foreground text-sm mt-1">Assign tests by patient and track booking, collection and result status.</p>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        {([{ id: "patients" as const, label: `👥 Patients (${patients.length})` }, { id: "mine" as const, label: "🩺 My Tests" }, { id: "tests" as const, label: `🧪 Test Catalog (${tests.length})` }]).map((item) => (
-          <button key={item.id} onClick={() => setView(item.id)} className={`px-4 py-2 rounded-2xl text-sm font-semibold whitespace-nowrap transition-colors ${view === item.id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>{item.label}</button>
+      <div className="flex gap-2 overflow-x-auto -mx-4 px-4 md:-mx-6 md:px-6 pb-1 no-scrollbar">
+        {([{ id: "patients" as const, label: `👥 Patients (${patients.length})` }, { id: "mine" as const, label: "🩺 My Tests" }, { id: "tests" as const, label: `🧪 Catalog (${tests.length})` }]).map((item) => (
+          <button key={item.id} onClick={() => setView(item.id)} className={`shrink-0 px-3.5 py-2 rounded-2xl text-[13px] font-semibold whitespace-nowrap transition-colors ${view === item.id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>{item.label}</button>
         ))}
       </div>
 

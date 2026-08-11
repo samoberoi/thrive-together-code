@@ -160,5 +160,5 @@ export default function CoachActivityRings() {
     color: "#B91C1C", hint: `${Math.min(soleusCount, soleusGoal)} / ${soleusGoal} rounds`,
   });
 
-  return <DailyActivityDial items={rings} title="Your rings — lead by example" size="lg" />;
+  return <DailyActivityDial items={rings} title="My rings" size="lg" />;
 }

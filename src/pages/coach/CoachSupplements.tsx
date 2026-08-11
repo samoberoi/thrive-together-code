@@ -427,19 +427,19 @@ export default function CoachSupplements() {
       </div>
 
       {/* Tab switcher */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 overflow-x-auto -mx-4 px-4 pb-1 no-scrollbar">
         {(["patients", "mine", "protocols"] as View[]).map((v) => (
           <button
             key={v}
             onClick={() => setView(v)}
-            className={`px-4 py-2 rounded-2xl text-sm font-semibold transition-colors ${
+            className={`shrink-0 whitespace-nowrap px-3.5 py-2 rounded-2xl text-[13px] font-semibold transition-colors ${
               view === v ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
             }`}
           >
             <span className="inline-flex items-center gap-1.5">
               {v === "patients" ? <Users className="w-4 h-4" /> : <Pill className="w-4 h-4" />}
               {v === "protocols"
-                ? `Condition Protocols (${Object.keys(conditionGroups).length})`
+                ? `Protocols (${Object.keys(conditionGroups).length})`
                 : v === "mine"
                   ? "My Supplements"
                   : `Patients (${patients.length})`}
@@ -448,7 +448,7 @@ export default function CoachSupplements() {
         ))}
       </div>
 
-      {view === "mine" && <UserSupplements />}
+      {view === "mine" && <UserSupplements simpleMode />}
 
       {/* ─── Protocols View ─── */}
       {view === "protocols" && (
