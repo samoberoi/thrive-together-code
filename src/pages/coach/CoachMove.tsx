@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import CoachPatientIdentity from "@/components/coach/CoachPatientIdentity";
 import { toast } from "sonner";
 import {
   getMovementConfig,
@@ -225,25 +226,20 @@ export default function CoachMove() {
             const hasCustom = row.progress?.custom_daily_step_goal != null;
             return (
               <div key={row.user_id} className="liquid-glass rounded-3xl p-4 sm:p-5 space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-2xl bg-primary/10 flex items-center justify-center overflow-hidden shrink-0">
-                    {row.avatar_url ? (
-                      <img src={row.avatar_url} alt="" className="w-11 h-11 rounded-2xl object-cover" />
-                    ) : (
-                      <span className="text-primary font-bold text-sm">{(row.name ?? "?")[0].toUpperCase()}</span>
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-bold text-foreground text-sm truncate">{row.name || "Unnamed"}</h3>
-                    <p className="text-[11px] text-muted-foreground truncate">{row.phone || "No phone"}</p>
-                  </div>
-                  <div className={`px-3 py-1.5 rounded-full text-[11px] font-bold flex items-center gap-1.5 ${
-                    hasCustom ? "bg-amber-500/15 text-amber-500 border border-amber-500/30" : "bg-primary/10 text-primary border border-primary/20"
-                  }`}>
-                    <Footprints className="w-3.5 h-3.5" />
-                    {effective.toLocaleString()} / day
-                  </div>
-                </div>
+                <CoachPatientIdentity
+                  name={row.name}
+                  phone={row.phone}
+                  avatarUrl={row.avatar_url}
+                  badges={
+                    <div className={`px-3 py-1.5 rounded-full text-[11px] font-bold flex items-center gap-1.5 ${
+                      hasCustom ? "bg-amber-500/15 text-amber-500 border border-amber-500/30" : "bg-primary/10 text-primary border border-primary/20"
+                    }`}>
+                      <Footprints className="w-3.5 h-3.5" />
+                      {effective.toLocaleString()} / day
+                    </div>
+                  }
+                />
+
 
                 <div className="grid grid-cols-2 gap-3 text-[11px]">
                   <div className="rounded-xl bg-muted/50 px-3 py-2">
