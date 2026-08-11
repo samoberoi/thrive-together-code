@@ -12,7 +12,7 @@ type Mode = "hub" | "reference" | "plate" | "saved";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
-export default function Diet() {
+export default function Diet({ planOverride }: { planOverride?: string } = {}) {
   const [mode, setMode] = useState<Mode>("hub");
   const { user } = useAuth();
   const [planId, setPlanId] = useState<string | null>(null);
@@ -39,7 +39,7 @@ export default function Diet() {
         .order("started_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      setPlanId((sub as any)?.plan_id ?? null);
+      setPlanId(planOverride ?? ((sub as any)?.plan_id ?? null));
       const { count } = await supabase
         .from("coach_meetings")
         .select("id", { head: true, count: "exact" })
@@ -48,7 +48,7 @@ export default function Diet() {
       setHasCompletedMeeting((count ?? 0) > 0);
       setSubLoaded(true);
     })();
-  }, [user]);
+  }, [user, planOverride]);
 
   if (mode === "reference") return <QuickFoodReference onClose={() => setMode("hub")} />;
   if (mode === "plate") return <BuildMyPlate onClose={() => setMode("hub")} />;
@@ -63,13 +63,14 @@ export default function Diet() {
     );
   }
 
-  const isPaid = planId === "active" || planId === "intensive" || planId === "pro";
+  const effectivePlan = planOverride ?? planId;
+  const isPaid = effectivePlan === "active" || effectivePlan === "intensive" || effectivePlan === "pro";
   // Package 2 (active) = user builds their own plates. Package 3 (intensive/pro) = pre-built 30-day plates.
-  const isPrebuiltPlan = planId === "intensive" || planId === "pro";
-  const isBuildYourOwnPlan = planId === "active";
-  const awaitingCoach = isPrebuiltPlan && hasCompletedMeeting === false;
+  const isPrebuiltPlan = effectivePlan === "intensive" || effectivePlan === "pro";
+  const isBuildYourOwnPlan = effectivePlan === "active" || !!planOverride;
+  const awaitingCoach = !planOverride && isPrebuiltPlan && hasCompletedMeeting === false;
   // Package 1 (free / basic) has nothing else to see — auto-load the food reference directly.
-  const isPackageOne = planId !== "active" && planId !== "intensive" && planId !== "pro";
+  const isPackageOne = effectivePlan !== "active" && effectivePlan !== "intensive" && effectivePlan !== "pro";
 
   if (isPackageOne) {
     return (

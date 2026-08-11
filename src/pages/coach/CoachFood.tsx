@@ -13,7 +13,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { getOrCreateConversation, sendMessage } from "@/lib/chatService";
 import QuickFoodReference from "@/components/diet/QuickFoodReference";
 
-type View = "patients" | "reference";
+import Diet from "@/pages/tabs/Diet";
+import { UtensilsCrossed } from "lucide-react";
+
+type View = "patients" | "reference" | "mine";
 
 
 interface PatientRow {
@@ -216,9 +219,12 @@ export default function CoachFood() {
       <div className="flex items-center gap-2 mb-4">
         <TabBtn active={view === "patients"} onClick={() => setView("patients")} icon={Users} label="Patient check-ins" />
         <TabBtn active={view === "reference"} onClick={() => setView("reference")} icon={Apple} label="Food library" />
+        <TabBtn active={view === "mine"} onClick={() => setView("mine")} icon={UtensilsCrossed} label="My Plates" />
       </div>
 
-      {view === "reference" ? (
+      {view === "mine" ? (
+        <Diet planOverride="intensive" />
+      ) : view === "reference" ? (
         <QuickFoodReference embedded />
       ) : (
         <div className="space-y-3">
