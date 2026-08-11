@@ -12,6 +12,7 @@ import {
   enableHealthBackgroundSync,
   syncTodaySteps,
 } from "@/lib/healthProvider";
+import { logTodaySteps } from "@/lib/movementUserService";
 import { logStartupEvent, reportStartupError } from "@/lib/startupDiagnostics";
 
 const ASKED_KEY = "bbdo:health_permission_asked";
@@ -38,6 +39,14 @@ function markAsked(userId: string) {
 
 let inFlight: Promise<boolean> | null = null;
 
+async function syncAndPersistSteps(userId: string) {
+  const steps = await syncTodaySteps({ allowPrompt: false });
+  if (steps == null) return false;
+  await logTodaySteps(userId, steps);
+  window.dispatchEvent(new CustomEvent("health-log-saved"));
+  return true;
+}
+
 /**
  * Prompt for health access once per user/device. Safe to call on every login.
  * `force` re-opens the sheet for an explicit user action.
@@ -50,7 +59,7 @@ export async function ensureNativeHealthPermission(
   if (!opts?.force && hasAskedHealthPermission(userId)) {
     // Already prompted before — just keep data flowing silently.
     void enableHealthBackgroundSync();
-    void syncTodaySteps().catch(() => {});
+    void syncAndPersistSteps(userId).catch(() => {});
     return true;
   }
   if (inFlight) return inFlight;
@@ -71,7 +80,7 @@ export async function ensureNativeHealthPermission(
       );
       if (result.authorized) {
         void enableHealthBackgroundSync();
-        void syncTodaySteps().catch(() => {});
+        void syncAndPersistSteps(userId).catch(() => {});
         window.dispatchEvent(new CustomEvent("health-permission-granted"));
       }
       return result.authorized;
