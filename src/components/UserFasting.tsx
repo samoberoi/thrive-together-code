@@ -203,6 +203,8 @@ export default function UserFasting({ packageKey, selfServe = false }: { package
   const [yesterdayFasting, setYesterdayFasting] = useState<FastingTracking | null>(null);
   const [loading, setLoading] = useState(true);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [showLmodPicker, setShowLmodPicker] = useState(false);
+
   const [availableProtos, setAvailableProtos] = useState<FastingProtocol[]>([]);
   const [startingProtoId, setStartingProtoId] = useState<string | null>(null);
 
