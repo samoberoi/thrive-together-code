@@ -202,7 +202,7 @@ export default function CoachSelfCheckins() {
           </div>
           <div className="grid grid-cols-2 gap-2">
             <button
-              onClick={() => logMeal("fmod")}
+              onClick={() => setMealPickerFor("fmod")}
               disabled={busy || !!fmodAt}
               className={`rounded-2xl p-3 flex items-center gap-2 text-left transition-colors disabled:opacity-100 ${
                 fmodAt ? "bg-success/10" : "bg-muted/60"
