@@ -36,6 +36,7 @@ import {
   CalendarDays,
   Scale,
   Gauge,
+  Ticket,
 } from "lucide-react";
 
 import NotificationCenter from "@/components/NotificationCenter";
@@ -77,6 +78,7 @@ const AdminPnl = lazy(() => import("./admin/AdminPnl"));
 const AdminDietTypes = lazy(() => import("./admin/AdminDietTypes"));
 const AdminBmiCategories = lazy(() => import("./admin/AdminBmiCategories"));
 const AdminOnboardingGrades = lazy(() => import("./admin/AdminOnboardingGrades"));
+const AdminCoupons = lazy(() => import("./admin/AdminCoupons"));
 
 
 import NotificationsPanel from "@/components/NotificationsPanel";
@@ -115,6 +117,7 @@ export type AdminTab =
   | "diet_types"
   | "bmi"
   | "onboarding_grades"
+  | "coupons"
   
   | "profile";
 
@@ -175,6 +178,7 @@ const navItems: NavItem[] = [
       { id: "diet_types", icon: Salad, label: "Diet Types" },
       { id: "bmi", icon: Scale, label: "BMI Categories" },
       { id: "onboarding_grades", icon: Gauge, label: "Onboarding Grading" },
+      { id: "coupons", icon: Ticket, label: "Coupon Manager" },
     ],
   },
 ];
@@ -212,6 +216,7 @@ const tabContentMap: Record<AdminTab, React.ReactNode> = {
   diet_types: <AdminDietTypes />,
   bmi: <AdminBmiCategories />,
   onboarding_grades: <AdminOnboardingGrades />,
+  coupons: <AdminCoupons />,
   
   profile: null,
 };
@@ -247,6 +252,7 @@ const adminTabs = new Set<AdminTab>([
   "diet_types",
   "bmi",
   "onboarding_grades",
+  "coupons",
   
   "profile",
 ]);
@@ -276,6 +282,7 @@ const controlCenterTabs = new Set<AdminTab>([
   "diet_types",
   "bmi",
   "onboarding_grades",
+  "coupons",
 ]);
 
 const supplementTabs = new Set<AdminTab>(["supplements"]);
