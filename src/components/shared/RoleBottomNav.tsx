@@ -6,7 +6,11 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/u
 import { AppBottomBar } from "@/components/layout/AppBottomBar";
 
 
+// Layout: [tab][tab][tab] [ + ] [tab][tab][…] — same topology as the end-user dock.
+const LEFT_SLOTS = 3;
+
 export interface RoleNavItem<TId extends string = string> {
+
   id: TId;
   icon: React.ElementType;
   label: string;
