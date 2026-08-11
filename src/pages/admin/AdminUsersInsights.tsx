@@ -376,13 +376,21 @@ export default function AdminUsersInsights() {
           transition={{ duration: 0.22 }}
           className="rounded-3xl bg-card border border-border overflow-hidden"
         >
-          <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-primary" />
-              <h3 className="font-bold text-foreground">{PLAN_META[activeTab].label} members</h3>
+          <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-border flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2 min-w-0">
+              <ShieldCheck className="w-4 h-4 text-primary shrink-0" />
+              <h3 className="font-bold text-foreground text-sm sm:text-base truncate">{PLAN_META[activeTab].label} members</h3>
             </div>
-            <span className="text-xs text-muted-foreground">{filtered.length} showing</span>
+            <div className="flex items-center gap-2 shrink-0">
+              {activeTab === "foundation" && (
+                <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-600">
+                  WhatsApp nudge only
+                </span>
+              )}
+              <span className="text-xs text-muted-foreground">{filtered.length} showing</span>
+            </div>
           </div>
+
 
           {filtered.length === 0 ? (
             <div className="py-16 text-center text-sm text-muted-foreground">No members match these filters</div>
