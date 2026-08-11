@@ -411,10 +411,10 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
                   <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/80">Recommended test</p>
                   <h5 className="text-base md:text-lg font-black leading-tight">{basicTest.product_name}</h5>
                   <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-[11px] text-white/85">
-                    {count > 0 && <span className="inline-flex items-center gap-1"><Check className="w-3 h-3" /> {count} parameters</span>}
                     <span className="inline-flex items-center gap-1"><Home className="w-3 h-3" /> Free home collection</span>
-                    <span className="inline-flex items-center gap-1"><Clock className="w-3 h-3" /> {basicTest.fasting_required ? "8–10 hr fasting" : "No fasting"}</span>
+                    <span className="inline-flex items-center gap-1"><Clock className="w-3 h-3" /> 10–11 hrs fasting</span>
                   </div>
+
                 </div>
               </div>
               <div className="flex flex-col items-start md:items-end gap-2 shrink-0">
