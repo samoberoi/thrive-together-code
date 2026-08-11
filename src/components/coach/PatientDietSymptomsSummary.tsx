@@ -28,6 +28,43 @@ const PRETTY: Record<string, string> = {
 const pretty = (s: string) =>
   PRETTY[s] || s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
+/** Basic ailments the patient declared during onboarding / profile setup. */
+function deriveAilments(profile: any): string[] {
+  if (!profile) return [];
+  const c = (profile.clinical || {}) as Record<string, any>;
+  const d = (profile.deep_profiling || {}) as Record<string, any>;
+  const out: string[] = [];
+
+  if (c.hasDiabetes) {
+    const t: Record<string, string> = {
+      type1: "Diabetes (Type 1)",
+      type2: "Diabetes (Type 2)",
+      prediabetes: "Prediabetes",
+    };
+    out.push(t[c.diabetesType] || "Diabetes");
+  }
+  if (c.hasHypertension) out.push("Hypertension");
+  if (c.hasCardiovascular) out.push("Cardiovascular condition");
+
+  const yes = (v: any) => v === "yes" || v === true;
+  if (yes(d.thyroid)) {
+    const ty = String(d.thyroidType || "").toLowerCase();
+    out.push(ty === "hypothyroid" ? "Hypothyroid" : ty === "hyperthyroid" ? "Hyperthyroid" : "Thyroid disorder");
+  }
+  if (yes(d.fattyLiver)) out.push("Fatty liver");
+  if (yes(d.pcos)) out.push("PCOS / PCOD");
+  if (yes(d.vitaminD)) out.push("Vitamin D deficiency");
+  if (yes(d.kidneyDisease)) out.push("Kidney disease");
+  if (yes(d.ironDeficiency)) out.push("Iron deficiency");
+  if (typeof d.uricAcid === "number" && d.uricAcid >= 7) out.push(`High uric acid (${d.uricAcid})`);
+
+  if (yes(d.bpMedication) && !c.hasHypertension) out.push("On BP medication");
+  if (yes(d.thyroidMedication) && !yes(d.thyroid)) out.push("On thyroid medication");
+  if (d.medications === "insulin" || d.medications === "insulin_plus") out.push("On insulin");
+
+  return out;
+}
+
 function Chips({ items, tone }: { items: string[]; tone: "blue" | "red" | "muted" | "amber" }) {
   const cls =
     tone === "blue"
