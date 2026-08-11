@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Pill, Plus, Check, X, Pause, Play, Edit2, Trash2,
-  ChevronDown, ChevronRight, Clock, Users, HeartPulse
+  ChevronDown, ChevronRight, Clock, Users, HeartPulse, Loader2
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
