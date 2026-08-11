@@ -50,10 +50,22 @@ export default function RecommendTestsDialog({ open, onOpenChange, coachId, pati
       });
   }, [open]);
 
-  const filtered = tests.filter((t) => {
-    const q = search.toLowerCase();
-    return !q || t.product_name.toLowerCase().includes(q) || t.product_code.toLowerCase().includes(q);
-  });
+  // Always show BYE BYE BASIC → PLUS → ADVANCED, then anything else alphabetically
+  const testRank = (name: string) => {
+    const n = (name || "").toUpperCase();
+    if (n.includes("BASIC")) return 0;
+    if (n.includes("PLUS")) return 1;
+    if (n.includes("ADVANCED") || n.includes("ADVANCE")) return 2;
+    return 3;
+  };
+
+  const filtered = tests
+    .filter((t) => {
+      const q = search.toLowerCase();
+      return !q || t.product_name.toLowerCase().includes(q);
+    })
+    .slice()
+    .sort((a, b) => testRank(a.product_name) - testRank(b.product_name) || a.product_name.localeCompare(b.product_name));
   const selectedCodes = Object.entries(selected).filter(([, v]) => v).map(([k]) => k);
   const selectedTests = tests.filter((t) => selected[t.product_code]);
 
@@ -123,8 +135,8 @@ export default function RecommendTestsDialog({ open, onOpenChange, coachId, pati
                   className="mt-0.5"
                 />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{t.product_name}</p>
-                  <p className="text-xs text-muted-foreground">{t.product_code}{t.category ? ` • ${t.category}` : ""}</p>
+                  <p className="text-sm font-medium text-foreground">{t.product_name}</p>
+                  <p className="text-xs text-muted-foreground">Free home collection · 10–11 hrs fasting</p>
                 </div>
               </label>
             ))}
