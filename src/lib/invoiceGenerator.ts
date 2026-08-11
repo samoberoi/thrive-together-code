@@ -24,6 +24,29 @@ function generateInvoiceNumber(sub: Subscription): string {
   return `BBDO-${y}${m}-${short}`;
 }
 
+/** Inline the logo as a data URI so the downloaded/shared HTML shows it offline. */
+async function getLogoDataUri(): Promise<string> {
+  try {
+    const absolute = new URL(logoUrl, window.location.origin).href;
+    const res = await fetch(absolute);
+    if (!res.ok) return absolute;
+    const blob = await res.blob();
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(String(reader.result));
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    try {
+      return new URL(logoUrl, window.location.origin).href;
+    } catch {
+      return logoUrl;
+    }
+  }
+}
+
+
 export async function downloadInvoice({ subscription, userName, userEmail, userPhone, userCity, healthScore, coachName }: InvoiceData) {
   const sub = subscription;
   const invoiceNo = generateInvoiceNumber(sub);
