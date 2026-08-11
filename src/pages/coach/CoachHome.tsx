@@ -225,6 +225,12 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
     if (!user) return;
     loadData();
 
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const refreshSoon = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => loadData({ silent: true }), 400);
+    };
+
     const channel = supabase
       .channel(`coach-health-alerts-${user.id}`)
       .on(
@@ -232,19 +238,42 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
         { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
         (payload) => {
           const row = payload.new as { type?: string };
-          if (row.type === "health_alert") loadData();
+          if (row.type === "health_alert") loadData({ silent: true });
         }
-      )
-      .subscribe();
+      );
+
+    // Live patient activity — any check-in updates the coach view immediately
+    for (const table of [
+      "health_logs",
+      "user_supplement_tracking",
+      "fasting_tracking",
+      "user_exercise_logs",
+      "video_progress",
+      "meal_photos",
+      "user_soleus_sessions",
+      "user_breath_sessions",
+      "user_supplement_plans",
+      "user_protocols",
+    ]) {
+      channel.on("postgres_changes", { event: "*", schema: "public", table }, refreshSoon);
+    }
+
+    channel.subscribe();
+
+    const onFocus = () => refreshSoon();
+    window.addEventListener("focus", onFocus);
 
     return () => {
+      if (timer) clearTimeout(timer);
+      window.removeEventListener("focus", onFocus);
       supabase.removeChannel(channel);
     };
   }, [user?.id]);
 
-  const loadData = async () => {
+  const loadData = async (opts?: { silent?: boolean }) => {
     if (!user) return;
-    setLoading(true);
+    if (!opts?.silent) setLoading(true);
+
 
     const coachData = await resolveCurrentCoach(user);
 
