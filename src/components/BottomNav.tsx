@@ -172,6 +172,7 @@ export default function BottomNav({
             <div className="grid grid-cols-3 gap-2">
               {allowed.map((id) => renderTab(id, { inSheet: true }))}
             </div>
+            <ExpertConnectBar className="mt-3" context="the app" />
           </div>
         </DrawerContent>
       </Drawer>

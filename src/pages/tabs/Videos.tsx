@@ -154,6 +154,9 @@ export default function Videos({ packageKey }: VideosProps = {}) {
 
   return (
     <div className="flex flex-col gap-4 pt-4 md:pt-6 pb-6">
+      <div className="mx-5">
+        <ExpertConnectBar context="yoga" />
+      </div>
 
       {/* HERO — BBDO Daily Breath Protocol (big, prominent) */}
       <div className="mx-5">

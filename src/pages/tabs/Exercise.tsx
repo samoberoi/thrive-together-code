@@ -499,6 +499,7 @@ export default function ExerciseTab({ packageKey }: Props) {
 
   return (
     <div className="theme-exercise px-4 md:px-6 pt-3 md:pt-8 pb-10 space-y-4">
+      <ExpertConnectBar context="my training" />
       {/* HERO — BBDO Soleus Push-Ups (matches yoga hero look & feel) */}
       <motion.button
         onClick={() => setSoleusOpen(true)}
