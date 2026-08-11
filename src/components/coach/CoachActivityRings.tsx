@@ -7,7 +7,7 @@ import { useBreathSessionsToday } from "@/hooks/useBreathSessionsToday";
 import { useSoleusSessionsToday } from "@/hooks/useSoleusSessionsToday";
 import { useDailyYogaMinutes } from "@/hooks/useAppSettings";
 import { getTodayYogaMinutes } from "@/lib/yogaProgressService";
-import { fetchMovementOverview } from "@/lib/movementUserService";
+import { fetchMovementOverview, COACH_MIN_DAILY_STEPS } from "@/lib/movementUserService";
 import { fetchProfile } from "@/lib/profileService";
 import { fetchUserProtocol, fetchTrackingForUser } from "@/lib/fastingService";
 
