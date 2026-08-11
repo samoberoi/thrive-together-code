@@ -90,9 +90,30 @@ export async function requestHealthConnectAuthorization(): Promise<HealthConnect
   try {
     const status = await HealthConnect.checkAvailability();
     if (status.availability === "NotSupported") return getHealthConnectPermissionState();
+    if (status.availability === "NotInstalled") return getHealthConnectPermissionState();
 
     logStartupEvent("health-connect authorization requested");
-    const result = await HealthConnect.requestHealthPermissions(readOptions);
+    // Ask for Steps first (exactly what the patient sync flow does). Requesting
+    // every record type at once can abort the Health Connect permission
+    // activity on some Android builds and take the app down with it.
+    const stepsOnly = { read: ["Steps"] as RecordType[], write: [] as RecordType[] };
+    let result: any = null;
+    try {
+      result = await HealthConnect.requestHealthPermissions(stepsOnly);
+    } catch (e) {
+      reportStartupError("health-connect steps permission request failed", e);
+    }
+    // Then top up the remaining vitals separately; a failure here must never
+    // break (or crash) the steps flow that already succeeded.
+    try {
+      const rest = await HealthConnect.checkHealthPermissions(readOptions);
+      if (!rest?.hasAllPermissions) await HealthConnect.requestHealthPermissions(readOptions);
+    } catch (e) {
+      reportStartupError("health-connect extended permission request failed", e);
+    }
+    if (!result?.hasAllPermissions) {
+      try { result = await HealthConnect.checkHealthPermissions(stepsOnly); } catch { /* ignore */ }
+    }
     logStartupEvent("health-connect authorization result", result?.hasAllPermissions ? "granted" : "denied");
 
     if (result?.hasAllPermissions) {
