@@ -28,7 +28,9 @@ const CoachInbox = lazy(() => import("@/components/chat/CoachInbox"));
 import NotificationsPanel from "@/components/NotificationsPanel";
 import LogFAB from "@/components/LogFAB";
 import { useAttentionCounts } from "@/hooks/useAttentionCounts";
+import { useCoachModuleNavigation } from "@/lib/coachNav";
 import AttentionBadge from "@/components/attention/AttentionBadge";
+
 import { RoleBottomNav, RoleTopBar, type RoleNavItem } from "@/components/shared";
 
 export type CoachTab = "home" | "patients" | "meetings" | "requests" | "messages" | "community" | "fasting" | "food" | "supplements" | "move" | "train" | "yoga" | "labtests" | "profile";
