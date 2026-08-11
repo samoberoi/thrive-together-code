@@ -15,7 +15,10 @@ import {
 import { logTodaySteps } from "@/lib/movementUserService";
 import { logStartupEvent, reportStartupError } from "@/lib/startupDiagnostics";
 
-const ASKED_KEY = "bbdo:health_permission_asked";
+// v2 deliberately invalidates the old marker. The previous flow wrote its
+// marker even when Android failed to display Health Connect because another
+// permission activity (usually push) was still open.
+const ASKED_KEY = "bbdo:health_permission_asked_v2";
 
 function askedKey(userId: string) {
   return `${ASKED_KEY}:${userId}`;
@@ -56,17 +59,22 @@ export async function ensureNativeHealthPermission(
   opts?: { force?: boolean },
 ): Promise<boolean> {
   if (!canUseNativeHealth()) return false;
-  if (!opts?.force && hasAskedHealthPermission(userId)) {
-    // Already prompted before — just keep data flowing silently.
-    void enableHealthBackgroundSync();
-    void syncAndPersistSteps(userId).catch(() => {});
-    return true;
-  }
   if (inFlight) return inFlight;
 
   inFlight = (async () => {
     try {
       const state = await getNativeHealthPermissionState();
+      if (state.authorized) {
+        markAsked(userId);
+        void enableHealthBackgroundSync();
+        void syncAndPersistSteps(userId).catch(() => {});
+        return true;
+      }
+      if (!opts?.force && hasAskedHealthPermission(userId)) {
+        // A real denial is respected. Crucially, merely having an old marker is
+        // no longer treated as proof that health access is authorized.
+        return false;
+      }
       if (!state.authorized && !state.canRequest && !opts?.force) {
         markAsked(userId);
         return false;
@@ -86,7 +94,8 @@ export async function ensureNativeHealthPermission(
       return result.authorized;
     } catch (error) {
       reportStartupError("health permission bootstrap failed", error);
-      markAsked(userId);
+      // Do not poison future launches when Android failed before showing the
+      // permission activity. Only a completed permission result is marked.
       return false;
     } finally {
       inFlight = null;

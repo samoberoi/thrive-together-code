@@ -25,6 +25,11 @@ const READ_TYPES: RecordType[] = [
   "BloodGlucose",
 ] ;
 
+const STEPS_READ_OPTIONS = {
+  read: ["Steps"] as RecordType[],
+  write: [] as RecordType[],
+};
+
 type HealthConnectPermissionState = {
   availability: HealthConnectAvailability | "Unknown";
   authorized: boolean;
@@ -63,7 +68,9 @@ export async function getHealthConnectPermissionState(): Promise<HealthConnectPe
       };
     }
 
-    const perms = await HealthConnect.checkHealthPermissions(readOptions);
+    // Startup permission state is intentionally Steps-only. Requiring every
+    // optional vital here made a granted Steps permission look unauthorized.
+    const perms = await HealthConnect.checkHealthPermissions(STEPS_READ_OPTIONS);
     const authorized = !!perms?.hasAllPermissions;
     return {
       availability: status.availability,
@@ -96,23 +103,14 @@ export async function requestHealthConnectAuthorization(): Promise<HealthConnect
     // Ask for Steps first (exactly what the patient sync flow does). Requesting
     // every record type at once can abort the Health Connect permission
     // activity on some Android builds and take the app down with it.
-    const stepsOnly = { read: ["Steps"] as RecordType[], write: [] as RecordType[] };
     let result: any = null;
     try {
-      result = await HealthConnect.requestHealthPermissions(stepsOnly);
+      result = await HealthConnect.requestHealthPermissions(STEPS_READ_OPTIONS);
     } catch (e) {
       reportStartupError("health-connect steps permission request failed", e);
     }
-    // Then top up the remaining vitals separately; a failure here must never
-    // break (or crash) the steps flow that already succeeded.
-    try {
-      const rest = await HealthConnect.checkHealthPermissions(readOptions);
-      if (!rest?.hasAllPermissions) await HealthConnect.requestHealthPermissions(readOptions);
-    } catch (e) {
-      reportStartupError("health-connect extended permission request failed", e);
-    }
     if (!result?.hasAllPermissions) {
-      try { result = await HealthConnect.checkHealthPermissions(stepsOnly); } catch { /* ignore */ }
+      try { result = await HealthConnect.checkHealthPermissions(STEPS_READ_OPTIONS); } catch { /* ignore */ }
     }
     logStartupEvent("health-connect authorization result", result?.hasAllPermissions ? "granted" : "denied");
 
@@ -192,15 +190,14 @@ async function ensureStepsPermission(allowPrompt = true): Promise<void> {
   if (status.availability === "NotInstalled") {
     throw new Error("Install or update Health Connect, then allow step permissions.");
   }
-  const stepsOnly = { read: ["Steps"] as RecordType[], write: [] as RecordType[] };
-  const perms = await HealthConnect.checkHealthPermissions(stepsOnly);
+  const perms = await HealthConnect.checkHealthPermissions(STEPS_READ_OPTIONS);
   if (perms?.hasAllPermissions) return;
   if (!allowPrompt) {
     // Never open the system permission screen from a background/auto sync —
     // it steals window focus and causes the status bar to flicker in a loop.
     throw new Error("Allow the Steps permission in Health Connect to sync your steps.");
   }
-  const requested = await HealthConnect.requestHealthPermissions(stepsOnly);
+  const requested = await HealthConnect.requestHealthPermissions(STEPS_READ_OPTIONS);
   if (!requested?.hasAllPermissions) {
     throw new Error("Allow the Steps permission in Health Connect to sync your steps.");
   }

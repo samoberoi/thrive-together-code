@@ -196,13 +196,22 @@ function SubscriptionGate({ children }: { children: ReactNode }) {
 function GlobalRealtimeAlerts() {
   const { user } = useAuth();
 
-  // Ask for Apple Health / Health Connect access right after login (all roles).
+  // Android only allows one permission activity to own the foreground at a
+  // time. Run health first, then push, for every role through this one pipeline.
   useEffect(() => {
     if (!user) return;
+    let cancelled = false;
     const id = window.setTimeout(() => {
-      void ensureNativeHealthPermission(user.id);
-    }, 1200);
-    return () => window.clearTimeout(id);
+      void (async () => {
+        await ensureNativeHealthPermission(user.id);
+        if (cancelled || !isNativePushSupported()) return;
+        await registerNativePush(user.id);
+      })();
+    }, 800);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(id);
+    };
   }, [user]);
 
 

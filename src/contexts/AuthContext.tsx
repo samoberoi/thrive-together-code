@@ -4,7 +4,6 @@ import type { Session, User } from "@supabase/supabase-js";
 import { logAudit } from "@/lib/auditLog";
 import { clearUser } from "@/lib/userStore";
 // Welcome notification is triggered from Home dashboard, not on auth events.
-import { registerNativePush, isNativePushSupported } from "@/lib/nativePush";
 import {
   clearNativePersistedAuthState,
   getNativePersistenceDiagnostics,
@@ -19,15 +18,6 @@ import { logStartupEvent, reportStartupError } from "@/lib/startupDiagnostics";
 
 export const EXPLICIT_LOGOUT_KEY = "bb_explicit_logout";
 let existingSessionRestorePromise: Promise<Session | null> | null = null;
-
-function scheduleNativePushRegistration(userId: string, delayMs = 800) {
-  if (!isNativePushSupported()) return;
-  window.setTimeout(() => {
-    void registerNativePush(userId).catch((error) => {
-      console.warn("registerNativePush failed", error);
-    });
-  }, delayMs);
-}
 
 export function clearPersistedAuthState(markLoggedOut = true) {
   try {
@@ -232,12 +222,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // is greeted when they actually land on the dashboard.
         }
 
-        // Register for native push (APNs / FCM) whenever a native session is
-        // restored for a different user, not only on a fresh SIGNED_IN event.
-        // Existing iPhone installs often restore a session after rebuild/sync.
-        if (newUid && previousUid !== newUid) {
-          scheduleNativePushRegistration(newUid);
-        }
         prevUserId.current = newUid;
       }
     );
@@ -277,13 +261,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       setReady(true);
       logStartupEvent("auth provider ready", session?.user?.id || "no-session");
-      const uid = session?.user?.id;
-      if (uid) {
-        // Welcome notification is triggered from the Home dashboard on landing,
-        // not on session restore.
-        scheduleNativePushRegistration(uid, 900);
-      }
-
     })().catch((error) => {
       reportStartupError("Initial auth restore failed", error);
       applySession(null);
