@@ -50,6 +50,8 @@ interface PatientSummary {
   hasSuppPlan: boolean;
   activities: Record<ActivityKey, boolean>;
   applicable: Record<ActivityKey, boolean>;
+  progress?: Partial<Record<ActivityKey, { text: string; ratio: number }>>;
+
   doneCount: number;
   applicableCount: number;
   onTrack: boolean;
