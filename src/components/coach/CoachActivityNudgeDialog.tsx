@@ -160,9 +160,25 @@ export default function CoachActivityNudgeDialog({
                         <span className="text-primary font-bold text-xs">{(p.name ?? "?")[0].toUpperCase()}</span>
                       )}
                     </div>
-                    <p className="flex-1 min-w-0 text-foreground font-semibold text-sm truncate">
-                      {p.name ?? "Patient"}
-                    </p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-foreground font-semibold text-sm truncate">
+                        {p.name ?? "Patient"}
+                      </p>
+                      {p.progress && (
+                        <div className="mt-1 flex items-center gap-1.5">
+                          <div className="h-1 w-16 rounded-full bg-muted overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-primary"
+                              style={{ width: `${Math.round((p.ratio ?? 0) * 100)}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] font-semibold text-muted-foreground truncate">
+                            {p.progress}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
                     <button
                       onClick={() => nudgeOne(p)}
                       disabled={nudging === p.user_id}
