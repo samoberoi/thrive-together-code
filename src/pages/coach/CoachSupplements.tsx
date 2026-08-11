@@ -536,82 +536,77 @@ export default function CoachSupplements() {
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                 className="liquid-glass rounded-3xl p-4 sm:p-5"
               >
-                {/* Compact header row */}
-                <div className="flex items-center justify-between gap-3 flex-wrap">
-                  <button
-                    onClick={() => setExpandedPatient(isExpanded && !isAssigning && !isEditing && !isAdding ? null : patient.user_id)}
-                    className="flex items-center gap-3 flex-1 min-w-0 text-left"
-                  >
-                    <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center overflow-hidden shrink-0">
-                      {patient.avatar_url ? (
-                        <img src={patient.avatar_url} alt="" className="w-10 h-10 rounded-2xl object-cover" />
+                {/* Header: full name + full phone, badges & actions below */}
+                <CoachPatientIdentity
+                  name={patient.name}
+                  phone={patient.phone}
+                  avatarUrl={patient.avatar_url}
+                  meta={plan ? <>{items.length} supplements · {plan.plan_name}</> : null}
+                  badges={
+                    <>
+                      {plan ? (
+                        <Badge className={`text-[11px] ${
+                          isPaused ? "bg-amber-500/15 text-amber-500 border-amber-500/20" :
+                          compliance >= 80 ? "bg-primary/15 text-primary border-primary/20" :
+                          compliance >= 50 ? "bg-amber-500/15 text-amber-500 border-amber-500/20" :
+                          "bg-destructive/15 text-destructive border-destructive/20"
+                        }`} variant="outline">
+                          {isPaused ? "Paused" : `${compliance}% today`}
+                        </Badge>
                       ) : (
-                        <span className="text-primary font-bold text-sm">{(patient.name ?? "?")[0].toUpperCase()}</span>
+                        <Badge variant="outline" className="text-[11px] border-muted-foreground/30 text-muted-foreground">No plan</Badge>
                       )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <h3 className="font-bold text-foreground text-sm truncate">{patient.name || "Unnamed"}</h3>
-                      <p className="text-[10px] text-muted-foreground truncate">
-                        {patient.phone}
-                        {plan && <> · <span className="text-foreground/70">{items.length} supp · {plan.plan_name}</span></>}
-                      </p>
-                    </div>
-                    {plan ? (
-                      <Badge className={`text-[10px] shrink-0 ${
-                        isPaused ? "bg-amber-500/15 text-amber-500 border-amber-500/20" :
-                        compliance >= 80 ? "bg-primary/15 text-primary border-primary/20" :
-                        compliance >= 50 ? "bg-amber-500/15 text-amber-500 border-amber-500/20" :
-                        "bg-destructive/15 text-destructive border-destructive/20"
-                      }`} variant="outline">
-                        {isPaused ? "Paused" : `${compliance}% today`}
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-[10px] border-muted-foreground/30 text-muted-foreground shrink-0">No Plan</Badge>
-                    )}
-                    <ChevronDown className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
-                  </button>
-
-                  {/* Inline action buttons */}
-                  <div className="flex items-center gap-2 shrink-0">
-                    {!plan && !isAssigning && (
                       <button
-                        onClick={(e) => { e.stopPropagation(); setAssigningPatient(patient.user_id); setSelectedRules(new Set()); setRuleDurations({}); }}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-primary text-primary-foreground text-xs font-semibold"
+                        onClick={() => setExpandedPatient(isExpanded && !isAssigning && !isEditing && !isAdding ? null : patient.user_id)}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-muted-foreground px-2 py-1 rounded-lg bg-muted/60"
                       >
-                        <Plus className="w-3.5 h-3.5" /> Assign
+                        {isExpanded ? "Hide" : "Details"}
+                        <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
                       </button>
-                    )}
-                    {plan && !isEditing && !isAdding && !isAssigning && (
-                      <>
+                    </>
+                  }
+                  actions={
+                    <>
+                      {!plan && !isAssigning && (
                         <button
-                          onClick={(e) => { e.stopPropagation(); setEditingPatient(patient.user_id); setExpandedPatient(patient.user_id); }}
-                          className="w-9 h-9 flex items-center justify-center rounded-xl bg-primary/10 text-primary"
-                          aria-label="Edit plan"
+                          onClick={(e) => { e.stopPropagation(); setAssigningPatient(patient.user_id); setSelectedRules(new Set()); setRuleDurations({}); }}
+                          className="flex items-center gap-1 px-3.5 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold"
                         >
-                          <Edit2 className="w-4 h-4" />
+                          <Plus className="w-3.5 h-3.5" /> Assign
                         </button>
-                        {plan.status === "active" && (
+                      )}
+                      {plan && !isEditing && !isAdding && !isAssigning && (
+                        <>
                           <button
-                            onClick={(e) => { e.stopPropagation(); handleStatusChange(plan, "paused"); }}
-                            className="w-9 h-9 flex items-center justify-center rounded-xl bg-amber-500/10 text-amber-500"
-                            aria-label="Pause plan"
-                          >
-                            <Pause className="w-4 h-4" />
-                          </button>
-                        )}
-                        {plan.status === "paused" && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleStatusChange(plan, "active"); }}
+                            onClick={(e) => { e.stopPropagation(); setEditingPatient(patient.user_id); setExpandedPatient(patient.user_id); }}
                             className="w-9 h-9 flex items-center justify-center rounded-xl bg-primary/10 text-primary"
-                            aria-label="Resume plan"
+                            aria-label="Edit plan"
                           >
-                            <Play className="w-4 h-4" />
+                            <Edit2 className="w-4 h-4" />
                           </button>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </div>
+                          {plan.status === "active" && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleStatusChange(plan, "paused"); }}
+                              className="w-9 h-9 flex items-center justify-center rounded-xl bg-amber-500/10 text-amber-500"
+                              aria-label="Pause plan"
+                            >
+                              <Pause className="w-4 h-4" />
+                            </button>
+                          )}
+                          {plan.status === "paused" && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleStatusChange(plan, "active"); }}
+                              className="w-9 h-9 flex items-center justify-center rounded-xl bg-primary/10 text-primary"
+                              aria-label="Resume plan"
+                            >
+                              <Play className="w-4 h-4" />
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </>
+                  }
+                />
 
                 {/* Expanded body */}
                 {isExpanded && (
