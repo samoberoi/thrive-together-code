@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Loader2, Salad, ShieldAlert, Stethoscope } from "lucide-react";
+import { HeartPulse, Loader2, Salad, ShieldAlert, Stethoscope } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { loadDietProfile } from "@/lib/dietProfileService";
 import { fetchSymptomCatalog, loadUserSymptoms } from "@/lib/symptomsService";
@@ -28,12 +28,51 @@ const PRETTY: Record<string, string> = {
 const pretty = (s: string) =>
   PRETTY[s] || s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
-function Chips({ items, tone }: { items: string[]; tone: "blue" | "red" | "muted" }) {
+/** Basic ailments the patient declared during onboarding / profile setup. */
+function deriveAilments(profile: any): string[] {
+  if (!profile) return [];
+  const c = (profile.clinical || {}) as Record<string, any>;
+  const d = (profile.deep_profiling || {}) as Record<string, any>;
+  const out: string[] = [];
+
+  if (c.hasDiabetes) {
+    const t: Record<string, string> = {
+      type1: "Diabetes (Type 1)",
+      type2: "Diabetes (Type 2)",
+      prediabetes: "Prediabetes",
+    };
+    out.push(t[c.diabetesType] || "Diabetes");
+  }
+  if (c.hasHypertension) out.push("Hypertension");
+  if (c.hasCardiovascular) out.push("Cardiovascular condition");
+
+  const yes = (v: any) => v === "yes" || v === true;
+  if (yes(d.thyroid)) {
+    const ty = String(d.thyroidType || "").toLowerCase();
+    out.push(ty === "hypothyroid" ? "Hypothyroid" : ty === "hyperthyroid" ? "Hyperthyroid" : "Thyroid disorder");
+  }
+  if (yes(d.fattyLiver)) out.push("Fatty liver");
+  if (yes(d.pcos)) out.push("PCOS / PCOD");
+  if (yes(d.vitaminD)) out.push("Vitamin D deficiency");
+  if (yes(d.kidneyDisease)) out.push("Kidney disease");
+  if (yes(d.ironDeficiency)) out.push("Iron deficiency");
+  if (typeof d.uricAcid === "number" && d.uricAcid >= 7) out.push(`High uric acid (${d.uricAcid})`);
+
+  if (yes(d.bpMedication) && !c.hasHypertension) out.push("On BP medication");
+  if (yes(d.thyroidMedication) && !yes(d.thyroid)) out.push("On thyroid medication");
+  if (d.medications === "insulin" || d.medications === "insulin_plus") out.push("On insulin");
+
+  return out;
+}
+
+function Chips({ items, tone }: { items: string[]; tone: "blue" | "red" | "muted" | "amber" }) {
   const cls =
     tone === "blue"
       ? "text-[var(--bbdo-blue)] bg-[var(--bbdo-blue)]/10"
       : tone === "red"
       ? "text-destructive bg-destructive/10"
+      : tone === "amber"
+      ? "text-warning bg-warning/10"
       : "text-foreground bg-muted";
   return (
     <div className="flex flex-wrap gap-1.5 mt-1.5">
@@ -57,13 +96,18 @@ export default function PatientDietSymptomsSummary({ userId, refreshKey }: Props
   const [allergens, setAllergens] = useState<string[]>([]);
   const [symptoms, setSymptoms] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
+  const [ailments, setAilments] = useState<string[]>([]);
 
   const load = useCallback(async () => {
-    const [diet, sym, catalog] = await Promise.all([
+    const [diet, sym, catalog, prof] = await Promise.all([
       loadDietProfile(userId),
       loadUserSymptoms(userId),
       fetchSymptomCatalog(),
+      supabase.from("profiles").select("clinical,deep_profiling,gender").eq("user_id", userId).maybeSingle(),
     ]);
+
+    setAilments(deriveAilments((prof as any)?.data));
+
 
     const prefsArr = ((diet as any)?.diet_preferences as string[] | null) || [];
     const single = diet?.diet_preference ? [diet.diet_preference] : [];
@@ -105,6 +149,7 @@ export default function PatientDietSymptomsSummary({ userId, refreshKey }: Props
       .channel(`patient-summary-${userId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "user_diet_profiles", filter: `user_id=eq.${userId}` }, () => load())
       .on("postgres_changes", { event: "*", schema: "public", table: "user_symptoms", filter: `user_id=eq.${userId}` }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "profiles", filter: `user_id=eq.${userId}` }, () => load())
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
@@ -119,8 +164,9 @@ export default function PatientDietSymptomsSummary({ userId, refreshKey }: Props
       transition={{ delay: 0.07 }}
     >
       <p className="text-xs font-bold tracking-wider uppercase text-muted-foreground mb-3">
-        Diet, allergies &amp; symptoms
+        Diet, ailments &amp; symptoms
       </p>
+
 
       {loading ? (
         <div className="flex items-center justify-center py-6">
@@ -155,6 +201,23 @@ export default function PatientDietSymptomsSummary({ userId, refreshKey }: Props
               )}
             </div>
           </div>
+
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-xl bg-warning/10 flex items-center justify-center shrink-0">
+              <HeartPulse className="w-4 h-4 text-warning" strokeWidth={2} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-black text-foreground leading-tight">
+                Ailments{ailments.length ? ` · ${ailments.length}` : ""}
+              </p>
+              {ailments.length ? (
+                <Chips items={ailments} tone="amber" />
+              ) : (
+                <p className="text-xs text-muted-foreground mt-0.5">None reported</p>
+              )}
+            </div>
+          </div>
+
 
           <div className="flex items-start gap-3">
             <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center shrink-0">
