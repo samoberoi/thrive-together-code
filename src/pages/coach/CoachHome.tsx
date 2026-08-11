@@ -187,7 +187,13 @@ function evaluateAlerts(patients: PatientSummary[], healthNotifications: CoachHe
 
 const ALL_ACTIVITIES: ActivityKey[] = [
   "glucose", "bp", "weight", "fasting", "supplements", "exercise", "yoga", "diet",
+  "water", "soleus", "breath",
 ];
+
+const WATER_GLASS_GOAL = 8;
+const SOLEUS_GOAL = 3;
+const BREATH_GOAL = 4;
+
 
 export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTests }: { onViewPatient?: () => void; onViewFasting?: () => void; onViewMessages?: () => void; onViewLabTests?: () => void }) {
   const { user } = useAuth();
