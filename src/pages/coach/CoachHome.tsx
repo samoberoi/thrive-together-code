@@ -360,11 +360,26 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
     const glucoseSet = new Set<string>();
     const bpSet = new Set<string>();
     const weightSet = new Set<string>();
+    const waterByUser = new Map<string, number>();
     (hLogsToday as any[] | null)?.forEach((l) => {
       if (l.log_type === "diabetes" && (l.glucose_morning != null || l.glucose_evening != null)) glucoseSet.add(l.user_id);
       if (l.log_type === "bp" && l.bp_systolic != null) bpSet.add(l.user_id);
       if (l.log_type === "weight" && l.weight_kg != null) weightSet.add(l.user_id);
+      // Water glasses are stored as deltas in weight_kg on log_type "water"
+      if (l.log_type === "water" && l.weight_kg != null) {
+        waterByUser.set(l.user_id, (waterByUser.get(l.user_id) ?? 0) + Number(l.weight_kg));
+      }
     });
+
+    const soleusByUser = new Map<string, number>();
+    ((soleusRows as any[]) ?? []).forEach((r) => {
+      soleusByUser.set(r.user_id, (soleusByUser.get(r.user_id) ?? 0) + 1);
+    });
+    const breathByUser = new Map<string, number>();
+    ((breathRows as any[]) ?? []).forEach((r) => {
+      breathByUser.set(r.user_id, (breathByUser.get(r.user_id) ?? 0) + 1);
+    });
+
 
     const fastingSet = new Set<string>();
     (fastTodayRows as any[] | null)?.forEach((r) => {
