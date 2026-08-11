@@ -285,7 +285,10 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
       { data: latestBp },
       { data: recentWeights },
       { data: recentCoachHealthAlerts },
+      { data: soleusRows },
+      { data: breathRows },
     ] = await Promise.all([
+
       supabase.from("profiles" as any)
         .select("user_id, name, phone, avatar_url, age, gender, weight, bmi, bmi_category, initial_health_score, assessment")
         .in("user_id", patientIds),
