@@ -20,6 +20,8 @@ import {
 import { calculateStreak, fetchBadgeDefinitions, fetchUserBadges, type FastingBadge } from "@/lib/streakService";
 
 import UserFasting from "@/components/UserFasting";
+import { useCoachPatientFocus } from "@/lib/coachNav";
+
 
 type View = "protocols" | "patients" | "mine";
 
@@ -39,6 +41,15 @@ export default function CoachFasting() {
   const [loading, setLoading] = useState(true);
   const [patientSearch, setPatientSearch] = useState("");
   const [expandedPatient, setExpandedPatient] = useState<string | null>(null);
+
+  // "Manage" from a patient profile lands directly on that patient's detail.
+  useCoachPatientFocus("fasting", (patientId) => {
+    setView("patients");
+    setPatientSearch("");
+    setExpandedPatient(patientId);
+  });
+
+
 
   useEffect(() => {
     if (!user) return;

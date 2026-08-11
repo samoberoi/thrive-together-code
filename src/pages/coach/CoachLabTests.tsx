@@ -11,6 +11,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { LabTestParametersDialog } from "@/components/lab/LabTestParametersDialog";
 import { patientPriceFor, useLabTestMarkup } from "@/lib/labTestMarkup";
+import { useCoachPatientFocus } from "@/lib/coachNav";
+
 import { createNotification } from "@/lib/notificationService";
 import LabOrderDetails from "@/components/lab/LabOrderDetails";
 import LabHistorySection from "@/components/lab/LabHistorySection";
@@ -126,6 +128,15 @@ export default function CoachLabTests() {
   const [openInvestigation, setOpenInvestigation] = useState<Record<string, boolean>>({});
   const [expandedPatient, setExpandedPatient] = useState<string | null>(null);
   const markupPct = useLabTestMarkup();
+
+  // "Manage" from a patient profile lands directly on that patient's detail.
+  useCoachPatientFocus("labtests", (patientId) => {
+    setView("patients");
+    setPatientSearch("");
+    setExpandedPatient(patientId);
+  });
+
+
 
   const [extReports, setExtReports] = useState<Record<string, ExternalLabReport[]>>({});
   const [markerRevision, setMarkerRevision] = useState(0);

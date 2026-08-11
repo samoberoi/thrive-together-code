@@ -9,6 +9,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import CoachPatientIdentity from "@/components/coach/CoachPatientIdentity";
+import { useCoachPatientFocus } from "@/lib/coachNav";
+
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import {
   fetchSupplements, fetchConditionRules, fetchUserPlan, fetchPlanItems,
@@ -58,6 +60,14 @@ export default function CoachSupplements() {
   // Submit lock — prevents double-tap duplicate inserts
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
+
+  // "Manage" from a patient profile lands directly on that patient's detail.
+  useCoachPatientFocus("supplements", (patientId) => {
+    setView("patients");
+    setPatientSearch("");
+    setExpandedPatient(patientId);
+  });
+
 
   useEffect(() => { if (user) loadData(); }, [user]);
 
