@@ -12,7 +12,7 @@ import CoachPatientIdentity from "@/components/coach/CoachPatientIdentity";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import {
   fetchSupplements, fetchConditionRules, fetchUserPlan, fetchPlanItems,
-  createUserPlan, addPlanItem, removePlanItem, updatePlanItem, updateUserPlanStatus, fetchTrackingHistory,
+  createUserPlan, addPlanItem, addPlanItems, removePlanItem, updatePlanItem, updateUserPlanStatus, fetchTrackingHistory,
   CONDITION_LABELS, CONDITION_ICONS, CONDITION_COLORS, SEVERITY_COLORS,
   CATEGORY_COLORS, CATEGORY_BG, TIMING_ICONS,
   type Supplement, type ConditionRule, type UserSupplementPlan, type PlanItem, type SupplementTracking
