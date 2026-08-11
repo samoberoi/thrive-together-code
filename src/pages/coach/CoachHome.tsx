@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import {
   Users, Star, Activity, AlertTriangle, TrendingUp, TrendingDown, Minus,
   Heart, UserCheck, Loader2, Bell,
-  CalendarClock, Plus, Package, Send, CheckCircle2, Search, Percent, FlaskConical, FileText,
+  CalendarClock, Clock, Plus, Package, Send, CheckCircle2, Search, Percent, FlaskConical, FileText,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -493,7 +493,12 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
         .filter((m) => m.status === "completed" || (m.scheduled_at ?? "") >= graceIso)
         .map((m) => m.user_id),
     );
-    setNeedsScheduling(enriched.filter((p) => !handledIds.has(p.user_id)));
+    // Longest-waiting patient first (SLA), newest at the bottom.
+    setNeedsScheduling(
+      enriched
+        .filter((p) => !handledIds.has(p.user_id))
+        .sort((a, b) => new Date(a.assigned_at).getTime() - new Date(b.assigned_at).getTime()),
+    );
 
     // Upcoming (not yet lapsed) meetings, so newly booked patients stay visible on Home.
     const nameById2 = new Map(enriched.map((p) => [p.user_id, p.name || "Patient"]));
@@ -746,13 +751,38 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
             <p className="text-muted-foreground text-[10px] font-medium mt-1 truncate">Sessions</p>
           </div>
         </button>
+        <button
+          onClick={() =>
+            document.getElementById("coach-pending-meetings")?.scrollIntoView({ behavior: "smooth", block: "start" })
+          }
+          className={`col-span-2 rounded-2xl p-2 transition-colors min-w-0 h-[66px] flex items-center gap-2 text-left ${
+            needsScheduling.length > 0
+              ? "bg-destructive/10 ring-1 ring-destructive/25 hover:bg-destructive/15"
+              : "liquid-glass hover:bg-accent/40"
+          }`}
+          title="Patients awaiting a scheduled meeting"
+        >
+          <CalendarClock
+            className={`w-5 h-5 shrink-0 ${needsScheduling.length > 0 ? "text-destructive" : "text-muted-foreground"}`}
+            strokeWidth={1.8}
+          />
+          <div className="min-w-0">
+            <p className={`stat-number text-lg leading-none ${needsScheduling.length > 0 ? "text-destructive" : "text-foreground"}`}>
+              {needsScheduling.length}
+            </p>
+            <p className={`text-[10px] font-medium mt-1 truncate ${needsScheduling.length > 0 ? "text-destructive/80" : "text-muted-foreground"}`}>
+              Pending meetings
+            </p>
+          </div>
+        </button>
       </motion.div>
 
 
-      {/* Meetings to Schedule — surfaced right below the KPI grid */}
+      {/* Meetings to Schedule — SLA ordered, longest wait first */}
       {needsScheduling.length > 0 && (
         <motion.div
-          className="liquid-glass rounded-3xl p-5 ring-1 ring-primary/15"
+          id="coach-pending-meetings"
+          className="liquid-glass rounded-3xl p-5 ring-1 ring-primary/15 scroll-mt-20"
           initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}
         >
           <div className="flex items-center gap-3 mb-4">
@@ -761,23 +791,22 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">Action needed</p>
-              <h3 className="text-base font-black text-foreground leading-tight mt-0.5 no-break">Meetings require scheduling</h3>
+              <h3 className="text-base font-black text-foreground leading-tight mt-0.5 no-break">Pending meetings</h3>
             </div>
-            <span className="text-[10px] font-black uppercase tracking-[0.12em] text-primary bg-primary/10 px-2.5 py-1 rounded-full whitespace-nowrap no-break">
+            <span className="text-[10px] font-black uppercase tracking-[0.12em] text-destructive bg-destructive/10 px-2.5 py-1 rounded-full whitespace-nowrap no-break">
               {needsScheduling.length} pending
             </span>
           </div>
           <div className="space-y-2">
-            {needsScheduling.slice(0, 6).map((p) => {
-              const daysLeft = p.planExpires
-                ? Math.max(0, Math.ceil((new Date(p.planExpires).getTime() - Date.now()) / 86400000))
-                : null;
-              const urgency = daysLeft === null ? null : daysLeft <= 7 ? "danger" : daysLeft <= 21 ? "warn" : "ok";
+            {needsScheduling.slice(0, 8).map((p) => {
+              const hours = Math.max(0, Math.floor((Date.now() - new Date(p.assigned_at).getTime()) / 3600000));
+              const waitLabel =
+                hours < 1 ? "Just now" : hours < 24 ? `${hours}+ hrs waiting` : `${Math.floor(hours / 24)}+ days waiting`;
+              const sla = hours >= 48 ? "danger" : hours >= 20 ? "warn" : "ok";
               return (
-                <button
+                <div
                   key={p.user_id}
-                  onClick={() => setScheduleFor(p)}
-                  className="w-full flex items-start gap-3 p-3 rounded-2xl bg-card/70 hover:bg-card transition text-left"
+                  className="w-full flex items-center gap-3 p-3 rounded-2xl bg-card/70"
                 >
                   <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
                     {p.avatar_url ? (
@@ -787,40 +816,35 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
                     )}
                   </div>
                   <div className="flex-1 min-w-0 space-y-1.5">
-                    <p className="text-foreground font-semibold text-sm leading-snug break-words">
+                    <p className="text-foreground font-semibold text-sm leading-snug truncate">
                       {p.name ?? "Patient"}
                     </p>
                     <div className="flex flex-wrap items-center gap-1.5">
+                      <span
+                        className={`inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md no-break ${
+                          sla === "danger"
+                            ? "bg-destructive/10 text-destructive"
+                            : sla === "warn"
+                              ? "bg-warning/10 text-warning"
+                              : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        <Clock className="w-3 h-3" strokeWidth={2.2} /> {waitLabel}
+                      </span>
                       {p.planName && (
-                        <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md break-words max-w-full">
+                        <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md truncate max-w-[55%]">
                           {p.planName}
                         </span>
                       )}
-                      {daysLeft !== null && (
-                        <span
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded-md no-break ${
-                            urgency === "danger"
-                              ? "bg-destructive/10 text-destructive"
-                              : urgency === "warn"
-                                ? "bg-warning/10 text-warning"
-                                : "bg-muted text-muted-foreground"
-                          }`}
-                        >
-                          {daysLeft}d left in plan
-                        </span>
-                      )}
-                      <span className="text-[10px] font-semibold text-muted-foreground no-break">
-                        No meeting scheduled
-                      </span>
                     </div>
                   </div>
-                  <span
-                    className="gradient-blue text-primary-foreground rounded-xl w-9 h-9 flex items-center justify-center shrink-0 mt-0.5"
-                    aria-label="Schedule meeting"
+                  <button
+                    onClick={() => setScheduleFor(p)}
+                    className="gradient-blue text-primary-foreground rounded-xl px-3 h-9 text-xs font-bold flex items-center gap-1.5 shrink-0"
                   >
-                    <Plus className="w-4 h-4" strokeWidth={2.4} />
-                  </span>
-                </button>
+                    <Plus className="w-3.5 h-3.5" strokeWidth={2.6} /> Schedule
+                  </button>
+                </div>
               );
             })}
           </div>
