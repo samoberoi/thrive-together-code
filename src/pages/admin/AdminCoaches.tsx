@@ -333,7 +333,7 @@ export default function AdminCoaches() {
                             <InfoCell label="Phone" value={coach.phone} />
                             <InfoCell label="Email" value={coach.email || "—"} />
                             <InfoCell label="Packages" value={((coach as any).coach_packages?.length ? (coach as any).coach_packages : [coach.coach_type]).map((p: string) => packageLabel(p)).join(", ")} />
-                            <InfoCell label="Experience" value={`${coach.bbdo_community_exp} yrs`} />
+                            <InfoCell label="BBDO Community Exp" value={`${coach.bbdo_community_exp}`} />
                             <InfoCell label="Commission" value={`${coach.commission_percent || 0}%`} />
                             <InfoCell label="Start Date" value={coach.start_date ? new Date(coach.start_date).toLocaleDateString("en-IN") : "—"} />
                             <InfoCell label="Qualification" value={coach.qualification || "—"} />
@@ -462,7 +462,7 @@ function CoachFormFields({
       </div>
       <FormField label="Specialization" value={data.specialization || ""} onChange={(v) => set("specialization", v)} />
       <FormField label="Qualification" value={data.qualification || ""} onChange={(v) => set("qualification", v)} />
-      <FormField label="Years Experience" value={String(data.bbdo_community_exp || 0)} onChange={(v) => set("bbdo_community_exp", parseInt(v) || 0)} type="number" />
+      <FormField label="BBDO Community Exp" value={String(data.bbdo_community_exp || 0)} onChange={(v) => set("bbdo_community_exp", parseInt(v) || 0)} type="number" />
       <div>
         <label className="text-xs font-medium text-muted-foreground mb-1 block">Commission Model</label>
         <select

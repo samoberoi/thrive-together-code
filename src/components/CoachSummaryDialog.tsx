@@ -74,7 +74,7 @@ export default function CoachSummaryDialog({ open, onOpenChange, coachId, userId
             <div className="relative mt-4 flex items-center gap-4 text-[11px] font-semibold text-white/90">
               <span className="flex items-center gap-1"><Star className="w-3.5 h-3.5 fill-white text-white" /> {coach.avg_rating?.toFixed?.(1) ?? "5.0"}</span>
               <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" /> {coach.total_consultations ?? 0} sessions</span>
-              <span className="flex items-center gap-1"><Briefcase className="w-3.5 h-3.5" /> {coach.bbdo_community_exp ?? 0}y exp</span>
+              <span className="flex items-center gap-1"><Briefcase className="w-3.5 h-3.5" /> {coach.bbdo_community_exp ?? 0} BBDO Community Exp</span>
             </div>
           )}
         </div>

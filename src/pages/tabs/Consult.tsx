@@ -183,7 +183,7 @@ export default function Consult() {
                   <span>({coach.total_ratings})</span>
                 </span>
                 <span>•</span>
-                <span className="whitespace-nowrap">{coach.bbdo_community_exp} yrs exp</span>
+                <span className="whitespace-nowrap">{coach.bbdo_community_exp} BBDO Community Exp</span>
                 <span>•</span>
                 <span className="whitespace-nowrap">{coach.total_consultations.toLocaleString()} sessions</span>
               </div>
