@@ -320,10 +320,9 @@ export async function syncTodayStepsFromHealthConnect(
   const total = sum(scoped, "count") ?? 0;
   if (total > 0) return Math.max(0, Math.round(total));
 
-  // Last resort: nothing inside today's window, but records do exist — use the
-  // largest single-origin total from the raw window so the user isn't stuck at 0.
-  const rawDeduped = sumStepsDeduped(raw) ?? 0;
-  return Math.max(0, Math.round(rawDeduped));
+  // Records exist, but none overlap today — genuinely 0 steps so far today.
+  return 0;
+
 }
 
 
