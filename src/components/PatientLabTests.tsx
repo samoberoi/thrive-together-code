@@ -748,12 +748,6 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
           {detailsTest && (() => {
             const price = patientPriceFor(detailsTest.offer_rate ?? detailsTest.rate, detailsTest.markup_pct, markupPct) ?? 0;
             const original = Number(detailsTest.rate || 0);
-            const included: IncludedTest[] = Array.isArray(detailsTest?.raw_data?.testsIncluded) ? detailsTest.raw_data.testsIncluded : [];
-            const groups: Record<string, IncludedTest[]> = {};
-            for (const it of included) {
-              const g = it.groupName || "Others";
-              (groups[g] ||= []).push(it);
-            }
             return (
               <div className="space-y-4">
                 <div className="rounded-2xl p-4 text-white" style={{ background: "var(--bbdo-gradient)" }}>
@@ -764,34 +758,12 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
                       <p className="text-sm line-through text-white/70">₹{original.toLocaleString("en-IN")}</p>
                     )}
                   </div>
-                  <p className="text-xs text-white/85 mt-1">
-                    {(detailsTest.parameters_count || included.length) > 0
-                      ? `${detailsTest.parameters_count || included.length} parameters included`
-                      : "Curated panel"}
-                  </p>
+                  <p className="text-xs text-white/85 mt-1">Free home collection · 10–11 hrs fasting</p>
                 </div>
-
-                {included.length > 0 ? (
-                  <div className="space-y-3">
-                    {Object.entries(groups).map(([g, items]) => (
-                      <div key={g}>
-                        <p className="text-[11px] font-black uppercase tracking-wide text-muted-foreground mb-1.5">{g}</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {items.map((it, i) => (
-                            <Badge key={i} variant="secondary" className="text-[11px] font-medium">
-                              {it.name || it.code}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">Detailed parameter list will appear here after the next sync.</p>
-                )}
               </div>
             );
           })()}
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setDetailsTest(null)}>Close</Button>
             <Button onClick={() => { if (detailsTest) { startFoundationBooking(detailsTest); setDetailsTest(null); } }}>
