@@ -15,6 +15,8 @@ import RecommendTestsDialog from "@/components/coach/RecommendTestsDialog";
 import RecommendSupplementsDialog from "@/components/coach/RecommendSupplementsDialog";
 import PatientVitalsCard from "@/components/coach/PatientVitalsCard";
 import PatientProfileEditor from "@/components/coach/PatientProfileEditor";
+import PatientDietSymptomsSummary from "@/components/coach/PatientDietSymptomsSummary";
+
 
 type LogTab = "diabetes" | "bp" | "weight" | "fasting" | "supps";
 
@@ -150,6 +152,8 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
   const [coachId, setCoachId] = useState<string | null>(null);
   const [actionDlg, setActionDlg] = useState<null | "meeting" | "tests" | "supps">(null);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
+  const [summaryRefresh, setSummaryRefresh] = useState(0);
+
 
   useEffect(() => {
     if (!user) return;
