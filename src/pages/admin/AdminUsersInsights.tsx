@@ -3,10 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, Users as UsersIcon, AlertTriangle, Heart, UserCheck, Search,
-  Sparkles, Activity, ShieldCheck, Crown, Leaf, Phone, ChevronRight,
+  Sparkles, Activity, ShieldCheck, Crown, Leaf, Phone, ChevronRight, MessageCircle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { whatsappCallUrl } from "@/lib/coachAvailability";
 import { cn } from "@/lib/utils";
+
 
 type PlanKey = "foundation" | "active" | "intensive";
 type Severity = "high" | "medium" | "ok";
@@ -410,7 +412,7 @@ export default function AdminUsersInsights() {
                       {r.lastSeen && <span>· Last log {timeAgo(r.lastSeen)}</span>}
                     </div>
                   </div>
-                  <div className="text-right hidden sm:block max-w-[260px]">
+                  <div className="text-right hidden lg:block max-w-[260px]">
                     <p className={cn(
                       "text-xs font-semibold",
                       r.severity === "high" ? "text-destructive" : r.severity === "medium" ? "text-amber-600" : "text-emerald-600"
@@ -418,7 +420,20 @@ export default function AdminUsersInsights() {
                       {r.reason}
                     </p>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                  {r.phone ? (
+                    <a
+                      href={whatsappCallUrl(r.phone, `Hi ${r.name}, this is the BBDO team checking in on your progress.`)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1.5 rounded-full bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 transition-colors"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" /> Chat
+                    </a>
+                  ) : (
+                    <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                  )}
+
                 </motion.li>
               ))}
             </ul>
@@ -458,7 +473,7 @@ export default function AdminUsersInsights() {
 
 function HeroStat({ icon: Icon, label, value, tone, bg }: { icon: any; label: string; value: number; tone: string; bg: string }) {
   return (
-    <div className="rounded-2xl bg-card border border-border p-3 min-w-[120px]">
+    <div className="rounded-2xl bg-card border border-border p-3 min-w-0">
       <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center mb-2", bg)}>
         <Icon className={cn("w-4 h-4", tone)} strokeWidth={2} />
       </div>
