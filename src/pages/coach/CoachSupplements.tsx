@@ -53,6 +53,9 @@ export default function CoachSupplements() {
   // Patient list search + expansion
   const [patientSearch, setPatientSearch] = useState("");
   const [expandedPatient, setExpandedPatient] = useState<string | null>(null);
+  // Submit lock — prevents double-tap duplicate inserts
+  const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
 
   useEffect(() => { if (user) loadData(); }, [user]);
 
