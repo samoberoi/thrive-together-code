@@ -150,7 +150,7 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
   const [fastingLogs, setFastingLogs] = useState<any[]>([]);
   const [suppTrackingLogs, setSuppTrackingLogs] = useState<any[]>([]);
   const [coachId, setCoachId] = useState<string | null>(null);
-  const [actionDlg, setActionDlg] = useState<null | "meeting" | "tests" | "supps">(null);
+  const [actionDlg, setActionDlg] = useState<null | "meeting" | "tests" | "supps" | "fasting">(null);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [summaryRefresh, setSummaryRefresh] = useState(0);
 
