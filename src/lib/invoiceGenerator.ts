@@ -59,6 +59,7 @@ export async function downloadInvoice({ subscription, userName, userEmail, userP
   // Never show internal phone-based alias addresses on the invoice
   const displayEmail = userEmail && !userEmail.toLowerCase().endsWith("@bbd.app") ? userEmail : undefined;
   const firstName = (userName || "").trim().split(/\s+/)[0] || userName;
+  const logoSrc = await getLogoDataUri();
 
   const html = `
 <!DOCTYPE html>
@@ -105,7 +106,7 @@ export async function downloadInvoice({ subscription, userName, userEmail, userP
 <body>
   <div class="header">
     <div class="brand">
-      <img src="${logoUrl}" alt="Bye Bye Diabetes & Obesity" />
+      <img src="${logoSrc}" alt="Bye Bye Diabetes & Obesity" />
       <div class="brand-text">
         <h1>Bye Bye Diabetes<br/>&amp; Obesity</h1>
         <p>Your health transformation partner</p>
