@@ -512,20 +512,27 @@ export default function Community() {
     return m;
   }, [categories]);
 
-  // Handle deep-link share
+  // Handle deep-link share (metric is optional — goal shares have none)
   useEffect(() => {
     const shareType = searchParams.get("share");
     const metric = searchParams.get("metric");
-    if (shareType && metric) {
+    if (shareType) {
+      const m = metric ? metric : "";
       const messages: Record<string, { msg: string; slug: string }> = {
-        weight_loss: { msg: `🔥 Just dropped ${metric}! My discipline is paying off. #ByeByeDiabetes`, slug: "wins" },
-        weight: { msg: `🔥 Just dropped ${metric}! My discipline is paying off. #ByeByeDiabetes`, slug: "wins" },
-        sugar_drop: { msg: `🍃 My sugar improved — ${metric}! Feeling the change. #SugarControl`, slug: "wins" },
-        sugar: { msg: `🍃 My sugar improved — ${metric}! Feeling the change. #SugarControl`, slug: "wins" },
-        bp_improvement: { msg: `❤️ BP getting better — ${metric}! #HealthWin`, slug: "wins" },
-        health_score: { msg: `🏆 Health score improved by ${metric}! Feeling stronger.`, slug: "wins" },
+        weight_loss: { msg: `🔥 Just dropped ${m}! My discipline is paying off. #ByeByeDiabetes`, slug: "wins" },
+        weight: { msg: `🔥 Just dropped ${m}! My discipline is paying off. #ByeByeDiabetes`, slug: "wins" },
+        sugar_drop: { msg: `🍃 My sugar improved — ${m}! Feeling the change. #SugarControl`, slug: "wins" },
+        sugar: { msg: `🍃 My sugar improved — ${m}! Feeling the change. #SugarControl`, slug: "wins" },
+        bp_improvement: { msg: `❤️ BP getting better — ${m}! #HealthWin`, slug: "wins" },
+        health_score: { msg: `🏆 Health score improved by ${m}! Feeling stronger.`, slug: "wins" },
+        exercise_goal: { msg: `💪 Hit my exercise goal today! Showing up beats perfect. #ByeByeDiabetes`, slug: "wins" },
+        yoga_goal: { msg: `🧘 Finished my yoga session today — calmer body, calmer mind. #ByeByeDiabetes`, slug: "wins" },
+        movement_goal: { msg: `🚶 Crushed my movement goal today! Every step counts. #ByeByeDiabetes`, slug: "wins" },
+        generic: { msg: `🏆 Another win logged today on my reversal journey! #ByeByeDiabetes`, slug: "wins" },
       };
-      const preset = messages[shareType] || { msg: `🏆 Health win: ${metric}!`, slug: "wins" };
+      const preset =
+        messages[shareType] ||
+        (m ? { msg: `🏆 Health win: ${m}!`, slug: "wins" } : messages.generic);
       setPrefillContent(preset.msg);
       setPrefillSlug(preset.slug);
       setShowCreate(true);
@@ -536,6 +543,7 @@ export default function Community() {
       setSearchParams(next, { replace: true });
     }
   }, [searchParams, setSearchParams]);
+
 
   const loadCategories = useCallback(async () => {
     const cats = await fetchPostCategories();

@@ -102,12 +102,25 @@ export default function NotificationsPanel({ onClose, embedded = false }: Notifi
     // Notifications in the panel are read-only: tapping only marks them read,
     // it does NOT navigate anywhere. (Previously action_url could route users
     // to unintended pages like the profile.)
+    // Exception: "share your win" notifications open the community composer
+    // pre-filled with the win, ready to send.
     if (!n.is_read) {
       await markRead(n.id);
       setItems((prev) => prev.map((x) => (x.id === n.id ? { ...x, is_read: true } : x)));
       notifyBadgeSync();
     }
+
+    const url = n.action_url || "";
+    if (n.type === "achievement_share" || url.includes("share=")) {
+      const query = url.includes("?") ? url.slice(url.indexOf("?") + 1) : "";
+      const params = new URLSearchParams(query);
+      params.set("tab", "community");
+      if (!params.get("share")) params.set("share", "generic");
+      onClose?.();
+      navigate(`/home?${params.toString()}`);
+    }
   };
+
 
   const onMarkAllRead = async () => {
     await markAllRead();
