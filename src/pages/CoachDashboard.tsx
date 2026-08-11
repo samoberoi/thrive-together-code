@@ -65,7 +65,7 @@ export default function CoachDashboard() {
     setActiveTab(tab);
     setVisitedTabs((prev) => (prev.has(tab) ? prev : new Set(prev).add(tab)));
   };
-  useCoachModuleNavigation(selectTab as (tab: string) => void as any);
+  useCoachModuleNavigation((tab) => selectTab(tab as CoachTab));
 
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
