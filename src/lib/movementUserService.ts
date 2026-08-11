@@ -41,9 +41,13 @@ export async function fetchUserProgress(userId: string): Promise<UserMovementPro
   return (data as any) ?? null;
 }
 
+/** Minimum daily step target for coaches (lead by example). */
+export const COACH_MIN_DAILY_STEPS = 7500;
+
 export async function ensureUserProgress(
   userId: string,
   profile: { bmiCategory?: string | null; activityLevel?: string | null; age?: number | null; weightKg?: number | null; heightCm?: number | null },
+  opts?: { minTargetSteps?: number },
 ): Promise<{ progress: UserMovementProgress; level: MovementLevel | null; targetSteps: number }> {
   let progress = await fetchUserProgress(userId);
   const [cfg, levels] = await Promise.all([getMovementConfig(), listMovementLevels()]);
@@ -82,7 +86,8 @@ export async function ensureUserProgress(
   const recommended = cfg ? computeRecommendedSteps(cfg, profile) : (level?.target_daily_steps ?? 5000);
   const levelTarget = level?.target_daily_steps ?? (cfg?.base_daily_steps ?? 5000);
   const autoTarget = Math.max(500, Math.min(levelTarget, recommended));
-  const targetSteps = coachOverride && coachOverride > 0 ? coachOverride : autoTarget;
+  const base = coachOverride && coachOverride > 0 ? coachOverride : autoTarget;
+  const targetSteps = Math.max(base, opts?.minTargetSteps ?? 0);
   return { progress: progress!, level, targetSteps };
 }
 
@@ -220,12 +225,13 @@ export function scaleStepsForUser(rawSteps: number, modifierRatio: number): numb
 export async function fetchMovementOverview(
   userId: string,
   profile: { bmiCategory?: string | null; activityLevel?: string | null; age?: number | null; weightKg?: number | null; heightCm?: number | null },
+  opts?: { minTargetSteps?: number },
 ): Promise<MovementOverview> {
   await supabase.rpc("recompute_movement_progress_for_user" as any, { _user_id: userId });
 
   const [{ progress, level, targetSteps }, todaySteps, history, badgesEarned, allBadges, config, levels] =
     await Promise.all([
-      ensureUserProgress(userId, profile),
+      ensureUserProgress(userId, profile, opts),
       fetchTodaySteps(userId),
       fetchStepsHistory(userId, 14),
       fetchUserBadges(userId),
