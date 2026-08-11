@@ -245,7 +245,49 @@ export async function syncLocalToBackend(userId: string) {
   });
 
 
-  return updateProfile(userId, updates);
+  const ok = await updateProfile(userId, updates);
+
+  // Onboarding captures the diet preference (veg / non-veg / …) in the lifestyle
+  // step. Mirror it into user_diet_profiles so coach-side views (patient profile,
+  // diet & symptoms summary) can see it.
+  await syncOnboardingDietPreference(userId, (local.lifestyle as any)?.diet);
+
+  return ok;
+}
+
+function normalizeDietSlug(p: string | null | undefined): string | null {
+  const v = (p || "").toLowerCase().trim().replace(/[-\s]/g, "_");
+  if (!v) return null;
+  if (v === "vegetarian") return "veg";
+  if (v === "nonveg" || v === "non_vegetarian") return "non_veg";
+  if (v === "eggetarian") return "eggitarian";
+  return v;
+}
+
+/** Persist the onboarding diet choice into user_diet_profiles (never overwrites richer choices). */
+export async function syncOnboardingDietPreference(userId: string, diet: string | null | undefined) {
+  const slug = normalizeDietSlug(diet);
+  if (!slug) return;
+
+  const { data, error } = await supabase
+    .from("user_diet_profiles")
+    .select("diet_preference, diet_preferences")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) {
+    console.error("syncOnboardingDietPreference read failed:", error);
+    return;
+  }
+
+  const existing = (data as any)?.diet_preferences as string[] | null;
+  if (existing && existing.length > 0) return; // user already refined it in-app
+
+  const { error: upsertError } = await supabase
+    .from("user_diet_profiles")
+    .upsert({ user_id: userId, diet_preference: slug, diet_preferences: [slug] } as any, {
+      onConflict: "user_id",
+    });
+  if (upsertError) console.error("syncOnboardingDietPreference upsert failed:", upsertError);
 }
 
 /** Load backend profile into localStorage */
