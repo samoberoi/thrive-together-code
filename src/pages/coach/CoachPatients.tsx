@@ -401,7 +401,7 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
           onClose={() => setEditProfileOpen(false)}
           patientUserId={selectedPatient.user_id}
           patientName={selectedPatient.name ?? "Patient"}
-          onSaved={() => { loadPatients(); openPatient(selectedPatient); }}
+          onSaved={() => { loadPatients(); openPatient(selectedPatient); setSummaryRefresh((n) => n + 1); }}
         />
 
         {/* Patient Info Card */}
