@@ -879,6 +879,7 @@ export type Database = {
           bank_account_number: string | null
           bank_ifsc: string | null
           bank_name: string | null
+          bbdo_community_exp: number
           bio: string | null
           city: string | null
           coach_packages: string[]
@@ -909,7 +910,6 @@ export type Database = {
           tour_signature: string | null
           updated_at: string
           user_id: string | null
-          years_experience: number
         }
         Insert: {
           aadhaar_card?: string | null
@@ -921,6 +921,7 @@ export type Database = {
           bank_account_number?: string | null
           bank_ifsc?: string | null
           bank_name?: string | null
+          bbdo_community_exp?: number
           bio?: string | null
           city?: string | null
           coach_packages?: string[]
@@ -951,7 +952,6 @@ export type Database = {
           tour_signature?: string | null
           updated_at?: string
           user_id?: string | null
-          years_experience?: number
         }
         Update: {
           aadhaar_card?: string | null
@@ -963,6 +963,7 @@ export type Database = {
           bank_account_number?: string | null
           bank_ifsc?: string | null
           bank_name?: string | null
+          bbdo_community_exp?: number
           bio?: string | null
           city?: string | null
           coach_packages?: string[]
@@ -993,7 +994,6 @@ export type Database = {
           tour_signature?: string | null
           updated_at?: string
           user_id?: string | null
-          years_experience?: number
         }
         Relationships: [
           {
@@ -5478,6 +5478,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           avg_rating: number | null
+          bbdo_community_exp: number | null
           bio: string | null
           city: string | null
           coach_type: Database["public"]["Enums"]["coach_type"] | null
@@ -5490,11 +5491,11 @@ export type Database = {
           specialization: string | null
           total_consultations: number | null
           total_ratings: number | null
-          years_experience: number | null
         }
         Insert: {
           avatar_url?: string | null
           avg_rating?: number | null
+          bbdo_community_exp?: number | null
           bio?: string | null
           city?: string | null
           coach_type?: Database["public"]["Enums"]["coach_type"] | null
@@ -5507,11 +5508,11 @@ export type Database = {
           specialization?: string | null
           total_consultations?: number | null
           total_ratings?: number | null
-          years_experience?: number | null
         }
         Update: {
           avatar_url?: string | null
           avg_rating?: number | null
+          bbdo_community_exp?: number | null
           bio?: string | null
           city?: string | null
           coach_type?: Database["public"]["Enums"]["coach_type"] | null
@@ -5524,7 +5525,6 @@ export type Database = {
           specialization?: string | null
           total_consultations?: number | null
           total_ratings?: number | null
-          years_experience?: number | null
         }
         Relationships: []
       }
