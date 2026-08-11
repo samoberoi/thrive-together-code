@@ -42,6 +42,15 @@ export default function CoachFasting() {
   const [patientSearch, setPatientSearch] = useState("");
   const [expandedPatient, setExpandedPatient] = useState<string | null>(null);
 
+  // "Manage" from a patient profile lands directly on that patient's detail.
+  useCoachPatientFocus("fasting", (patientId) => {
+    setView("patients");
+    setPatientSearch("");
+    setExpandedPatient(patientId);
+  });
+
+
+
   useEffect(() => {
     if (!user) return;
     loadData();
