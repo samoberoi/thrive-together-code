@@ -709,13 +709,22 @@ export default function UserFasting({ packageKey, selfServe = false }: { package
               </div>
             )}
 
-            <button
-              onClick={trackLMOD}
-              disabled={analyzingPhoto}
-              className="flex items-center gap-2 px-8 py-3 rounded-2xl bg-primary text-primary-foreground font-bold text-sm mx-auto disabled:opacity-50"
-            >
-              <UtensilsCrossed className="w-4 h-4" /> Track LMOD & Start Fasting
-            </button>
+            {showLmodPicker ? (
+              <TimePicker
+                label="When did you have your last meal?"
+                onSelect={(h, m) => trackLMOD(h, m)}
+                onCancel={() => setShowLmodPicker(false)}
+              />
+            ) : (
+              <button
+                onClick={() => setShowLmodPicker(true)}
+                disabled={analyzingPhoto}
+                className="flex items-center gap-2 px-8 py-3 rounded-2xl bg-primary text-primary-foreground font-bold text-sm mx-auto disabled:opacity-50"
+              >
+                <UtensilsCrossed className="w-4 h-4" /> Track LMOD & Start Fasting
+              </button>
+            )}
+
           </motion.div>
         )}
 
