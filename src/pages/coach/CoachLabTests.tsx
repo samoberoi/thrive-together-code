@@ -11,6 +11,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { LabTestParametersDialog } from "@/components/lab/LabTestParametersDialog";
 import { patientPriceFor, useLabTestMarkup } from "@/lib/labTestMarkup";
+import { useCoachPatientFocus } from "@/lib/coachNav";
+
 import { createNotification } from "@/lib/notificationService";
 import LabOrderDetails from "@/components/lab/LabOrderDetails";
 import LabHistorySection from "@/components/lab/LabHistorySection";
