@@ -13,11 +13,9 @@ import { PushNotifications } from "@capacitor/push-notifications";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { getNotificationSoundSettings } from "@/lib/notificationSoundService";
-import { getMuted, playNotificationSound, setMasterVolume } from "@/lib/soundEngine";
 
 const APP_VERSION = (globalThis as any).__APP_VERSION__ ?? "1.0.0";
-export const BBDO_PUSH_CHANNEL_ID = "bbdo-alerts-v10";
+export const BBDO_PUSH_CHANNEL_ID = "bbdo-alerts-v11";
 const ANDROID_FIREBASE_GENERATION = "com.hyperrevamp.bbdo:bbdoapp:73939371932:v4";
 const ANDROID_TOKEN_RESET_KEY = `bbdo_fcm_token_reset_${ANDROID_FIREBASE_GENERATION}`;
 
@@ -151,18 +149,6 @@ async function getAndroidFcmTokenFallback(): Promise<string | null> {
   }
 }
 
-async function playNativePushAppSound() {
-  try {
-    if (getMuted()) return;
-    const settings = await getNotificationSoundSettings();
-    if (!settings.enabled) return;
-    setMasterVolume(Math.max(settings.volume ?? 1, 1));
-    playNotificationSound(settings.variant);
-  } catch (err) {
-    console.warn("[push] app sound failed", err);
-  }
-}
-
 async function resetAndroidFcmTokenAfterChannelUpgrade() {
   if (currentPlatform() !== "android") return;
   if (localStorage.getItem(ANDROID_TOKEN_RESET_KEY) === "1") return;
@@ -209,7 +195,6 @@ async function attachPushListenersOnce() {
       "pushNotificationReceived",
       (n) => {
         console.log("[push] received in-app:", n);
-        void playNativePushAppSound();
       },
     );
 
@@ -217,7 +202,6 @@ async function attachPushListenersOnce() {
       "pushNotificationActionPerformed",
       (a) => {
         console.log("[push] tapped:", a);
-        void playNativePushAppSound();
       },
     );
 
@@ -307,9 +291,9 @@ export async function registerNativePush(
     }
 
 
-    // Android channels are immutable after first creation. Use a fresh channel
-    // id and the phone's default notification sound so lock-screen pushes beep
-    // reliably instead of depending on a custom file/channel created earlier.
+    // Android channels are immutable after first creation. This channel uses
+    // only the bundled Hummingbird file. Native pushes must never also trigger
+    // WebAudio, otherwise users hear a second synthesized sound.
     if (currentPlatform() === "android") {
       try {
         await resetAndroidFcmTokenAfterChannelUpgrade();

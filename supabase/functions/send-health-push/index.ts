@@ -11,7 +11,7 @@ const APNS_PRIVATE_KEY = Deno.env.get("APNS_PRIVATE_KEY") ?? "";
 const APNS_BUNDLE_ID = Deno.env.get("APNS_BUNDLE_ID") ?? "com.hyperrevamp.bbdo";
 const APNS_ENVIRONMENT = (Deno.env.get("APNS_ENVIRONMENT") ?? "sandbox").toLowerCase();
 const FCM_SERVICE_ACCOUNT_JSON = Deno.env.get("FCM_SERVICE_ACCOUNT_JSON") ?? "";
-const BBDO_PUSH_CHANNEL_ID = "bbdo-alerts-v10";
+const BBDO_PUSH_CHANNEL_ID = "bbdo-alerts-v11";
 const BBDO_PUSH_SOUND = "bbdo_chime";
 const BBDO_IOS_PUSH_SOUND = "bbdo_chime.wav";
 
