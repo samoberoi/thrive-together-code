@@ -1,3 +1,4 @@
+import logoImg from "@/assets/logo.png";
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useSearchParams } from "react-router-dom";
