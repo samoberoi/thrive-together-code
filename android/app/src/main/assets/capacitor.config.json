@@ -1,40 +1,54 @@
 {
-  "appId": "com.hyperrevamp.bbdo",
-  "appName": "BBDO",
-  "webDir": "dist",
-  "server": {
-    "hostname": "app.byebyediabetes.com",
-    "androidScheme": "https",
-    "iosScheme": "https"
-  },
-  "plugins": {
-    "SplashScreen": {
-      "launchShowDuration": 0,
-      "launchAutoHide": true,
-      "backgroundColor": "#0B1220",
-      "showSpinner": false,
-      "splashFullScreen": true,
-      "splashImmersive": true,
-      "androidScaleType": "FIT_CENTER"
-    },
-    "LocalNotifications": {
-      "presentationOptions": ["badge", "sound", "banner", "list"]
-    },
-    "PushNotifications": {
-      "presentationOptions": ["badge", "sound", "banner", "list"]
-    }
-  },
-  "android": {
-    "backgroundColor": "#0B1220",
-    "includePlugins": [
-      "@capacitor/app",
-      "@capacitor/filesystem",
-      "@capacitor/local-notifications",
-      "@capacitor/preferences",
-      "@capacitor/push-notifications",
-      "@capacitor/share",
-      "@capawesome/capacitor-badge",
-      "capacitor-health-connect"
-    ]
-  }
+	"appId": "com.hyperrevamp.bbdo",
+	"appName": "BBDO",
+	"webDir": "dist",
+	"server": {
+		"hostname": "app.byebyediabetes.com",
+		"androidScheme": "https",
+		"iosScheme": "https"
+	},
+	"plugins": {
+		"SplashScreen": {
+			"launchShowDuration": 0,
+			"launchAutoHide": true,
+			"backgroundColor": "#0B1220",
+			"showSpinner": false,
+			"splashFullScreen": true,
+			"splashImmersive": true,
+			"androidScaleType": "FIT_CENTER"
+		},
+		"LocalNotifications": {
+			"presentationOptions": [
+				"badge",
+				"sound",
+				"banner",
+				"list"
+			]
+		},
+		"PushNotifications": {
+			"presentationOptions": [
+				"badge",
+				"sound",
+				"banner",
+				"list"
+			]
+		}
+	},
+	"ios": {
+		"preferredContentMode": "mobile",
+		"backgroundColor": "#0B1220"
+	},
+	"android": {
+		"backgroundColor": "#0B1220",
+		"includePlugins": [
+			"@capacitor/app",
+			"@capacitor/filesystem",
+			"@capacitor/local-notifications",
+			"@capacitor/preferences",
+			"@capacitor/push-notifications",
+			"@capacitor/share",
+			"@capawesome/capacitor-badge",
+			"capacitor-health-connect"
+		]
+	}
 }
