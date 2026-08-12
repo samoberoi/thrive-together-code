@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
 const nativeAuthenticate = vi.fn();
 const nativeCheck = vi.fn();
@@ -63,5 +65,21 @@ describe("Android biometric unlock", () => {
 
     await expect(authenticateWithBiometrics()).resolves.toBe(true);
     expect(packageAuthenticate).not.toHaveBeenCalled();
+  });
+
+  it("settles the native Capacitor call only once after a successful touch", () => {
+    const source = readFileSync(
+      resolve(
+        process.cwd(),
+        "android/app/src/main/java/com/hyperrevamp/bbdo/BBDOBiometricsPlugin.java",
+      ),
+      "utf8",
+    );
+
+    expect(source).toContain("final AtomicBoolean settled = new AtomicBoolean(false)");
+    expect(source).toContain("if (!settled.compareAndSet(false, true)) return;");
+    expect(source).toContain("if (settled.compareAndSet(false, true)) {");
+    expect(source).not.toContain("startActivity(");
+    expect(source).not.toContain("new Intent(");
   });
 });

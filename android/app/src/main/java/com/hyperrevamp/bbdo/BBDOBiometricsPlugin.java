@@ -13,6 +13,7 @@ import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * First-party Android biometric bridge.
@@ -110,6 +111,15 @@ public class BBDOBiometricsPlugin extends Plugin {
 
         final String reason = call.getString("reason", "Unlock bye bye diabetes");
 
+        // BiometricPrompt/AndroidX is known to invoke a second, terminal
+        // callback (typically onAuthenticationError with ERROR_CANCELED) right
+        // after onAuthenticationSucceeded while the prompt fragment tears
+        // itself down. Capacitor's PluginCall throws if resolve()/reject() is
+        // invoked more than once, which crashed the app a beat after a
+        // successful touch. Guard with a one-shot flag so only the first
+        // terminal callback ever touches the call.
+        final AtomicBoolean settled = new AtomicBoolean(false);
+
         activity.runOnUiThread(() -> {
             try {
                 Executor executor = androidx.core.content.ContextCompat.getMainExecutor(activity);
@@ -119,6 +129,7 @@ public class BBDOBiometricsPlugin extends Plugin {
                     new BiometricPrompt.AuthenticationCallback() {
                         @Override
                         public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result) {
+                            if (!settled.compareAndSet(false, true)) return;
                             JSObject ret = new JSObject();
                             ret.put("success", true);
                             call.resolve(ret);
@@ -126,6 +137,7 @@ public class BBDOBiometricsPlugin extends Plugin {
 
                         @Override
                         public void onAuthenticationError(int errorCode, CharSequence errString) {
+                            if (!settled.compareAndSet(false, true)) return;
                             JSObject ret = new JSObject();
                             ret.put("success", false);
                             ret.put("code", errorCode);
@@ -155,11 +167,13 @@ public class BBDOBiometricsPlugin extends Plugin {
 
                 prompt.authenticate(builder.build());
             } catch (Exception e) {
-                JSObject ret = new JSObject();
-                ret.put("success", false);
-                ret.put("code", "prompt-error");
-                ret.put("message", e.getMessage() == null ? "Biometric prompt failed." : e.getMessage());
-                call.resolve(ret);
+                if (settled.compareAndSet(false, true)) {
+                    JSObject ret = new JSObject();
+                    ret.put("success", false);
+                    ret.put("code", "prompt-error");
+                    ret.put("message", e.getMessage() == null ? "Biometric prompt failed." : e.getMessage());
+                    call.resolve(ret);
+                }
             }
         });
     }
