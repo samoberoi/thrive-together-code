@@ -51,10 +51,8 @@ export default function BiometricToggle() {
   const handleTest = async () => {
     if (!biometricGateSupported) {
       toast({
-        title: native ? "Android app lock is unavailable" : "Biometric unlock is native only",
-        description: native
-          ? "Android app lock is temporarily disabled for launch stability."
-          : "Open the installed mobile app to use biometric unlock.",
+        title: "Biometric unlock is native only",
+        description: "Open the installed mobile app to use biometric unlock.",
       });
       return;
     }
