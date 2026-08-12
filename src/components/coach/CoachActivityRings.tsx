@@ -30,6 +30,8 @@ export default function CoachActivityRings() {
   const [yogaMin, setYogaMin] = useState(0);
   const [movement, setMovement] = useState({ ratio: 0, hint: "" });
   const [water, setWater] = useState(0);
+  const [hasDiabetes, setHasDiabetes] = useState(false);
+  const [diabetesLoggedToday, setDiabetesLoggedToday] = useState(false);
   const [supps, setSupps] = useState({ taken: 0, total: 0 });
   const [fasting, setFasting] = useState<{ active: boolean; ratio: number; hint: string }>({
     active: false, ratio: 0, hint: "",
