@@ -208,17 +208,19 @@ function GlobalRealtimeAlerts() {
     const id = window.setTimeout(() => {
       void (async () => {
         try {
-          // Health Connect uses a separate Android Activity. It must only be
-          // opened by an explicit tap, never during the fragile cold-start /
-          // permission-resume window. Already-granted access is still synced.
-          await ensureNativeHealthPermission(user.id, {
-            allowPrompt: Capacitor.getPlatform() !== "android",
-          });
-          if (cancelled || !isNativePushSupported()) return;
-          // Startup setup is silent. Permission sheets are only opened from a
-          // visible user action, never while Android is creating/resuming the
-          // main WebView Activity.
-          await registerNativePush(user.id, { allowPrompt: false });
+          // 1) Notifications first — POST_NOTIFICATIONS is a lightweight system
+          // dialog that does not recreate the WebView Activity. Asked at most
+          // once per install (see registerNativePush).
+          if (!cancelled && isNativePushSupported()) {
+            await registerNativePush(user.id, { allowPrompt: true });
+          }
+          if (cancelled) return;
+          // 2) Health last, and only after the notification dialog is gone.
+          // Health Connect runs in its own Activity, so it must never overlap
+          // with another permission surface.
+          await new Promise((resolve) => window.setTimeout(resolve, 600));
+          if (cancelled) return;
+          await ensureNativeHealthPermission(user.id, { allowPrompt: true });
         } finally {
           if (!cancelled) {
             root.classList.remove("bb-native-permission-flow");
