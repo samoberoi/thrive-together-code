@@ -35,7 +35,10 @@ export function isNative(): boolean {
 }
 
 export function supportsBiometricGate(): boolean {
-  return isNative() && Capacitor.getPlatform() === "ios";
+  // iOS uses the native BBDOBiometrics Swift plugin; Android uses the
+  // first-party BBDOBiometricsPlugin (BiometricPrompt hosted on MainActivity).
+  // The crashing third-party plugin is never packaged on Android.
+  return isNative();
 }
 
 export type BiometricDiagnostics = {
