@@ -384,7 +384,7 @@ export default function AdminOverview() {
                   >
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold text-foreground truncate">{c.name}</p>
-                      <div className="flex items-center gap-2 text-[11px] mt-0.5">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] mt-0.5">
                         <span className="text-muted-foreground">{c.total} patients</span>
                         <span className="text-emerald-600 font-semibold">✓ {c.onTrack} on track</span>
                         {c.offTrack > 0 && <span className="text-amber-600 font-semibold">• {c.offTrack} idle</span>}

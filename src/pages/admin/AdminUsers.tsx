@@ -287,7 +287,7 @@ export default function AdminUsers() {
                       {user.clinical && typeof user.clinical === "object" && Object.keys(user.clinical).length > 0 && (
                         <div>
                           <p className="text-xs font-semibold text-muted-foreground mb-2">Clinical Data</p>
-                          <div className="grid grid-cols-2 gap-2">
+                           <div className="grid grid-cols-1 min-[430px]:grid-cols-2 gap-2">
                             {Object.entries(user.clinical as Record<string, any>).map(([k, v]) => (
                               <InfoCell key={k} label={k.replace(/_/g, " ")} value={String(v)} />
                             ))}
