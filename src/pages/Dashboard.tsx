@@ -299,7 +299,7 @@ export default function Dashboard() {
       // Android permission/settings activities temporarily background the
       // WebView. Never mount the tour until those activities have fully closed.
       if (document.documentElement.classList.contains("bb-native-permission-flow") ||
-          document.visibilityState !== "visible" || !document.hasFocus()) {
+          document.visibilityState !== "visible") {
         timer = window.setTimeout(launchWhenStable, 500);
         return;
       }
