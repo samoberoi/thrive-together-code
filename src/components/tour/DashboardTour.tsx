@@ -158,7 +158,11 @@ export function buildUserTourSteps(packageKey: string | null | undefined): TourS
 /** First element matching the selector that is actually laid out (handles responsive duplicates). */
 function findVisible(selector: string): HTMLElement | null {
   const nodes = Array.from(document.querySelectorAll(selector)) as HTMLElement[];
-  return nodes.find((n) => n.getBoundingClientRect().width > 0 && n.getBoundingClientRect().height > 0) ?? null;
+  return nodes.find((n) => {
+    if (!n.isConnected || document.visibilityState !== "visible") return false;
+    const bounds = n.getBoundingClientRect();
+    return bounds.width > 0 && bounds.height > 0;
+  }) ?? null;
 }
 
 type Rect = { top: number; left: number; width: number; height: number };
@@ -182,13 +186,31 @@ export default function DashboardTour({
     if (!open) return;
     setI(0);
     // Give the dashboard a beat to render every anchor before we resolve steps.
-    const t = window.setTimeout(() => setSteps(buildUserTourSteps(packageKey)), 350);
-    return () => window.clearTimeout(t);
+    let cancelled = false;
+    let timer: number | null = null;
+    const resolveWhenVisible = () => {
+      if (cancelled) return;
+      if (document.visibilityState !== "visible") {
+        timer = window.setTimeout(resolveWhenVisible, 250);
+        return;
+      }
+      requestAnimationFrame(() => {
+        if (!cancelled && document.visibilityState === "visible") {
+          setSteps(buildUserTourSteps(packageKey));
+        }
+      });
+    };
+    timer = window.setTimeout(resolveWhenVisible, 350);
+    return () => {
+      cancelled = true;
+      if (timer != null) window.clearTimeout(timer);
+    };
   }, [open, packageKey]);
 
   const step = steps[i];
 
   const measure = useCallback(() => {
+    if (!open || document.visibilityState !== "visible") return;
     if (!step?.selector) {
       setRect(null);
       return;
@@ -206,16 +228,17 @@ export default function DashboardTour({
       width: r.width + pad * 2,
       height: r.height + pad * 2,
     });
-  }, [step]);
+  }, [open, step]);
 
   // Scroll every anchor into the upper half of the screen, leaving the lower half
   // permanently available for the mobile tour sheet.
   useLayoutEffect(() => {
     if (!open || !step) return;
     const el = step.selector ? findVisible(step.selector) : null;
-    if (el) {
+    if (el?.isConnected && document.visibilityState === "visible") {
       el.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
       window.setTimeout(() => {
+        if (!open || !el.isConnected || document.visibilityState !== "visible") return;
         const r = el.getBoundingClientRect();
         const targetTop = Math.max(72, window.innerHeight * 0.16);
         window.scrollBy({ top: r.top - targetTop, behavior: "smooth" });
@@ -224,6 +247,7 @@ export default function DashboardTour({
 
     let frames = 0;
     const tick = () => {
+      if (!open || document.visibilityState !== "visible") return;
       measure();
       frames += 1;
       // Android WebView can recreate its renderer immediately after a native
