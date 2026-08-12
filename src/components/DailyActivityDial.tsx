@@ -86,11 +86,13 @@ export default function DailyActivityDial({
   size = "md",
 }: Props) {
   const safe = items.filter((i) => Number.isFinite(i.ratio));
-  const n = safe.length;
-  const done = safe.filter((i) => i.ratio >= 1).length;
+  const active = safe.filter((i) => !i.disabled);
+  const n = active.length;
+  const done = active.filter((i) => i.ratio >= 1).length;
   const allDone = n > 0 && done === n;
 
-  const geo = computeGeometry(Math.max(n, 1));
+  const geo = computeGeometry(Math.max(safe.length, 1));
+
 
   return (
     <motion.div
