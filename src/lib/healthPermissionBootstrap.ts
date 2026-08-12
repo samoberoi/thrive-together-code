@@ -56,7 +56,7 @@ async function syncAndPersistSteps(userId: string) {
  */
 export async function ensureNativeHealthPermission(
   userId: string,
-  opts?: { force?: boolean },
+  opts?: { force?: boolean; allowPrompt?: boolean },
 ): Promise<boolean> {
   if (!canUseNativeHealth()) return false;
   if (inFlight) return inFlight;
@@ -73,6 +73,14 @@ export async function ensureNativeHealthPermission(
       if (!opts?.force && hasAskedHealthPermission(userId)) {
         // A real denial is respected. Crucially, merely having an old marker is
         // no longer treated as proof that health access is authorized.
+        return false;
+      }
+      // Android Health Connect is backed by a separate permission Activity.
+      // Never launch that Activity as a side effect of app startup: doing so
+      // while the dashboard and notification setup are mounting can destroy
+      // the WebView task on resume. The health card's explicit Allow action
+      // calls this function with force=true and remains the only prompt path.
+      if (opts?.allowPrompt === false && !opts?.force) {
         return false;
       }
       if (!state.authorized && !state.canRequest && !opts?.force) {

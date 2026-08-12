@@ -10,6 +10,7 @@ import PageTransition from "@/components/PageTransition";
 import AppErrorBoundary from "@/components/AppErrorBoundary";
 import BiometricGate from "@/components/BiometricGate";
 import { isNative } from "@/lib/biometric";
+import { Capacitor } from "@capacitor/core";
 import { isNativeVideoTransitionActive } from "@/lib/nativeVideoSession";
 
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
@@ -207,7 +208,12 @@ function GlobalRealtimeAlerts() {
     const id = window.setTimeout(() => {
       void (async () => {
         try {
-          await ensureNativeHealthPermission(user.id);
+          // Health Connect uses a separate Android Activity. It must only be
+          // opened by an explicit tap, never during the fragile cold-start /
+          // permission-resume window. Already-granted access is still synced.
+          await ensureNativeHealthPermission(user.id, {
+            allowPrompt: Capacitor.getPlatform() !== "android",
+          });
           if (cancelled || !isNativePushSupported()) return;
           await registerNativePush(user.id);
         } finally {

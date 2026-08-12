@@ -41,6 +41,19 @@ const config: CapacitorConfig = {
   },
   android: {
     backgroundColor: "#0B1220",
+    // The Aparajita biometric plugin remains available to iOS, but must never
+    // be packaged on Android. Its transparent AuthActivity can terminate the
+    // host task after fingerprint approval on affected Android versions.
+    includePlugins: [
+      "@capacitor/app",
+      "@capacitor/filesystem",
+      "@capacitor/local-notifications",
+      "@capacitor/preferences",
+      "@capacitor/push-notifications",
+      "@capacitor/share",
+      "@capawesome/capacitor-badge",
+      "capacitor-health-connect",
+    ],
   },
 };
 

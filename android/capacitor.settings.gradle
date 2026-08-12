@@ -1,8 +1,5 @@
 // Generated Capacitor Android plugin includes — kept in source so Android Studio builds
 // include native plugins even before running a fresh `cap sync android`.
-include ':capacitor-biometric-auth'
-project(':capacitor-biometric-auth').projectDir = new File('../node_modules/@aparajita/capacitor-biometric-auth/android')
-
 include ':capacitor-app'
 project(':capacitor-app').projectDir = new File('../node_modules/@capacitor/app/android')
 

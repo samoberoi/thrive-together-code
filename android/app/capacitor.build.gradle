@@ -1,7 +1,6 @@
 // Generated Capacitor Android plugin dependencies — kept in source so Firebase
 // Messaging from @capacitor/push-notifications is linked into Android builds.
 dependencies {
-    implementation project(':capacitor-biometric-auth')
     implementation project(':capacitor-app')
     implementation project(':capacitor-filesystem')
     implementation project(':capacitor-local-notifications')
