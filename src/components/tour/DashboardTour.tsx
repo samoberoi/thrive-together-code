@@ -251,16 +251,32 @@ export default function DashboardTour({
   const next = () => (isLast ? onClose() : setI((v) => v + 1));
   const back = () => setI((v) => Math.max(0, v - 1));
 
+  // Measure the real card so it never runs off the top/bottom on small screens.
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const [cardH, setCardH] = useState(220);
+  useLayoutEffect(() => {
+    const el = cardRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setCardH(el.getBoundingClientRect().height));
+    ro.observe(el);
+    setCardH(el.getBoundingClientRect().height);
+    return () => ro.disconnect();
+  }, [step?.key, open]);
+
   const card = useMemo(() => {
     const vh = typeof window !== "undefined" ? window.innerHeight : 800;
-    const margin = 16;
-    const cardH = 210;
-    if (!rect) return { top: Math.max(margin, vh / 2 - cardH / 2), placement: "center" as const };
+    const margin = 14;
+    const maxTop = Math.max(margin, vh - cardH - margin);
+    const clamp = (v: number) => Math.min(Math.max(margin, v), maxTop);
+    if (!rect) return { top: clamp(vh / 2 - cardH / 2) };
     const below = rect.top + rect.height + 14;
-    const fitsBelow = below + cardH < vh - margin;
-    if (fitsBelow) return { top: below, placement: "below" as const };
-    return { top: Math.max(margin, rect.top - cardH - 14), placement: "above" as const };
-  }, [rect]);
+    if (below + cardH <= vh - margin) return { top: below };
+    const above = rect.top - cardH - 14;
+    if (above >= margin) return { top: above };
+    // Anchor fills the screen — park the card at whichever edge has more room.
+    const spaceBelow = vh - (rect.top + rect.height);
+    return { top: spaceBelow > rect.top ? clamp(vh - cardH - margin) : clamp(margin) };
+  }, [rect, cardH]);
 
   if (!open || typeof document === "undefined") return null;
 
@@ -329,7 +345,8 @@ export default function DashboardTour({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.98 }}
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute left-1/2 -translate-x-1/2 w-[min(92vw,26rem)]"
+            ref={cardRef}
+            className="absolute left-0 right-0 mx-auto w-[calc(100vw-1.75rem)] max-w-[26rem] px-0"
             style={{ top: card.top }}
           >
             <div className="rounded-3xl bg-background text-foreground shadow-[0_24px_60px_-12px_rgba(0,0,0,0.55)] border border-border overflow-hidden">
@@ -341,17 +358,17 @@ export default function DashboardTour({
                   transition={{ duration: 0.3 }}
                 />
               </div>
-              <div className="p-5">
+              <div className="p-4 sm:p-5">
                 <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
                   <Sparkles className="w-3.5 h-3.5" style={{ color: "var(--bbdo-blue)" }} />
                   {total ? `Step ${i + 1} of ${total}` : "Loading tour"}
                 </div>
-                <h3 className="mt-2 font-display text-[19px] leading-tight font-black tracking-tight">
+                <h3 className="mt-2 font-display text-[17px] sm:text-[19px] leading-tight font-black tracking-tight">
                   {step?.title ?? ""}
                 </h3>
-                <p className="mt-2 text-[13.5px] leading-relaxed text-muted-foreground">{step?.body ?? ""}</p>
+                <p className="mt-2 text-[13px] sm:text-[13.5px] leading-relaxed text-muted-foreground">{step?.body ?? ""}</p>
 
-                <div className="mt-5 flex items-center justify-between gap-3">
+                <div className="mt-4 sm:mt-5 flex items-center justify-between gap-2">
                   <button
                     type="button"
                     onClick={back}
