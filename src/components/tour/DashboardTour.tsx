@@ -264,10 +264,16 @@ export default function DashboardTour({
   }, [step?.key, open]);
 
   // Track the *visual* viewport so keyboards / browser chrome never push the card off-screen.
-  const [vh, setVh] = useState(() => (typeof window !== "undefined" ? window.innerHeight : 800));
+  const [viewport, setViewport] = useState(() => ({
+    top: typeof window !== "undefined" ? (window.visualViewport?.offsetTop ?? 0) : 0,
+    height: typeof window !== "undefined" ? (window.visualViewport?.height ?? window.innerHeight) : 800,
+  }));
   useEffect(() => {
     if (!open) return;
-    const read = () => setVh(window.visualViewport?.height ?? window.innerHeight);
+    const read = () => setViewport({
+      top: window.visualViewport?.offsetTop ?? 0,
+      height: window.visualViewport?.height ?? window.innerHeight,
+    });
     read();
     window.addEventListener("resize", read);
     window.addEventListener("orientationchange", read);
@@ -292,22 +298,23 @@ export default function DashboardTour({
   }, []);
 
   const card = useMemo(() => {
-    const top = insets.top;
-    const bottom = insets.bottom;
-    const avail = Math.max(140, vh - top - bottom);
+    const top = viewport.top + insets.top + 44;
+    const bottomEdge = viewport.top + viewport.height - insets.bottom;
+    const avail = Math.max(140, bottomEdge - top);
     const h = Math.min(cardH, avail);
-    const maxTop = Math.max(top, vh - bottom - h);
+    const maxTop = Math.max(top, bottomEdge - h);
     const clamp = (v: number) => Math.min(Math.max(top, v), maxTop);
     const maxHeight = avail;
-    if (!rect) return { top: clamp(vh / 2 - h / 2), maxHeight };
+    if (!rect) return { top: clamp(viewport.top + viewport.height / 2 - h / 2), maxHeight };
     const below = rect.top + rect.height + 12;
-    if (below + h <= vh - bottom) return { top: below, maxHeight };
+    if (below + h <= bottomEdge) return { top: below, maxHeight };
     const above = rect.top - h - 12;
     if (above >= top) return { top: above, maxHeight };
     // Anchor fills the screen — park the card at whichever edge has more room.
-    const spaceBelow = vh - (rect.top + rect.height);
-    return { top: spaceBelow > rect.top ? maxTop : clamp(top), maxHeight };
-  }, [rect, cardH, vh, insets]);
+    const spaceBelow = bottomEdge - (rect.top + rect.height);
+    const spaceAbove = rect.top - top;
+    return { top: spaceBelow > spaceAbove ? maxTop : top, maxHeight };
+  }, [rect, cardH, viewport, insets]);
 
 
   if (!open || typeof document === "undefined") return null;
@@ -364,7 +371,7 @@ export default function DashboardTour({
           onClick={onClose}
           aria-label="Skip tour"
           className="no-pill absolute right-4 z-10 inline-flex items-center gap-1.5 rounded-full bg-white/15 backdrop-blur px-3.5 py-2 text-[12px] font-semibold text-white active:scale-[0.98]"
-          style={{ top: "max(env(safe-area-inset-top), 14px)" }}
+          style={{ top: viewport.top + insets.top }}
         >
           <X className="w-3.5 h-3.5" /> Skip
         </button>
@@ -390,8 +397,7 @@ export default function DashboardTour({
                   transition={{ duration: 0.3 }}
                 />
               </div>
-              <div className="p-4 sm:p-5 overflow-y-auto overscroll-contain" style={{ touchAction: "pan-y" }}>
-
+              <div className="p-4 pb-2 sm:p-5 sm:pb-2 overflow-y-auto overscroll-contain" style={{ touchAction: "pan-y" }}>
                 <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
                   <Sparkles className="w-3.5 h-3.5" style={{ color: "var(--bbdo-blue)" }} />
                   {total ? `Step ${i + 1} of ${total}` : "Loading tour"}
@@ -400,8 +406,8 @@ export default function DashboardTour({
                   {step?.title ?? ""}
                 </h3>
                 <p className="mt-2 text-[13px] sm:text-[13.5px] leading-relaxed text-muted-foreground">{step?.body ?? ""}</p>
-
-                <div className="mt-4 sm:mt-5 flex items-center justify-between gap-2">
+              </div>
+              <div className="shrink-0 border-t border-border bg-background px-4 py-3 sm:px-5 flex items-center justify-between gap-2">
                   <button
                     type="button"
                     onClick={back}
@@ -418,7 +424,6 @@ export default function DashboardTour({
                   >
                     {isLast ? "Start my day" : "Next"} <ArrowRight className="w-4 h-4" />
                   </button>
-                </div>
               </div>
             </div>
           </motion.div>
