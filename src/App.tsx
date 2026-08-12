@@ -222,6 +222,9 @@ function GlobalRealtimeAlerts() {
           if (!cancelled) {
             root.classList.remove("bb-native-permission-flow");
             window.dispatchEvent(new CustomEvent("bbdo:native-permissions-settled"));
+            // Once startup (push prompt + biometric gate) is fully idle, show
+            // the health permission sheet automatically, once per device.
+            void scheduleHealthPermissionAutoPrompt(user.id);
           }
         }
       })();
