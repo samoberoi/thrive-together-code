@@ -59,7 +59,6 @@ const AdminAssignments = lazy(() => import("./admin/AdminAssignments"));
 const AdminVideos = lazy(() => import("./admin/AdminVideos"));
 const AdminFasting = lazy(() => import("./admin/AdminFasting"));
 const AdminSupplements = lazy(() => import("./admin/AdminSupplements"));
-const AdminDiet = lazy(() => import("./admin/AdminDiet"));
 const AdminLabTests = lazy(() => import("./admin/AdminLabTests"));
 const AdminFoodConditionRules = lazy(() => import("./admin/AdminFoodConditionRules"));
 const AdminRBAC = lazy(() => import("./admin/AdminRBAC"));
@@ -151,7 +150,7 @@ const navItems: NavItem[] = [
     icon: Salad,
     label: "Diet",
     children: [
-      { id: "diet", icon: Salad, label: "Foods" },
+      { id: "diet", icon: Salad, label: "My Plates" },
       { id: "food_condition_rules", icon: HeartPulse, label: "Food ↔ Conditions" },
     ],
   },
