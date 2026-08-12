@@ -10,7 +10,6 @@ import PageTransition from "@/components/PageTransition";
 import AppErrorBoundary from "@/components/AppErrorBoundary";
 import BiometricGate from "@/components/BiometricGate";
 import { isNative } from "@/lib/biometric";
-import { Capacitor } from "@capacitor/core";
 import { isNativeVideoTransitionActive } from "@/lib/nativeVideoSession";
 
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
