@@ -11,6 +11,7 @@ import android.provider.Settings;
 import android.webkit.WebSettings;
 
 import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.Bridge;
 
 public class MainActivity extends BridgeActivity {
     private static final String BBDO_PUSH_CHANNEL_ID = "bbdo-alerts-v10";
@@ -20,7 +21,13 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(BBDOAndroidPushPlugin.class);
         super.onCreate(savedInstanceState);
         createBbdoNotificationChannel();
-        WebSettings settings = getBridge().getWebView().getSettings();
+        // Android can recreate this Activity while the system WebView provider
+        // is updating after a settings/permission round-trip. Capacitor then
+        // renders its fallback without a Bridge; dereferencing it crashed the
+        // process immediately on resume.
+        Bridge bridge = getBridge();
+        if (bridge == null || bridge.getWebView() == null) return;
+        WebSettings settings = bridge.getWebView().getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setMediaPlaybackRequiresUserGesture(false);

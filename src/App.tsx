@@ -215,7 +215,10 @@ function GlobalRealtimeAlerts() {
             allowPrompt: Capacitor.getPlatform() !== "android",
           });
           if (cancelled || !isNativePushSupported()) return;
-          await registerNativePush(user.id);
+          // Startup setup is silent. Permission sheets are only opened from a
+          // visible user action, never while Android is creating/resuming the
+          // main WebView Activity.
+          await registerNativePush(user.id, { allowPrompt: false });
         } finally {
           if (!cancelled) {
             root.classList.remove("bb-native-permission-flow");
