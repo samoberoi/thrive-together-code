@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ArrowRight, X, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
 import { Capacitor } from "@capacitor/core";
 
 export type TourStep = {
@@ -363,16 +363,7 @@ export default function DashboardTour({
           />
         )}
 
-        {/* Skip */}
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Skip tour"
-          className="no-pill absolute right-4 z-10 inline-flex items-center gap-1.5 rounded-full bg-white/15 backdrop-blur px-3.5 py-2 text-[12px] font-semibold text-white active:scale-[0.98]"
-          style={{ top: "max(env(safe-area-inset-top), 14px)" }}
-        >
-          <X className="w-3.5 h-3.5" /> Skip
-        </button>
+        {/* No skip: users must view the tour end-to-end */}
 
         {/* Step card */}
         <AnimatePresence mode="wait">
