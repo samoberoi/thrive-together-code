@@ -143,6 +143,7 @@ export default function BottomNav({
         key={id}
         onClick={() => setActiveTab(id)}
         aria-label={label}
+        data-tour={`tab-${id}`}
         whileTap={{ scale: 0.9 }}
         transition={{ duration: 0.14, ease: [0.22, 1, 0.36, 1] }}
         className="relative flex-1 flex items-center justify-center h-11 rounded-full transition-colors"
@@ -199,6 +200,7 @@ export default function BottomNav({
             <motion.button
               onClick={onFABPress}
               aria-label="Quick log"
+              data-tour="quick-log"
               whileTap={{ scale: 0.92 }}
               transition={{ duration: 0.14, ease: [0.22, 1, 0.36, 1] }}
               className="shrink-0 w-11 h-11 -mt-3 rounded-full flex items-center justify-center"
@@ -221,6 +223,7 @@ export default function BottomNav({
               key="more"
               onClick={() => setExpanded(true)}
               aria-label="More sections"
+              data-tour="more"
               whileTap={{ scale: 0.9 }}
               transition={{ duration: 0.14, ease: [0.22, 1, 0.36, 1] }}
               className="relative flex-1 h-11 flex items-center justify-center rounded-full"
