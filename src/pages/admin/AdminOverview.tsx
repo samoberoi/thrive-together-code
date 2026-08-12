@@ -260,7 +260,7 @@ export default function AdminOverview() {
       <CoachSelfCheckins />
 
 
-      <div className="grid grid-cols-1 min-[430px]:grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2 sm:gap-3">
+      <div className="grid grid-cols-2 min-[430px]:grid-cols-3 xl:grid-cols-6 gap-2 sm:gap-3">
         {kpis.map((card, i) => {
           const Icon = card.icon;
           return (
@@ -270,22 +270,21 @@ export default function AdminOverview() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.03, duration: 0.2 }}
               onClick={card.onClick}
-              className="liquid-glass rounded-xl sm:rounded-2xl p-3 text-left min-w-0 hover:-translate-y-px transition-transform"
+              className="liquid-glass rounded-xl sm:rounded-2xl p-2.5 sm:p-3 text-left min-w-0 hover:-translate-y-px transition-transform"
             >
-              <div className="flex items-center gap-2 min-w-0">
-                <span className={`w-7 h-7 rounded-lg ${card.bg} flex items-center justify-center shrink-0`}>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg ${card.bg} flex items-center justify-center shrink-0`}>
                   <Icon className={`w-3.5 h-3.5 ${card.tone}`} strokeWidth={1.9} />
                 </span>
-                <p className="text-base sm:text-lg font-black text-foreground break-words min-w-0">{card.value}</p>
+                <p className="text-[15px] sm:text-lg font-black text-foreground truncate min-w-0">{card.value}</p>
               </div>
-              <div className="flex items-center justify-between gap-2 mt-1.5 min-[430px]:block">
-                <p className="text-[11px] font-medium text-muted-foreground leading-tight">{card.label}</p>
-                <p className="text-[10px] text-muted-foreground/80 text-right min-[430px]:text-left leading-tight">{card.sub}</p>
-              </div>
+              <p className="text-[11px] font-medium text-muted-foreground leading-tight mt-1.5 truncate">{card.label}</p>
+              <p className="text-[10px] text-muted-foreground/80 leading-tight truncate">{card.sub}</p>
             </motion.button>
           );
         })}
       </div>
+
 
       {/* Active package cards stack on phones for readable names and values. */}
       <div className="liquid-glass rounded-2xl p-3 sm:p-5">
