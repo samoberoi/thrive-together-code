@@ -8,6 +8,7 @@ import {
   getBiometryLabel,
   isNative,
   setBiometricEnabled,
+  supportsBiometricGate,
   type BiometricDiagnostics,
 } from "@/lib/biometric";
 
@@ -21,6 +22,7 @@ import {
  */
 export default function BiometricToggle() {
   const native = isNative();
+  const biometricGateSupported = supportsBiometricGate();
   const [supported, setSupported] = useState(false);
   const [checking, setChecking] = useState(native);
   const [testing, setTesting] = useState(false);
@@ -28,7 +30,7 @@ export default function BiometricToggle() {
   const [diagnostics, setDiagnostics] = useState<BiometricDiagnostics | null>(null);
 
   useEffect(() => {
-    if (!native) {
+    if (!biometricGateSupported) {
       setChecking(false);
       return;
     }
@@ -44,13 +46,15 @@ export default function BiometricToggle() {
         setChecking(false);
       }
     })();
-  }, [native]);
+  }, [biometricGateSupported]);
 
   const handleTest = async () => {
-    if (!native) {
+    if (!biometricGateSupported) {
       toast({
-        title: "Biometric unlock is native only",
-        description: "Open the installed mobile app to use biometric unlock.",
+        title: native ? "Android app lock is unavailable" : "Biometric unlock is native only",
+        description: native
+          ? "Android app lock is temporarily disabled for launch stability."
+          : "Open the installed mobile app to use biometric unlock.",
       });
       return;
     }
@@ -79,6 +83,8 @@ export default function BiometricToggle() {
         <div className="text-xs text-muted-foreground mt-0.5">
           {!native
             ? "Available in the installed mobile app."
+            : !biometricGateSupported
+              ? "Temporarily disabled on Android for launch stability."
             : checking
             ? "Checking device support…"
             : supported
@@ -97,7 +103,7 @@ export default function BiometricToggle() {
         size="sm"
         variant="outline"
         onClick={handleTest}
-        disabled={!native || checking || testing}
+        disabled={!biometricGateSupported || checking || testing}
         className="shrink-0 rounded-full px-4"
       >
         {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Test"}
