@@ -134,9 +134,8 @@ export default function AdminUsers() {
             {users.length} {users.length === 1 ? "user" : "users"} total
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-
-          <div className="relative w-full sm:w-72">
+        <div className="grid grid-cols-2 sm:flex gap-2 w-full sm:w-auto">
+          <div className="relative col-span-2 w-full sm:w-72">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Search by name, phone, city…"
@@ -145,17 +144,15 @@ export default function AdminUsers() {
               className="pl-9"
             />
           </div>
-          <div className="flex items-center gap-2">
-            <ExportCsvButton filename="users" rows={filtered as any} />
-            <ImportCsvButton table="profiles" onImported={() => window.location.reload()} />
-          </div>
+          <ExportCsvButton filename="users" rows={filtered as any} className="w-full justify-center sm:w-fit" />
+          <ImportCsvButton table="profiles" onImported={() => window.location.reload()} className="w-full justify-center sm:w-fit" />
         </div>
 
       </div>
 
 
       {/* Table */}
-      <div className="liquid-glass rounded-2xl overflow-hidden">
+      <div className="liquid-glass rounded-xl sm:rounded-2xl overflow-hidden">
         {/* Header */}
         <div className="hidden md:grid grid-cols-[minmax(0,2fr)_minmax(0,1.4fr)_minmax(0,1.6fr)_minmax(0,1.4fr)_110px_24px] gap-4 items-center px-4 py-3 bg-muted/40 border-b border-border text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
           <div>Name / Phone</div>
@@ -177,7 +174,7 @@ export default function AdminUsers() {
               <motion.div key={user.id} layout>
                 <button
                   onClick={() => setExpandedUser(isExpanded ? null : user.id)}
-                  className="w-full grid grid-cols-[1fr_auto] md:grid-cols-[minmax(0,2fr)_minmax(0,1.4fr)_minmax(0,1.6fr)_minmax(0,1.4fr)_110px_24px] gap-4 items-center px-4 py-3 text-left hover:bg-muted/30 transition-colors"
+                  className="w-full grid grid-cols-[minmax(0,1fr)_auto] md:grid-cols-[minmax(0,2fr)_minmax(0,1.4fr)_minmax(0,1.6fr)_minmax(0,1.4fr)_110px_24px] gap-3 md:gap-4 items-center px-3 sm:px-4 py-3 text-left hover:bg-muted/30 transition-colors"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -231,7 +228,7 @@ export default function AdminUsers() {
                 </button>
 
                 {/* Mobile pills */}
-                <div className="md:hidden px-4 pb-3 flex flex-wrap gap-2">
+                <div className="md:hidden px-3 sm:px-4 pb-3 grid grid-cols-1 min-[430px]:grid-cols-2 gap-1.5">
                   <Pill icon={<PackageIcon className="w-3 h-3" />} label={pkg} tone="blue" />
                   <Pill label={`${fmtDate(sub?.started_at)} → ${fmtDate(sub?.expires_at)}`} tone="muted" />
                   <Pill icon={<UserCheck className="w-3 h-3" />} label={coach} tone={user.coach_name ? "green" : "muted"} />
@@ -257,7 +254,7 @@ export default function AdminUsers() {
                     className="overflow-hidden"
                   >
                     <div className="px-4 pb-4 space-y-4 border-t border-border pt-4">
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                       <div className="grid grid-cols-1 min-[390px]:grid-cols-2 sm:grid-cols-3 gap-3">
                         <InfoCell label="Package" value={pkg} />
                         <InfoCell label="Start Date" value={fmtDate(sub?.started_at)} />
                         <InfoCell label="End Date" value={fmtDate(sub?.expires_at)} />
@@ -319,9 +316,9 @@ export default function AdminUsers() {
 
 function InfoCell({ label, value }: { label: string; value: string }) {
   return (
-    <div>
+    <div className="min-w-0 rounded-lg bg-muted/40 p-2.5">
       <p className="text-xs text-muted-foreground capitalize">{label}</p>
-      <p className="text-sm text-foreground font-medium">{value}</p>
+      <p className="text-sm text-foreground font-medium break-words">{value}</p>
     </div>
   );
 }
@@ -342,9 +339,9 @@ function Pill({
       ? "bg-emerald-500/10 text-emerald-600"
       : "bg-muted text-muted-foreground";
   return (
-    <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full ${cls}`}>
+    <span className={`inline-flex min-w-0 items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-lg ${cls}`}>
       {icon}
-      <span className="truncate max-w-[180px]">{label}</span>
+      <span className="break-words leading-tight">{label}</span>
     </span>
   );
 }
