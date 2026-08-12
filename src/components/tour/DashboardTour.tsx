@@ -206,11 +206,19 @@ export default function DashboardTour({
     });
   }, [step]);
 
-  // Scroll the anchor into view, then measure (and keep measuring while scrolling settles).
+  // Scroll every anchor into the upper half of the screen, leaving the lower half
+  // permanently available for the mobile tour sheet.
   useLayoutEffect(() => {
     if (!open || !step) return;
     const el = step.selector ? findVisible(step.selector) : null;
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
+      window.setTimeout(() => {
+        const r = el.getBoundingClientRect();
+        const targetTop = Math.max(72, window.innerHeight * 0.16);
+        window.scrollBy({ top: r.top - targetTop, behavior: "smooth" });
+      }, 80);
+    }
 
     let frames = 0;
     const tick = () => {
@@ -235,23 +243,13 @@ export default function DashboardTour({
     };
   }, [open, measure]);
 
-  // Lock background scrolling while the tour runs.
-  useEffect(() => {
-    if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [open]);
-
   const total = steps.length;
   const isLast = i >= total - 1;
 
   const next = () => (isLast ? onClose() : setI((v) => v + 1));
   const back = () => setI((v) => Math.max(0, v - 1));
 
-  // Measure the real card so it never runs off the top/bottom on small screens.
+  // Measure the real card so it can be pinned to the visual viewport bottom.
   const cardRef = useRef<HTMLDivElement | null>(null);
   const [cardH, setCardH] = useState(220);
   useLayoutEffect(() => {
@@ -298,23 +296,15 @@ export default function DashboardTour({
   }, []);
 
   const card = useMemo(() => {
-    const top = viewport.top + insets.top + 44;
+    const topLimit = viewport.top + insets.top + 52;
     const bottomEdge = viewport.top + viewport.height - insets.bottom;
-    const avail = Math.max(140, bottomEdge - top);
-    const h = Math.min(cardH, avail);
-    const maxTop = Math.max(top, bottomEdge - h);
-    const clamp = (v: number) => Math.min(Math.max(top, v), maxTop);
-    const maxHeight = avail;
-    if (!rect) return { top: clamp(viewport.top + viewport.height / 2 - h / 2), maxHeight };
-    const below = rect.top + rect.height + 12;
-    if (below + h <= bottomEdge) return { top: below, maxHeight };
-    const above = rect.top - h - 12;
-    if (above >= top) return { top: above, maxHeight };
-    // Anchor fills the screen — park the card at whichever edge has more room.
-    const spaceBelow = bottomEdge - (rect.top + rect.height);
-    const spaceAbove = rect.top - top;
-    return { top: spaceBelow > spaceAbove ? maxTop : top, maxHeight };
-  }, [rect, cardH, viewport, insets]);
+    const maxHeight = Math.max(180, bottomEdge - topLimit);
+    const renderedHeight = Math.min(cardH, maxHeight);
+    return {
+      top: Math.max(topLimit, bottomEdge - renderedHeight),
+      maxHeight,
+    };
+  }, [cardH, viewport, insets]);
 
 
   if (!open || typeof document === "undefined") return null;
@@ -327,8 +317,8 @@ export default function DashboardTour({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.2 }}
-        className="fixed inset-0 z-[9999]"
-        style={{ touchAction: "none" }}
+        className="fixed inset-0 z-[9999] overflow-hidden"
+        style={{ touchAction: "none", height: "100dvh" }}
         aria-live="polite"
       >
         {/* Dim layer with spotlight cut-out */}
@@ -385,10 +375,10 @@ export default function DashboardTour({
             exit={{ opacity: 0, y: -6, scale: 0.98 }}
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
             ref={cardRef}
-            className="absolute left-0 right-0 mx-auto w-[calc(100vw-1.75rem)] max-w-[26rem] px-0"
+            className="absolute left-0 right-0 mx-auto w-[calc(100%-1.25rem)] max-w-[26rem] px-0"
             style={{ top: card.top, maxHeight: card.maxHeight }}
           >
-            <div className="rounded-3xl bg-background text-foreground shadow-[0_24px_60px_-12px_rgba(0,0,0,0.55)] border border-border overflow-hidden flex flex-col" style={{ maxHeight: card.maxHeight }}>
+            <div className="rounded-2xl bg-background text-foreground shadow-[0_24px_60px_-12px_rgba(0,0,0,0.55)] border border-border overflow-hidden flex flex-col" style={{ maxHeight: card.maxHeight }}>
               <div className="h-1 w-full bg-muted">
                 <motion.div
                   className="h-full"
