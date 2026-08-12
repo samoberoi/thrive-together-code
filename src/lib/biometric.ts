@@ -35,6 +35,10 @@ export function isNative(): boolean {
   return Capacitor.isNativePlatform();
 }
 
+export function supportsBiometricGate(): boolean {
+  return isNative() && Capacitor.getPlatform() === "ios";
+}
+
 export type BiometricDiagnostics = {
   native: boolean;
   platform: string;
@@ -74,6 +78,22 @@ export async function getBiometricDiagnostics(): Promise<BiometricDiagnostics> {
       label: "Face ID / Touch ID / Fingerprint",
       code: "web-preview",
       reason: "Biometric unlock only runs in the installed mobile app.",
+    };
+  }
+
+  // The third-party Android prompt launches a separate transparent Activity.
+  // On affected devices that Activity terminates the app after fingerprint
+  // approval, before JavaScript can catch or recover from the failure. Keep
+  // Android fail-open and never invoke that native prompt during startup.
+  if (platform === "android") {
+    return {
+      native: true,
+      platform,
+      available: false,
+      deviceSecure: true,
+      label: "Fingerprint",
+      code: "android-gate-disabled",
+      reason: "Android biometric app lock is disabled for launch stability.",
     };
   }
 
@@ -124,7 +144,7 @@ export async function getBiometricDiagnostics(): Promise<BiometricDiagnostics> {
 }
 
 export async function isBiometricAvailable(): Promise<boolean> {
-  if (!isNative()) return false;
+  if (!supportsBiometricGate()) return false;
   try {
     const info = await BBDOBiometrics.check();
     if (info.available) return true;
@@ -140,6 +160,7 @@ export async function isBiometricAvailable(): Promise<boolean> {
 }
 
 export async function getBiometryLabel(): Promise<string> {
+  if (Capacitor.getPlatform() === "android") return "Fingerprint";
   try {
     const info = await BBDOBiometrics.check();
     if (info.label) return info.label;
@@ -155,7 +176,7 @@ export async function getBiometryLabel(): Promise<string> {
 }
 
 export function isBiometricEnabled(): boolean {
-  return isNative();
+  return supportsBiometricGate();
 }
 
 export function isBiometricSetupPending(): boolean {
@@ -163,7 +184,7 @@ export function isBiometricSetupPending(): boolean {
 }
 
 export function shouldRequireBiometricUnlock(): boolean {
-  return isNative();
+  return supportsBiometricGate();
 }
 
 export function setBiometricEnabled(_on = true) {
@@ -176,6 +197,11 @@ export function setBiometricEnabled(_on = true) {
 export async function authenticateWithBiometrics(
   reason = "Unlock BBDO"
 ): Promise<boolean> {
+  // Never start the Android biometric Activity. Affected Android versions and
+  // OEM builds can kill the process after a successful fingerprint, which is
+  // not recoverable from JavaScript. Android therefore fails open.
+  if (Capacitor.getPlatform() === "android") return true;
+
   if (isNative()) {
     try {
       logStartupEvent("biometric authenticate", "BBDOBiometrics.authenticate");
@@ -192,29 +218,15 @@ export async function authenticateWithBiometrics(
     }
   }
 
-  // Android: BiometricPrompt throws a fatal IllegalArgumentException when a
-  // negative button is combined with device-credential fallback, which kills
-  // the whole process (app closes to the launcher). Never send that combo.
-  const android = Capacitor.getPlatform() === "android";
-
   try {
     logStartupEvent("biometric authenticate", "BiometricAuth.authenticate");
     await BiometricAuth.authenticate(
-      android
-        ? {
-            reason,
-            cancelTitle: "Cancel",
-            allowDeviceCredential: false,
-            androidTitle: "BBDO",
-            androidConfirmationRequired: false,
-            androidBiometryStrength: AndroidBiometryStrength.weak,
-          }
-        : {
-            reason,
-            cancelTitle: "Cancel",
-            allowDeviceCredential: true,
-            iosFallbackTitle: "Use passcode",
-          }
+      {
+        reason,
+        cancelTitle: "Cancel",
+        allowDeviceCredential: true,
+        iosFallbackTitle: "Use passcode",
+      }
     );
     return true;
   } catch (err) {

@@ -8,6 +8,7 @@ import {
   isNative,
   getBiometryLabel,
   setBiometricEnabled,
+  supportsBiometricGate,
   type BiometricDiagnostics,
 } from "@/lib/biometric";
 import { Button } from "@/components/ui/button";
@@ -64,8 +65,9 @@ export default function BiometricGate({ children }: { children: ReactNode }) {
   // (Fingerprint / Face Unlock). On Android we're resilient — if biometry
   // isn't enrolled we let the user in rather than trap them behind the lock.
   const native = isNative();
-  const startupShield = native && loading && !isVideoSuppressActive();
-  const shouldGate = native && !loading && !!session && BIOMETRIC_PROTECTED_ROUTES.has(location.pathname);
+  const biometricGateSupported = supportsBiometricGate();
+  const startupShield = biometricGateSupported && loading && !isVideoSuppressActive();
+  const shouldGate = biometricGateSupported && !loading && !!session && BIOMETRIC_PROTECTED_ROUTES.has(location.pathname);
   const gateVisible =
     !isVideoSuppressActive() &&
     (startupShield || (shouldGate && (locked || authenticating || lastAuthAt.current === 0)));
