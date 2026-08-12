@@ -79,6 +79,7 @@ describe("Android biometric unlock", () => {
     expect(source).toContain("final AtomicBoolean settled = new AtomicBoolean(false)");
     expect(source).toContain("if (!settled.compareAndSet(false, true)) return;");
     expect(source).toContain("if (settled.compareAndSet(false, true)) {");
-    expect(source).not.toContain("AuthActivity");
+    expect(source).not.toContain("startActivity(");
+    expect(source).not.toContain("new Intent(");
   });
 });
