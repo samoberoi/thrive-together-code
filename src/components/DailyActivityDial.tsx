@@ -21,7 +21,10 @@ export interface DialRingItem {
   ratio: number; // 0..1
   color: string;
   hint?: string;
+  /** Pillar not unlocked for this user's plan — shown greyed out, not counted. */
+  disabled?: boolean;
 }
+
 
 interface Props {
   items: DialRingItem[];
@@ -83,11 +86,13 @@ export default function DailyActivityDial({
   size = "md",
 }: Props) {
   const safe = items.filter((i) => Number.isFinite(i.ratio));
-  const n = safe.length;
-  const done = safe.filter((i) => i.ratio >= 1).length;
+  const active = safe.filter((i) => !i.disabled);
+  const n = active.length;
+  const done = active.filter((i) => i.ratio >= 1).length;
   const allDone = n > 0 && done === n;
 
-  const geo = computeGeometry(Math.max(n, 1));
+  const geo = computeGeometry(Math.max(safe.length, 1));
+
 
   return (
     <motion.div
@@ -158,6 +163,22 @@ export default function DailyActivityDial({
               if (r < geo.INNER_RESERVED - geo.stroke / 2) return null;
               const circ = 2 * Math.PI * r;
               const pct = Math.max(0, Math.min(1, it.ratio));
+              if (it.disabled) {
+                return (
+                  <circle
+                    key={`ring-${it.key}`}
+                    cx={CENTER}
+                    cy={CENTER}
+                    r={r}
+                    fill="none"
+                    stroke="hsl(var(--muted-foreground))"
+                    strokeOpacity={0.14}
+                    strokeWidth={geo.stroke}
+                    strokeDasharray="2 5"
+                    strokeLinecap="round"
+                  />
+                );
+              }
               return (
                 <g key={`ring-${it.key}`}>
                   <circle
@@ -193,6 +214,7 @@ export default function DailyActivityDial({
                 </g>
               );
             })}
+
 
             {/* Center readout drawn as SVG so it scales with the dial */}
             <g>
@@ -238,16 +260,24 @@ export default function DailyActivityDial({
             {/* Icon chips — drawn inside the SVG so they always sit exactly on
                 the same circle as the rings, on every screen size. */}
             {safe.map((it, i) => {
-              const angle = (i / Math.max(n, 1)) * Math.PI * 2 - Math.PI / 2;
+              const angle = (i / Math.max(safe.length, 1)) * Math.PI * 2 - Math.PI / 2;
               const x = CENTER + Math.cos(angle) * geo.iconRadius;
               const y = CENTER + Math.sin(angle) * geo.iconRadius;
               const Icon = ICONS[it.key] ?? Heart;
-              const complete = it.ratio >= 1;
+              const complete = !it.disabled && it.ratio >= 1;
+              const inProgress = !it.disabled && it.ratio > 0 && it.ratio < 1;
               const r = geo.iconChip / 2;
               const glyph = geo.iconChip * 0.52;
+              const glyphColor = it.disabled
+                ? "#CBD5E1"
+                : complete
+                  ? it.color
+                  : inProgress
+                    ? it.color
+                    : "#94A3B8";
               return (
-                <g key={`chip-${it.key}`}>
-                  <title>{`${it.label}${it.hint ? ` · ${it.hint}` : ""}`}</title>
+                <g key={`chip-${it.key}`} opacity={it.disabled ? 0.55 : 1}>
+                  <title>{`${it.label}${it.disabled ? " · Not unlocked" : it.hint ? ` · ${it.hint}` : ""}`}</title>
                   <circle
                     cx={x}
                     cy={y}
@@ -255,18 +285,21 @@ export default function DailyActivityDial({
                     fill="#ffffff"
                     stroke={complete ? it.color : "hsl(var(--border))"}
                     strokeWidth={complete ? 1.6 : 1}
+                    strokeDasharray={it.disabled ? "2 3" : undefined}
                   />
                   <Icon
                     x={x - glyph / 2}
                     y={y - glyph / 2}
                     width={glyph}
                     height={glyph}
-                    color={complete ? it.color : "#94A3B8"}
+                    color={glyphColor}
+                    opacity={inProgress ? 0.75 : 1}
                     strokeWidth={2.4}
                   />
                 </g>
               );
             })}
+
           </svg>
         </div>
 
@@ -274,26 +307,39 @@ export default function DailyActivityDial({
         {/* Legend */}
         <div className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-x-4 gap-y-2">
           {safe.map((it) => {
-            const complete = it.ratio >= 1;
+            const disabled = !!it.disabled;
+            const complete = !disabled && it.ratio >= 1;
+            const inProgress = !disabled && it.ratio > 0 && it.ratio < 1;
             const pct = Math.round(Math.max(0, Math.min(1, it.ratio)) * 100);
             const Icon = ICONS[it.key] ?? Heart;
+            const accent = complete ? it.color : inProgress ? `${it.color}CC` : undefined;
             return (
-              <div key={`leg-${it.key}`} className="flex items-center gap-2 min-w-0">
+              <div
+                key={`leg-${it.key}`}
+                className={`flex items-center gap-2 min-w-0 ${disabled ? "opacity-55" : ""}`}
+              >
                 <span
                   className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
                   style={{
-                    backgroundColor: complete ? `${it.color}18` : "hsl(var(--muted))",
+                    backgroundColor: complete
+                      ? `${it.color}18`
+                      : inProgress
+                        ? `${it.color}0F`
+                        : "hsl(var(--muted))",
                   }}
                 >
                   <Icon
                     className="w-3 h-3"
-                    style={{ color: complete ? it.color : "#94A3B8" }}
+                    style={{ color: disabled ? "#CBD5E1" : (accent ?? "#94A3B8") }}
                     strokeWidth={2.6}
                   />
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-1.5">
-                    <span className="text-[11px] font-bold text-foreground truncate">
+                    <span
+                      className="text-[11px] font-bold truncate"
+                      style={{ color: disabled ? "hsl(var(--muted-foreground))" : (accent ?? "hsl(var(--foreground))") }}
+                    >
                       {it.label}
                     </span>
                     <span
@@ -302,19 +348,22 @@ export default function DailyActivityDial({
                         color: complete ? it.color : "hsl(var(--muted-foreground))",
                       }}
                     >
-                      {complete ? (
+                      {disabled ? (
+                        "Not unlocked"
+                      ) : complete ? (
                         <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={2.4} />
                       ) : (
                         `${pct}%`
                       )}
                     </span>
                   </div>
-                  {it.hint && (
+                  {(disabled || it.hint) && (
                     <p className="text-[9px] text-muted-foreground font-medium truncate">
-                      {it.hint}
+                      {disabled ? "Not part of your plan yet" : it.hint}
                     </p>
                   )}
                 </div>
+
               </div>
             );
           })}

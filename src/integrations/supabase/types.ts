@@ -2680,6 +2680,30 @@ export type Database = {
           },
         ]
       }
+      health_score_daily: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          score: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          score: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          score?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       lab_parameters: {
         Row: {
           code: string

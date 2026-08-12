@@ -42,6 +42,9 @@ import { fetchUserStats } from "@/lib/userStatsService";
 import { useColorGauges } from "@/hooks/useColorGauges";
 import HealthScoreRing from "@/components/HealthScoreRing";
 import DailyActivityDial, { type DialRingItem as HeartRingItem } from "@/components/DailyActivityDial";
+import MetricTrendsSection from "@/components/MetricTrendsSection";
+import { recordDailyHealthScore } from "@/lib/trendsService";
+
 import TodaysYogaClass from "@/components/home/TodaysYogaClass";
 import GlobalStreakCard from "@/components/home/GlobalStreakCard";
 import { Wind } from "lucide-react";
@@ -546,6 +549,14 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
   const overrideTriggered = user.assessment?.overrideTriggered ?? false;
   const recommendedProgram = user.assessment?.recommendedProgram ?? "";
   const [initialScore, setInitialScore] = useState<number | null>(null);
+
+  // Persist today's health score so the "Health trends" chart has a datapoint
+  // for every day the user opens the app.
+  useEffect(() => {
+    if (!authUser?.id || !Number.isFinite(healthScore)) return;
+    recordDailyHealthScore(authUser.id, healthScore);
+  }, [authUser?.id, healthScore]);
+
   const [initialWeight, setInitialWeight] = useState<number | null>(null);
   const [initialGlucose, setInitialGlucose] = useState<number | null>(null);
   const [latestWeight, setLatestWeight] = useState<number | null>(null);
@@ -1529,80 +1540,92 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
         const yogaRatio = YOGA_DAILY_MINUTES > 0
           ? Math.min(1, yogaMinutesToday / YOGA_DAILY_MINUTES)
           : 0;
-        const rings: HeartRingItem[] = [];
-        if (fastingState !== "no_plan" && fastingState !== "loading") {
-          rings.push({
+        // All nine pillars always render. Pillars the user's plan hasn't
+        // unlocked yet stay in place but are shown greyed out ("Not unlocked")
+        // and never count towards today's completion tally.
+        const fastingEnabled = fastingState !== "no_plan" && fastingState !== "loading";
+        const rings: HeartRingItem[] = [
+          {
             key: "fasting",
             label: "Fasting",
-            ratio: fastingRatio,
+            ratio: fastingEnabled ? fastingRatio : 0,
             color: "#0F1A3D",
-            hint: [
-              fmodDoneToday ? "FMOD ✓" : "FMOD pending",
-              fastingTarget ? `${Math.min(fastingElapsedStatic, fastingTarget).toFixed(1)} / ${fastingTarget}h` : (lmodDoneToday ? "LMOD ✓" : "LMOD pending"),
-            ].join(" · "),
-          });
-        }
-        if (hasActiveSupplements) {
-          rings.push({
+            disabled: !fastingEnabled,
+            hint: fastingEnabled
+              ? [
+                  fmodDoneToday ? "FMOD ✓" : "FMOD pending",
+                  fastingTarget ? `${Math.min(fastingElapsedStatic, fastingTarget).toFixed(1)} / ${fastingTarget}h` : (lmodDoneToday ? "LMOD ✓" : "LMOD pending"),
+                ].join(" · ")
+              : undefined,
+          },
+          {
             key: "supplements",
             label: "Supplements",
-            ratio: suppTaken / suppTotal,
+            ratio: hasActiveSupplements && suppTotal > 0 ? suppTaken / suppTotal : 0,
             color: "#F59E0B",
-            hint: `${suppTaken} / ${suppTotal} taken`,
-          });
-        }
-        rings.push({
-          key: "movement",
-          label: "Movement",
-          ratio: movementRatio,
-          color: "#10B981",
-          hint: movementHint || undefined,
-        });
-        rings.push({
-          key: "exercise",
-          label: "Exercise",
-          ratio: exerciseRatio,
-          color: "#248CCB",
-            hint: `${Math.min(completedExercisesToday, EXERCISE_DAILY_GOAL).toLocaleString("en-IN", { maximumFractionDigits: 1 })} / ${EXERCISE_DAILY_GOAL} min`,
-        });
-        // Yoga only if the user has a yoga booking on file OR a foundation-level plan expectation.
-        rings.push({
-          key: "yoga",
-          label: "Yoga & Stress",
-          ratio: yogaRatio,
-          color: "#8B5CF6",
-            hint: `${Math.min(yogaMinutesToday, YOGA_DAILY_MINUTES).toLocaleString("en-IN", { maximumFractionDigits: 1 })} / ${YOGA_DAILY_MINUTES} min`,
-        });
-        rings.push({
-          key: "water",
-          label: "Water",
-          ratio: waterRatio,
-          color: "#38BDF8",
-          hint: `${waterGlasses} / 8 glasses`,
-        });
-        rings.push({
-          key: "breath",
-          label: "Breath Protocol",
-          ratio: breathGoalToday > 0 ? Math.min(1, breathCountToday / breathGoalToday) : 0,
-          color: "#EA6A5E",
-          hint: `${Math.min(breathCountToday, breathGoalToday)} / ${breathGoalToday} sessions`,
-        });
-        rings.push({
-          key: "soleus",
-          label: "Soleus Push-Ups",
-          ratio: soleusGoalToday > 0 ? Math.min(1, soleusCountToday / soleusGoalToday) : 0,
-          color: "#B91C1C",
-          hint: `${Math.min(soleusCountToday, soleusGoalToday)} / ${soleusGoalToday} rounds`,
-        });
-        if (hasDiabetesFlag) {
-          rings.push({
+            disabled: !hasActiveSupplements || suppTotal === 0,
+            hint: hasActiveSupplements && suppTotal > 0 ? `${suppTaken} / ${suppTotal} taken` : undefined,
+          },
+          {
+            key: "movement",
+            label: "Movement",
+            ratio: movementRatio,
+            color: "#10B981",
+            hint: movementHint || undefined,
+          },
+          {
+            key: "exercise",
+            label: "Exercise",
+            ratio: exerciseRatio,
+            color: "#248CCB",
+            disabled: EXERCISE_DAILY_GOAL <= 0,
+            hint: EXERCISE_DAILY_GOAL > 0
+              ? `${Math.min(completedExercisesToday, EXERCISE_DAILY_GOAL).toLocaleString("en-IN", { maximumFractionDigits: 1 })} / ${EXERCISE_DAILY_GOAL} min`
+              : undefined,
+          },
+          {
+            key: "yoga",
+            label: "Yoga & Stress",
+            ratio: yogaRatio,
+            color: "#8B5CF6",
+            disabled: YOGA_DAILY_MINUTES <= 0,
+            hint: YOGA_DAILY_MINUTES > 0
+              ? `${Math.min(yogaMinutesToday, YOGA_DAILY_MINUTES).toLocaleString("en-IN", { maximumFractionDigits: 1 })} / ${YOGA_DAILY_MINUTES} min`
+              : undefined,
+          },
+          {
+            key: "water",
+            label: "Water",
+            ratio: waterRatio,
+            color: "#38BDF8",
+            hint: `${waterGlasses} / 8 glasses`,
+          },
+          {
+            key: "breath",
+            label: "Breath Protocol",
+            ratio: breathGoalToday > 0 ? Math.min(1, breathCountToday / breathGoalToday) : 0,
+            color: "#EA6A5E",
+            disabled: breathGoalToday <= 0,
+            hint: breathGoalToday > 0 ? `${Math.min(breathCountToday, breathGoalToday)} / ${breathGoalToday} sessions` : undefined,
+          },
+          {
+            key: "soleus",
+            label: "Soleus Push-Ups",
+            ratio: soleusGoalToday > 0 ? Math.min(1, soleusCountToday / soleusGoalToday) : 0,
+            color: "#B91C1C",
+            disabled: soleusGoalToday <= 0,
+            hint: soleusGoalToday > 0 ? `${Math.min(soleusCountToday, soleusGoalToday)} / ${soleusGoalToday} rounds` : undefined,
+          },
+          {
             key: "diabetes",
             label: "Blood sugar log",
-            ratio: hasTodayDiabetesLog ? 1 : 0,
+            ratio: hasDiabetesFlag && hasTodayDiabetesLog ? 1 : 0,
             color: "#E00101",
-            hint: hasTodayDiabetesLog ? "Logged today" : "Not logged yet",
-          });
-        }
+            disabled: !hasDiabetesFlag,
+            hint: hasDiabetesFlag ? (hasTodayDiabetesLog ? "Logged today" : "Not logged yet") : undefined,
+          },
+        ];
+
         return <DailyActivityDial items={rings} title="Close your rings" size="lg" />;
       })()}
 
@@ -1646,6 +1669,9 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
           </div>
         );
       })()}
+
+      {/* ─── Long-run trends since joining (tap to open full graph + date filter) ─── */}
+      <MetricTrendsSection userId={authUser?.id} />
 
 
       {/* Health Markers from lab reports */}
@@ -2197,49 +2223,6 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
         );
       })()}
 
-      {/* ─── Diabetes Check-in Card ─── */}
-      <motion.div
-        className="liquid-glass rounded-2xl p-3.5 relative overflow-hidden"
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.27 }}
-      >
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-              <Activity className="w-4 h-4 text-primary" strokeWidth={1.6} />
-            </div>
-            <div className="min-w-0">
-              <span className="text-foreground font-bold text-[13px]">Diabetes Check-in</span>
-              <p className="text-muted-foreground text-[10px] font-medium">
-                {diabetesMorningDone && diabetesEveningDone ? "2/2 logged" : diabetesMorningDone || diabetesEveningDone ? "1/2 logged" : "0/2 logged"}
-              </p>
-            </div>
-          </div>
-          <span className={`px-2.5 py-1 rounded-lg font-bold text-[10px] shrink-0 ${
-            diabetesMorningDone && diabetesEveningDone ? "bg-primary/15 text-primary" :
-            diabetesMorningDone || diabetesEveningDone ? "bg-warning-soft text-warning" :
-            "bg-muted text-muted-foreground"
-          }`}>
-            {diabetesMorningDone && diabetesEveningDone ? "Complete" : diabetesMorningDone || diabetesEveningDone ? "Partial" : "Pending"}
-          </span>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <DiabetesSlot
-            slot="morning"
-            done={diabetesMorningDone}
-            value={diabetesMorningValue}
-            userId={authUser?.id}
-          />
-          <DiabetesSlot
-            slot="evening"
-            done={diabetesEveningDone}
-            value={diabetesEveningValue}
-            userId={authUser?.id}
-          />
-        </div>
-      </motion.div>
-
       {/* Metric cards removed — deltas now surface directly on the Health / Weight / Blood Glucose rings above. */}
 
 
@@ -2255,122 +2238,6 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
         userId={authUser?.id ?? null}
       />
 
-    </div>
-  );
-}
-
-
-function DiabetesSlot({
-  slot,
-  done,
-  value,
-  userId,
-}: {
-  slot: "morning" | "evening";
-  done: boolean;
-  value: number | null;
-  userId?: string;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [val, setVal] = useState("");
-  const [saving, setSaving] = useState(false);
-  const label = slot === "morning" ? "Morning" : "Evening";
-  const SlotIcon = slot === "morning" ? Timer : Activity;
-
-  async function save() {
-    const num = parseFloat(val);
-    if (!num || !Number.isFinite(num)) {
-      toast.error("Enter a valid value");
-      return;
-    }
-    if (!userId) return;
-    setSaving(true);
-    try {
-      const { supabase } = await import("@/integrations/supabase/client");
-      const { error } = await supabase.from("health_logs" as any).insert({
-        user_id: userId,
-        log_type: "diabetes",
-        logged_at: new Date().toISOString(),
-        glucose_morning: slot === "morning" ? num : null,
-        glucose_evening: slot === "evening" ? num : null,
-      });
-      if (error) throw error;
-      toast.success(`${slot === "morning" ? "Morning" : "Evening"} glucose saved`);
-      setEditing(false);
-      setVal("");
-      window.dispatchEvent(new CustomEvent("health-log-saved"));
-    } catch (e) {
-      console.error(e);
-      toast.error("Couldn't save");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <div className={`p-2.5 rounded-xl transition-colors border ${editing ? "col-span-2" : ""} ${
-      done ? "bg-primary/10 border-primary/25" : "bg-card border-border"
-    }`}>
-      <div className="flex items-center gap-2 mb-2">
-        <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
-          done ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary"
-        }`}>
-          {done ? <Check className="w-3.5 h-3.5" strokeWidth={2} /> : <SlotIcon className="w-3.5 h-3.5" strokeWidth={2} />}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className={`text-[12px] font-bold leading-tight ${done ? "text-primary" : "text-foreground"}`}>
-            {label}
-          </p>
-          <p className="text-[10px] text-muted-foreground font-medium mt-0.5 truncate">
-            {done ? `${value} mg/dL` : "Add glucose"}
-          </p>
-        </div>
-      </div>
-      {!done && (
-        editing ? (
-          <div className="space-y-2.5">
-            <label className="block rounded-2xl bg-muted/45 px-4 py-4 focus-within:ring-2 focus-within:ring-primary/25">
-              <div className="flex flex-col items-center justify-center gap-1 min-h-[84px]">
-                <input
-                  inputMode="decimal"
-                  type="number"
-                  value={val}
-                  onChange={(e) => setVal(e.target.value)}
-                  placeholder="112"
-                  className="no-number-spinner w-full min-w-0 bg-transparent text-center text-5xl leading-none font-black tabular-nums text-foreground outline-none placeholder:text-muted-foreground/30"
-                />
-                <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wide shrink-0">mg/dL</span>
-              </div>
-            </label>
-            <div className="grid grid-cols-[1fr_auto] gap-2">
-              <button
-                onClick={save}
-                disabled={saving}
-                className="no-pill h-11 rounded-xl bg-primary text-primary-foreground text-xs font-bold uppercase disabled:opacity-50 active:scale-[0.98] transition-transform"
-              >
-                {saving ? "Saving…" : "Save"}
-              </button>
-              <button
-                onClick={() => {
-                  setEditing(false);
-                  setVal("");
-                }}
-                className="no-pill h-11 px-3 rounded-xl bg-muted text-muted-foreground text-xs font-bold uppercase active:scale-[0.98] transition-transform"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        ) : (
-          <button
-            onClick={() => setEditing(true)}
-            className="no-pill w-full h-9 rounded-lg bg-primary/10 text-primary text-[11px] font-bold flex items-center justify-center gap-1 active:scale-[0.98] transition-transform"
-          >
-            <Plus className="w-3.5 h-3.5" strokeWidth={2} />
-            Add reading
-          </button>
-        )
-      )}
     </div>
   );
 }
