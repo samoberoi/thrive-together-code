@@ -26,6 +26,16 @@ import {
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
+const CYCLES = [
+  { key: "monthly", label: "Monthly" },
+  { key: "quarterly", label: "Quarterly" },
+  { key: "half_yearly", label: "6 months" },
+  { key: "yearly", label: "Yearly" },
+];
+const CYCLE_LABEL: Record<string, string> = {
+  monthly: "Monthly", quarterly: "Quarterly", half_yearly: "6 months", yearly: "Yearly",
+};
+
 export default function AdminCoupons() {
   const confirm = useConfirm();
   const [loading, setLoading] = useState(true);
@@ -43,6 +53,10 @@ export default function AdminCoupons() {
   const [count, setCount] = useState(100);
   const [startDate, setStartDate] = useState(todayIso());
   const [endDate, setEndDate] = useState("");
+  const [cycles, setCycles] = useState<string[]>([]);
+  const [planKeys, setPlanKeys] = useState<string[]>([]);
+  const [totalLimit, setTotalLimit] = useState("");
+  const [packages, setPackages] = useState<{ plan_key: string; name: string }[]>([]);
 
   // detail
   const [coupons, setCoupons] = useState<Coupon[]>([]);
@@ -57,6 +71,13 @@ export default function AdminCoupons() {
   };
   useEffect(() => { load(); }, []);
 
+  useEffect(() => {
+    (async () => {
+      const { data } = await (supabase as any).from("packages").select("plan_key, name").eq("active", true).order("name");
+      setPackages((data ?? []).filter((p: any) => p.plan_key !== "onboarding_test"));
+    })();
+  }, []);
+
   const loadDetail = async (id: string) => {
     const [cs, rs] = await Promise.all([fetchCoupons(id), fetchRedemptions(id)]);
     setCoupons(cs);
@@ -68,6 +89,7 @@ export default function AdminCoupons() {
   const resetForm = () => {
     setName(""); setDescription(""); setDiscountType("percent"); setDiscountValue(10);
     setIsLimited(true); setCount(100); setStartDate(todayIso()); setEndDate("");
+    setCycles([]); setPlanKeys([]); setTotalLimit("");
   };
 
   const submitCreate = async () => {
@@ -84,6 +106,9 @@ export default function AdminCoupons() {
         is_limited: isLimited,
         start_date: new Date(startDate).toISOString(),
         end_date: endDate ? new Date(`${endDate}T23:59:59`).toISOString() : null,
+        applicable_cycles: cycles,
+        applicable_plan_keys: planKeys,
+        total_redemption_limit: totalLimit.trim() ? Number(totalLimit) : null,
       });
       if (isLimited) {
         const made = await generateCoupons(camp.id, count);
@@ -279,7 +304,13 @@ export default function AdminCoupons() {
                     <p className="text-xs text-muted-foreground truncate">
                       {c.discount_type === "percent" ? `${c.discount_value}% off` : `₹${c.discount_value} off`} ·{" "}
                       {c.is_limited ? `${c.coupon_count} codes` : "Unlimited"}
+                      {c.total_redemption_limit ? ` · max ${c.total_redemption_limit} uses` : ""}
                       {c.end_date ? ` · ends ${new Date(c.end_date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}` : ""}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      {c.applicable_cycles?.length ? c.applicable_cycles.map((x) => CYCLE_LABEL[x] ?? x).join(", ") : "All durations"}
+                      {" · "}
+                      {c.applicable_plan_keys?.length ? c.applicable_plan_keys.join(", ") : "All packages"}
                     </p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
