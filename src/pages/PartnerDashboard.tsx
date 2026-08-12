@@ -912,13 +912,11 @@ export default function PartnerDashboard() {
           className="flex items-center gap-3 px-6 pt-8 pb-6"
           style={{ borderBottom: "1px solid hsl(var(--border))" }}
         >
-          <div className="w-10 h-10 rounded-xl gradient-blue glow-blue flex items-center justify-center shrink-0">
-            <Handshake className="w-5 h-5 text-white" />
-          </div>
+          <img src={logoImg} alt="BBDO" className="h-10 w-auto object-contain shrink-0" />
           <div className="flex-1 min-w-0">
-            <h1 className="text-foreground font-black text-lg leading-none">bye bye</h1>
             <p className="text-muted-foreground text-xs">Partner Portal</p>
           </div>
+
           <NotificationCenter unreadCount={attentionCounts.notifications} />
           <button
             onClick={() => setActiveTab("profile")}
