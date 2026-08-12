@@ -83,22 +83,6 @@ export async function getBiometricDiagnostics(): Promise<BiometricDiagnostics> {
     };
   }
 
-  // The third-party Android prompt launches a separate transparent Activity.
-  // On affected devices that Activity terminates the app after fingerprint
-  // approval, before JavaScript can catch or recover from the failure. Keep
-  // Android fail-open and never invoke that native prompt during startup.
-  if (platform === "android") {
-    return {
-      native: true,
-      platform,
-      available: false,
-      deviceSecure: true,
-      label: "Fingerprint",
-      code: "android-gate-disabled",
-      reason: "Android biometric app lock is disabled for launch stability.",
-    };
-  }
-
   try {
     logStartupEvent("biometric check", "BBDOBiometrics.check");
     const info = await BBDOBiometrics.check();
@@ -108,13 +92,26 @@ export async function getBiometricDiagnostics(): Promise<BiometricDiagnostics> {
       platform,
       available: Boolean(info.available),
       deviceSecure: Boolean(info.deviceSecure),
-      label: info.label || (platform === "ios" ? "Face ID / Touch ID" : "Biometrics"),
+      label: info.label || (platform === "ios" ? "Face ID / Touch ID" : "Fingerprint / Face Unlock"),
       code: info.code || (info.available ? "available" : "unavailable"),
       reason: info.reason || "Device biometric status checked.",
     };
   } catch (error) {
     reportStartupError("BBDOBiometrics.check failed", error);
-    /* Fall through to the package plugin for older installed builds. */
+    // Android never packages the third-party plugin (its transparent
+    // AuthActivity killed the host task), so there is nothing to fall back to.
+    if (platform === "android") {
+      return {
+        native: true,
+        platform,
+        available: false,
+        deviceSecure: false,
+        label: "Fingerprint",
+        code: "plugin-unavailable",
+        reason: "Reinstall the latest Android build to enable fingerprint unlock.",
+      };
+    }
+    /* Fall through to the package plugin for older installed iOS builds. */
   }
 
   try {
