@@ -192,20 +192,30 @@ export async function authenticateWithBiometrics(
     }
   }
 
+  // Android: BiometricPrompt throws a fatal IllegalArgumentException when a
+  // negative button is combined with device-credential fallback, which kills
+  // the whole process (app closes to the launcher). Never send that combo.
+  const android = Capacitor.getPlatform() === "android";
+
   try {
     logStartupEvent("biometric authenticate", "BiometricAuth.authenticate");
-    await BiometricAuth.authenticate({
-      reason,
-      cancelTitle: "Cancel",
-      allowDeviceCredential: true,
-      iosFallbackTitle: "Use passcode",
-      // Android prompt renders the `reason` field as the description/subtitle.
-      // We use a short distinct title so the user sees "Unlock BBDO" once, not
-      // duplicated as both title and body.
-      androidTitle: "BBDO",
-      androidConfirmationRequired: false,
-      androidBiometryStrength: AndroidBiometryStrength.weak,
-    });
+    await BiometricAuth.authenticate(
+      android
+        ? {
+            reason,
+            cancelTitle: "Cancel",
+            allowDeviceCredential: false,
+            androidTitle: "BBDO",
+            androidConfirmationRequired: false,
+            androidBiometryStrength: AndroidBiometryStrength.weak,
+          }
+        : {
+            reason,
+            cancelTitle: "Cancel",
+            allowDeviceCredential: true,
+            iosFallbackTitle: "Use passcode",
+          }
+    );
     return true;
   } catch (err) {
     reportStartupError("BiometricAuth.authenticate failed", err);
@@ -214,3 +224,4 @@ export async function authenticateWithBiometrics(
     return false;
   }
 }
+
