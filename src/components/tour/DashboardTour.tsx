@@ -9,8 +9,8 @@ export type TourStep = {
   selector?: string;
   title: string;
   body: string;
-  /** Only show this step for these package keys. Omit = all packages. */
-  packages?: string[];
+  /** Hide this step for Package 1 (foundation/starter) users. */
+  paidOnly?: boolean;
   /** Extra padding around the spotlight cut-out. */
   pad?: number;
   radius?: number;
@@ -39,7 +39,7 @@ export function buildUserTourSteps(packageKey: string | null | undefined): TourS
       selector: '[data-tour="coach-chip"]',
       title: "This is your coach",
       body: "Your assigned BBDO coach sits right under your name. Tap the chip any time to open a direct chat — questions, check-ins, or a quick nudge.",
-      packages: ["transform", "reverse", "growth", "elite", "premium", "plus", "advanced"],
+      paidOnly: true,
     },
     {
       key: "rings",
@@ -128,7 +128,7 @@ export function buildUserTourSteps(packageKey: string | null | undefined): TourS
       selector: '[data-tour="tab-chat"]',
       title: "Talk to your coach",
       body: "This is your private chat with your coach. Send photos of your plate, ask about a reading, or book your next call — they're with you the whole way.",
-      packages: ["transform", "reverse", "growth", "elite", "premium", "plus", "advanced"],
+      paidOnly: true,
       pad: 6,
       radius: 999,
     },
@@ -148,7 +148,7 @@ export function buildUserTourSteps(packageKey: string | null | undefined): TourS
   ];
 
   return all.filter((s) => {
-    if (s.packages && !s.packages.includes(key)) return false;
+    if (s.paidOnly && isFoundation) return false;
     if (s.selector && !document.querySelector(s.selector)) return false;
     return true;
   });
