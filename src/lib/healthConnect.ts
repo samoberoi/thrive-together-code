@@ -143,14 +143,12 @@ export async function requestHealthConnectAuthorization(): Promise<HealthConnect
 async function ensureAvailableAndAuthorized(): Promise<boolean> {
   const state = await getHealthConnectPermissionState();
   if (state.authorized) return true;
-  if (state.availability !== "Available" && state.availability !== "NotInstalled") {
-    logStartupEvent("health-connect availability", state.availability);
-    throw new Error(state.message);
-  }
-
-  const requested = await requestHealthConnectAuthorization();
-  if (!requested.authorized) throw new Error(requested.message);
-  return true;
+  // Snapshot reads run on dashboard mount, app resume, and a timer. They must
+  // never launch Health Connect's permission Activity implicitly. Permission
+  // requests are restricted to requestHealthConnectAuthorization(), which is
+  // called by the visible Connect/Allow control after a deliberate user tap.
+  logStartupEvent("health-connect read skipped", state.availability);
+  return false;
 }
 
 function startOfToday() { return startOfLocalDay(); }
