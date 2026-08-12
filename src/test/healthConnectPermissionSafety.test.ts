@@ -2,10 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const checkAvailability = vi.fn();
-const checkHealthPermissions = vi.fn();
-const requestHealthPermissions = vi.fn();
-const readRecords = vi.fn();
+const isAvailable = vi.fn();
+const checkAuthorization = vi.fn();
+const requestAuthorization = vi.fn();
+const readSamples = vi.fn();
 
 vi.mock("@capacitor/core", () => ({
   Capacitor: {
@@ -15,12 +15,12 @@ vi.mock("@capacitor/core", () => ({
   registerPlugin: () => ({}),
 }));
 
-vi.mock("capacitor-health-connect", () => ({
-  HealthConnect: {
-    checkAvailability,
-    checkHealthPermissions,
-    requestHealthPermissions,
-    readRecords,
+vi.mock("@capgo/capacitor-health", () => ({
+  Health: {
+    isAvailable,
+    checkAuthorization,
+    requestAuthorization,
+    readSamples,
   },
 }));
 
@@ -36,18 +36,18 @@ vi.mock("@/lib/movementUserService", () => ({
 describe("Android Health Connect permission safety", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    checkAvailability.mockResolvedValue({ availability: "Available" });
-    checkHealthPermissions.mockResolvedValue({ hasAllPermissions: false });
+    isAvailable.mockResolvedValue({ available: true, platform: "android" });
+    checkAuthorization.mockResolvedValue({ readAuthorized: [], readDenied: ["steps"], writeAuthorized: [], writeDenied: [] });
   });
 
   it("does not open a permission activity during an automatic snapshot read", async () => {
     const { fetchHealthConnectSnapshot } = await import("@/lib/healthConnect");
 
     await expect(fetchHealthConnectSnapshot()).resolves.toBeNull();
-    expect(checkAvailability).toHaveBeenCalledOnce();
-    expect(checkHealthPermissions).toHaveBeenCalledOnce();
-    expect(requestHealthPermissions).not.toHaveBeenCalled();
-    expect(readRecords).not.toHaveBeenCalled();
+    expect(isAvailable).toHaveBeenCalledOnce();
+    expect(checkAuthorization).toHaveBeenCalledOnce();
+    expect(requestAuthorization).not.toHaveBeenCalled();
+    expect(readSamples).not.toHaveBeenCalled();
   });
 
   it("does not open Health Connect from the startup permission bootstrap", async () => {
@@ -56,7 +56,7 @@ describe("Android Health Connect permission safety", () => {
     await expect(
       ensureNativeHealthPermission("android-user", { allowPrompt: true }),
     ).resolves.toBe(false);
-    expect(requestHealthPermissions).not.toHaveBeenCalled();
+    expect(requestAuthorization).not.toHaveBeenCalled();
   });
 
   it("keeps the required Health Connect manifest wiring and current push channel", () => {
@@ -70,5 +70,13 @@ describe("Android Health Connect permission safety", () => {
     expect(manifest).toContain('android:name="android.permission.health.READ_STEPS"');
     expect(manifest).toContain('android:value="bbdo-alerts-v10"');
     expect(manifest).not.toContain('android:value="bbdo-alerts-v9"');
+  });
+
+  it("uses a Capacitor 8-compatible health plugin instead of the legacy Capacitor 5 bridge", () => {
+    const packageJson = readFileSync(resolve(process.cwd(), "package.json"), "utf8");
+    const config = readFileSync(resolve(process.cwd(), "capacitor.config.ts"), "utf8");
+    expect(packageJson).toContain('"@capgo/capacitor-health"');
+    expect(packageJson).not.toContain('"capacitor-health-connect"');
+    expect(config).toContain('"@capgo/capacitor-health"');
   });
 });

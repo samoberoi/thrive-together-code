@@ -28,7 +28,7 @@
 		"classpath": "io.capawesome.capacitorjs.plugins.badge.BadgePlugin"
 	},
 	{
-		"pkg": "capacitor-health-connect",
-		"classpath": "com.ubiehealth.capacitor.healthconnect.HealthConnectPlugin"
+		"pkg": "@capgo/capacitor-health",
+		"classpath": "app.capgo.plugin.health.HealthPlugin"
 	}
 ]

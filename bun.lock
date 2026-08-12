@@ -16,6 +16,7 @@
         "@capacitor/push-notifications": "^8.1.2",
         "@capacitor/share": "^8.0.1",
         "@capawesome/capacitor-badge": "^8.0.2",
+        "@capgo/capacitor-health": "^8.10.2",
         "@fontsource/epilogue": "^5.2.8",
         "@fontsource/montserrat": "^5.2.8",
         "@fontsource/urbanist": "^5.2.7",
@@ -50,7 +51,6 @@
         "@radix-ui/react-tooltip": "^1.2.7",
         "@supabase/supabase-js": "^2.110.5",
         "@tanstack/react-query": "^5.83.0",
-        "capacitor-health-connect": "^0.7.0",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "cmdk": "^1.1.1",
@@ -143,6 +143,8 @@
     "@capacitor/synapse": ["@capacitor/synapse@1.0.4", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@capacitor/synapse/-/synapse-1.0.4.tgz", {}, "sha512-/C1FUo8/OkKuAT4nCIu/34ny9siNHr9qtFezu4kxm6GY1wNFxrCFWjfYx5C1tUhVGz3fxBABegupkpjXvjCHrw=="],
 
     "@capawesome/capacitor-badge": ["@capawesome/capacitor-badge@8.0.2", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@capawesome/capacitor-badge/-/capacitor-badge-8.0.2.tgz", { "peerDependencies": { "@capacitor/core": ">=8.0.0" } }, "sha512-4ZnRyFvViaokupdrOi3OkoBurH+23hnxni+PYq5C1ObNLYbhty/WK8BzMtndCv0S47XjGBLjQ9DJsYj3JDVxGQ=="],
+
+    "@capgo/capacitor-health": ["@capgo/capacitor-health@8.10.2", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@capgo/capacitor-health/-/capacitor-health-8.10.2.tgz", { "peerDependencies": { "@capacitor/core": ">=8.0.0" } }, "sha512-fmZXCrdHs01eJxKf9Q1Eth6QDatXu4N9x57nw0JWezOevMzmDpgvM1uLbCQz2x23xudvKQqk4u3oNIYmnrdaew=="],
 
     "@cspotcode/source-map-support": ["@cspotcode/source-map-support@0.8.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@cspotcode/source-map-support/-/source-map-support-0.8.1.tgz", { "dependencies": { "@jridgewell/trace-mapping": "0.3.9" } }, "sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw=="],
 
@@ -725,8 +727,6 @@
     "caniuse-lite": ["caniuse-lite@1.0.30001805", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/caniuse-lite/-/caniuse-lite-1.0.30001805.tgz", {}, "sha512-52noaS3DubycKSXaU30TwPGIp+POyQSUVa5jBEq3vkRkY0kjyb3LQgvhU6WGyCcyXqVLWO0Cw0Q6BSdD0kUfVA=="],
 
     "canvg": ["canvg@3.0.11", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/canvg/-/canvg-3.0.11.tgz", { "dependencies": { "@babel/runtime": "^7.12.5", "@types/raf": "^3.4.0", "core-js": "^3.8.3", "raf": "^3.4.1", "regenerator-runtime": "^0.13.7", "rgbcolor": "^1.0.1", "stackblur-canvas": "^2.0.0", "svg-pathdata": "^6.0.3" } }, "sha512-5ON+q7jCTgMp9cjpu4Jo6XbvfYwSB2Ow3kzHKfIyJfaCAOHLbdKPQqGKgfED/R5B+3TFFfe8pegYA+b423SRyA=="],
-
-    "capacitor-health-connect": ["capacitor-health-connect@0.7.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/capacitor-health-connect/-/capacitor-health-connect-0.7.0.tgz", { "peerDependencies": { "@capacitor/core": "^5.0.0" } }, "sha512-QQJpnCoFU9x4A9//PgbVT1kqpiFFiGWoiEl/+oprR03YXDTHi9BjCqotIwgVl0HT9fxVqEfkyrFXhcBsSNIZrA=="],
 
     "chai": ["chai@5.3.3", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/chai/-/chai-5.3.3.tgz", { "dependencies": { "assertion-error": "^2.0.1", "check-error": "^2.1.1", "deep-eql": "^5.0.1", "loupe": "^3.1.0", "pathval": "^2.0.0" } }, "sha512-4zNhdJD/iOjSH0A05ea+Ke6MU5mmpQcbQsSOkgdaUMJ9zTlDTD/GYlwohmIE2u0gaxHYiVHEn1Fw9mZ/ktJWgw=="],
 
