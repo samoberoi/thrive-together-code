@@ -172,7 +172,7 @@ export function fireRealtimeHealthNotificationAlert(notification: RealtimeHealth
   window.setTimeout(() => playedRealtimeAlertIds.delete(key), 30_000);
 
   setMasterVolume(1);
-  playCriticalHealthAlert();
+  playNotificationSound();
   void sendLocalHealthAlert(notification.title, notification.body);
 }
 
