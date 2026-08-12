@@ -472,23 +472,14 @@ export type BbdoNotificationSound =
   | "unlock";
 
 export const NOTIFICATION_SOUND_OPTIONS: { value: BbdoNotificationSound; label: string; hint: string }[] = [
-  { value: "bbdo_signature", label: "BBDO Signature",  hint: "Two-note rising chime with hummingbird shimmer" },
-  { value: "chime",          label: "Soft Chime",       hint: "Classic three-note ascending sine" },
-  { value: "hummingbird",    label: "Hummingbird",      hint: "Rapid high trill + wing flutter" },
-  { value: "warm",           label: "Warm Tone",        hint: "Slow uplifting sine sweep" },
-  { value: "tap",            label: "Subtle Tap",       hint: "Minimal single-tick click" },
-  { value: "unlock",         label: "Unlock",           hint: "Game-style ascending triangle" },
+  { value: "hummingbird", label: "Hummingbird", hint: "The single BBDO notification sound — used on web, iOS and Android push" },
 ];
 
-/** Play a notification sound by variant name, respecting master volume + mute. */
-export function playNotificationSound(variant: BbdoNotificationSound = "bbdo_signature") {
-  switch (variant) {
-    case "chime":       return playChime();
-    case "hummingbird": return playHummingbirdChirp();
-    case "warm":        return playWarm();
-    case "tap":         return playTap();
-    case "unlock":      return playUnlock();
-    case "bbdo_signature":
-    default:            return playBbdoNotification();
-  }
+/**
+ * Unified notification sound. BBDO uses ONE sound everywhere (web, in-app,
+ * native push on iOS + Android): the Hummingbird trill. The variant argument
+ * is accepted for backwards compatibility but always resolves to hummingbird.
+ */
+export function playNotificationSound(_variant: BbdoNotificationSound = "hummingbird") {
+  return playHummingbirdChirp();
 }
