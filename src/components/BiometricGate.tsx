@@ -259,6 +259,7 @@ export default function BiometricGate({ children }: { children: ReactNode }) {
       </div>
       {gateVisible && (
         <div
+          data-biometric-gate=""
           className="fixed inset-0 z-[9999] flex flex-col items-center justify-center gap-6 bg-background px-8 text-center text-foreground"
         >
           <div className="text-5xl">🔒</div>
