@@ -139,25 +139,12 @@ export default function MetricTrendsSection({ userId }: { userId?: string }) {
               {!isOpen && data.length > 1 && (
                 <div className="w-20 h-9 shrink-0">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={data} margin={{ top: 2, right: 0, bottom: 2, left: 0 }}>
-                      <defs>
-                        <linearGradient id={`spark-${m.key}`} x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor={m.color} stopOpacity={0.35} />
-                          <stop offset="100%" stopColor={m.color} stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <YAxis hide domain={["dataMin", "dataMax"]} />
-                      <Area
-                        type="linear"
-                        dataKey="value"
-                        stroke={m.color}
-                        strokeWidth={1.8}
-                        fill={`url(#spark-${m.key})`}
-                        dot={false}
-                        isAnimationActive={false}
-                      />
-                    </AreaChart>
+                    <BarChart data={data} margin={{ top: 2, right: 0, bottom: 2, left: 0 }} barCategoryGap="18%">
+                      <YAxis hide domain={[0, "dataMax"]} />
+                      <Bar dataKey="value" fill={m.color} radius={[2, 2, 0, 0]} isAnimationActive={false} />
+                    </BarChart>
                   </ResponsiveContainer>
+
                 </div>
               )}
               <ChevronDown
