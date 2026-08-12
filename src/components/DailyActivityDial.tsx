@@ -163,6 +163,22 @@ export default function DailyActivityDial({
               if (r < geo.INNER_RESERVED - geo.stroke / 2) return null;
               const circ = 2 * Math.PI * r;
               const pct = Math.max(0, Math.min(1, it.ratio));
+              if (it.disabled) {
+                return (
+                  <circle
+                    key={`ring-${it.key}`}
+                    cx={CENTER}
+                    cy={CENTER}
+                    r={r}
+                    fill="none"
+                    stroke="hsl(var(--muted-foreground))"
+                    strokeOpacity={0.14}
+                    strokeWidth={geo.stroke}
+                    strokeDasharray="2 5"
+                    strokeLinecap="round"
+                  />
+                );
+              }
               return (
                 <g key={`ring-${it.key}`}>
                   <circle
@@ -198,6 +214,7 @@ export default function DailyActivityDial({
                 </g>
               );
             })}
+
 
             {/* Center readout drawn as SVG so it scales with the dial */}
             <g>
