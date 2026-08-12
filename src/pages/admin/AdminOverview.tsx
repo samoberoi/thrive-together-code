@@ -294,7 +294,7 @@ export default function AdminOverview() {
           </h3>
           <p className="text-[11px] sm:text-xs text-muted-foreground shrink-0">{activeSubsCount} active</p>
         </div>
-        <div className="grid grid-cols-1 min-[520px]:grid-cols-3 gap-2 sm:gap-3">
+        <div className="grid grid-cols-2 min-[520px]:grid-cols-3 gap-2 sm:gap-3">
           {packageBreakdown.map((p) => {
             const share = activeSubsCount > 0 ? (p.active / activeSubsCount) * 100 : 0;
             return (
