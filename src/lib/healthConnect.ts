@@ -1,6 +1,5 @@
 import { Capacitor } from "@capacitor/core";
-import { HealthConnect } from "capacitor-health-connect";
-import type { HealthConnectAvailability, RecordType } from "capacitor-health-connect";
+import { Health, type HealthDataType, type HealthSample } from "@capgo/capacitor-health";
 import type { HealthSnapshot } from "@/lib/appleHealth";
 import { logStartupEvent, reportStartupError } from "@/lib/startupDiagnostics";
 import {
@@ -16,28 +15,46 @@ export function canUseHealthConnect() {
   return Capacitor.getPlatform() === "android" && Capacitor.isNativePlatform();
 }
 
-const READ_TYPES: RecordType[] = [
-  "Steps",
-  "ActiveCaloriesBurned",
-  "HeartRateSeries",
-  "RestingHeartRate",
-  "Weight",
-  "BloodGlucose",
-] ;
+const READ_TYPES: HealthDataType[] = [
+  "steps", "calories", "heartRate", "restingHeartRate", "weight", "bloodGlucose",
+];
 
 const STEPS_READ_OPTIONS = {
-  read: ["Steps"] as RecordType[],
-  write: [] as RecordType[],
+  read: ["steps"] as HealthDataType[],
+  write: [] as HealthDataType[],
 };
 
 type HealthConnectPermissionState = {
-  availability: HealthConnectAvailability | "Unknown";
+  availability: "Available" | "NotInstalled" | "NotSupported" | "Unknown";
   authorized: boolean;
   canRequest: boolean;
   message: string;
 };
 
 const readOptions = { read: READ_TYPES, write: [] as RecordType[] };
+
+let permissionTransitionActive = false;
+let lastKnownStepsAuthorized = false;
+
+function transitionState(): HealthConnectPermissionState {
+  return {
+    availability: "Available",
+    authorized: lastKnownStepsAuthorized,
+    canRequest: !lastKnownStepsAuthorized,
+    message: lastKnownStepsAuthorized
+      ? "Health Connect is connected."
+      : "Complete the Health Connect permission screen.",
+  };
+}
+
+function mapAvailability(available: boolean, reason?: string): HealthConnectPermissionState["availability"] {
+  if (available) return "Available";
+  return /install|provider|update/i.test(reason ?? "") ? "NotInstalled" : "NotSupported";
+}
+
+function isReadAuthorized(readAuthorized: HealthDataType[] | undefined, type: HealthDataType) {
+  return readAuthorized?.includes(type) ?? false;
+}
 
 export async function getHealthConnectPermissionState(): Promise<HealthConnectPermissionState> {
   if (!canUseHealthConnect()) {
@@ -49,19 +66,25 @@ export async function getHealthConnectPermissionState(): Promise<HealthConnectPe
     };
   }
 
+  // Android emits app-resume and visibility events while the native permission
+  // result is still being delivered. Never make a second plugin call in that
+  // hand-off window.
+  if (permissionTransitionActive) return transitionState();
+
   try {
-    const status = await HealthConnect.checkAvailability();
-    if (status.availability === "NotInstalled") {
+    const status = await Health.isAvailable();
+    const availability = mapAvailability(status.available, status.reason);
+    if (availability === "NotInstalled") {
       return {
-        availability: status.availability,
+        availability,
         authorized: false,
         canRequest: true,
         message: "Install or update Health Connect, then allow permissions.",
       };
     }
-    if (status.availability === "NotSupported") {
+    if (availability === "NotSupported") {
       return {
-        availability: status.availability,
+        availability,
         authorized: false,
         canRequest: false,
         message: "Health Connect is not supported on this Android device.",
@@ -70,10 +93,11 @@ export async function getHealthConnectPermissionState(): Promise<HealthConnectPe
 
     // Startup permission state is intentionally Steps-only. Requiring every
     // optional vital here made a granted Steps permission look unauthorized.
-    const perms = await HealthConnect.checkHealthPermissions(STEPS_READ_OPTIONS);
-    const authorized = !!perms?.hasAllPermissions;
+    const perms = await Health.checkAuthorization(STEPS_READ_OPTIONS);
+    const authorized = isReadAuthorized(perms.readAuthorized, "steps");
+    lastKnownStepsAuthorized = authorized;
     return {
-      availability: status.availability,
+      availability,
       authorized,
       canRequest: !authorized,
       message: authorized
@@ -93,28 +117,32 @@ export async function getHealthConnectPermissionState(): Promise<HealthConnectPe
 
 export async function requestHealthConnectAuthorization(): Promise<HealthConnectPermissionState> {
   if (!canUseHealthConnect()) return getHealthConnectPermissionState();
+  if (permissionTransitionActive) return transitionState();
 
+  permissionTransitionActive = true;
+  document.documentElement.classList.add("bb-native-permission-flow");
+  window.dispatchEvent(new CustomEvent("bbdo:native-permissions-started"));
   try {
-    const status = await HealthConnect.checkAvailability();
-    if (status.availability === "NotSupported") return getHealthConnectPermissionState();
-    if (status.availability === "NotInstalled") return getHealthConnectPermissionState();
+    const status = await Health.isAvailable();
+    const availability = mapAvailability(status.available, status.reason);
+    if (!status.available) {
+      return {
+        availability,
+        authorized: false,
+        canRequest: availability === "NotInstalled",
+        message: availability === "NotInstalled"
+          ? "Install or update Health Connect, then allow permissions."
+          : "Health Connect is not supported on this Android device.",
+      };
+    }
 
     logStartupEvent("health-connect authorization requested");
-    // Ask for Steps first (exactly what the patient sync flow does). Requesting
-    // every record type at once can abort the Health Connect permission
-    // activity on some Android builds and take the app down with it.
-    let result: any = null;
-    try {
-      result = await HealthConnect.requestHealthPermissions(STEPS_READ_OPTIONS);
-    } catch (e) {
-      reportStartupError("health-connect steps permission request failed", e);
-    }
-    if (!result?.hasAllPermissions) {
-      try { result = await HealthConnect.checkHealthPermissions(STEPS_READ_OPTIONS); } catch { /* ignore */ }
-    }
-    logStartupEvent("health-connect authorization result", result?.hasAllPermissions ? "granted" : "denied");
+    const result = await Health.requestAuthorization(STEPS_READ_OPTIONS);
+    const authorized = isReadAuthorized(result.readAuthorized, "steps");
+    lastKnownStepsAuthorized = authorized;
+    logStartupEvent("health-connect authorization result", authorized ? "granted" : "denied");
 
-    if (result?.hasAllPermissions) {
+    if (authorized) {
       return {
         availability: "Available",
         authorized: true,
@@ -124,7 +152,7 @@ export async function requestHealthConnectAuthorization(): Promise<HealthConnect
     }
 
     return {
-      availability: status.availability,
+      availability,
       authorized: false,
       canRequest: true,
       message: "Health Connect permission was not granted. Tap Allow and enable the requested data types.",
@@ -137,6 +165,13 @@ export async function requestHealthConnectAuthorization(): Promise<HealthConnect
       canRequest: true,
       message: "Health Connect permission request was cancelled or failed. Tap Allow and try again.",
     };
+  } finally {
+    // Let Capacitor finish restoring the WebView and dispatching appStateChange
+    // before dashboard cards are allowed to query Health Connect.
+    await new Promise((resolve) => window.setTimeout(resolve, 900));
+    permissionTransitionActive = false;
+    document.documentElement.classList.remove("bb-native-permission-flow");
+    window.dispatchEvent(new CustomEvent("bbdo:native-permissions-settled"));
   }
 }
 
@@ -155,17 +190,16 @@ function startOfToday() { return startOfLocalDay(); }
 function endOfToday()   { return new Date(); }
 function daysAgo(n: number) { const d = new Date(); d.setDate(d.getDate() - n); return d; }
 
-async function aggregate(type: RecordType, start: Date, end: Date): Promise<any | null> {
+async function aggregate(type: HealthDataType, start: Date, end: Date): Promise<HealthSample[] | null> {
   try {
-    const res: any = await (HealthConnect as any).readRecords({
-      type,
-      timeRangeFilter: {
-        type: "between",
-        startTime: start.toISOString(),
-        endTime: end.toISOString(),
-      },
+    const res = await Health.readSamples({
+      dataType: type,
+      startDate: start.toISOString(),
+      endDate: end.toISOString(),
+      limit: 5000,
+      ascending: true,
     });
-    return res?.records ?? [];
+    return res.samples ?? [];
   } catch (e) {
     console.warn(`health-connect readRecords ${type} failed`, e);
     return null;
@@ -181,45 +215,42 @@ function last<T = any>(records: any[] | null): T | undefined {
 
 /** Read Steps only — never blocked by other data types being un-granted. */
 async function ensureStepsPermission(allowPrompt = true): Promise<void> {
-  const status = await HealthConnect.checkAvailability();
-  if (status.availability === "NotSupported") {
+  if (permissionTransitionActive) throw new Error("Health Connect permission is still being applied.");
+  const status = await Health.isAvailable();
+  const availability = mapAvailability(status.available, status.reason);
+  if (availability === "NotSupported") {
     throw new Error("Health Connect is not supported on this Android device.");
   }
-  if (status.availability === "NotInstalled") {
+  if (availability === "NotInstalled") {
     throw new Error("Install or update Health Connect, then allow step permissions.");
   }
-  const perms = await HealthConnect.checkHealthPermissions(STEPS_READ_OPTIONS);
-  if (perms?.hasAllPermissions) return;
+  const perms = await Health.checkAuthorization(STEPS_READ_OPTIONS);
+  if (isReadAuthorized(perms.readAuthorized, "steps")) return;
   if (!allowPrompt) {
     // Never open the system permission screen from a background/auto sync —
     // it steals window focus and causes the status bar to flicker in a loop.
     throw new Error("Allow the Steps permission in Health Connect to sync your steps.");
   }
-  const requested = await HealthConnect.requestHealthPermissions(STEPS_READ_OPTIONS);
-  if (!requested?.hasAllPermissions) {
+  const requested = await requestHealthConnectAuthorization();
+  if (!requested.authorized) {
     throw new Error("Allow the Steps permission in Health Connect to sync your steps.");
   }
 }
 
 async function readAllSteps(start: Date, end: Date): Promise<any[]> {
-  const records: any[] = [];
-  let pageToken: string | undefined;
-  for (let i = 0; i < 20; i++) {
-    const res: any = await (HealthConnect as any).readRecords({
-      type: "Steps",
-      timeRangeFilter: {
-        type: "between",
-        startTime: start.toISOString(),
-        endTime: end.toISOString(),
-      },
-      pageSize: 1000,
-      pageToken,
-    });
-    records.push(...(res?.records ?? []));
-    pageToken = res?.pageToken || undefined;
-    if (!pageToken) break;
-  }
-  return records;
+  const result = await Health.readSamples({
+    dataType: "steps",
+    startDate: start.toISOString(),
+    endDate: end.toISOString(),
+    limit: 10000,
+    ascending: true,
+  });
+  return (result.samples ?? []).map((sample) => ({
+    count: sample.value,
+    startTime: sample.startDate,
+    endTime: sample.endDate,
+    metadata: { dataOrigin: sample.sourceId ?? sample.sourceName ?? "unknown" },
+  }));
 }
 
 
@@ -294,26 +325,22 @@ export async function fetchHealthConnectSnapshot(): Promise<HealthSnapshot | nul
 
   const [steps, active, hr, restingHr, weight, glucose] =
     await Promise.all([
-      aggregate("Steps", startOfToday(), endOfToday()),
-      aggregate("ActiveCaloriesBurned", startOfToday(), endOfToday()),
-      aggregate("HeartRateSeries", daysAgo(1), endOfToday()),
-      aggregate("RestingHeartRate", daysAgo(7), endOfToday()),
-      aggregate("Weight", daysAgo(30), endOfToday()),
-      aggregate("BloodGlucose", daysAgo(7), endOfToday()),
+      aggregate("steps", startOfToday(), endOfToday()),
+      aggregate("calories", startOfToday(), endOfToday()),
+      aggregate("heartRate", daysAgo(1), endOfToday()),
+      aggregate("restingHeartRate", daysAgo(7), endOfToday()),
+      aggregate("weight", daysAgo(30), endOfToday()),
+      aggregate("bloodGlucose", daysAgo(7), endOfToday()),
     ]);
 
-  const stepsTotal = sumStepsDeduped(steps);
-  const activeKcal = active ? active.reduce(
-    (a: number, r: any) => a + Number(r?.energy?.value ?? r?.energy ?? 0),
-    0,
-  ) : undefined;
+  const stepsTotal = steps?.reduce((total, sample) => total + Number(sample.value || 0), 0);
+  const activeKcal = active?.reduce((total, sample) => total + Number(sample.value || 0), 0);
 
   const heartRateFromSeries = (() => {
     if (!hr || hr.length === 0) return undefined;
     const samples: number[] = [];
     for (const r of hr) {
-      const arr = r?.samples ?? [];
-      for (const s of arr) samples.push(Number(s?.beatsPerMinute ?? 0));
+      samples.push(Number(r?.value ?? 0));
     }
     if (!samples.length) return undefined;
     samples.sort((a, b) => a - b);
@@ -321,32 +348,32 @@ export async function fetchHealthConnectSnapshot(): Promise<HealthSnapshot | nul
   })();
 
   const lastRestingHr = last<any>(restingHr);
-  const restingHeartRate = Number(lastRestingHr?.beatsPerMinute ?? 0) || heartRateFromSeries;
+  const restingHeartRate = Number(lastRestingHr?.value ?? 0) || heartRateFromSeries;
 
   const lastWeight = last<any>(weight);
   const weightKg = (() => {
     if (!lastWeight) return undefined;
-    const value = Number(lastWeight?.weight?.value ?? lastWeight?.weight ?? 0);
+    const value = Number(lastWeight?.value ?? 0);
     if (!value) return undefined;
-    const unit = lastWeight?.weight?.unit;
+    const unit = lastWeight?.unit;
     return unit === "gram" ? value / 1000 : value;
   })();
-  const weightAt = lastWeight?.time ?? lastWeight?.endTime;
+  const weightAt = lastWeight?.endDate;
 
   const lastGlucose = last<any>(glucose);
   const glucoseMgDl = (() => {
     if (!lastGlucose) return undefined;
-    const value = Number(lastGlucose?.level?.value ?? 0);
+    const value = Number(lastGlucose?.value ?? 0);
     if (!value) return undefined;
-    return Math.round(lastGlucose?.level?.unit === "millimolesPerLiter" ? value * 18.0182 : value);
+    return Math.round(value);
   })();
-  const glucoseAt = lastGlucose?.time;
+  const glucoseAt = lastGlucose?.endDate;
 
   return {
     steps: stepsTotal != null ? Math.round(stepsTotal) : undefined,
     activeCalories: activeKcal ? Math.round(activeKcal) : undefined,
     restingHeartRate,
-    restingHeartRateAt: lastRestingHr?.time,
+    restingHeartRateAt: lastRestingHr?.endDate,
     weightKg,
     weightAt,
     glucoseMgDl,
@@ -359,17 +386,18 @@ export async function writeWeightToHealthConnect(kg: number, at?: Date): Promise
   try {
     const readOk = await ensureAvailableAndAuthorized();
     if (!readOk) return false;
-    const writePerms = await HealthConnect.checkHealthPermissions({ read: [], write: ["Weight"] });
-    if (!writePerms?.hasAllPermissions) {
-      const requested = await HealthConnect.requestHealthPermissions({ read: [], write: ["Weight"] });
-      if (!requested?.hasAllPermissions) return false;
+    const writeOptions = { read: [] as HealthDataType[], write: ["weight"] as HealthDataType[] };
+    const writePerms = await Health.checkAuthorization(writeOptions);
+    if (!writePerms.writeAuthorized.includes("weight")) {
+      const requested = await Health.requestAuthorization(writeOptions);
+      if (!requested.writeAuthorized.includes("weight")) return false;
     }
-    await (HealthConnect as any).insertRecords({
-      records: [{
-        type: "Weight",
-        time: (at ?? new Date()).toISOString(),
-        weight: { value: kg, unit: "kilogram" },
-      }],
+    await Health.saveSample({
+      dataType: "weight",
+      value: kg,
+      unit: "kilogram",
+      startDate: (at ?? new Date()).toISOString(),
+      endDate: (at ?? new Date()).toISOString(),
     });
     return true;
   } catch (e) {
@@ -379,5 +407,5 @@ export async function writeWeightToHealthConnect(kg: number, at?: Date): Promise
 }
 
 export async function openHealthConnectSettings(): Promise<void> {
-  try { await (HealthConnect as any).openHealthConnectSetting?.(); } catch {}
+  try { await Health.openHealthConnectSettings(); } catch {}
 }

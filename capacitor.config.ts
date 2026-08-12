@@ -52,7 +52,7 @@ const config: CapacitorConfig = {
       "@capacitor/push-notifications",
       "@capacitor/share",
       "@capawesome/capacitor-badge",
-      "capacitor-health-connect",
+      "@capgo/capacitor-health",
     ],
   },
 };
