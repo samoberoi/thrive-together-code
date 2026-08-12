@@ -6,7 +6,6 @@ import { createNotification } from "@/lib/notificationService";
 import { getNotificationSoundSettings } from "@/lib/notificationSoundService";
 import { BBDO_PUSH_CHANNEL_ID } from "@/lib/nativePush";
 import {
-  playCriticalHealthAlert,
   playNotificationSound,
   playSuccess,
   getMasterVolume,
@@ -148,7 +147,7 @@ export async function sendLocalHealthAlert(title: string, body: string): Promise
           id: Math.floor(Date.now() % 2_147_000_000),
           title,
           body,
-          sound: "default",
+          sound: "bbdo_chime.wav",
           schedule: { at: new Date(Date.now() + 350) },
           channelId: BBDO_PUSH_CHANNEL_ID,
           interruptionLevel: "timeSensitive",
@@ -172,7 +171,7 @@ export function fireRealtimeHealthNotificationAlert(notification: RealtimeHealth
   window.setTimeout(() => playedRealtimeAlertIds.delete(key), 30_000);
 
   setMasterVolume(1);
-  playCriticalHealthAlert();
+  playNotificationSound();
   void sendLocalHealthAlert(notification.title, notification.body);
 }
 
@@ -237,8 +236,8 @@ export async function fireHealthMetricFeedback(
         try {
           const previousVolume = getMasterVolume();
           setMasterVolume(Math.max(settings.volume ?? 0.8, result.level === "critical" ? 1 : 0.9));
-          playCriticalHealthAlert();
-          setTimeout(() => playNotificationSound(settings.variant), 520);
+          // One sound only — the Hummingbird chirp.
+          playNotificationSound(settings.variant);
           setTimeout(() => setMasterVolume(previousVolume), 1_800);
         } catch (soundErr) {
           console.warn("health alert sound failed", soundErr);
