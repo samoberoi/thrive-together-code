@@ -148,7 +148,7 @@ export async function sendLocalHealthAlert(title: string, body: string): Promise
           id: Math.floor(Date.now() % 2_147_000_000),
           title,
           body,
-          sound: "default",
+          sound: "bbdo_chime.wav",
           schedule: { at: new Date(Date.now() + 350) },
           channelId: BBDO_PUSH_CHANNEL_ID,
           interruptionLevel: "timeSensitive",
