@@ -260,16 +260,24 @@ export default function DailyActivityDial({
             {/* Icon chips — drawn inside the SVG so they always sit exactly on
                 the same circle as the rings, on every screen size. */}
             {safe.map((it, i) => {
-              const angle = (i / Math.max(n, 1)) * Math.PI * 2 - Math.PI / 2;
+              const angle = (i / Math.max(safe.length, 1)) * Math.PI * 2 - Math.PI / 2;
               const x = CENTER + Math.cos(angle) * geo.iconRadius;
               const y = CENTER + Math.sin(angle) * geo.iconRadius;
               const Icon = ICONS[it.key] ?? Heart;
-              const complete = it.ratio >= 1;
+              const complete = !it.disabled && it.ratio >= 1;
+              const inProgress = !it.disabled && it.ratio > 0 && it.ratio < 1;
               const r = geo.iconChip / 2;
               const glyph = geo.iconChip * 0.52;
+              const glyphColor = it.disabled
+                ? "#CBD5E1"
+                : complete
+                  ? it.color
+                  : inProgress
+                    ? it.color
+                    : "#94A3B8";
               return (
-                <g key={`chip-${it.key}`}>
-                  <title>{`${it.label}${it.hint ? ` · ${it.hint}` : ""}`}</title>
+                <g key={`chip-${it.key}`} opacity={it.disabled ? 0.55 : 1}>
+                  <title>{`${it.label}${it.disabled ? " · Not unlocked" : it.hint ? ` · ${it.hint}` : ""}`}</title>
                   <circle
                     cx={x}
                     cy={y}
@@ -277,18 +285,21 @@ export default function DailyActivityDial({
                     fill="#ffffff"
                     stroke={complete ? it.color : "hsl(var(--border))"}
                     strokeWidth={complete ? 1.6 : 1}
+                    strokeDasharray={it.disabled ? "2 3" : undefined}
                   />
                   <Icon
                     x={x - glyph / 2}
                     y={y - glyph / 2}
                     width={glyph}
                     height={glyph}
-                    color={complete ? it.color : "#94A3B8"}
+                    color={glyphColor}
+                    opacity={inProgress ? 0.75 : 1}
                     strokeWidth={2.4}
                   />
                 </g>
               );
             })}
+
           </svg>
         </div>
 
