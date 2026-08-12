@@ -12,7 +12,6 @@ import {
   type FastingProtocol,
   type UserProtocol,
 } from "@/lib/fastingService";
-import { createNotification } from "@/lib/notificationService";
 
 interface Props {
   open: boolean;
