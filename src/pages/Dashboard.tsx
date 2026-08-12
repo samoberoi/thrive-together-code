@@ -1,4 +1,5 @@
 import { useEffect, useState, lazy, Suspense } from "react";
+import { Capacitor } from "@capacitor/core";
 import { motion, AnimatePresence } from "framer-motion";
 import { Home, Play, Users, Stethoscope, Zap, Timer, Pill, FlaskConical, LogOut, Footprints, Compass, Dumbbell, MessageCircle, Plus, CalendarDays, UtensilsCrossed } from "lucide-react";
 import BbdoWordmark from "@/components/BbdoWordmark";
@@ -290,12 +291,37 @@ export default function Dashboard() {
     let seen = "1";
     try { seen = localStorage.getItem(tourKey) ?? ""; } catch { /* ignore */ }
     if (seen) return;
-    const t = window.setTimeout(() => {
+
+    let cancelled = false;
+    let timer: number | null = null;
+    const launchWhenStable = () => {
+      if (cancelled) return;
+      // Android permission/settings activities temporarily background the
+      // WebView. Never mount the tour until those activities have fully closed.
+      if (document.documentElement.classList.contains("bb-native-permission-flow") ||
+          document.visibilityState !== "visible" || !document.hasFocus()) {
+        timer = window.setTimeout(launchWhenStable, 500);
+        return;
+      }
+      const settleDelay = Capacitor.getPlatform() === "android" && Capacitor.isNativePlatform() ? 1200 : 300;
+      timer = window.setTimeout(() => {
+        if (cancelled || document.visibilityState !== "visible") return;
+        setActiveTab("home");
+        setProfileOpen(false);
+        setTourOpen(true);
+      }, settleDelay);
+    };
+    const onPermissionsSettled = () => launchWhenStable();
+    window.addEventListener("bbdo:native-permissions-settled", onPermissionsSettled);
+    timer = window.setTimeout(() => {
       setActiveTab("home");
-      setProfileOpen(false);
-      setTourOpen(true);
+      launchWhenStable();
     }, 1400);
-    return () => window.clearTimeout(t);
+    return () => {
+      cancelled = true;
+      if (timer != null) window.clearTimeout(timer);
+      window.removeEventListener("bbdo:native-permissions-settled", onPermissionsSettled);
+    };
   }, [tourKey, tourOpen]);
 
   // Replay trigger (Profile → "Take the tour again")

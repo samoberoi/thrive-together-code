@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, ArrowRight, X, Sparkles } from "lucide-react";
+import { Capacitor } from "@capacitor/core";
 
 export type TourStep = {
   key: string;
@@ -175,6 +176,7 @@ export default function DashboardTour({
   const [i, setI] = useState(0);
   const [rect, setRect] = useState<Rect | null>(null);
   const rafRef = useRef<number | null>(null);
+  const androidNative = Capacitor.getPlatform() === "android" && Capacitor.isNativePlatform();
 
   useEffect(() => {
     if (!open) return;
@@ -224,13 +226,15 @@ export default function DashboardTour({
     const tick = () => {
       measure();
       frames += 1;
-      if (frames < 45) rafRef.current = requestAnimationFrame(tick);
+      // Android WebView can recreate its renderer immediately after a native
+      // permission activity. Avoid hammering it with 45 animated measurements.
+      if (!androidNative && frames < 45) rafRef.current = requestAnimationFrame(tick);
     };
     rafRef.current = requestAnimationFrame(tick);
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [open, step, measure]);
+  }, [androidNative, open, step, measure]);
 
   useEffect(() => {
     if (!open) return;
@@ -275,28 +279,42 @@ export default function DashboardTour({
         style={{ touchAction: "none", height: "100dvh" }}
         aria-live="polite"
       >
-        {/* Dim layer with spotlight cut-out */}
-        <svg className="absolute inset-0 w-full h-full" style={{ pointerEvents: "auto" }} onClick={(e) => e.stopPropagation()}>
-          <defs>
-            <mask id="bbdo-tour-mask">
-              <rect x="0" y="0" width="100%" height="100%" fill="white" />
-              {rect && (
-                <motion.rect
-                  initial={false}
-                  animate={{ x: rect.left, y: rect.top, width: rect.width, height: rect.height }}
-                  transition={{ type: "spring", stiffness: 320, damping: 34 }}
-                  rx={step?.radius ?? 20}
-                  ry={step?.radius ?? 20}
-                  fill="black"
-                />
-              )}
-            </mask>
-          </defs>
-          <rect x="0" y="0" width="100%" height="100%" fill="rgba(9,14,30,0.78)" mask="url(#bbdo-tour-mask)" />
-        </svg>
+        {/* Android uses four static panels instead of an animated SVG mask.
+            This avoids WebView GPU/renderer crashes after permission activities. */}
+        {androidNative ? (
+          rect ? (
+            <div className="absolute inset-0 pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+              <div className="absolute left-0 right-0 top-0 bg-[rgba(9,14,30,0.78)]" style={{ height: Math.max(0, rect.top) }} />
+              <div className="absolute left-0 right-0 bottom-0 bg-[rgba(9,14,30,0.78)]" style={{ top: Math.max(0, rect.top + rect.height) }} />
+              <div className="absolute left-0 bg-[rgba(9,14,30,0.78)]" style={{ top: rect.top, width: Math.max(0, rect.left), height: rect.height }} />
+              <div className="absolute right-0 bg-[rgba(9,14,30,0.78)]" style={{ top: rect.top, left: Math.max(0, rect.left + rect.width), height: rect.height }} />
+            </div>
+          ) : (
+            <div className="absolute inset-0 bg-[rgba(9,14,30,0.78)]" />
+          )
+        ) : (
+          <svg className="absolute inset-0 w-full h-full" style={{ pointerEvents: "auto" }} onClick={(e) => e.stopPropagation()}>
+            <defs>
+              <mask id="bbdo-tour-mask">
+                <rect x="0" y="0" width="100%" height="100%" fill="white" />
+                {rect && (
+                  <motion.rect
+                    initial={false}
+                    animate={{ x: rect.left, y: rect.top, width: rect.width, height: rect.height }}
+                    transition={{ type: "spring", stiffness: 320, damping: 34 }}
+                    rx={step?.radius ?? 20}
+                    ry={step?.radius ?? 20}
+                    fill="black"
+                  />
+                )}
+              </mask>
+            </defs>
+            <rect x="0" y="0" width="100%" height="100%" fill="rgba(9,14,30,0.78)" mask="url(#bbdo-tour-mask)" />
+          </svg>
+        )}
 
         {/* Glow ring around the spotlight — pulses like a native coach-mark */}
-        {rect && (
+        {rect && !androidNative && (
           <motion.div
             initial={false}
             animate={{

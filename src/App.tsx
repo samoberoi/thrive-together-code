@@ -201,16 +201,27 @@ function GlobalRealtimeAlerts() {
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
+    const root = document.documentElement;
+    root.classList.add("bb-native-permission-flow");
+    window.dispatchEvent(new CustomEvent("bbdo:native-permissions-started"));
     const id = window.setTimeout(() => {
       void (async () => {
-        await ensureNativeHealthPermission(user.id);
-        if (cancelled || !isNativePushSupported()) return;
-        await registerNativePush(user.id);
+        try {
+          await ensureNativeHealthPermission(user.id);
+          if (cancelled || !isNativePushSupported()) return;
+          await registerNativePush(user.id);
+        } finally {
+          if (!cancelled) {
+            root.classList.remove("bb-native-permission-flow");
+            window.dispatchEvent(new CustomEvent("bbdo:native-permissions-settled"));
+          }
+        }
       })();
     }, 800);
     return () => {
       cancelled = true;
       window.clearTimeout(id);
+      root.classList.remove("bb-native-permission-flow");
     };
   }, [user]);
 
