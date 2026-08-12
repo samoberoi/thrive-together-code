@@ -42,6 +42,9 @@ import { fetchUserStats } from "@/lib/userStatsService";
 import { useColorGauges } from "@/hooks/useColorGauges";
 import HealthScoreRing from "@/components/HealthScoreRing";
 import DailyActivityDial, { type DialRingItem as HeartRingItem } from "@/components/DailyActivityDial";
+import MetricTrendsSection from "@/components/MetricTrendsSection";
+import { recordDailyHealthScore } from "@/lib/trendsService";
+
 import TodaysYogaClass from "@/components/home/TodaysYogaClass";
 import GlobalStreakCard from "@/components/home/GlobalStreakCard";
 import { Wind } from "lucide-react";
