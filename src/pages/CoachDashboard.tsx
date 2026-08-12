@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { resolveCurrentCoach } from "@/lib/coachService";
 import CoachGuidedTour from "./coach/CoachGuidedTour";
+import logoImg from "@/assets/logo.png";
 
 // Lazy: coach panels mount on first visit, so each gets its own chunk.
 const Community = lazy(() => import("./tabs/Community"));
