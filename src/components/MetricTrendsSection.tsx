@@ -1,18 +1,15 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
-import { Activity, ChevronRight, Droplet, Footprints, Scale, TrendingDown, TrendingUp } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Activity, ChevronDown, Droplet, Footprints, Scale, TrendingDown, TrendingUp } from "lucide-react";
 import {
   Area,
   AreaChart,
   CartesianGrid,
-  Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { fetchJoinDate, fetchTrendSeries, todayKey, type TrendMetric, type TrendPoint } from "@/lib/trendsService";
 
 interface MetricDef {
@@ -26,10 +23,19 @@ interface MetricDef {
 }
 
 const METRICS: MetricDef[] = [
-  { key: "health", title: "Health trends", unit: "", icon: Activity, color: "#248CCB", goodDirection: "up" },
-  { key: "weight", title: "Weight trends", unit: "kg", icon: Scale, color: "#10B981", goodDirection: "down" },
-  { key: "glucose", title: "Blood glucose trends", unit: "mg/dL", icon: Droplet, color: "#F59E0B", goodDirection: "down" },
-  { key: "steps", title: "Steps trends", unit: "steps", icon: Footprints, color: "#8B5CF6", goodDirection: "up" },
+  { key: "health", title: "Health score", unit: "", icon: Activity, color: "#248CCB", goodDirection: "up" },
+  { key: "weight", title: "Weight", unit: "kg", icon: Scale, color: "#10B981", goodDirection: "down" },
+  { key: "glucose", title: "Blood glucose", unit: "mg/dL", icon: Droplet, color: "#F59E0B", goodDirection: "down" },
+  { key: "steps", title: "Steps", unit: "steps", icon: Footprints, color: "#8B5CF6", goodDirection: "up" },
+];
+
+type RangeKey = "W" | "F" | "M" | "Q";
+
+const RANGES: { key: RangeKey; label: string; days: number }[] = [
+  { key: "W", label: "Week", days: 7 },
+  { key: "F", label: "Fortnight", days: 14 },
+  { key: "M", label: "Month", days: 30 },
+  { key: "Q", label: "Quarter", days: 90 },
 ];
 
 function fmt(value: number, unit: string) {
@@ -37,18 +43,28 @@ function fmt(value: number, unit: string) {
   return unit && unit !== "steps" ? `${v} ${unit}` : v;
 }
 
+function shiftDays(dateKeyStr: string, days: number) {
+  const d = new Date(`${dateKeyStr}T00:00:00`);
+  d.setDate(d.getDate() - days);
+  return d.toISOString().slice(0, 10);
+}
+
 function prettyDate(d: string) {
   return new Date(`${d}T00:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
 }
 
+/**
+ * Health-app style trends: one row per metric, tap to slide open an inline
+ * chart with Week / Fortnight / Month / Quarter toggles. No dialogs.
+ */
 export default function MetricTrendsSection({ userId }: { userId?: string }) {
-  const [joinDate, setJoinDate] = useState<string | null>(null);
-  const [series, setSeries] = useState<Record<TrendMetric, TrendPoint[]>>({
+  const today = todayKey();
+  const [joinDate, setJoinDate] = useState<string>(today);
+  const [open, setOpen] = useState<TrendMetric | null>(null);
+  const [range, setRange] = useState<RangeKey>("W");
+  const [full, setFull] = useState<Record<TrendMetric, TrendPoint[]>>({
     health: [], weight: [], glucose: [], steps: [],
   });
-  const [open, setOpen] = useState<TrendMetric | null>(null);
-
-  const today = todayKey();
 
   useEffect(() => {
     if (!userId) return;
@@ -57,261 +73,210 @@ export default function MetricTrendsSection({ userId }: { userId?: string }) {
       const jd = (await fetchJoinDate(userId)) ?? today;
       if (cancelled) return;
       setJoinDate(jd);
-      const results = await Promise.all(
-        METRICS.map((m) => fetchTrendSeries(userId, m.key, jd, today)),
-      );
+      // Load the widest window once (quarter or since joining, whichever is
+      // longer) and slice it client-side when the toggle changes.
+      const earliest = jd < shiftDays(today, 90) ? jd : shiftDays(today, 90);
+      const results = await Promise.all(METRICS.map((m) => fetchTrendSeries(userId, m.key, earliest, today)));
       if (cancelled) return;
       const next = { health: [], weight: [], glucose: [], steps: [] } as Record<TrendMetric, TrendPoint[]>;
       METRICS.forEach((m, i) => { next[m.key] = results[i]; });
-      setSeries(next);
+      setFull(next);
     })();
     return () => { cancelled = true; };
   }, [userId, today]);
 
-  const activeMetric = METRICS.find((m) => m.key === open) ?? null;
+  const days = RANGES.find((r) => r.key === range)!.days;
+  const windowStart = useMemo(() => {
+    const s = shiftDays(today, days - 1);
+    return s < joinDate ? joinDate : s;
+  }, [today, days, joinDate]);
 
   return (
-    <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-        {METRICS.map((m, idx) => {
-          const data = series[m.key];
-          const first = data[0]?.value ?? null;
-          const last = data[data.length - 1]?.value ?? null;
-          const delta = first != null && last != null ? last - first : null;
-          const improving = delta == null || delta === 0
-            ? null
-            : m.goodDirection === "up" ? delta > 0 : delta < 0;
-          const Icon = m.icon;
-          return (
-            <motion.button
-              key={m.key}
+    <div className="space-y-2.5">
+      {METRICS.map((m, idx) => {
+        const all = full[m.key];
+        const isOpen = open === m.key;
+        const windowed = all.filter((p) => p.date >= windowStart && p.date <= today);
+        const data = isOpen ? windowed : all.slice(-14);
+        const first = windowed[0]?.value ?? null;
+        const last = windowed[windowed.length - 1]?.value ?? all[all.length - 1]?.value ?? null;
+        const delta = first != null && windowed.length > 1 ? windowed[windowed.length - 1].value - first : null;
+        const improving = delta == null || delta === 0 ? null : m.goodDirection === "up" ? delta > 0 : delta < 0;
+        const Icon = m.icon;
+
+        return (
+          <motion.div
+            key={m.key}
+            className="liquid-glass rounded-2xl overflow-hidden"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.04 * idx, duration: 0.22 }}
+          >
+            <button
               type="button"
-              onClick={() => setOpen(m.key)}
-              className="liquid-glass rounded-2xl p-3.5 text-left flex items-center gap-3 active:scale-[0.99] transition-transform"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.04 * idx, duration: 0.22 }}
+              onClick={() => setOpen(isOpen ? null : m.key)}
+              className="w-full px-3.5 py-3 flex items-center gap-3 text-left active:scale-[0.995] transition-transform"
             >
               <span
                 className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
                 style={{ backgroundColor: `${m.color}1A` }}
               >
-                <Icon className="w-4.5 h-4.5" style={{ color: m.color }} strokeWidth={2} />
+                <Icon className="w-4 h-4" style={{ color: m.color }} strokeWidth={2.2} />
               </span>
               <div className="min-w-0 flex-1">
                 <p className="text-[13px] font-bold text-foreground leading-tight truncate">{m.title}</p>
                 <p className="text-[10px] text-muted-foreground font-medium mt-0.5">
-                  {last != null ? `Now ${fmt(last, m.unit)}` : "No data yet"}
+                  {last != null ? fmt(last, m.unit) : "No data yet"}
                   {delta != null && delta !== 0 && (
                     <span
                       className="ml-1.5 inline-flex items-center gap-0.5 font-bold"
                       style={{ color: improving ? "#10B981" : "#EF4444" }}
                     >
                       {delta > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                      {fmt(Math.abs(delta), m.unit === "steps" ? "steps" : m.unit)}
+                      {fmt(Math.abs(delta), m.unit)}
                     </span>
                   )}
                 </p>
               </div>
-              {data.length > 1 && (
-                <div className="w-16 h-8 shrink-0 opacity-90">
+              {!isOpen && data.length > 1 && (
+                <div className="w-20 h-9 shrink-0">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={data}>
-                      <Area type="monotone" dataKey="value" stroke={m.color} fill={`${m.color}33`} strokeWidth={1.6} dot={false} />
+                    <AreaChart data={data} margin={{ top: 2, right: 0, bottom: 2, left: 0 }}>
+                      <defs>
+                        <linearGradient id={`spark-${m.key}`} x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={m.color} stopOpacity={0.35} />
+                          <stop offset="100%" stopColor={m.color} stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <YAxis hide domain={["dataMin", "dataMax"]} />
+                      <Area
+                        type="linear"
+                        dataKey="value"
+                        stroke={m.color}
+                        strokeWidth={1.8}
+                        fill={`url(#spark-${m.key})`}
+                        dot={false}
+                        isAnimationActive={false}
+                      />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
               )}
-              <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
-            </motion.button>
-          );
-        })}
-      </div>
+              <ChevronDown
+                className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`}
+              />
+            </button>
 
-      <TrendDetailDialog
-        metric={activeMetric}
-        userId={userId}
-        joinDate={joinDate ?? today}
-        today={today}
-        onClose={() => setOpen(null)}
-      />
-    </>
-  );
-}
+            <AnimatePresence initial={false}>
+              {isOpen && (
+                <motion.div
+                  key="panel"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
+                  className="overflow-hidden"
+                >
+                  <div className="px-3.5 pb-3.5">
+                    <div className="flex gap-1 rounded-full bg-muted p-1 mb-3">
+                      {RANGES.map((r) => {
+                        const active = range === r.key;
+                        return (
+                          <button
+                            key={r.key}
+                            type="button"
+                            onClick={() => setRange(r.key)}
+                            className={`flex-1 rounded-full py-1.5 text-[11px] font-bold transition-colors ${
+                              active ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
+                            }`}
+                          >
+                            {r.label}
+                          </button>
+                        );
+                      })}
+                    </div>
 
-function TrendDetailDialog({
-  metric,
-  userId,
-  joinDate,
-  today,
-  onClose,
-}: {
-  metric: MetricDef | null;
-  userId?: string;
-  joinDate: string;
-  today: string;
-  onClose: () => void;
-}) {
-  type RangeKey = "weekly" | "fortnightly" | "monthly" | "quarterly" | "all" | "custom";
-  const RANGES: { key: RangeKey; label: string; days: number | "all" }[] = [
-    { key: "weekly", label: "Weekly", days: 7 },
-    { key: "fortnightly", label: "Fortnightly", days: 14 },
-    { key: "monthly", label: "Monthly", days: 30 },
-    { key: "quarterly", label: "Quarterly", days: 90 },
-    { key: "all", label: "Since joining", days: "all" },
-  ];
+                    <p className="text-[10px] font-semibold text-muted-foreground mb-2">
+                      {prettyDate(windowStart)} – {prettyDate(today)}
+                    </p>
 
-  const startFor = useCallback(
-    (days: number | "all") => {
-      if (days === "all") return joinDate;
-      const d = new Date(`${today}T00:00:00`);
-      d.setDate(d.getDate() - (days - 1));
-      const key = d.toISOString().slice(0, 10);
-      return key < joinDate ? joinDate : key;
-    },
-    [joinDate, today],
-  );
+                    <div className="h-48 w-full">
+                      {windowed.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={windowed} margin={{ top: 8, right: 6, bottom: 0, left: -12 }}>
+                            <defs>
+                              <linearGradient id={`fill-${m.key}`} x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor={m.color} stopOpacity={0.28} />
+                                <stop offset="100%" stopColor={m.color} stopOpacity={0.02} />
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.6} />
+                            <XAxis
+                              dataKey="date"
+                              tickFormatter={prettyDate}
+                              tick={{ fontSize: 10 }}
+                              tickLine={false}
+                              axisLine={false}
+                              stroke="hsl(var(--muted-foreground))"
+                              minTickGap={24}
+                            />
+                            <YAxis
+                              tick={{ fontSize: 10 }}
+                              tickLine={false}
+                              axisLine={false}
+                              width={40}
+                              stroke="hsl(var(--muted-foreground))"
+                              domain={["auto", "auto"]}
+                            />
+                            <Tooltip
+                              labelFormatter={(l: any) => prettyDate(String(l))}
+                              contentStyle={{ borderRadius: 12, border: "1px solid hsl(var(--border))", fontSize: 12 }}
+                              formatter={(v: any) => [fmt(Number(v), m.unit), m.title]}
+                            />
+                            <Area
+                              type="linear"
+                              dataKey="value"
+                              stroke={m.color}
+                              strokeWidth={2.4}
+                              fill={`url(#fill-${m.key})`}
+                              dot={windowed.length <= 14 ? { r: 2.5, fill: m.color, strokeWidth: 0 } : false}
+                              activeDot={{ r: 4 }}
+                            />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-border bg-background/60 px-4 text-center text-[12px] font-medium text-muted-foreground">
+                          No {m.title.toLowerCase()} data in this range yet.
+                        </div>
+                      )}
+                    </div>
 
-  const [range, setRange] = useState<RangeKey>("weekly");
-  const [start, setStart] = useState(() => startFor(7));
-  const [end, setEnd] = useState(today);
-  const [data, setData] = useState<TrendPoint[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  // Reset to the default weekly window whenever a different metric is opened.
-  useEffect(() => {
-    setRange("weekly");
-    setStart(startFor(7));
-    setEnd(today);
-  }, [metric?.key, startFor, today]);
-
-  const load = useCallback(async () => {
-    if (!userId || !metric) return;
-    setLoading(true);
-    const rows = await fetchTrendSeries(userId, metric.key, start, end);
-    setData(rows);
-    setLoading(false);
-  }, [userId, metric, start, end]);
-
-  useEffect(() => { load(); }, [load]);
-
-  const preset = (r: RangeKey, days: number | "all") => {
-    setRange(r);
-    setStart(startFor(days));
-    setEnd(today);
-  };
-
-  const stats = useMemo(() => {
-    if (data.length === 0) return null;
-    const values = data.map((d) => d.value);
-    const first = values[0];
-    const last = values[values.length - 1];
-    return {
-      first, last,
-      delta: last - first,
-      best: metric?.goodDirection === "down" ? Math.min(...values) : Math.max(...values),
-    };
-  }, [data, metric]);
-
-  const chartData = data.map((d) => ({ ...d, label: prettyDate(d.date) }));
-
-  return (
-    <Dialog open={!!metric} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-lg max-h-[88svh] overflow-y-auto rounded-3xl">
-        <DialogHeader>
-          <DialogTitle className="text-base font-black">{metric?.title ?? ""}</DialogTitle>
-        </DialogHeader>
-
-        <div className="flex flex-wrap gap-1.5">
-          {RANGES.map((p) => {
-            const active = range === p.key;
-            return (
-              <button
-                key={p.key}
-                type="button"
-                onClick={() => preset(p.key, p.days)}
-                className={`rounded-full border px-3 py-1 text-[11px] font-bold transition-colors ${
-                  active
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border bg-background/60 text-muted-foreground hover:border-primary hover:text-primary"
-                }`}
-              >
-                {p.label}
-              </button>
-            );
-          })}
-        </div>
-
-
-        <div className="grid grid-cols-2 gap-2">
-          <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-            Start date
-            <input
-              type="date"
-              value={start}
-              min={joinDate}
-              max={end}
-              onChange={(e) => { setRange("custom"); setStart(e.target.value); }}
-              className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-[13px] font-semibold text-foreground normal-case tracking-normal"
-            />
-          </label>
-          <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-            End date
-            <input
-              type="date"
-              value={end}
-              min={start}
-              max={today}
-              onChange={(e) => { setRange("custom"); setEnd(e.target.value); }}
-              className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-[13px] font-semibold text-foreground normal-case tracking-normal"
-            />
-          </label>
-        </div>
-
-        <div className="h-56 w-full">
-          {loading ? (
-            <div className="flex h-full items-center justify-center text-[12px] text-muted-foreground">Loading…</div>
-          ) : chartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: -10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="label" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" minTickGap={18} />
-                <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" width={38} domain={["auto", "auto"]} />
-                <Tooltip
-                  contentStyle={{ borderRadius: 12, border: "1px solid hsl(var(--border))", fontSize: 12 }}
-                  formatter={(v: any) => [fmt(Number(v), metric?.unit ?? ""), metric?.title ?? ""]}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="value"
-                  stroke={metric?.color ?? "hsl(var(--primary))"}
-                  strokeWidth={2.4}
-                  dot={{ r: 2.5 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-border bg-background/60 px-4 text-center text-[12px] font-medium text-muted-foreground">
-              No {metric?.title.replace(" trends", "").toLowerCase()} data in this range yet.
-            </div>
-          )}
-        </div>
-
-        {stats && (
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { label: "Start", value: fmt(stats.first, metric?.unit ?? "") },
-              { label: "Latest", value: fmt(stats.last, metric?.unit ?? "") },
-              { label: "Change", value: `${stats.delta > 0 ? "+" : ""}${fmt(stats.delta, metric?.unit ?? "")}` },
-            ].map((s) => (
-              <div key={s.label} className="rounded-2xl border border-border bg-background/60 px-3 py-2">
-                <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-muted-foreground">{s.label}</p>
-                <p className="text-[15px] font-black text-foreground leading-tight mt-0.5">{s.value}</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
+                    {windowed.length > 0 && (
+                      <div className="grid grid-cols-3 gap-2 mt-3">
+                        {[
+                          { label: "Start", value: fmt(windowed[0].value, m.unit) },
+                          { label: "Latest", value: fmt(windowed[windowed.length - 1].value, m.unit) },
+                          {
+                            label: "Change",
+                            value: `${delta != null && delta > 0 ? "+" : ""}${fmt(delta ?? 0, m.unit)}`,
+                          },
+                        ].map((s) => (
+                          <div key={s.label} className="rounded-2xl border border-border bg-background/60 px-3 py-2">
+                            <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                              {s.label}
+                            </p>
+                            <p className="text-[14px] font-black text-foreground leading-tight mt-0.5">{s.value}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        );
+      })}
+    </div>
   );
 }
