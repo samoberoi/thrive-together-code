@@ -549,6 +549,14 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
   const overrideTriggered = user.assessment?.overrideTriggered ?? false;
   const recommendedProgram = user.assessment?.recommendedProgram ?? "";
   const [initialScore, setInitialScore] = useState<number | null>(null);
+
+  // Persist today's health score so the "Health trends" chart has a datapoint
+  // for every day the user opens the app.
+  useEffect(() => {
+    if (!authUser?.id || !Number.isFinite(healthScore)) return;
+    recordDailyHealthScore(authUser.id, healthScore);
+  }, [authUser?.id, healthScore]);
+
   const [initialWeight, setInitialWeight] = useState<number | null>(null);
   const [initialGlucose, setInitialGlucose] = useState<number | null>(null);
   const [latestWeight, setLatestWeight] = useState<number | null>(null);
