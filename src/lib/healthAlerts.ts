@@ -170,9 +170,15 @@ export function fireRealtimeHealthNotificationAlert(notification: RealtimeHealth
   playedRealtimeAlertIds.add(key);
   window.setTimeout(() => playedRealtimeAlertIds.delete(key), 30_000);
 
+  if (Capacitor.isNativePlatform()) {
+    // The scheduled native notification owns audio on mobile. Playing WebAudio
+    // here as well produced a second, alarming sound after Hummingbird.
+    void sendLocalHealthAlert(notification.title, notification.body);
+    return;
+  }
+
   setMasterVolume(1);
   playNotificationSound();
-  void sendLocalHealthAlert(notification.title, notification.body);
 }
 
 export async function sendRemoteHealthPushResult(title: string, body: string, opts: { delaySeconds?: number } = {}): Promise<RemoteHealthPushResult> {

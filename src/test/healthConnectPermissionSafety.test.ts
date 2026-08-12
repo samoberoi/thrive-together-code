@@ -68,8 +68,8 @@ describe("Android Health Connect permission safety", () => {
     expect(manifest).toContain("androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE");
     expect(manifest).toContain("android.intent.action.VIEW_PERMISSION_USAGE");
     expect(manifest).toContain('android:name="android.permission.health.READ_STEPS"');
-    expect(manifest).toContain('android:value="bbdo-alerts-v10"');
-    expect(manifest).not.toContain('android:value="bbdo-alerts-v9"');
+    expect(manifest).toContain('android:value="bbdo-alerts-v11"');
+    expect(manifest).not.toContain('android:value="bbdo-alerts-v10"');
   });
 
   it("uses a Capacitor 8-compatible health plugin instead of the legacy Capacitor 5 bridge", () => {
