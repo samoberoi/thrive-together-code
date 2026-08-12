@@ -37,6 +37,7 @@ import {
   Scale,
   Gauge,
   Ticket,
+  Monitor,
 } from "lucide-react";
 
 import NotificationCenter from "@/components/NotificationCenter";
@@ -45,6 +46,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { isAdminUser } from "@/lib/roleService";
+import { useIsMobile } from "@/hooks/use-mobile";
+import logoImg from "@/assets/logo.png";
 
 // Lazy: each admin panel is its own chunk so end users (and the admin's first
 // paint) don't download every screen up front.
@@ -79,6 +82,13 @@ const AdminDietTypes = lazy(() => import("./admin/AdminDietTypes"));
 const AdminBmiCategories = lazy(() => import("./admin/AdminBmiCategories"));
 const AdminOnboardingGrades = lazy(() => import("./admin/AdminOnboardingGrades"));
 const AdminCoupons = lazy(() => import("./admin/AdminCoupons"));
+
+// Admin self-tracking (same modules patients & coaches use).
+import AdminSelfTabs from "@/components/admin/AdminSelfTabs";
+const UserSupplements = lazy(() => import("@/components/UserSupplements"));
+const UserFasting = lazy(() => import("@/components/UserFasting"));
+const PatientLabTests = lazy(() => import("@/components/PatientLabTests"));
+const UserDiet = lazy(() => import("./tabs/Diet"));
 
 
 import NotificationsPanel from "@/components/NotificationsPanel";
@@ -189,13 +199,22 @@ const tabContentMap: Record<AdminTab, React.ReactNode> = {
   users: <AdminUsers />,
   coaches: <AdminCoaches />,
   admins: <AdminAdmins />,
-  diet: <AdminDiet />,
-  supplements: <AdminSupplements />,
+  diet: (
+    <AdminSelfTabs manageLabel="Food library" mineLabel="My Plates" mineIcon={Salad} manage={<AdminDiet />} mine={<UserDiet planOverride="intensive" />} />
+  ),
+  supplements: (
+    <AdminSelfTabs manageLabel="Catalog" mineLabel="My Supplements" mineIcon={Pill} manage={<AdminSupplements />} mine={<UserSupplements simpleMode />} />
+  ),
   
   food_condition_rules: <AdminFoodConditionRules />,
-  fasting: <AdminFasting />,
+  fasting: (
+    <AdminSelfTabs manageLabel="Protocols" mineLabel="My Fasting" mineIcon={Timer} manage={<AdminFasting />} mine={<UserFasting packageKey="intensive" selfServe />} />
+  ),
   movement: <AdminMovement />,
-  labtests: <AdminLabTests />,
+  labtests: (
+    <AdminSelfTabs manageLabel="Catalog" mineLabel="My Tests" mineIcon={FlaskConical} manage={<AdminLabTests />} mine={<PatientLabTests alwaysShow foundationMode />} />
+  ),
+
   videos: <AdminVideos />,
   exercises: <AdminExercises />,
   rbac: <AdminRBAC />,
@@ -284,6 +303,15 @@ const controlCenterTabs = new Set<AdminTab>([
   "onboarding_grades",
   "coupons",
 ]);
+
+/**
+ * Control Center is a web-only surface: the phone app stays focused on the
+ * day-to-day modules. Users & Coaches stay on mobile because admins need them
+ * on the go.
+ */
+const desktopOnlyTabs = new Set<AdminTab>(
+  [...controlCenterTabs].filter((t) => t !== "users" && t !== "coaches"),
+);
 
 const supplementTabs = new Set<AdminTab>(["supplements"]);
 const dietTabs = new Set<AdminTab>(["diet", "food_condition_rules"]);
@@ -389,6 +417,7 @@ export default function AdminDashboard() {
   });
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const { counts: attentionCounts } = useAttentionCounts();
   const adminInitial = (user?.email?.[0] ?? "A").toUpperCase();
   const [adminAllowed, setAdminAllowed] = useState<boolean | null>(null);
@@ -479,13 +508,11 @@ export default function AdminDashboard() {
           className="flex items-center gap-3 px-6 pt-8 pb-6"
           style={{ borderBottom: "1px solid hsl(var(--border))" }}
         >
-          <div className="w-10 h-10 rounded-xl gradient-blue glow-blue flex items-center justify-center shrink-0">
-            <span className="text-white font-black text-base tracking-tighter">BB</span>
-          </div>
+          <img src={logoImg} alt="BBDO" className="h-10 w-auto object-contain shrink-0" />
           <div className="flex-1 min-w-0">
-            <h1 className="text-foreground font-black text-lg leading-none">bye bye</h1>
             <p className="text-muted-foreground text-xs">Super Admin</p>
           </div>
+
           <SoundToggle inline />
           <NotificationCenter unreadCount={attentionCounts.notifications} />
         </div>
@@ -635,6 +662,21 @@ export default function AdminDashboard() {
                       onOpenRBAC={() => selectTab("rbac")}
                       onOpenNotifications={() => selectTab("notifications")}
                     />
+                  ) : isMobile && desktopOnlyTabs.has(activeTab) ? (
+                    <div className="p-8 flex flex-col items-center text-center gap-3">
+                      <Monitor className="w-8 h-8 text-muted-foreground" strokeWidth={1.5} />
+                      <h2 className="text-base font-black text-foreground">Available on web</h2>
+                      <p className="text-sm text-muted-foreground max-w-xs">
+                        Control Center settings are managed from the web console. Open the admin
+                        portal on a desktop browser to make changes here.
+                      </p>
+                      <button
+                        onClick={() => selectTab("overview")}
+                        className="mt-1 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold"
+                      >
+                        Back to Home
+                      </button>
+                    </div>
                   ) : (
                     tabContentMap[activeTab]
                   )}
@@ -655,7 +697,6 @@ export default function AdminDashboard() {
             { id: "users", icon: Users, label: "Users" },
             { id: "coaches", icon: UserCheck, label: "Coaches" },
             { id: "diet", icon: Salad, label: "Diet" },
-            { id: "food_condition_rules", icon: HeartPulse, label: "Food Rules" },
             { id: "supplements", icon: Pill, label: "Supps" },
             { id: "fasting", icon: Timer, label: "Fasting" },
             { id: "movement", icon: Footprints, label: "Move" },
@@ -663,24 +704,8 @@ export default function AdminDashboard() {
             { id: "videos", icon: Video, label: "Videos" },
             { id: "exercises", icon: Dumbbell, label: "Exercise" },
             { id: "community", icon: MessageSquare, label: "Community" },
-            { id: "admins", icon: ShieldCheck, label: "Admins" },
-            { id: "rbac", icon: Shield, label: "Access" },
-            { id: "packages", icon: PackageIcon, label: "Packages" },
-            { id: "assignments", icon: Link2, label: "Assign" },
-            { id: "languages", icon: LanguagesIcon, label: "Languages" },
-            { id: "commissions", icon: Percent, label: "Commissions" },
-            { id: "community_categories", icon: MessageSquare, label: "Categories" },
-            
-            { id: "referrals", icon: Gift, label: "Referrals" },
-            { id: "logs", icon: ScrollText, label: "Logs" },
-            { id: "color_gauges", icon: Palette, label: "Gauges" },
-            { id: "notifications", icon: Bell, label: "Notifs" },
-            { id: "channel_partners", icon: Handshake, label: "Partners" },
-            { id: "global_streak", icon: Flame, label: "Streak" },
-            { id: "pnl", icon: TrendingUp, label: "P&L" },
-            { id: "bmi", icon: Scale, label: "BMI" },
-            { id: "onboarding_grades", icon: Gauge, label: "Grading" },
           ]}
+
         />
       </div>
     </div>

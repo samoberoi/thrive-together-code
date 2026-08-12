@@ -13,6 +13,8 @@ import { format, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { whatsappCallUrl } from "@/lib/coachAvailability";
+import CoachActivityRings from "@/components/coach/CoachActivityRings";
+import CoachSelfCheckins from "@/components/coach/CoachSelfCheckins";
 
 interface Profile { user_id: string; name: string | null; phone: string | null; }
 interface Subscription {
@@ -253,7 +255,11 @@ export default function AdminOverview() {
         </div>
       </div>
 
-      {/* Mobile-first KPI list; expands into a grid only when space allows. */}
+      {/* The admin's own daily habit rings + check-ins — same engine as coaches. */}
+      <CoachActivityRings />
+      <CoachSelfCheckins />
+
+
       <div className="grid grid-cols-1 min-[430px]:grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2 sm:gap-3">
         {kpis.map((card, i) => {
           const Icon = card.icon;
