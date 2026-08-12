@@ -81,8 +81,6 @@ export default function BiometricToggle() {
         <div className="text-xs text-muted-foreground mt-0.5">
           {!native
             ? "Available in the installed mobile app."
-            : !biometricGateSupported
-              ? "Temporarily disabled on Android for launch stability."
             : checking
             ? "Checking device support…"
             : supported
