@@ -1659,6 +1659,9 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
         );
       })()}
 
+      {/* ─── Long-run trends since joining (tap to open full graph + date filter) ─── */}
+      <MetricTrendsSection userId={authUser?.id} />
+
 
       {/* Health Markers from lab reports */}
       
