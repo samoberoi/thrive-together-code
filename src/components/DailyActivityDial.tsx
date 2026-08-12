@@ -21,7 +21,10 @@ export interface DialRingItem {
   ratio: number; // 0..1
   color: string;
   hint?: string;
+  /** Pillar not unlocked for this user's plan — shown greyed out, not counted. */
+  disabled?: boolean;
 }
+
 
 interface Props {
   items: DialRingItem[];
