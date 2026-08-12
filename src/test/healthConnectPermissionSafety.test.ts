@@ -68,7 +68,7 @@ describe("Android Health Connect permission safety", () => {
     expect(manifest).toContain("androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE");
     expect(manifest).toContain("android.intent.action.VIEW_PERMISSION_USAGE");
     expect(manifest).toContain('android:name="android.permission.health.READ_STEPS"');
-    expect(manifest).toContain('android:value="bbdo-alerts-v11"');
+    expect(manifest).toContain('android:value="bbdo-alerts-v12"');
     expect(manifest).not.toContain('android:value="bbdo-alerts-v10"');
   });
 
