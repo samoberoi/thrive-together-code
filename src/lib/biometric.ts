@@ -4,7 +4,6 @@ import {
   BiometryType,
   BiometryError,
   BiometryErrorType,
-  AndroidBiometryStrength,
   type CheckBiometryResult,
 } from "@aparajita/capacitor-biometric-auth";
 import { syncNativePersistenceFromLocalStorage } from "@/lib/nativePersistence";
