@@ -197,7 +197,9 @@ function GlobalRealtimeAlerts() {
   const { user } = useAuth();
 
   // Android only allows one permission activity to own the foreground at a
-  // time. Run health first, then push, for every role through this one pipeline.
+  // time. Startup may show the notification prompt; Health Connect is only
+  // opened from an explicit health-card action. Launching both here used to
+  // collide with the biometric prompt when Android resumed the WebView.
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
@@ -207,19 +209,15 @@ function GlobalRealtimeAlerts() {
     const id = window.setTimeout(() => {
       void (async () => {
         try {
-          // 1) Notifications first — POST_NOTIFICATIONS is a lightweight system
-          // dialog that does not recreate the WebView Activity. Asked at most
-          // once per install (see registerNativePush).
+          // Notifications are the only Android system prompt allowed at startup.
+          // Asked at most once per install (see registerNativePush).
           if (!cancelled && isNativePushSupported()) {
             await registerNativePush(user.id, { allowPrompt: true });
           }
           if (cancelled) return;
-          // 2) Health last, and only after the notification dialog is gone.
-          // Health Connect runs in its own Activity, so it must never overlap
-          // with another permission surface.
-          await new Promise((resolve) => window.setTimeout(resolve, 600));
-          if (cancelled) return;
-          await ensureNativeHealthPermission(user.id, { allowPrompt: true });
+          // Check/sync already-authorized health data without opening another
+          // Android Activity. The visible health control owns the prompt path.
+          await ensureNativeHealthPermission(user.id, { allowPrompt: false });
         } finally {
           if (!cancelled) {
             root.classList.remove("bb-native-permission-flow");

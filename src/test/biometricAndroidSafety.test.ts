@@ -82,4 +82,36 @@ describe("Android biometric unlock", () => {
     expect(source).not.toContain("startActivity(");
     expect(source).not.toContain("new Intent(");
   });
+
+  it("serializes biometric unlock behind Android startup permissions", () => {
+    const source = readFileSync(
+      resolve(process.cwd(), "src/components/BiometricGate.tsx"),
+      "utf8",
+    );
+
+    expect(source).toContain("waitForAndroidPermissionFlow");
+    expect(source).toContain('bbdo:native-permissions-settled');
+    expect(source).toContain('document.visibilityState !== "visible"');
+    expect(source).toContain("await waitForAndroidPermissionFlow()");
+  });
+
+  it("keeps the crashing third-party biometric plugin out of Android", () => {
+    const capacitorConfig = readFileSync(
+      resolve(process.cwd(), "capacitor.config.ts"),
+      "utf8",
+    );
+    const generatedPlugins = readFileSync(
+      resolve(process.cwd(), "android/app/src/main/assets/capacitor.plugins.json"),
+      "utf8",
+    );
+    const generatedDependencies = readFileSync(
+      resolve(process.cwd(), "android/app/capacitor.build.gradle"),
+      "utf8",
+    );
+
+    const androidPlugins = capacitorConfig.split("includePlugins:")[1] ?? "";
+    expect(androidPlugins).not.toContain("@aparajita/capacitor-biometric-auth");
+    expect(generatedPlugins).not.toContain("BiometricAuthNative");
+    expect(generatedDependencies).not.toContain("capacitor-biometric-auth");
+  });
 });

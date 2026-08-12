@@ -36,6 +36,35 @@ function isAndroidNativeApp() {
   return typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
 }
 
+function waitForAndroidPermissionFlow(): Promise<void> {
+  if (!isAndroidNativeApp()) return Promise.resolve();
+  const permissionFlowActive = () =>
+    document.documentElement.classList.contains("bb-native-permission-flow") ||
+    document.visibilityState !== "visible";
+  if (!permissionFlowActive()) return Promise.resolve();
+
+  return new Promise((resolve) => {
+    let settled = false;
+    let timer: number | null = null;
+    const finishWhenStable = () => {
+      if (settled || permissionFlowActive()) return;
+      settled = true;
+      window.removeEventListener("bbdo:native-permissions-settled", scheduleCheck);
+      document.removeEventListener("visibilitychange", scheduleCheck);
+      if (timer != null) window.clearTimeout(timer);
+      // Let Android fully re-attach the resumed Activity before BiometricPrompt.
+      timer = window.setTimeout(resolve, 750);
+    };
+    const scheduleCheck = () => {
+      if (timer != null) window.clearTimeout(timer);
+      timer = window.setTimeout(finishWhenStable, 100);
+    };
+    window.addEventListener("bbdo:native-permissions-settled", scheduleCheck);
+    document.addEventListener("visibilitychange", scheduleCheck);
+    scheduleCheck();
+  });
+}
+
 /**
  * Native-only Face ID / biometric gate.
  * - Runs on iOS/Android automatically whenever an authenticated session exists.
@@ -74,6 +103,8 @@ export default function BiometricGate({ children }: { children: ReactNode }) {
 
   const runAuth = useCallback(async () => {
     if (authenticatingRef.current) return;
+    await waitForAndroidPermissionFlow();
+    if (!shouldGate) return;
     if (isVideoSuppressActive()) {
       lastAuthAt.current = Date.now();
       setLocked(false);
@@ -132,7 +163,7 @@ export default function BiometricGate({ children }: { children: ReactNode }) {
     } else {
       setLocked(true);
     }
-  }, [isVideoSuppressActive]);
+  }, [isVideoSuppressActive, shouldGate]);
 
   // Initial gate when a session appears
   useEffect(() => {
