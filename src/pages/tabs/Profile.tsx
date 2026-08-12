@@ -7,7 +7,7 @@ import {
   Flame, Zap, Award, ClipboardList, Activity, Scale, Heart,
   Globe, Moon, Sun, Package, ArrowLeft, BellOff, BellRing, X, Camera,
   UserCog, Gift, Trophy, Lock, Timer, Utensils, Pill, Check, XCircle, MessageCircle, Sparkles,
-  AlertTriangle, Plus, Footprints, Star, type LucideIcon
+  AlertTriangle, Plus, Footprints, Star, Compass, type LucideIcon
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import EditProfile from "@/components/EditProfile";
@@ -431,6 +431,10 @@ export default function Profile({ onClose, isDark = true, onToggleTheme }: Profi
 
   const menuItems = [
     { icon: UserCog, label: t("editProfile"), sublabel: t("updateDetails"), action: () => setSubPage("editProfile") },
+    { icon: Compass, label: "Take the tour again", sublabel: "Replay the guided walkthrough of your dashboard", action: () => {
+        onClose?.();
+        window.setTimeout(() => window.dispatchEvent(new Event("bbdo:start-tour")), 120);
+      } },
     { icon: Utensils, label: "Diet Preferences", sublabel: "Veg, Vegan, Jain, Non-veg & allergies", action: () => setSubPage("diet") },
     { icon: Bell, label: t("notifications"), sublabel: t("manageAlerts"), action: () => setSubPage("notifications") },
     { icon: Shield, label: t("privacySecurity"), sublabel: t("dataControl"), action: () => setSubPage("privacy") },

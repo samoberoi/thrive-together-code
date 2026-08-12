@@ -434,7 +434,7 @@ export default function Dashboard() {
         <div className="px-4 pb-6" style={{ borderTop: "1px solid hsl(var(--border))", paddingTop: "12px" }}>
           <SidebarPackageCard />
           <button
-            onClick={() => navigate("/tour")}
+            onClick={() => window.dispatchEvent(new Event("bbdo:start-tour"))}
             className="flex items-center gap-3 px-4 py-2.5 rounded-2xl text-muted-foreground hover:text-[var(--bbdo-blue)] hover:bg-[var(--bbdo-blue-soft)] transition-colors w-full mb-1"
           >
             <Compass className="w-5 h-5 shrink-0" strokeWidth={1.5} />
