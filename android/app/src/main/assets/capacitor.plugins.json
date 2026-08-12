@@ -1,38 +1,34 @@
 [
-  {
-    "pkg": "@aparajita/capacitor-biometric-auth",
-    "classpath": "com.aparajita.capacitor.biometricauth.BiometricAuthNative"
-  },
-  {
-    "pkg": "@capacitor/app",
-    "classpath": "com.capacitorjs.plugins.app.AppPlugin"
-  },
-  {
-    "pkg": "@capacitor/filesystem",
-    "classpath": "com.capacitorjs.plugins.filesystem.FilesystemPlugin"
-  },
-  {
-    "pkg": "@capacitor/local-notifications",
-    "classpath": "com.capacitorjs.plugins.localnotifications.LocalNotificationsPlugin"
-  },
-  {
-    "pkg": "@capacitor/preferences",
-    "classpath": "com.capacitorjs.plugins.preferences.PreferencesPlugin"
-  },
-  {
-    "pkg": "@capacitor/push-notifications",
-    "classpath": "com.capacitorjs.plugins.pushnotifications.PushNotificationsPlugin"
-  },
-  {
-    "pkg": "@capacitor/share",
-    "classpath": "com.capacitorjs.plugins.share.SharePlugin"
-  },
-  {
-    "pkg": "@capawesome/capacitor-badge",
-    "classpath": "io.capawesome.capacitorjs.plugins.badge.BadgePlugin"
-  },
-  {
-    "pkg": "capacitor-health-connect",
-    "classpath": "com.ubiehealth.capacitor.healthconnect.HealthConnectPlugin"
-  }
+	{
+		"pkg": "@capacitor/app",
+		"classpath": "com.capacitorjs.plugins.app.AppPlugin"
+	},
+	{
+		"pkg": "@capacitor/filesystem",
+		"classpath": "com.capacitorjs.plugins.filesystem.FilesystemPlugin"
+	},
+	{
+		"pkg": "@capacitor/local-notifications",
+		"classpath": "com.capacitorjs.plugins.localnotifications.LocalNotificationsPlugin"
+	},
+	{
+		"pkg": "@capacitor/preferences",
+		"classpath": "com.capacitorjs.plugins.preferences.PreferencesPlugin"
+	},
+	{
+		"pkg": "@capacitor/push-notifications",
+		"classpath": "com.capacitorjs.plugins.pushnotifications.PushNotificationsPlugin"
+	},
+	{
+		"pkg": "@capacitor/share",
+		"classpath": "com.capacitorjs.plugins.share.SharePlugin"
+	},
+	{
+		"pkg": "@capawesome/capacitor-badge",
+		"classpath": "io.capawesome.capacitorjs.plugins.badge.BadgePlugin"
+	},
+	{
+		"pkg": "capacitor-health-connect",
+		"classpath": "com.ubiehealth.capacitor.healthconnect.HealthConnectPlugin"
+	}
 ]

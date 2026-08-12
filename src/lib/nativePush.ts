@@ -258,7 +258,7 @@ function markPushPromptAsked() {
  */
 export async function registerNativePush(
   userId: string,
-  opts: { interactive?: boolean } = {},
+  opts: { interactive?: boolean; allowPrompt?: boolean } = {},
 ): Promise<{ ok: true; token?: string } | { ok: false; reason: string }> {
   if (!isNativePushSupported()) {
     return { ok: false, reason: "not_native" };
@@ -277,7 +277,11 @@ export async function registerNativePush(
 
     let perm = await PushNotifications.checkPermissions();
     const canPrompt = perm.receive === "prompt" || perm.receive === "prompt-with-rationale";
-    if (canPrompt && (opts.interactive || !hasAskedPushPermission())) {
+    if (
+      canPrompt &&
+      opts.allowPrompt !== false &&
+      (opts.interactive || !hasAskedPushPermission())
+    ) {
       markPushPromptAsked();
       perm = await PushNotifications.requestPermissions();
     }
@@ -348,7 +352,7 @@ export async function registerNativePushWithToast(userId: string) {
     toast.info("Push notifications require the native mobile app.");
     return;
   }
-  const res = await registerNativePush(userId, { interactive: true });
+  const res = await registerNativePush(userId, { interactive: true, allowPrompt: true });
   if (res.ok === true) {
     if (res.token) {
       toast.success("Push notifications enabled for this phone");
