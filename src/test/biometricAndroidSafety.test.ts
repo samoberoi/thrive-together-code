@@ -82,4 +82,16 @@ describe("Android biometric unlock", () => {
     expect(source).not.toContain("startActivity(");
     expect(source).not.toContain("new Intent(");
   });
+
+  it("serializes biometric unlock behind Android startup permissions", () => {
+    const source = readFileSync(
+      resolve(process.cwd(), "src/components/BiometricGate.tsx"),
+      "utf8",
+    );
+
+    expect(source).toContain("waitForAndroidPermissionFlow");
+    expect(source).toContain('bbdo:native-permissions-settled');
+    expect(source).toContain('document.visibilityState !== "visible"');
+    expect(source).toContain("await waitForAndroidPermissionFlow()");
+  });
 });

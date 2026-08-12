@@ -10,6 +10,7 @@ vi.mock("@capacitor/core", () => ({
     isNativePlatform: () => true,
     getPlatform: () => "android",
   },
+  registerPlugin: () => ({}),
 }));
 
 vi.mock("capacitor-health-connect", () => ({
@@ -24,6 +25,10 @@ vi.mock("capacitor-health-connect", () => ({
 vi.mock("@/lib/startupDiagnostics", () => ({
   logStartupEvent: vi.fn(),
   reportStartupError: vi.fn(),
+}));
+
+vi.mock("@/lib/movementUserService", () => ({
+  logTodaySteps: vi.fn(),
 }));
 
 describe("Android Health Connect permission safety", () => {
@@ -41,5 +46,14 @@ describe("Android Health Connect permission safety", () => {
     expect(checkHealthPermissions).toHaveBeenCalledOnce();
     expect(requestHealthPermissions).not.toHaveBeenCalled();
     expect(readRecords).not.toHaveBeenCalled();
+  });
+
+  it("does not open Health Connect from the startup permission bootstrap", async () => {
+    const { ensureNativeHealthPermission } = await import("@/lib/healthPermissionBootstrap");
+
+    await expect(
+      ensureNativeHealthPermission("android-user", { allowPrompt: true }),
+    ).resolves.toBe(false);
+    expect(requestHealthPermissions).not.toHaveBeenCalled();
   });
 });

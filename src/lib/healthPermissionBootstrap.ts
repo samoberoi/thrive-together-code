@@ -12,6 +12,7 @@ import {
   enableHealthBackgroundSync,
   syncTodaySteps,
 } from "@/lib/healthProvider";
+import { Capacitor } from "@capacitor/core";
 import { logTodaySteps } from "@/lib/movementUserService";
 import { logStartupEvent, reportStartupError } from "@/lib/startupDiagnostics";
 
@@ -73,6 +74,13 @@ export async function ensureNativeHealthPermission(
       if (!opts?.force && hasAskedHealthPermission(userId)) {
         // A real denial is respected. Crucially, merely having an old marker is
         // no longer treated as proof that health access is authorized.
+        return false;
+      }
+      // Never open Health Connect during Android startup. Its permission UI is
+      // a separate Activity; returning from it while push/biometric startup is
+      // settling can tear down the WebView task. Only an explicit user action
+      // (`force: true`) may launch it.
+      if (Capacitor.getPlatform() === "android" && !opts?.force) {
         return false;
       }
       // Android Health Connect is backed by a separate permission Activity.
