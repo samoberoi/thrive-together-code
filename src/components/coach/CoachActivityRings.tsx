@@ -30,6 +30,8 @@ export default function CoachActivityRings() {
   const [yogaMin, setYogaMin] = useState(0);
   const [movement, setMovement] = useState({ ratio: 0, hint: "" });
   const [water, setWater] = useState(0);
+  const [hasDiabetes, setHasDiabetes] = useState(false);
+  const [diabetesLoggedToday, setDiabetesLoggedToday] = useState(false);
   const [supps, setSupps] = useState({ taken: 0, total: 0 });
   const [fasting, setFasting] = useState<{ active: boolean; ratio: number; hint: string }>({
     active: false, ratio: 0, hint: "",
@@ -55,6 +57,24 @@ export default function CoachActivityRings() {
         ratio: ov.targetSteps > 0 ? Math.min(1, ov.todaySteps / ov.targetSteps) : 0,
         hint: `${(ov.todaySteps || 0).toLocaleString("en-IN")} / ${(ov.targetSteps || 0).toLocaleString("en-IN")} steps`,
       });
+      const clin = (p as any)?.clinical ?? {};
+      setHasDiabetes(!!(clin.hasDiabetes || clin.has_diabetes || (p as any)?.has_diabetes));
+    } catch { /* ignore */ }
+
+    // Blood sugar log today
+    try {
+      const { data } = await supabase
+        .from("health_logs" as any)
+        .select("logged_at, log_type")
+        .eq("user_id", user.id)
+        .eq("log_type", "blood_sugar")
+        .order("logged_at", { ascending: false })
+        .limit(10);
+      setDiabetesLoggedToday(
+        ((data as any[]) ?? []).some(
+          (l) => new Date(l.logged_at).toDateString() === new Date().toDateString(),
+        ),
+      );
     } catch { /* ignore */ }
 
     // Water (glasses stored in weight_kg on water logs)
@@ -135,38 +155,61 @@ export default function CoachActivityRings() {
 
   if (!user) return null;
 
-  const rings: DialRingItem[] = [];
-  if (fasting.active) {
-    rings.push({ key: "fasting", label: "Fasting", ratio: fasting.ratio, color: "#0F1A3D", hint: fasting.hint });
-  }
-  if (supps.total > 0) {
-    rings.push({
-      key: "supplements", label: "Supplements", ratio: supps.taken / supps.total,
-      color: "#F59E0B", hint: `${supps.taken} / ${supps.total} taken`,
-    });
-  }
-  rings.push({ key: "movement", label: "Movement", ratio: movement.ratio, color: "#10B981", hint: movement.hint || undefined });
-  rings.push({
-    key: "exercise", label: "Exercise",
-    ratio: exerciseGoal > 0 ? Math.min(1, exerciseMin / exerciseGoal) : 0,
-    color: "#248CCB", hint: `${Math.min(exerciseMin, exerciseGoal)} / ${exerciseGoal} min`,
-  });
-  rings.push({
-    key: "yoga", label: "Yoga & Stress",
-    ratio: yogaGoal > 0 ? Math.min(1, yogaMin / yogaGoal) : 0,
-    color: "#8B5CF6", hint: `${Math.min(yogaMin, yogaGoal)} / ${yogaGoal} min`,
-  });
-  rings.push({ key: "water", label: "Water", ratio: Math.min(1, water / 8), color: "#38BDF8", hint: `${water} / 8 glasses` });
-  rings.push({
-    key: "breath", label: "Breath Protocol",
-    ratio: breathGoal > 0 ? Math.min(1, breathCount / breathGoal) : 0,
-    color: "#EA6A5E", hint: `${Math.min(breathCount, breathGoal)} / ${breathGoal} sessions`,
-  });
-  rings.push({
-    key: "soleus", label: "Soleus Push-Ups",
-    ratio: soleusGoal > 0 ? Math.min(1, soleusCount / soleusGoal) : 0,
-    color: "#B91C1C", hint: `${Math.min(soleusCount, soleusGoal)} / ${soleusGoal} rounds`,
-  });
+  // All nine pillars always render. Ones not set up yet stay in place but are
+  // greyed out and labelled "Not unlocked" instead of showing 0%.
+  const rings: DialRingItem[] = [
+    {
+      key: "fasting", label: "Fasting",
+      ratio: fasting.active ? fasting.ratio : 0,
+      color: "#0F1A3D",
+      disabled: !fasting.active,
+      hint: fasting.active ? fasting.hint : undefined,
+    },
+    {
+      key: "supplements", label: "Supplements",
+      ratio: supps.total > 0 ? supps.taken / supps.total : 0,
+      color: "#F59E0B",
+      disabled: supps.total === 0,
+      hint: supps.total > 0 ? `${supps.taken} / ${supps.total} taken` : undefined,
+    },
+    { key: "movement", label: "Movement", ratio: movement.ratio, color: "#10B981", hint: movement.hint || undefined },
+    {
+      key: "exercise", label: "Exercise",
+      ratio: exerciseGoal > 0 ? Math.min(1, exerciseMin / exerciseGoal) : 0,
+      color: "#248CCB",
+      disabled: exerciseGoal <= 0,
+      hint: exerciseGoal > 0 ? `${Math.min(exerciseMin, exerciseGoal)} / ${exerciseGoal} min` : undefined,
+    },
+    {
+      key: "yoga", label: "Yoga & Stress",
+      ratio: yogaGoal > 0 ? Math.min(1, yogaMin / yogaGoal) : 0,
+      color: "#8B5CF6",
+      disabled: yogaGoal <= 0,
+      hint: yogaGoal > 0 ? `${Math.min(yogaMin, yogaGoal)} / ${yogaGoal} min` : undefined,
+    },
+    { key: "water", label: "Water", ratio: Math.min(1, water / 8), color: "#38BDF8", hint: `${water} / 8 glasses` },
+    {
+      key: "breath", label: "Breath Protocol",
+      ratio: breathGoal > 0 ? Math.min(1, breathCount / breathGoal) : 0,
+      color: "#EA6A5E",
+      disabled: breathGoal <= 0,
+      hint: breathGoal > 0 ? `${Math.min(breathCount, breathGoal)} / ${breathGoal} sessions` : undefined,
+    },
+    {
+      key: "soleus", label: "Soleus Push-Ups",
+      ratio: soleusGoal > 0 ? Math.min(1, soleusCount / soleusGoal) : 0,
+      color: "#B91C1C",
+      disabled: soleusGoal <= 0,
+      hint: soleusGoal > 0 ? `${Math.min(soleusCount, soleusGoal)} / ${soleusGoal} rounds` : undefined,
+    },
+    {
+      key: "diabetes", label: "Blood sugar log",
+      ratio: hasDiabetes && diabetesLoggedToday ? 1 : 0,
+      color: "#E00101",
+      disabled: !hasDiabetes,
+      hint: hasDiabetes ? (diabetesLoggedToday ? "Logged today" : "Not logged yet") : undefined,
+    },
+  ];
 
   return (
     <DailyActivityDial items={rings} title="My rings" size="lg" />
