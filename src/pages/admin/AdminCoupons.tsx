@@ -301,7 +301,7 @@ export default function AdminCoupons() {
       ]);
       setPackages((pkgs ?? []).filter((p: any) => p.plan_key !== "onboarding_test"));
       const order = ["monthly", "quarterly", "half_yearly", "yearly"];
-      const uniq = [...new Set((pricing ?? []).map((r: any) => r.billing_cycle as string))].sort(
+      const uniq: string[] = [...new Set(((pricing ?? []) as any[]).map((r) => String(r.billing_cycle)))].sort(
         (a, b) => (order.indexOf(a) + 1 || 99) - (order.indexOf(b) + 1 || 99),
       );
       setCycleOptions(uniq.map((k) => ({ key: k, label: prettyCycle(k) })));
