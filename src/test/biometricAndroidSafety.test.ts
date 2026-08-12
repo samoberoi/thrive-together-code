@@ -94,4 +94,24 @@ describe("Android biometric unlock", () => {
     expect(source).toContain('document.visibilityState !== "visible"');
     expect(source).toContain("await waitForAndroidPermissionFlow()");
   });
+
+  it("keeps the crashing third-party biometric plugin out of Android", () => {
+    const capacitorConfig = readFileSync(
+      resolve(process.cwd(), "capacitor.config.ts"),
+      "utf8",
+    );
+    const generatedPlugins = readFileSync(
+      resolve(process.cwd(), "android/app/src/main/assets/capacitor.plugins.json"),
+      "utf8",
+    );
+    const generatedDependencies = readFileSync(
+      resolve(process.cwd(), "android/app/capacitor.build.gradle"),
+      "utf8",
+    );
+
+    const androidPlugins = capacitorConfig.split("includePlugins:")[1] ?? "";
+    expect(androidPlugins).not.toContain("@aparajita/capacitor-biometric-auth");
+    expect(generatedPlugins).not.toContain("BiometricAuthNative");
+    expect(generatedDependencies).not.toContain("capacitor-biometric-auth");
+  });
 });

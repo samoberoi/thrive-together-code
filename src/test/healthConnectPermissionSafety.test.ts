@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
 const checkAvailability = vi.fn();
 const checkHealthPermissions = vi.fn();
@@ -55,5 +57,18 @@ describe("Android Health Connect permission safety", () => {
       ensureNativeHealthPermission("android-user", { allowPrompt: true }),
     ).resolves.toBe(false);
     expect(requestHealthPermissions).not.toHaveBeenCalled();
+  });
+
+  it("keeps the required Health Connect manifest wiring and current push channel", () => {
+    const manifest = readFileSync(
+      resolve(process.cwd(), "android/app/src/main/AndroidManifest.xml"),
+      "utf8",
+    );
+
+    expect(manifest).toContain("androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE");
+    expect(manifest).toContain("android.intent.action.VIEW_PERMISSION_USAGE");
+    expect(manifest).toContain('android:name="android.permission.health.READ_STEPS"');
+    expect(manifest).toContain('android:value="bbdo-alerts-v10"');
+    expect(manifest).not.toContain('android:value="bbdo-alerts-v9"');
   });
 });
