@@ -249,6 +249,18 @@ export default function DashboardTour({
   const next = () => (isLast ? onClose() : setI((v) => v + 1));
   const back = () => setI((v) => Math.max(0, v - 1));
 
+  // Native-style adaptive placement: the sheet never covers the thing it points at.
+  const vh = typeof window !== "undefined" ? window.innerHeight : 800;
+  const placement: "top" | "bottom" =
+    rect && rect.top + rect.height > vh * 0.52 ? "top" : "bottom";
+  const cardMaxHeight =
+    placement === "top"
+      ? `calc(${Math.max(160, (rect ? rect.top : vh) - 76)}px)`
+      : rect
+        ? `calc(${Math.max(160, vh - (rect.top + rect.height) - 24)}px)`
+        : "calc(100dvh - max(env(safe-area-inset-top), 14px) - 4.5rem)";
+
+
   if (!open || typeof document === "undefined") return null;
 
   return createPortal(
