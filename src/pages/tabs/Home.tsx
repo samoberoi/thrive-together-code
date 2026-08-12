@@ -1529,80 +1529,92 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
         const yogaRatio = YOGA_DAILY_MINUTES > 0
           ? Math.min(1, yogaMinutesToday / YOGA_DAILY_MINUTES)
           : 0;
-        const rings: HeartRingItem[] = [];
-        if (fastingState !== "no_plan" && fastingState !== "loading") {
-          rings.push({
+        // All nine pillars always render. Pillars the user's plan hasn't
+        // unlocked yet stay in place but are shown greyed out ("Not unlocked")
+        // and never count towards today's completion tally.
+        const fastingEnabled = fastingState !== "no_plan" && fastingState !== "loading";
+        const rings: HeartRingItem[] = [
+          {
             key: "fasting",
             label: "Fasting",
-            ratio: fastingRatio,
+            ratio: fastingEnabled ? fastingRatio : 0,
             color: "#0F1A3D",
-            hint: [
-              fmodDoneToday ? "FMOD ✓" : "FMOD pending",
-              fastingTarget ? `${Math.min(fastingElapsedStatic, fastingTarget).toFixed(1)} / ${fastingTarget}h` : (lmodDoneToday ? "LMOD ✓" : "LMOD pending"),
-            ].join(" · "),
-          });
-        }
-        if (hasActiveSupplements) {
-          rings.push({
+            disabled: !fastingEnabled,
+            hint: fastingEnabled
+              ? [
+                  fmodDoneToday ? "FMOD ✓" : "FMOD pending",
+                  fastingTarget ? `${Math.min(fastingElapsedStatic, fastingTarget).toFixed(1)} / ${fastingTarget}h` : (lmodDoneToday ? "LMOD ✓" : "LMOD pending"),
+                ].join(" · ")
+              : undefined,
+          },
+          {
             key: "supplements",
             label: "Supplements",
-            ratio: suppTaken / suppTotal,
+            ratio: hasActiveSupplements && suppTotal > 0 ? suppTaken / suppTotal : 0,
             color: "#F59E0B",
-            hint: `${suppTaken} / ${suppTotal} taken`,
-          });
-        }
-        rings.push({
-          key: "movement",
-          label: "Movement",
-          ratio: movementRatio,
-          color: "#10B981",
-          hint: movementHint || undefined,
-        });
-        rings.push({
-          key: "exercise",
-          label: "Exercise",
-          ratio: exerciseRatio,
-          color: "#248CCB",
-            hint: `${Math.min(completedExercisesToday, EXERCISE_DAILY_GOAL).toLocaleString("en-IN", { maximumFractionDigits: 1 })} / ${EXERCISE_DAILY_GOAL} min`,
-        });
-        // Yoga only if the user has a yoga booking on file OR a foundation-level plan expectation.
-        rings.push({
-          key: "yoga",
-          label: "Yoga & Stress",
-          ratio: yogaRatio,
-          color: "#8B5CF6",
-            hint: `${Math.min(yogaMinutesToday, YOGA_DAILY_MINUTES).toLocaleString("en-IN", { maximumFractionDigits: 1 })} / ${YOGA_DAILY_MINUTES} min`,
-        });
-        rings.push({
-          key: "water",
-          label: "Water",
-          ratio: waterRatio,
-          color: "#38BDF8",
-          hint: `${waterGlasses} / 8 glasses`,
-        });
-        rings.push({
-          key: "breath",
-          label: "Breath Protocol",
-          ratio: breathGoalToday > 0 ? Math.min(1, breathCountToday / breathGoalToday) : 0,
-          color: "#EA6A5E",
-          hint: `${Math.min(breathCountToday, breathGoalToday)} / ${breathGoalToday} sessions`,
-        });
-        rings.push({
-          key: "soleus",
-          label: "Soleus Push-Ups",
-          ratio: soleusGoalToday > 0 ? Math.min(1, soleusCountToday / soleusGoalToday) : 0,
-          color: "#B91C1C",
-          hint: `${Math.min(soleusCountToday, soleusGoalToday)} / ${soleusGoalToday} rounds`,
-        });
-        if (hasDiabetesFlag) {
-          rings.push({
+            disabled: !hasActiveSupplements || suppTotal === 0,
+            hint: hasActiveSupplements && suppTotal > 0 ? `${suppTaken} / ${suppTotal} taken` : undefined,
+          },
+          {
+            key: "movement",
+            label: "Movement",
+            ratio: movementRatio,
+            color: "#10B981",
+            hint: movementHint || undefined,
+          },
+          {
+            key: "exercise",
+            label: "Exercise",
+            ratio: exerciseRatio,
+            color: "#248CCB",
+            disabled: EXERCISE_DAILY_GOAL <= 0,
+            hint: EXERCISE_DAILY_GOAL > 0
+              ? `${Math.min(completedExercisesToday, EXERCISE_DAILY_GOAL).toLocaleString("en-IN", { maximumFractionDigits: 1 })} / ${EXERCISE_DAILY_GOAL} min`
+              : undefined,
+          },
+          {
+            key: "yoga",
+            label: "Yoga & Stress",
+            ratio: yogaRatio,
+            color: "#8B5CF6",
+            disabled: YOGA_DAILY_MINUTES <= 0,
+            hint: YOGA_DAILY_MINUTES > 0
+              ? `${Math.min(yogaMinutesToday, YOGA_DAILY_MINUTES).toLocaleString("en-IN", { maximumFractionDigits: 1 })} / ${YOGA_DAILY_MINUTES} min`
+              : undefined,
+          },
+          {
+            key: "water",
+            label: "Water",
+            ratio: waterRatio,
+            color: "#38BDF8",
+            hint: `${waterGlasses} / 8 glasses`,
+          },
+          {
+            key: "breath",
+            label: "Breath Protocol",
+            ratio: breathGoalToday > 0 ? Math.min(1, breathCountToday / breathGoalToday) : 0,
+            color: "#EA6A5E",
+            disabled: breathGoalToday <= 0,
+            hint: breathGoalToday > 0 ? `${Math.min(breathCountToday, breathGoalToday)} / ${breathGoalToday} sessions` : undefined,
+          },
+          {
+            key: "soleus",
+            label: "Soleus Push-Ups",
+            ratio: soleusGoalToday > 0 ? Math.min(1, soleusCountToday / soleusGoalToday) : 0,
+            color: "#B91C1C",
+            disabled: soleusGoalToday <= 0,
+            hint: soleusGoalToday > 0 ? `${Math.min(soleusCountToday, soleusGoalToday)} / ${soleusGoalToday} rounds` : undefined,
+          },
+          {
             key: "diabetes",
             label: "Blood sugar log",
-            ratio: hasTodayDiabetesLog ? 1 : 0,
+            ratio: hasDiabetesFlag && hasTodayDiabetesLog ? 1 : 0,
             color: "#E00101",
-            hint: hasTodayDiabetesLog ? "Logged today" : "Not logged yet",
-          });
-        }
+            disabled: !hasDiabetesFlag,
+            hint: hasDiabetesFlag ? (hasTodayDiabetesLog ? "Logged today" : "Not logged yet") : undefined,
+          },
+        ];
+
         return <DailyActivityDial items={rings} title="Close your rings" size="lg" />;
       })()}
 
