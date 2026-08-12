@@ -283,17 +283,29 @@ export default function DashboardTour({
           <rect x="0" y="0" width="100%" height="100%" fill="rgba(9,14,30,0.78)" mask="url(#bbdo-tour-mask)" />
         </svg>
 
-        {/* Glow ring around the spotlight */}
+        {/* Glow ring around the spotlight — pulses like a native coach-mark */}
         {rect && (
           <motion.div
             initial={false}
-            animate={{ top: rect.top, left: rect.left, width: rect.width, height: rect.height }}
-            transition={{ type: "spring", stiffness: 320, damping: 34 }}
-            className="absolute pointer-events-none"
-            style={{
-              borderRadius: step?.radius ?? 20,
-              boxShadow: "0 0 0 2px rgba(255,255,255,0.9), 0 0 34px 6px rgba(36,140,203,0.55)",
+            animate={{
+              top: rect.top,
+              left: rect.left,
+              width: rect.width,
+              height: rect.height,
+              boxShadow: [
+                "0 0 0 2px rgba(255,255,255,0.9), 0 0 0 0px rgba(36,140,203,0.55)",
+                "0 0 0 2px rgba(255,255,255,0.9), 0 0 0 14px rgba(36,140,203,0.0)",
+              ],
             }}
+            transition={{
+              top: { type: "spring", stiffness: 320, damping: 34 },
+              left: { type: "spring", stiffness: 320, damping: 34 },
+              width: { type: "spring", stiffness: 320, damping: 34 },
+              height: { type: "spring", stiffness: 320, damping: 34 },
+              boxShadow: { duration: 1.5, repeat: Infinity, ease: "easeOut" },
+            }}
+            className="absolute pointer-events-none"
+            style={{ borderRadius: step?.radius ?? 20 }}
           />
         )}
 
@@ -312,13 +324,18 @@ export default function DashboardTour({
         <AnimatePresence mode="wait">
           <motion.div
             key={step?.key ?? "loading"}
-            initial={{ opacity: 0, y: 10, scale: 0.98 }}
+            initial={{ opacity: 0, y: placement === "top" ? -10 : 10, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -6, scale: 0.98 }}
+            exit={{ opacity: 0, y: placement === "top" ? 6 : -6, scale: 0.98 }}
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute bottom-[max(env(safe-area-inset-bottom),0.625rem)] left-0 right-0 mx-auto w-[calc(100%-1.25rem)] max-w-[26rem] px-0"
-            style={{ maxHeight: "calc(100dvh - max(env(safe-area-inset-top), 14px) - 4.5rem)" }}
+            className={`absolute left-0 right-0 mx-auto w-[calc(100%-1.25rem)] max-w-[26rem] px-0 ${
+              placement === "top"
+                ? "top-[max(env(safe-area-inset-top),3.5rem)]"
+                : "bottom-[max(env(safe-area-inset-bottom),0.625rem)]"
+            }`}
+            style={{ maxHeight: cardMaxHeight }}
           >
+
             <div className="rounded-2xl bg-background text-foreground shadow-[0_24px_60px_-12px_rgba(0,0,0,0.55)] border border-border overflow-hidden flex flex-col" style={{ maxHeight: "calc(100dvh - max(env(safe-area-inset-top), 14px) - 4.5rem)" }}>
               <div className="h-1 w-full bg-muted">
                 <motion.div
