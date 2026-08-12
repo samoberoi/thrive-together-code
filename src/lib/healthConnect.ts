@@ -31,7 +31,7 @@ type HealthConnectPermissionState = {
   message: string;
 };
 
-const readOptions = { read: READ_TYPES, write: [] as RecordType[] };
+const readOptions = { read: READ_TYPES, write: [] as HealthDataType[] };
 
 let permissionTransitionActive = false;
 let lastKnownStepsAuthorized = false;
