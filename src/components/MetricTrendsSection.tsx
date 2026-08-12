@@ -152,7 +152,7 @@ function TrendDetailDialog({
   today: string;
   onClose: () => void;
 }) {
-  type RangeKey = "weekly" | "fortnightly" | "monthly" | "quarterly" | "all";
+  type RangeKey = "weekly" | "fortnightly" | "monthly" | "quarterly" | "all" | "custom";
   const RANGES: { key: RangeKey; label: string; days: number | "all" }[] = [
     { key: "weekly", label: "Weekly", days: 7 },
     { key: "fortnightly", label: "Fortnightly", days: 14 },
@@ -251,7 +251,7 @@ function TrendDetailDialog({
               value={start}
               min={joinDate}
               max={end}
-              onChange={(e) => setStart(e.target.value)}
+              onChange={(e) => { setRange("custom"); setStart(e.target.value); }}
               className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-[13px] font-semibold text-foreground normal-case tracking-normal"
             />
           </label>
@@ -262,7 +262,7 @@ function TrendDetailDialog({
               value={end}
               min={start}
               max={today}
-              onChange={(e) => setEnd(e.target.value)}
+              onChange={(e) => { setRange("custom"); setEnd(e.target.value); }}
               className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-[13px] font-semibold text-foreground normal-case tracking-normal"
             />
           </label>
