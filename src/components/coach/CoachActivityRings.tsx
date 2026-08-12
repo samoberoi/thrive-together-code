@@ -57,6 +57,24 @@ export default function CoachActivityRings() {
         ratio: ov.targetSteps > 0 ? Math.min(1, ov.todaySteps / ov.targetSteps) : 0,
         hint: `${(ov.todaySteps || 0).toLocaleString("en-IN")} / ${(ov.targetSteps || 0).toLocaleString("en-IN")} steps`,
       });
+      const clin = (p as any)?.clinical ?? {};
+      setHasDiabetes(!!(clin.hasDiabetes || clin.has_diabetes || (p as any)?.has_diabetes));
+    } catch { /* ignore */ }
+
+    // Blood sugar log today
+    try {
+      const { data } = await supabase
+        .from("health_logs" as any)
+        .select("logged_at, log_type")
+        .eq("user_id", user.id)
+        .eq("log_type", "blood_sugar")
+        .order("logged_at", { ascending: false })
+        .limit(10);
+      setDiabetesLoggedToday(
+        ((data as any[]) ?? []).some(
+          (l) => new Date(l.logged_at).toDateString() === new Date().toDateString(),
+        ),
+      );
     } catch { /* ignore */ }
 
     // Water (glasses stored in weight_kg on water logs)
