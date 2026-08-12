@@ -2,9 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Activity, ChevronDown, Droplet, Footprints, Scale, TrendingDown, TrendingUp } from "lucide-react";
 import {
-  Area,
-  AreaChart,
+  Bar,
+  BarChart,
   CartesianGrid,
+  ComposedChart,
+  Line,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -137,25 +139,12 @@ export default function MetricTrendsSection({ userId }: { userId?: string }) {
               {!isOpen && data.length > 1 && (
                 <div className="w-20 h-9 shrink-0">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={data} margin={{ top: 2, right: 0, bottom: 2, left: 0 }}>
-                      <defs>
-                        <linearGradient id={`spark-${m.key}`} x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor={m.color} stopOpacity={0.35} />
-                          <stop offset="100%" stopColor={m.color} stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <YAxis hide domain={["dataMin", "dataMax"]} />
-                      <Area
-                        type="linear"
-                        dataKey="value"
-                        stroke={m.color}
-                        strokeWidth={1.8}
-                        fill={`url(#spark-${m.key})`}
-                        dot={false}
-                        isAnimationActive={false}
-                      />
-                    </AreaChart>
+                    <BarChart data={data} margin={{ top: 2, right: 0, bottom: 2, left: 0 }} barCategoryGap="18%">
+                      <YAxis hide domain={[0, "dataMax"]} />
+                      <Bar dataKey="value" fill={m.color} radius={[2, 2, 0, 0]} isAnimationActive={false} />
+                    </BarChart>
                   </ResponsiveContainer>
+
                 </div>
               )}
               <ChevronDown
@@ -199,11 +188,11 @@ export default function MetricTrendsSection({ userId }: { userId?: string }) {
                     <div className="h-48 w-full">
                       {windowed.length > 0 ? (
                         <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart data={windowed} margin={{ top: 8, right: 6, bottom: 0, left: -12 }}>
+                          <ComposedChart data={windowed} margin={{ top: 8, right: 6, bottom: 0, left: -12 }} barCategoryGap="22%">
                             <defs>
                               <linearGradient id={`fill-${m.key}`} x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor={m.color} stopOpacity={0.28} />
-                                <stop offset="100%" stopColor={m.color} stopOpacity={0.02} />
+                                <stop offset="0%" stopColor={m.color} stopOpacity={0.95} />
+                                <stop offset="100%" stopColor={m.color} stopOpacity={0.35} />
                               </linearGradient>
                             </defs>
                             <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.6} />
@@ -222,23 +211,32 @@ export default function MetricTrendsSection({ userId }: { userId?: string }) {
                               axisLine={false}
                               width={40}
                               stroke="hsl(var(--muted-foreground))"
-                              domain={["auto", "auto"]}
+                              domain={[0, "auto"]}
                             />
                             <Tooltip
+                              cursor={{ fill: "hsl(var(--muted))", opacity: 0.4 }}
                               labelFormatter={(l: any) => prettyDate(String(l))}
                               contentStyle={{ borderRadius: 12, border: "1px solid hsl(var(--border))", fontSize: 12 }}
                               formatter={(v: any) => [fmt(Number(v), m.unit), m.title]}
                             />
-                            <Area
+                            <Bar
+                              dataKey="value"
+                              fill={`url(#fill-${m.key})`}
+                              radius={[4, 4, 0, 0]}
+                              maxBarSize={22}
+                              isAnimationActive={false}
+                            />
+                            <Line
                               type="linear"
                               dataKey="value"
                               stroke={m.color}
-                              strokeWidth={2.4}
-                              fill={`url(#fill-${m.key})`}
+                              strokeWidth={2}
                               dot={windowed.length <= 14 ? { r: 2.5, fill: m.color, strokeWidth: 0 } : false}
                               activeDot={{ r: 4 }}
+                              isAnimationActive={false}
                             />
-                          </AreaChart>
+                          </ComposedChart>
+
                         </ResponsiveContainer>
                       ) : (
                         <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-border bg-background/60 px-4 text-center text-[12px] font-medium text-muted-foreground">
