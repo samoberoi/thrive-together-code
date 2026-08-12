@@ -434,6 +434,7 @@ export default function Dashboard() {
                 onClick={() => setProfileOpen(true)}
                 className="w-10 h-10 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center"
                 aria-label="Profile"
+                data-tour="profile-btn"
               >
                 {userAvatar ? (
                   <img src={userAvatar} alt="Profile" className="w-full h-full object-cover" />

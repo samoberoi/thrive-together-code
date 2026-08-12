@@ -149,9 +149,15 @@ export function buildUserTourSteps(packageKey: string | null | undefined): TourS
 
   return all.filter((s) => {
     if (s.paidOnly && isFoundation) return false;
-    if (s.selector && !document.querySelector(s.selector)) return false;
+    if (s.selector && !findVisible(s.selector)) return false;
     return true;
   });
+}
+
+/** First element matching the selector that is actually laid out (handles responsive duplicates). */
+function findVisible(selector: string): HTMLElement | null {
+  const nodes = Array.from(document.querySelectorAll(selector)) as HTMLElement[];
+  return nodes.find((n) => n.getBoundingClientRect().width > 0 && n.getBoundingClientRect().height > 0) ?? null;
 }
 
 type Rect = { top: number; left: number; width: number; height: number };
@@ -185,7 +191,7 @@ export default function DashboardTour({
       setRect(null);
       return;
     }
-    const el = document.querySelector(step.selector) as HTMLElement | null;
+    const el = findVisible(step.selector);
     if (!el) {
       setRect(null);
       return;
@@ -203,7 +209,7 @@ export default function DashboardTour({
   // Scroll the anchor into view, then measure (and keep measuring while scrolling settles).
   useLayoutEffect(() => {
     if (!open || !step) return;
-    const el = step.selector ? (document.querySelector(step.selector) as HTMLElement | null) : null;
+    const el = step.selector ? findVisible(step.selector) : null;
     if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
 
     let frames = 0;
