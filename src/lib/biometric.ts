@@ -35,7 +35,10 @@ export function isNative(): boolean {
 }
 
 export function supportsBiometricGate(): boolean {
-  return isNative() && Capacitor.getPlatform() === "ios";
+  // iOS uses the native BBDOBiometrics Swift plugin; Android uses the
+  // first-party BBDOBiometricsPlugin (BiometricPrompt hosted on MainActivity).
+  // The crashing third-party plugin is never packaged on Android.
+  return isNative();
 }
 
 export type BiometricDiagnostics = {
@@ -80,22 +83,6 @@ export async function getBiometricDiagnostics(): Promise<BiometricDiagnostics> {
     };
   }
 
-  // The third-party Android prompt launches a separate transparent Activity.
-  // On affected devices that Activity terminates the app after fingerprint
-  // approval, before JavaScript can catch or recover from the failure. Keep
-  // Android fail-open and never invoke that native prompt during startup.
-  if (platform === "android") {
-    return {
-      native: true,
-      platform,
-      available: false,
-      deviceSecure: true,
-      label: "Fingerprint",
-      code: "android-gate-disabled",
-      reason: "Android biometric app lock is disabled for launch stability.",
-    };
-  }
-
   try {
     logStartupEvent("biometric check", "BBDOBiometrics.check");
     const info = await BBDOBiometrics.check();
@@ -105,13 +92,26 @@ export async function getBiometricDiagnostics(): Promise<BiometricDiagnostics> {
       platform,
       available: Boolean(info.available),
       deviceSecure: Boolean(info.deviceSecure),
-      label: info.label || (platform === "ios" ? "Face ID / Touch ID" : "Biometrics"),
+      label: info.label || (platform === "ios" ? "Face ID / Touch ID" : "Fingerprint / Face Unlock"),
       code: info.code || (info.available ? "available" : "unavailable"),
       reason: info.reason || "Device biometric status checked.",
     };
   } catch (error) {
     reportStartupError("BBDOBiometrics.check failed", error);
-    /* Fall through to the package plugin for older installed builds. */
+    // Android never packages the third-party plugin (its transparent
+    // AuthActivity killed the host task), so there is nothing to fall back to.
+    if (platform === "android") {
+      return {
+        native: true,
+        platform,
+        available: false,
+        deviceSecure: false,
+        label: "Fingerprint",
+        code: "plugin-unavailable",
+        reason: "Reinstall the latest Android build to enable fingerprint unlock.",
+      };
+    }
+    /* Fall through to the package plugin for older installed iOS builds. */
   }
 
   try {
@@ -148,8 +148,9 @@ export async function isBiometricAvailable(): Promise<boolean> {
     const info = await BBDOBiometrics.check();
     if (info.available) return true;
   } catch {
-    /* Fall through to the package plugin. */
+    /* Fall through to the package plugin (iOS only). */
   }
+  if (Capacitor.getPlatform() === "android") return false;
   try {
     const info = await BiometricAuth.checkBiometry();
     return info.isAvailable && info.biometryType !== BiometryType.none;
@@ -159,13 +160,13 @@ export async function isBiometricAvailable(): Promise<boolean> {
 }
 
 export async function getBiometryLabel(): Promise<string> {
-  if (Capacitor.getPlatform() === "android") return "Fingerprint";
   try {
     const info = await BBDOBiometrics.check();
     if (info.label) return info.label;
   } catch {
-    /* Fall through to the package plugin. */
+    /* Fall through to the package plugin (iOS only). */
   }
+  if (Capacitor.getPlatform() === "android") return "Fingerprint / Face Unlock";
   try {
     const info = await BiometricAuth.checkBiometry();
     return labelForBiometryType(info.biometryType);
@@ -196,10 +197,7 @@ export function setBiometricEnabled(_on = true) {
 export async function authenticateWithBiometrics(
   reason = "Unlock BBDO"
 ): Promise<boolean> {
-  // Never start the Android biometric Activity. Affected Android versions and
-  // OEM builds can kill the process after a successful fingerprint, which is
-  // not recoverable from JavaScript. Android therefore fails open.
-  if (Capacitor.getPlatform() === "android") return true;
+  const platform = Capacitor.getPlatform();
 
   if (isNative()) {
     try {
@@ -210,12 +208,17 @@ export async function authenticateWithBiometrics(
     } catch (error) {
       reportStartupError("BBDOBiometrics.authenticate failed", error);
       const message = error instanceof Error ? error.message : String(error ?? "");
+      // Android must never touch the third-party plugin — it isn't packaged and
+      // its Activity is what crashed the app. Fail open instead of locking out.
+      if (platform === "android") return true;
       if (!/not implemented|unimplemented|plugin/i.test(message)) {
         console.warn("Native biometric auth failed:", message);
         return false;
       }
     }
   }
+
+
 
   try {
     logStartupEvent("biometric authenticate", "BiometricAuth.authenticate");
