@@ -152,12 +152,38 @@ function TrendDetailDialog({
   today: string;
   onClose: () => void;
 }) {
-  const [start, setStart] = useState(joinDate);
+  type RangeKey = "weekly" | "fortnightly" | "monthly" | "quarterly" | "all";
+  const RANGES: { key: RangeKey; label: string; days: number | "all" }[] = [
+    { key: "weekly", label: "Weekly", days: 7 },
+    { key: "fortnightly", label: "Fortnightly", days: 14 },
+    { key: "monthly", label: "Monthly", days: 30 },
+    { key: "quarterly", label: "Quarterly", days: 90 },
+    { key: "all", label: "Since joining", days: "all" },
+  ];
+
+  const startFor = useCallback(
+    (days: number | "all") => {
+      if (days === "all") return joinDate;
+      const d = new Date(`${today}T00:00:00`);
+      d.setDate(d.getDate() - (days - 1));
+      const key = d.toISOString().slice(0, 10);
+      return key < joinDate ? joinDate : key;
+    },
+    [joinDate, today],
+  );
+
+  const [range, setRange] = useState<RangeKey>("weekly");
+  const [start, setStart] = useState(() => startFor(7));
   const [end, setEnd] = useState(today);
   const [data, setData] = useState<TrendPoint[]>([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => { setStart(joinDate); setEnd(today); }, [joinDate, today, metric?.key]);
+  // Reset to the default weekly window whenever a different metric is opened.
+  useEffect(() => {
+    setRange("weekly");
+    setStart(startFor(7));
+    setEnd(today);
+  }, [metric?.key, startFor, today]);
 
   const load = useCallback(async () => {
     if (!userId || !metric) return;
@@ -169,12 +195,9 @@ function TrendDetailDialog({
 
   useEffect(() => { load(); }, [load]);
 
-  const preset = (days: number | "all") => {
-    if (days === "all") { setStart(joinDate); setEnd(today); return; }
-    const d = new Date(`${today}T00:00:00`);
-    d.setDate(d.getDate() - (days - 1));
-    const key = d.toISOString().slice(0, 10);
-    setStart(key < joinDate ? joinDate : key);
+  const preset = (r: RangeKey, days: number | "all") => {
+    setRange(r);
+    setStart(startFor(days));
     setEnd(today);
   };
 
@@ -200,22 +223,25 @@ function TrendDetailDialog({
         </DialogHeader>
 
         <div className="flex flex-wrap gap-1.5">
-          {[
-            { label: "7 days", v: 7 as const },
-            { label: "30 days", v: 30 as const },
-            { label: "90 days", v: 90 as const },
-            { label: "Since joining", v: "all" as const },
-          ].map((p) => (
-            <button
-              key={p.label}
-              type="button"
-              onClick={() => preset(p.v)}
-              className="rounded-full border border-border bg-background/60 px-3 py-1 text-[11px] font-bold text-muted-foreground hover:border-primary hover:text-primary transition-colors"
-            >
-              {p.label}
-            </button>
-          ))}
+          {RANGES.map((p) => {
+            const active = range === p.key;
+            return (
+              <button
+                key={p.key}
+                type="button"
+                onClick={() => preset(p.key, p.days)}
+                className={`rounded-full border px-3 py-1 text-[11px] font-bold transition-colors ${
+                  active
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-background/60 text-muted-foreground hover:border-primary hover:text-primary"
+                }`}
+              >
+                {p.label}
+              </button>
+            );
+          })}
         </div>
+
 
         <div className="grid grid-cols-2 gap-2">
           <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
