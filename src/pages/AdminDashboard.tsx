@@ -190,13 +190,22 @@ const tabContentMap: Record<AdminTab, React.ReactNode> = {
   users: <AdminUsers />,
   coaches: <AdminCoaches />,
   admins: <AdminAdmins />,
-  diet: <AdminDiet />,
-  supplements: <AdminSupplements />,
+  diet: (
+    <AdminSelfTabs manageLabel="Food library" mineLabel="My Plates" mineIcon={Salad} manage={<AdminDiet />} mine={<UserDiet planOverride="intensive" />} />
+  ),
+  supplements: (
+    <AdminSelfTabs manageLabel="Catalog" mineLabel="My Supplements" mineIcon={Pill} manage={<AdminSupplements />} mine={<UserSupplements simpleMode />} />
+  ),
   
   food_condition_rules: <AdminFoodConditionRules />,
-  fasting: <AdminFasting />,
+  fasting: (
+    <AdminSelfTabs manageLabel="Protocols" mineLabel="My Fasting" mineIcon={Timer} manage={<AdminFasting />} mine={<UserFasting packageKey="intensive" selfServe />} />
+  ),
   movement: <AdminMovement />,
-  labtests: <AdminLabTests />,
+  labtests: (
+    <AdminSelfTabs manageLabel="Catalog" mineLabel="My Tests" mineIcon={FlaskConical} manage={<AdminLabTests />} mine={<PatientLabTests alwaysShow foundationMode />} />
+  ),
+
   videos: <AdminVideos />,
   exercises: <AdminExercises />,
   rbac: <AdminRBAC />,
