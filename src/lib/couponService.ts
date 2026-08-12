@@ -10,6 +10,9 @@ export interface CouponCampaign {
   discount_value: number;
   is_limited: boolean;
   coupon_count: number;
+  applicable_cycles: string[] | null;
+  applicable_plan_keys: string[] | null;
+  total_redemption_limit: number | null;
   max_redemptions_per_coupon: number;
   start_date: string;
   end_date: string | null;
@@ -70,6 +73,9 @@ export async function createCampaign(input: {
   max_redemptions_per_coupon?: number;
   start_date: string;
   end_date: string | null;
+  applicable_cycles?: string[] | null;
+  applicable_plan_keys?: string[] | null;
+  total_redemption_limit?: number | null;
 }) {
   const { data, error } = await (supabase as any)
     .from("coupon_campaigns")
@@ -82,6 +88,9 @@ export async function createCampaign(input: {
       max_redemptions_per_coupon: input.is_limited ? (input.max_redemptions_per_coupon ?? 1) : 1,
       start_date: input.start_date,
       end_date: input.end_date,
+      applicable_cycles: input.applicable_cycles?.length ? input.applicable_cycles : null,
+      applicable_plan_keys: input.applicable_plan_keys?.length ? input.applicable_plan_keys : null,
+      total_redemption_limit: input.total_redemption_limit ?? null,
     })
     .select()
     .single();
@@ -143,17 +152,33 @@ export async function fetchUserLabels(userIds: string[]): Promise<Record<string,
   return map;
 }
 
-export async function validateCoupon(code: string, amount: number): Promise<CouponValidation> {
-  const { data, error } = await (supabase as any).rpc("validate_coupon", { _code: code, _amount: amount });
+export async function validateCoupon(
+  code: string,
+  amount: number,
+  planKey?: string | null,
+  billingCycle?: string | null,
+): Promise<CouponValidation> {
+  const { data, error } = await (supabase as any).rpc("validate_coupon", {
+    _code: code,
+    _amount: amount,
+    _plan_key: planKey ?? null,
+    _billing_cycle: billingCycle ?? null,
+  });
   if (error) return { valid: false, reason: "Could not verify this coupon" };
   return (data ?? { valid: false, reason: "Invalid coupon code" }) as CouponValidation;
 }
 
-export async function redeemCoupon(code: string, amount: number, planKey?: string | null): Promise<CouponValidation> {
+export async function redeemCoupon(
+  code: string,
+  amount: number,
+  planKey?: string | null,
+  billingCycle?: string | null,
+): Promise<CouponValidation> {
   const { data, error } = await (supabase as any).rpc("redeem_coupon", {
     _code: code,
     _amount: amount,
     _plan_key: planKey ?? null,
+    _billing_cycle: billingCycle ?? null,
   });
   if (error) return { valid: false, reason: "Could not apply this coupon" };
   return (data ?? { valid: false, reason: "Invalid coupon code" }) as CouponValidation;

@@ -26,6 +26,16 @@ import {
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
+const CYCLES = [
+  { key: "monthly", label: "Monthly" },
+  { key: "quarterly", label: "Quarterly" },
+  { key: "half_yearly", label: "6 months" },
+  { key: "yearly", label: "Yearly" },
+];
+const CYCLE_LABEL: Record<string, string> = {
+  monthly: "Monthly", quarterly: "Quarterly", half_yearly: "6 months", yearly: "Yearly",
+};
+
 export default function AdminCoupons() {
   const confirm = useConfirm();
   const [loading, setLoading] = useState(true);
@@ -43,6 +53,10 @@ export default function AdminCoupons() {
   const [count, setCount] = useState(100);
   const [startDate, setStartDate] = useState(todayIso());
   const [endDate, setEndDate] = useState("");
+  const [cycles, setCycles] = useState<string[]>([]);
+  const [planKeys, setPlanKeys] = useState<string[]>([]);
+  const [totalLimit, setTotalLimit] = useState("");
+  const [packages, setPackages] = useState<{ plan_key: string; name: string }[]>([]);
 
   // detail
   const [coupons, setCoupons] = useState<Coupon[]>([]);
@@ -57,6 +71,13 @@ export default function AdminCoupons() {
   };
   useEffect(() => { load(); }, []);
 
+  useEffect(() => {
+    (async () => {
+      const { data } = await (supabase as any).from("packages").select("plan_key, name").eq("enabled", true).order("sort_order");
+      setPackages((data ?? []).filter((p: any) => p.plan_key !== "onboarding_test"));
+    })();
+  }, []);
+
   const loadDetail = async (id: string) => {
     const [cs, rs] = await Promise.all([fetchCoupons(id), fetchRedemptions(id)]);
     setCoupons(cs);
@@ -68,6 +89,7 @@ export default function AdminCoupons() {
   const resetForm = () => {
     setName(""); setDescription(""); setDiscountType("percent"); setDiscountValue(10);
     setIsLimited(true); setCount(100); setStartDate(todayIso()); setEndDate("");
+    setCycles([]); setPlanKeys([]); setTotalLimit("");
   };
 
   const submitCreate = async () => {
@@ -84,6 +106,9 @@ export default function AdminCoupons() {
         is_limited: isLimited,
         start_date: new Date(startDate).toISOString(),
         end_date: endDate ? new Date(`${endDate}T23:59:59`).toISOString() : null,
+        applicable_cycles: cycles,
+        applicable_plan_keys: planKeys,
+        total_redemption_limit: totalLimit.trim() ? Number(totalLimit) : null,
       });
       if (isLimited) {
         const made = await generateCoupons(camp.id, count);
@@ -179,6 +204,47 @@ export default function AdminCoupons() {
                       <Textarea rows={2} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Festive offer for new members" />
                     </div>
 
+                    <div className="rounded-lg border p-3 space-y-3">
+                      <div>
+                        <p className="text-sm font-semibold">Applicable on — duration</p>
+                        <p className="text-xs text-muted-foreground">Pick the billing durations this coupon works on. Select none to allow all.</p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {CYCLES.map((cy) => {
+                          const on = cycles.includes(cy.key);
+                          return (
+                            <button
+                              key={cy.key}
+                              type="button"
+                              onClick={() => setCycles((p) => (on ? p.filter((x) => x !== cy.key) : [...p, cy.key]))}
+                              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${on ? "bg-primary text-primary-foreground border-primary" : "bg-background text-muted-foreground"}`}
+                            >
+                              {cy.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">Applicable on — packages</p>
+                        <p className="text-xs text-muted-foreground">Select none to allow all packages.</p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {packages.map((p) => {
+                          const on = planKeys.includes(p.plan_key);
+                          return (
+                            <button
+                              key={p.plan_key}
+                              type="button"
+                              onClick={() => setPlanKeys((prev) => (on ? prev.filter((x) => x !== p.plan_key) : [...prev, p.plan_key]))}
+                              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${on ? "bg-primary text-primary-foreground border-primary" : "bg-background text-muted-foreground"}`}
+                            >
+                              {p.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
                     <div className="flex items-center justify-between rounded-lg bg-muted/40 p-3">
                       <div>
                         <p className="text-sm font-semibold">Limited number of coupons</p>
@@ -195,6 +261,16 @@ export default function AdminCoupons() {
                         </div>
                       )}
                       <div>
+                        <label className="text-xs text-muted-foreground">Total uses allowed</label>
+                        <Input
+                          type="number"
+                          value={totalLimit}
+                          onChange={(e) => setTotalLimit(e.target.value)}
+                          placeholder="Leave blank = unlimited"
+                        />
+                        <p className="text-[10px] text-muted-foreground mt-1">Blank means unlimited uses during the offer window.</p>
+                      </div>
+                      <div>
                         <label className="text-xs text-muted-foreground">Start date</label>
                         <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
                       </div>
@@ -203,6 +279,7 @@ export default function AdminCoupons() {
                         <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
                       </div>
                     </div>
+
 
                     <div className="flex justify-end gap-2">
                       <Button variant="ghost" onClick={() => { setCreating(false); resetForm(); }}>Cancel</Button>
@@ -227,7 +304,13 @@ export default function AdminCoupons() {
                     <p className="text-xs text-muted-foreground truncate">
                       {c.discount_type === "percent" ? `${c.discount_value}% off` : `₹${c.discount_value} off`} ·{" "}
                       {c.is_limited ? `${c.coupon_count} codes` : "Unlimited"}
+                      {c.total_redemption_limit ? ` · max ${c.total_redemption_limit} uses` : ""}
                       {c.end_date ? ` · ends ${new Date(c.end_date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}` : ""}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      {c.applicable_cycles?.length ? c.applicable_cycles.map((x) => CYCLE_LABEL[x] ?? x).join(", ") : "All durations"}
+                      {" · "}
+                      {c.applicable_plan_keys?.length ? c.applicable_plan_keys.join(", ") : "All packages"}
                     </p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">

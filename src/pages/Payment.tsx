@@ -75,7 +75,7 @@ export default function Payment() {
     if (!code) return;
     setCouponStatus("applying");
     setCouponMessage("");
-    const res = await validateCoupon(code, baseAmount);
+    const res = await validateCoupon(code, baseAmount, plan?.plan_key ?? null, plan?.billing_cycle ?? null);
     if (!res.valid) {
       setCoupon(null);
       setCouponStatus("invalid");
@@ -157,7 +157,7 @@ export default function Payment() {
   const finalizePostPayment = async (user: PaymentUser) => {
     if (!plan) return;
     if (coupon?.valid && coupon.code) {
-      const res = await redeemCoupon(coupon.code, baseAmount, plan.plan_key);
+      const res = await redeemCoupon(coupon.code, baseAmount, plan.plan_key, plan.billing_cycle);
       if (!res.valid) console.warn("Coupon could not be recorded:", res.reason);
     }
     if (plan.assigns_coach !== false) {
