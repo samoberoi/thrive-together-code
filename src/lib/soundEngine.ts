@@ -236,54 +236,11 @@ export function playImpact() {
   });
 }
 
-// ── Urgent health alert: loud pulse + siren sweep + sharp shimmer ──
+// ── Health alert sound ──
+// BBDO uses ONE sound everywhere: the Hummingbird chirp. Health alerts used to
+// play a siren sweep before the chime, which sounded like noise on Android.
 export function playCriticalHealthAlert() {
-  safePlay(() => {
-    const ctx = getCtx();
-    const t = ctx.currentTime;
-
-    // Three attention pulses with a square wave edge.
-    [0, 0.28, 0.56].forEach((delay) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "square";
-      osc.frequency.setValueAtTime(880, t + delay);
-      osc.frequency.exponentialRampToValueAtTime(1320, t + delay + 0.12);
-      gain.gain.setValueAtTime(0, t + delay);
-      gain.gain.linearRampToValueAtTime(vol(0.16), t + delay + 0.015);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + delay + 0.18);
-      osc.connect(gain).connect(ctx.destination);
-      osc.start(t + delay);
-      osc.stop(t + delay + 0.2);
-    });
-
-    // Short rising siren underneath.
-    const siren = ctx.createOscillator();
-    const sirenGain = ctx.createGain();
-    siren.type = "sawtooth";
-    siren.frequency.setValueAtTime(420, t + 0.08);
-    siren.frequency.exponentialRampToValueAtTime(980, t + 0.78);
-    sirenGain.gain.setValueAtTime(0, t + 0.08);
-    sirenGain.gain.linearRampToValueAtTime(vol(0.08), t + 0.16);
-    sirenGain.gain.exponentialRampToValueAtTime(0.001, t + 0.9);
-    siren.connect(sirenGain).connect(ctx.destination);
-    siren.start(t + 0.08);
-    siren.stop(t + 0.92);
-
-    // Crisp noise tick so it is unmistakable on small phone speakers.
-    const bufferSize = Math.floor(ctx.sampleRate * 0.16);
-    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.55;
-    const noise = ctx.createBufferSource();
-    const noiseGain = ctx.createGain();
-    noise.buffer = buffer;
-    noiseGain.gain.setValueAtTime(vol(0.08), t);
-    noiseGain.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
-    noise.connect(noiseGain).connect(ctx.destination);
-    noise.start(t);
-    noise.stop(t + 0.16);
-  });
+  return playHummingbirdChirp();
 }
 
 // ── Warm uplifting tone ──
