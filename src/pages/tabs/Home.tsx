@@ -1335,6 +1335,7 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
     <div className="flex flex-col gap-6 px-5 md:px-8 xl:px-10 pt-3 md:pt-6 pb-6">
       {/* Hero greeting — always user's first name. Coach appears as a small chip below. */}
       <motion.div
+        data-tour="greeting"
         className="pt-1 pb-1"
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -1347,6 +1348,7 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
           <button
             type="button"
             onClick={openCoachChat}
+            data-tour="coach-chip"
             className="mt-3 inline-flex items-center gap-2.5 pl-1 pr-3 py-1 rounded-full liquid-glass ring-1 ring-primary/15 hover:ring-primary/30 transition-all active:scale-[0.98]"
             aria-label={`Message your coach ${coachName}`}
           >
@@ -1626,7 +1628,11 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
           },
         ];
 
-        return <DailyActivityDial items={rings} title="Close your rings" size="lg" />;
+        return (
+          <div data-tour="rings">
+            <DailyActivityDial items={rings} title="Close your rings" size="lg" />
+          </div>
+        );
       })()}
 
       {/* ─── Metric Rings: Health, Weight, Blood Glucose, BMI/Obesity ─── */}
@@ -1641,7 +1647,7 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
           ? "hsl(var(--primary))"
           : (bmiCat?.color ?? "var(--bbdo-mint)");
         return (
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-4 gap-2" data-tour="metrics">
             <MetricRing
               value={healthScore}
               label="Health"
@@ -1671,7 +1677,9 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
       })()}
 
       {/* ─── Long-run trends since joining (tap to open full graph + date filter) ─── */}
-      <MetricTrendsSection userId={authUser?.id} />
+      <div data-tour="trends">
+        <MetricTrendsSection userId={authUser?.id} />
+      </div>
 
 
       {/* Health Markers from lab reports */}

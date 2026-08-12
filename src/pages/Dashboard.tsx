@@ -9,6 +9,7 @@ import bbdoLogo from "@/assets/logo.png";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import LogFAB from "@/components/LogFAB";
 import BottomNav from "@/components/BottomNav";
+import DashboardTour from "@/components/tour/DashboardTour";
 
 // Home tab loads eagerly so /home paints immediately.
 import HomeTab from "./tabs/Home";
@@ -86,6 +87,7 @@ export default function Dashboard() {
   const [isDark, setIsDark] = useState(false);
   const [pendingLabRecs, setPendingLabRecs] = useState(0);
   const [hasYogaBooking, setHasYogaBooking] = useState(false);
+  const [tourOpen, setTourOpen] = useState(false);
   const { t } = useLanguage();
   const { user, signOut } = useAuth();
   const { canSeeTab, packageKey } = useRbac();
@@ -279,6 +281,40 @@ export default function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tabs.join("|"), activeTab]);
 
+  // ── Guided dashboard tour (end users only) ──────────────────────────────
+  const tourKey = user?.id ? `bbdo:dashTour:${user.id}` : null;
+
+  // Auto-launch once, the first time a user lands on their dashboard.
+  useEffect(() => {
+    if (!tourKey || tourOpen) return;
+    let seen = "1";
+    try { seen = localStorage.getItem(tourKey) ?? ""; } catch { /* ignore */ }
+    if (seen) return;
+    const t = window.setTimeout(() => {
+      setActiveTab("home");
+      setProfileOpen(false);
+      setTourOpen(true);
+    }, 1400);
+    return () => window.clearTimeout(t);
+  }, [tourKey, tourOpen]);
+
+  // Replay trigger (Profile → "Take the tour again")
+  useEffect(() => {
+    const handler = () => {
+      setProfileOpen(false);
+      setNotificationsOpen(false);
+      setActiveTab("home");
+      window.setTimeout(() => setTourOpen(true), 300);
+    };
+    window.addEventListener("bbdo:start-tour", handler);
+    return () => window.removeEventListener("bbdo:start-tour", handler);
+  }, []);
+
+  const closeTour = () => {
+    setTourOpen(false);
+    try { if (tourKey) localStorage.setItem(tourKey, "1"); } catch { /* ignore */ }
+  };
+
   // Open notifications inside the center frame (keeps sidebar visible)
   useEffect(() => {
     const openHandler = () => {
@@ -358,6 +394,7 @@ export default function Dashboard() {
             onClick={() => setProfileOpen(true)}
             className="w-9 h-9 rounded-full overflow-hidden border border-primary/30 bg-primary/15 flex items-center justify-center shrink-0"
             aria-label="Profile"
+            data-tour="profile-btn"
           >
             {userAvatar ? (
               <img src={userAvatar} alt="Profile" className="w-full h-full object-cover" />
@@ -397,7 +434,7 @@ export default function Dashboard() {
         <div className="px-4 pb-6" style={{ borderTop: "1px solid hsl(var(--border))", paddingTop: "12px" }}>
           <SidebarPackageCard />
           <button
-            onClick={() => navigate("/tour")}
+            onClick={() => window.dispatchEvent(new Event("bbdo:start-tour"))}
             className="flex items-center gap-3 px-4 py-2.5 rounded-2xl text-muted-foreground hover:text-[var(--bbdo-blue)] hover:bg-[var(--bbdo-blue-soft)] transition-colors w-full mb-1"
           >
             <Compass className="w-5 h-5 shrink-0" strokeWidth={1.5} />
@@ -433,6 +470,7 @@ export default function Dashboard() {
                 onClick={() => setProfileOpen(true)}
                 className="w-10 h-10 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center"
                 aria-label="Profile"
+                data-tour="profile-btn"
               >
                 {userAvatar ? (
                   <img src={userAvatar} alt="Profile" className="w-full h-full object-cover" />
@@ -485,6 +523,8 @@ export default function Dashboard() {
       </div>
 
       <LogFAB packageKey={packageKey} />
+
+      <DashboardTour packageKey={packageKey} open={tourOpen} onClose={closeTour} />
 
       <AnimatePresence>
         {profileOpen && (
