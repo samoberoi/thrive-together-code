@@ -670,7 +670,6 @@ export default function AdminDashboard() {
             { id: "users", icon: Users, label: "Users" },
             { id: "coaches", icon: UserCheck, label: "Coaches" },
             { id: "diet", icon: Salad, label: "Diet" },
-            { id: "food_condition_rules", icon: HeartPulse, label: "Food Rules" },
             { id: "supplements", icon: Pill, label: "Supps" },
             { id: "fasting", icon: Timer, label: "Fasting" },
             { id: "movement", icon: Footprints, label: "Move" },
@@ -678,24 +677,8 @@ export default function AdminDashboard() {
             { id: "videos", icon: Video, label: "Videos" },
             { id: "exercises", icon: Dumbbell, label: "Exercise" },
             { id: "community", icon: MessageSquare, label: "Community" },
-            { id: "admins", icon: ShieldCheck, label: "Admins" },
-            { id: "rbac", icon: Shield, label: "Access" },
-            { id: "packages", icon: PackageIcon, label: "Packages" },
-            { id: "assignments", icon: Link2, label: "Assign" },
-            { id: "languages", icon: LanguagesIcon, label: "Languages" },
-            { id: "commissions", icon: Percent, label: "Commissions" },
-            { id: "community_categories", icon: MessageSquare, label: "Categories" },
-            
-            { id: "referrals", icon: Gift, label: "Referrals" },
-            { id: "logs", icon: ScrollText, label: "Logs" },
-            { id: "color_gauges", icon: Palette, label: "Gauges" },
-            { id: "notifications", icon: Bell, label: "Notifs" },
-            { id: "channel_partners", icon: Handshake, label: "Partners" },
-            { id: "global_streak", icon: Flame, label: "Streak" },
-            { id: "pnl", icon: TrendingUp, label: "P&L" },
-            { id: "bmi", icon: Scale, label: "BMI" },
-            { id: "onboarding_grades", icon: Gauge, label: "Grading" },
           ]}
+
         />
       </div>
     </div>
