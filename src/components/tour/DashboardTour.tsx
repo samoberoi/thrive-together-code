@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, ArrowRight, X, Sparkles } from "lucide-react";
@@ -249,64 +249,6 @@ export default function DashboardTour({
   const next = () => (isLast ? onClose() : setI((v) => v + 1));
   const back = () => setI((v) => Math.max(0, v - 1));
 
-  // Measure the real card so it can be pinned to the visual viewport bottom.
-  const cardRef = useRef<HTMLDivElement | null>(null);
-  const [cardH, setCardH] = useState(220);
-  useLayoutEffect(() => {
-    const el = cardRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(() => setCardH(el.getBoundingClientRect().height));
-    ro.observe(el);
-    setCardH(el.getBoundingClientRect().height);
-    return () => ro.disconnect();
-  }, [step?.key, open]);
-
-  // Track the *visual* viewport so keyboards / browser chrome never push the card off-screen.
-  const [viewport, setViewport] = useState(() => ({
-    top: typeof window !== "undefined" ? (window.visualViewport?.offsetTop ?? 0) : 0,
-    height: typeof window !== "undefined" ? (window.visualViewport?.height ?? window.innerHeight) : 800,
-  }));
-  useEffect(() => {
-    if (!open) return;
-    const read = () => setViewport({
-      top: window.visualViewport?.offsetTop ?? 0,
-      height: window.visualViewport?.height ?? window.innerHeight,
-    });
-    read();
-    window.addEventListener("resize", read);
-    window.addEventListener("orientationchange", read);
-    window.visualViewport?.addEventListener("resize", read);
-    window.visualViewport?.addEventListener("scroll", read);
-    return () => {
-      window.removeEventListener("resize", read);
-      window.removeEventListener("orientationchange", read);
-      window.visualViewport?.removeEventListener("resize", read);
-      window.visualViewport?.removeEventListener("scroll", read);
-    };
-  }, [open]);
-
-  const insets = useMemo(() => {
-    if (typeof window === "undefined") return { top: 14, bottom: 14 };
-    const cs = getComputedStyle(document.documentElement);
-    const num = (v: string) => parseFloat(v || "0") || 0;
-    return {
-      top: 14 + num(cs.getPropertyValue("--sat")),
-      bottom: 14 + num(cs.getPropertyValue("--sab")),
-    };
-  }, []);
-
-  const card = useMemo(() => {
-    const topLimit = viewport.top + insets.top + 52;
-    const bottomEdge = viewport.top + viewport.height - insets.bottom;
-    const maxHeight = Math.max(180, bottomEdge - topLimit);
-    const renderedHeight = Math.min(cardH, maxHeight);
-    return {
-      top: Math.max(topLimit, bottomEdge - renderedHeight),
-      maxHeight,
-    };
-  }, [cardH, viewport, insets]);
-
-
   if (!open || typeof document === "undefined") return null;
 
   return createPortal(
@@ -361,7 +303,7 @@ export default function DashboardTour({
           onClick={onClose}
           aria-label="Skip tour"
           className="no-pill absolute right-4 z-10 inline-flex items-center gap-1.5 rounded-full bg-white/15 backdrop-blur px-3.5 py-2 text-[12px] font-semibold text-white active:scale-[0.98]"
-          style={{ top: viewport.top + insets.top }}
+          style={{ top: "max(env(safe-area-inset-top), 14px)" }}
         >
           <X className="w-3.5 h-3.5" /> Skip
         </button>
@@ -374,11 +316,10 @@ export default function DashboardTour({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.98 }}
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-            ref={cardRef}
-            className="absolute left-0 right-0 mx-auto w-[calc(100%-1.25rem)] max-w-[26rem] px-0"
-            style={{ top: card.top, maxHeight: card.maxHeight }}
+            className="absolute bottom-[max(env(safe-area-inset-bottom),0.625rem)] left-0 right-0 mx-auto w-[calc(100%-1.25rem)] max-w-[26rem] px-0"
+            style={{ maxHeight: "calc(100dvh - max(env(safe-area-inset-top), 14px) - 4.5rem)" }}
           >
-            <div className="rounded-2xl bg-background text-foreground shadow-[0_24px_60px_-12px_rgba(0,0,0,0.55)] border border-border overflow-hidden flex flex-col" style={{ maxHeight: card.maxHeight }}>
+            <div className="rounded-2xl bg-background text-foreground shadow-[0_24px_60px_-12px_rgba(0,0,0,0.55)] border border-border overflow-hidden flex flex-col" style={{ maxHeight: "calc(100dvh - max(env(safe-area-inset-top), 14px) - 4.5rem)" }}>
               <div className="h-1 w-full bg-muted">
                 <motion.div
                   className="h-full"
