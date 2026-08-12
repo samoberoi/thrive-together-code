@@ -479,13 +479,11 @@ export default function AdminDashboard() {
           className="flex items-center gap-3 px-6 pt-8 pb-6"
           style={{ borderBottom: "1px solid hsl(var(--border))" }}
         >
-          <div className="w-10 h-10 rounded-xl gradient-blue glow-blue flex items-center justify-center shrink-0">
-            <span className="text-white font-black text-base tracking-tighter">BB</span>
-          </div>
+          <img src={logoImg} alt="BBDO" className="h-10 w-auto object-contain shrink-0" />
           <div className="flex-1 min-w-0">
-            <h1 className="text-foreground font-black text-lg leading-none">bye bye</h1>
             <p className="text-muted-foreground text-xs">Super Admin</p>
           </div>
+
           <SoundToggle inline />
           <NotificationCenter unreadCount={attentionCounts.notifications} />
         </div>
