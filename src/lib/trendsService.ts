@@ -35,7 +35,7 @@ export async function fetchJoinDate(userId: string): Promise<string | null> {
     const { data } = await (supabase as any)
       .from("profiles")
       .select("created_at")
-      .eq("id", userId)
+      .eq("user_id", userId)
       .maybeSingle();
     return data?.created_at ? dateKey(data.created_at) : null;
   } catch {

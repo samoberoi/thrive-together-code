@@ -75,7 +75,7 @@ export default function MetricTrendsSection({ userId }: { userId?: string }) {
       setJoinDate(jd);
       // Load the widest window once (quarter or since joining, whichever is
       // longer) and slice it client-side when the toggle changes.
-      const earliest = jd < shiftDays(today, 90) ? jd : shiftDays(today, 90);
+      const earliest = jd && jd < shiftDays(today, 90) ? jd : shiftDays(today, 90);
       const results = await Promise.all(METRICS.map((m) => fetchTrendSeries(userId, m.key, earliest, today)));
       if (cancelled) return;
       const next = { health: [], weight: [], glucose: [], steps: [] } as Record<TrendMetric, TrendPoint[]>;
@@ -86,10 +86,8 @@ export default function MetricTrendsSection({ userId }: { userId?: string }) {
   }, [userId, today]);
 
   const days = RANGES.find((r) => r.key === range)!.days;
-  const windowStart = useMemo(() => {
-    const s = shiftDays(today, days - 1);
-    return s < joinDate ? joinDate : s;
-  }, [today, days, joinDate]);
+  // Always a fixed rolling window ending today: 7 / 14 / 30 / 90 days back.
+  const windowStart = useMemo(() => shiftDays(today, days - 1), [today, days]);
 
   return (
     <div className="space-y-2.5">
