@@ -237,8 +237,8 @@ export async function fireHealthMetricFeedback(
         try {
           const previousVolume = getMasterVolume();
           setMasterVolume(Math.max(settings.volume ?? 0.8, result.level === "critical" ? 1 : 0.9));
-          playCriticalHealthAlert();
-          setTimeout(() => playNotificationSound(settings.variant), 520);
+          // One sound only — the Hummingbird chirp.
+          playNotificationSound(settings.variant);
           setTimeout(() => setMasterVolume(previousVolume), 1_800);
         } catch (soundErr) {
           console.warn("health alert sound failed", soundErr);
