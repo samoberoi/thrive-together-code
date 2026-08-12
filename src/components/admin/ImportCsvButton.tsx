@@ -87,7 +87,7 @@ export default function ImportCsvButton({
         onClick={() => inputRef.current?.click()}
       >
         {busy ? <Loader2 className="w-4 h-4 shrink-0 animate-spin" /> : <Upload className="w-4 h-4 shrink-0" />}
-        <span className="hidden sm:inline">{busy ? "Importing…" : label}</span>
+        <span>{busy ? "Importing…" : label}</span>
       </Button>
     </>
   );

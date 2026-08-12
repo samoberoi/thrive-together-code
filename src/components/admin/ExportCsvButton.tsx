@@ -61,7 +61,7 @@ export default function ExportCsvButton({
       onClick={() => exportToCsv(filename, typeof rows === "function" ? rows() : rows, columns)}
     >
       <Download className="w-4 h-4 shrink-0" />
-      <span className="hidden sm:inline">{label}</span>
+      <span>{label}</span>
     </Button>
   );
 }

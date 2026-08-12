@@ -229,12 +229,9 @@ export default function AdminUsersInsights() {
 
   return (
     <div className="h-[100svh] max-h-[100svh] overflow-y-auto overscroll-y-contain bg-background">
-      {/* Ambient hero background */}
+      {/* Compact mobile-first summary */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-secondary/5 to-transparent pointer-events-none" />
-        <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-32 -left-32 w-96 h-96 rounded-full bg-secondary/10 blur-3xl pointer-events-none" />
-
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-[calc(env(safe-area-inset-top)+1rem)] sm:pt-8 pb-6 sm:pb-10">
           <button
             onClick={() => navigate("/admin-dashboard")}
@@ -245,19 +242,17 @@ export default function AdminUsersInsights() {
 
           <div className="flex items-end justify-between gap-6 flex-wrap">
             <div className="min-w-0">
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary mb-3">
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase text-primary mb-2">
                 <Sparkles className="w-3.5 h-3.5" /> Member Intelligence
               </div>
               <h1 className="text-[clamp(24px,7vw,44px)] font-black text-foreground leading-[1.05] tracking-tight">
                 Total Users <span className="text-primary">·</span>{" "}
                 <CountUp value={totalUsers} />
               </h1>
-              <p className="text-muted-foreground text-sm mt-2 max-w-xl">
-                Every enrolled member, the package they're on, the coach they're with and how their health is trending — at a glance.
-              </p>
+              <p className="text-muted-foreground text-sm mt-2 max-w-xl">Patients by package, coach and recent health status.</p>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 sm:gap-3 w-full sm:w-auto">
+            <div className="grid grid-cols-1 min-[390px]:grid-cols-3 gap-2 sm:gap-3 w-full sm:w-auto">
               <HeroStat icon={AlertTriangle} label="Need attention" value={totals.high + totals.medium} tone="text-destructive" bg="bg-destructive/10" />
               <HeroStat icon={Heart} label="Healthy" value={totals.healthy} tone="text-emerald-600" bg="bg-emerald-500/10" />
               <HeroStat icon={UserCheck} label="With coach" value={totals.coached} tone="text-secondary" bg="bg-secondary/10" />
@@ -269,7 +264,7 @@ export default function AdminUsersInsights() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-[calc(env(safe-area-inset-bottom)+4rem)] space-y-6 sm:space-y-8">
 
         {/* Plan category cards */}
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
           {(Object.keys(PLAN_META) as PlanKey[]).map((k, idx) => {
             const meta = PLAN_META[k];
             const c = counts[k];
@@ -285,7 +280,7 @@ export default function AdminUsersInsights() {
                 transition={{ delay: idx * 0.06, duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
                 whileTap={{ scale: 0.99 }}
                 className={cn(
-                  "relative text-left rounded-3xl p-5 overflow-hidden transition-all",
+                  "relative text-left rounded-xl sm:rounded-2xl p-4 sm:p-5 overflow-hidden transition-all",
                   "border bg-card",
                   active ? `border-transparent ring-2 ${meta.ring} shadow-card` : "border-border hover:border-foreground/20"
                 )}
@@ -343,7 +338,7 @@ export default function AdminUsersInsights() {
               className="w-full pl-9 pr-3 py-2.5 rounded-2xl border border-border bg-card text-sm focus:outline-none focus:border-primary"
             />
           </div>
-          <div className="flex gap-1.5 rounded-2xl bg-muted p-1">
+          <div className="grid grid-cols-2 min-[430px]:grid-cols-4 gap-1.5 rounded-xl bg-muted p-1">
             {([
               { id: "all", label: "All", count: counts[activeTab].total },
               { id: "high", label: "High risk", count: counts[activeTab].high },
@@ -354,7 +349,7 @@ export default function AdminUsersInsights() {
                 key={f.id}
                 onClick={() => setSeverityFilter(f.id as any)}
                 className={cn(
-                  "px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5",
+                  "min-w-0 justify-center px-2 py-2 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1",
                   severityFilter === f.id ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -374,7 +369,7 @@ export default function AdminUsersInsights() {
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.22 }}
-          className="rounded-3xl bg-card border border-border overflow-hidden"
+          className="rounded-xl sm:rounded-2xl bg-card border border-border overflow-hidden"
         >
           <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-border flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2 min-w-0">
@@ -402,7 +397,7 @@ export default function AdminUsersInsights() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: Math.min(idx, 6) * 0.02, duration: 0.18 }}
-                  className="px-5 py-4 hover:bg-accent/40 transition-colors flex items-center gap-4"
+                  className="px-3 sm:px-5 py-4 hover:bg-accent/40 transition-colors grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3 sm:gap-4"
                 >
                   <Avatar name={r.name} severity={r.severity} />
                   <div className="min-w-0 flex-1">
@@ -434,9 +429,9 @@ export default function AdminUsersInsights() {
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={(e) => e.stopPropagation()}
-                      className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1.5 rounded-full bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 transition-colors"
+                      className="shrink-0 inline-flex items-center justify-center w-9 h-9 sm:w-auto sm:h-auto sm:gap-1.5 text-[11px] font-bold sm:px-2.5 sm:py-1.5 rounded-full bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 transition-colors"
                     >
-                      <MessageCircle className="w-3.5 h-3.5" /> Chat
+                      <MessageCircle className="w-4 h-4 sm:w-3.5 sm:h-3.5" /> <span className="hidden sm:inline">Chat</span>
                     </a>
                   ) : (
                     <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
@@ -450,7 +445,7 @@ export default function AdminUsersInsights() {
 
         {/* Coach load (only meaningful for plans with coaches) */}
         {coachLoad.length > 0 && (
-          <div className="rounded-3xl bg-card border border-border p-5">
+          <div className="rounded-xl sm:rounded-2xl bg-card border border-border p-4 sm:p-5">
             <div className="flex items-center gap-2 mb-4">
               <UserCheck className="w-4 h-4 text-secondary" />
               <h3 className="font-bold text-foreground">Coach load · who's carrying what</h3>
@@ -481,7 +476,7 @@ export default function AdminUsersInsights() {
 
 function HeroStat({ icon: Icon, label, value, tone, bg }: { icon: any; label: string; value: number; tone: string; bg: string }) {
   return (
-    <div className="rounded-2xl bg-card border border-border p-3 min-w-0">
+    <div className="rounded-xl bg-card border border-border p-3 min-w-0 flex min-[390px]:block items-center gap-3">
       <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center mb-2", bg)}>
         <Icon className={cn("w-4 h-4", tone)} strokeWidth={2} />
       </div>

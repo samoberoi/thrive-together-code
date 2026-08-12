@@ -335,20 +335,20 @@ export default function AdminSubscriptions() {
         <DateRangeFilter value={range} onChange={setRange} />
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 min-[430px]:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
         <StatCard label="BBDO Active" value={activeSubs.length} tone="primary" onClick={() => setRoute({ subscriptionTab: "bbdo" })} />
         <StatCard label="Yoga Active" value={yogaActiveSubs.length} tone="emerald" onClick={() => setRoute({ subscriptionTab: "yoga" })} />
         <StatCard label="Renewals Due" value={bbdoRenewals.length + yogaRenewals.length} tone="amber" onClick={() => setRoute({ metric: "renewals" })} />
         <StatCard label="Active Revenue" value={inr(bbdoActiveRevenue + yogaActiveRevenue)} tone="purple" onClick={() => setRoute({ metric: "active_revenue" })} />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-3">
         <MetricButton icon={IndianRupee} label="Range Revenue" value={inr(bbdoRangeRevenue + yogaRangeRevenue)} sub={`${rangeSubs.length + yogaRangeSubs.length} paid sale${rangeSubs.length + yogaRangeSubs.length === 1 ? "" : "s"}`} onClick={() => setRoute({ metric: "range_revenue" })} />
         <MetricButton icon={Activity} label="BBDO Active Revenue" value={inr(bbdoActiveRevenue)} sub={`${activeSubs.length} active BBDO subscription${activeSubs.length === 1 ? "" : "s"}`} onClick={() => setRoute({ metric: "active_revenue", subscriptionTab: "bbdo" })} />
         <MetricButton icon={Sparkles} label="Yoga Active Revenue" value={inr(yogaActiveRevenue)} sub={`${yogaActiveSubs.length} active yoga subscription${yogaActiveSubs.length === 1 ? "" : "s"}`} onClick={() => setRoute({ metric: "active_revenue", subscriptionTab: "yoga" })} />
       </div>
 
-      <div className="flex gap-2 border-b border-border">
+      <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
         {[
           { id: "bbdo", label: "BBDO Plans", count: activeSubs.length },
           { id: "yoga", label: "Yoga Packages", count: yogaActiveSubs.length },
@@ -356,7 +356,7 @@ export default function AdminSubscriptions() {
           <button
             key={t.id}
             onClick={() => { setTab(t.id as "bbdo" | "yoga"); setRoute({ subscriptionTab: t.id as "bbdo" | "yoga" }); }}
-            className={`px-4 py-2 text-sm font-bold border-b-2 -mb-px transition-colors ${tab === t.id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+            className={`min-w-0 px-2 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-colors ${tab === t.id ? "bg-card text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
           >
             {t.label} <span className="ml-1 text-xs opacity-70">({t.count})</span>
           </button>
@@ -379,15 +379,15 @@ export default function AdminSubscriptions() {
                 key={pkg.plan_key}
                 onClick={() => setRoute({ subscriptionTab: "bbdo", view: "bbdo-plan", plan: pkg.plan_key })}
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                className="w-full liquid-glass rounded-2xl p-5 flex items-center justify-between text-left hover:bg-accent/40 hover:-translate-y-px transition-all"
+                className="w-full liquid-glass rounded-xl sm:rounded-2xl p-4 sm:p-5 text-left hover:bg-accent/40 hover:-translate-y-px transition-all"
               >
-                <div className="flex items-center gap-4 min-w-0">
+                <div className="flex items-start gap-3 sm:gap-4 min-w-0">
                   <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                     <CreditCard className="w-6 h-6 text-primary" strokeWidth={1.5} />
                   </div>
                   <div className="min-w-0">
-                    <p className="font-black text-foreground truncate">{planNumber(pkg.plan_key)} · {pkg.name}</p>
-                    <p className="text-xs text-muted-foreground truncate">{pkg.tagline || (hasCoach ? "Coach-supported plan" : "Self-guided plan · no coach")}</p>
+                    <p className="font-black text-foreground leading-tight">{planNumber(pkg.plan_key)} · {pkg.name}</p>
+                    <p className="text-xs text-muted-foreground mt-1 leading-snug">{pkg.tagline || (hasCoach ? "Coach-supported plan" : "Self-guided plan · no coach")}</p>
                     <div className="mt-2 flex flex-wrap gap-2 text-xs">
                       <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">{list.length} users</span>
                       <span className={`px-2 py-0.5 rounded-full font-medium ${hasCoach ? "bg-emerald-500/10 text-emerald-600" : "bg-muted text-muted-foreground"}`}>{hasCoach ? `${withCoach} with coach` : "No coach"}</span>
@@ -395,8 +395,8 @@ export default function AdminSubscriptions() {
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  <div className="text-right">
+                <div className="flex items-center justify-between gap-3 mt-3 pt-3 border-t border-border">
+                  <div className="text-left">
                     <p className="font-bold">{inr(rev)}</p>
                     <p className="text-xs text-muted-foreground">active revenue</p>
                   </div>
@@ -423,23 +423,23 @@ export default function AdminSubscriptions() {
                 key={pkg.id}
                 onClick={() => setRoute({ subscriptionTab: "yoga", view: "yoga-package", package: pkg.id })}
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                className="w-full liquid-glass rounded-2xl p-5 flex items-center justify-between text-left hover:bg-accent/40 hover:-translate-y-px transition-all"
+                className="w-full liquid-glass rounded-xl sm:rounded-2xl p-4 sm:p-5 text-left hover:bg-accent/40 hover:-translate-y-px transition-all"
               >
-                <div className="flex items-center gap-4 min-w-0">
+                <div className="flex items-start gap-3 sm:gap-4 min-w-0">
                   <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
                     <Sparkles className="w-6 h-6 text-emerald-500" strokeWidth={1.5} />
                   </div>
                   <div className="min-w-0">
-                    <p className="font-black truncate">{pkg.name}</p>
-                    <p className="text-xs text-muted-foreground truncate">{pkg.package_type} · {pkg.classes_per_month ?? 8} classes/mo</p>
+                    <p className="font-black leading-tight">{pkg.name}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{pkg.package_type} · {pkg.classes_per_month ?? 8} classes/mo</p>
                     <div className="mt-2 flex flex-wrap gap-2 text-xs">
                       <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">{list.length} subscribers</span>
                       {renewing > 0 && <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 font-medium">{renewing} renewing</span>}
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  <div className="text-right">
+                <div className="flex items-center justify-between gap-3 mt-3 pt-3 border-t border-border">
+                  <div className="text-left">
                     <p className="font-bold">{inr(rev)}</p>
                     <p className="text-xs text-muted-foreground">active revenue</p>
                   </div>
@@ -457,13 +457,13 @@ export default function AdminSubscriptions() {
 
 function HeaderBack({ onBack, title, subtitle }: { onBack: () => void; title: string; subtitle: string }) {
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-start gap-3 min-w-0">
       <button onClick={onBack} className="w-9 h-9 rounded-full liquid-glass flex items-center justify-center hover:bg-accent transition-colors" aria-label="Back to subscriptions">
         <ArrowLeft className="w-4 h-4" />
       </button>
       <div className="min-w-0">
-        <h1 className="text-2xl font-black truncate">{title}</h1>
-        <p className="text-muted-foreground text-sm">{subtitle}</p>
+        <h1 className="text-xl sm:text-2xl font-black leading-tight break-words">{title}</h1>
+        <p className="text-muted-foreground text-xs sm:text-sm mt-1 leading-snug">{subtitle}</p>
       </div>
     </div>
   );
@@ -471,13 +471,13 @@ function HeaderBack({ onBack, title, subtitle }: { onBack: () => void; title: st
 
 function SearchExport({ search, setSearch, placeholder, filename, rows }: { search: string; setSearch: (v: string) => void; placeholder: string; filename: string; rows: any[] }) {
   return (
-    <div className="flex flex-col sm:flex-row gap-2">
-      <div className="relative flex-1">
+    <div className="grid grid-cols-2 sm:flex gap-2">
+      <div className="relative col-span-2 sm:flex-1">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input placeholder={placeholder} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
       </div>
-      <ExportCsvButton filename={filename} rows={rows} />
-<ImportCsvButton table="subscriptions" onImported={() => window.location.reload()} />
+      <ExportCsvButton filename={filename} rows={rows} className="w-full justify-center sm:w-fit" />
+      <ImportCsvButton table="subscriptions" onImported={() => window.location.reload()} className="w-full justify-center sm:w-fit" />
     </div>
   );
 }
@@ -486,8 +486,8 @@ function BBDORow({ sub, index }: { sub: Sub; index: number }) {
   const daysLeft = differenceInDays(new Date(sub.expires_at), new Date());
   const renewSoon = daysLeft >= 0 && daysLeft <= 30;
   return (
-    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.02 }} className="liquid-glass rounded-2xl p-4">
-      <div className="flex items-start justify-between gap-3">
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.02 }} className="liquid-glass rounded-xl sm:rounded-2xl p-4">
+      <div className="grid grid-cols-1 sm:flex sm:items-start sm:justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="font-bold text-foreground truncate">{sub.userName}</p>
           <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground mt-1">
@@ -503,7 +503,7 @@ function BBDORow({ sub, index }: { sub: Sub; index: number }) {
             <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">{sub.duration_months}mo · {inr(sub.plan_price)}</span>
           </div>
         </div>
-        <RenewalBlock expiresAt={sub.expires_at} daysLeft={daysLeft} renewSoon={renewSoon} />
+        <div className="pt-3 border-t border-border sm:pt-0 sm:border-0"><RenewalBlock expiresAt={sub.expires_at} daysLeft={daysLeft} renewSoon={renewSoon} /></div>
       </div>
     </motion.div>
   );
@@ -529,12 +529,13 @@ function YogaRow({ sub, index }: { sub: YogaSub; index: number }) {
 
 function RenewalBlock({ expiresAt, daysLeft, renewSoon }: { expiresAt: string; daysLeft: number; renewSoon: boolean }) {
   return (
-    <div className="text-right shrink-0">
+    <div className="flex items-end justify-between gap-3 sm:block sm:text-right shrink-0">
+      <div>
       <p className={`text-xs flex items-center gap-1 justify-end ${renewSoon ? "text-destructive font-bold" : "text-muted-foreground"}`}>
         <Calendar className="w-3 h-3" />{daysLeft > 0 ? `${daysLeft}d left` : daysLeft === 0 ? "today" : "expired"}
       </p>
       <p className="text-xs text-muted-foreground mt-0.5">exp {fmtDate(expiresAt)}</p>
-      {renewSoon && (
+      </div>{renewSoon && (
         <span className="inline-flex items-center gap-1 text-[10px] mt-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 font-bold"><AlertCircle className="w-3 h-3" />Renewal due</span>
       )}
     </div>
@@ -645,10 +646,10 @@ function StatCard({ label, value, tone, onClick }: { label: string; value: numbe
     amber: "text-amber-500",
     purple: "text-purple-500",
   }[tone];
-  const className = `liquid-glass rounded-2xl p-4 text-center ${onClick ? "hover:bg-accent/40 hover:-translate-y-px transition-all" : ""}`;
+  const className = `liquid-glass rounded-xl sm:rounded-2xl p-3 sm:p-4 text-left min-w-0 ${onClick ? "hover:bg-accent/40 hover:-translate-y-px transition-all" : ""}`;
   const content = (
     <>
-      <p className={`text-2xl font-black ${toneClass}`}>{value}</p>
+      <p className={`text-xl sm:text-2xl font-black break-words ${toneClass}`}>{value}</p>
       <p className="text-xs text-muted-foreground mt-1">{label}</p>
     </>
   );

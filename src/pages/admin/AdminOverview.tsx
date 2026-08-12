@@ -253,8 +253,8 @@ export default function AdminOverview() {
         </div>
       </div>
 
-      {/* KPIs — compact tiles, 2 per row on the smallest phones */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2 sm:gap-3">
+      {/* Mobile-first KPI list; expands into a grid only when space allows. */}
+      <div className="grid grid-cols-1 min-[430px]:grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2 sm:gap-3">
         {kpis.map((card, i) => {
           const Icon = card.icon;
           return (
@@ -264,22 +264,24 @@ export default function AdminOverview() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.03, duration: 0.2 }}
               onClick={card.onClick}
-              className="liquid-glass rounded-2xl p-3 text-left min-w-0 hover:-translate-y-px transition-transform"
+              className="liquid-glass rounded-xl sm:rounded-2xl p-3 text-left min-w-0 hover:-translate-y-px transition-transform"
             >
               <div className="flex items-center gap-2 min-w-0">
                 <span className={`w-7 h-7 rounded-lg ${card.bg} flex items-center justify-center shrink-0`}>
                   <Icon className={`w-3.5 h-3.5 ${card.tone}`} strokeWidth={1.9} />
                 </span>
-                <p className="text-base sm:text-lg font-black text-foreground truncate">{card.value}</p>
+                <p className="text-base sm:text-lg font-black text-foreground break-words min-w-0">{card.value}</p>
               </div>
-              <p className="text-[11px] font-medium text-muted-foreground mt-1.5 truncate">{card.label}</p>
-              <p className="text-[10px] text-muted-foreground/80 truncate">{card.sub}</p>
+              <div className="flex items-center justify-between gap-2 mt-1.5 min-[430px]:block">
+                <p className="text-[11px] font-medium text-muted-foreground leading-tight">{card.label}</p>
+                <p className="text-[10px] text-muted-foreground/80 text-right min-[430px]:text-left leading-tight">{card.sub}</p>
+              </div>
             </motion.button>
           );
         })}
       </div>
 
-      {/* Active packages breakdown — always side by side */}
+      {/* Active package cards stack on phones for readable names and values. */}
       <div className="liquid-glass rounded-2xl p-3 sm:p-5">
         <div className="flex items-center justify-between mb-3 gap-2">
           <h3 className="font-bold text-foreground flex items-center gap-2 text-sm sm:text-base min-w-0">
@@ -287,17 +289,17 @@ export default function AdminOverview() {
           </h3>
           <p className="text-[11px] sm:text-xs text-muted-foreground shrink-0">{activeSubsCount} active</p>
         </div>
-        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        <div className="grid grid-cols-1 min-[520px]:grid-cols-3 gap-2 sm:gap-3">
           {packageBreakdown.map((p) => {
             const share = activeSubsCount > 0 ? (p.active / activeSubsCount) * 100 : 0;
             return (
               <button
                 key={p.key}
                 onClick={() => navigate(`/admin-dashboard?tab=subscriptions&subscriptionTab=bbdo&view=bbdo-plan&plan=${encodeURIComponent(p.key)}`)}
-                className="rounded-xl border border-border p-2.5 sm:p-4 space-y-1.5 text-left hover:bg-accent/40 hover:-translate-y-px transition-all min-w-0"
+                className="rounded-xl border border-border p-3 sm:p-4 space-y-2 text-left hover:bg-accent/40 hover:-translate-y-px transition-all min-w-0"
               >
                 <div className="flex items-start justify-between gap-1">
-                  <p className="text-[11px] sm:text-sm font-semibold text-foreground leading-tight line-clamp-2">{p.name}</p>
+                  <p className="text-sm font-semibold text-foreground leading-tight">{p.name}</p>
                   <span className="text-[10px] sm:text-xs px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-semibold shrink-0">
                     {p.active}
                   </span>
@@ -305,15 +307,15 @@ export default function AdminOverview() {
                 <div className="h-1.5 rounded-full bg-muted overflow-hidden">
                   <div className="h-full bg-primary" style={{ width: `${share}%` }} />
                 </div>
-                <div className="text-[10px] sm:text-[11px] text-muted-foreground leading-tight">
-                  <span className="block truncate">{p.sold} sold</span>
-                  <span className="block font-semibold text-foreground truncate">{inr(p.revenue)}</span>
+                <div className="flex items-center justify-between text-[11px] text-muted-foreground leading-tight">
+                  <span>{p.sold} sold</span>
+                  <span className="font-semibold text-foreground">{inr(p.revenue)}</span>
                 </div>
               </button>
             );
           })}
           {packageBreakdown.length === 0 && (
-            <p className="text-sm text-muted-foreground col-span-3">No packages defined</p>
+            <p className="text-sm text-muted-foreground min-[520px]:col-span-3">No packages defined</p>
           )}
         </div>
       </div>
