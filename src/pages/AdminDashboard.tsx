@@ -81,6 +81,13 @@ const AdminBmiCategories = lazy(() => import("./admin/AdminBmiCategories"));
 const AdminOnboardingGrades = lazy(() => import("./admin/AdminOnboardingGrades"));
 const AdminCoupons = lazy(() => import("./admin/AdminCoupons"));
 
+// Admin self-tracking (same modules patients & coaches use).
+import AdminSelfTabs from "@/components/admin/AdminSelfTabs";
+const UserSupplements = lazy(() => import("@/components/UserSupplements"));
+const UserFasting = lazy(() => import("@/components/UserFasting"));
+const PatientLabTests = lazy(() => import("@/components/PatientLabTests"));
+const UserDiet = lazy(() => import("./tabs/Diet"));
+
 
 import NotificationsPanel from "@/components/NotificationsPanel";
 import { useAttentionCounts } from "@/hooks/useAttentionCounts";
