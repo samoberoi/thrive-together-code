@@ -179,6 +179,47 @@ export default function AdminCoupons() {
                       <Textarea rows={2} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Festive offer for new members" />
                     </div>
 
+                    <div className="rounded-lg border p-3 space-y-3">
+                      <div>
+                        <p className="text-sm font-semibold">Applicable on — duration</p>
+                        <p className="text-xs text-muted-foreground">Pick the billing durations this coupon works on. Select none to allow all.</p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {CYCLES.map((cy) => {
+                          const on = cycles.includes(cy.key);
+                          return (
+                            <button
+                              key={cy.key}
+                              type="button"
+                              onClick={() => setCycles((p) => (on ? p.filter((x) => x !== cy.key) : [...p, cy.key]))}
+                              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${on ? "bg-primary text-primary-foreground border-primary" : "bg-background text-muted-foreground"}`}
+                            >
+                              {cy.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">Applicable on — packages</p>
+                        <p className="text-xs text-muted-foreground">Select none to allow all packages.</p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {packages.map((p) => {
+                          const on = planKeys.includes(p.plan_key);
+                          return (
+                            <button
+                              key={p.plan_key}
+                              type="button"
+                              onClick={() => setPlanKeys((prev) => (on ? prev.filter((x) => x !== p.plan_key) : [...prev, p.plan_key]))}
+                              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${on ? "bg-primary text-primary-foreground border-primary" : "bg-background text-muted-foreground"}`}
+                            >
+                              {p.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
                     <div className="flex items-center justify-between rounded-lg bg-muted/40 p-3">
                       <div>
                         <p className="text-sm font-semibold">Limited number of coupons</p>
@@ -195,6 +236,16 @@ export default function AdminCoupons() {
                         </div>
                       )}
                       <div>
+                        <label className="text-xs text-muted-foreground">Total uses allowed</label>
+                        <Input
+                          type="number"
+                          value={totalLimit}
+                          onChange={(e) => setTotalLimit(e.target.value)}
+                          placeholder="Leave blank = unlimited"
+                        />
+                        <p className="text-[10px] text-muted-foreground mt-1">Blank means unlimited uses during the offer window.</p>
+                      </div>
+                      <div>
                         <label className="text-xs text-muted-foreground">Start date</label>
                         <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
                       </div>
@@ -203,6 +254,7 @@ export default function AdminCoupons() {
                         <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
                       </div>
                     </div>
+
 
                     <div className="flex justify-end gap-2">
                       <Button variant="ghost" onClick={() => { setCreating(false); resetForm(); }}>Cancel</Button>
