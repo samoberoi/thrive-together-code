@@ -12,7 +12,6 @@ import {
   type FastingProtocol,
   type UserProtocol,
 } from "@/lib/fastingService";
-import { createNotification } from "@/lib/notificationService";
 
 interface Props {
   open: boolean;
@@ -62,16 +61,9 @@ export default function AssignFastingDialog({ open, onOpenChange, coachId, patie
     setSaving(true);
     try {
       if (current) await updateUserProtocolStatus(current.id, "completed");
+      // The patient notification (in-app + native push) is raised server-side by
+      // the user_protocols trigger, so no client-side notification is needed here.
       await assignProtocolToUser(patientId, selectedId, coachId, startDate);
-      const proto = protocols.find((p) => p.id === selectedId);
-      await createNotification({
-        user_id: patientId,
-        title: "⏳ Fasting protocol assigned",
-        body: `Your coach assigned you the ${proto?.protocol_name ?? "fasting"} protocol. Tap to start.`,
-        type: "fasting",
-        icon: "⏳",
-        action_url: "/dashboard?tab=fasting",
-      });
       toast({ title: "Fasting protocol assigned", description: `${patientName ?? "Patient"} can start now.` });
       onCreated?.();
       onOpenChange(false);
