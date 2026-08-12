@@ -199,9 +199,8 @@ const tabContentMap: Record<AdminTab, React.ReactNode> = {
   users: <AdminUsers />,
   coaches: <AdminCoaches />,
   admins: <AdminAdmins />,
-  diet: (
-    <AdminSelfTabs manageLabel="Food library" mineLabel="My Plates" mineIcon={Salad} manage={<AdminDiet />} mine={<UserDiet planOverride="intensive" />} />
-  ),
+  diet: <UserDiet planOverride="intensive" />,
+
   supplements: (
     <AdminSelfTabs manageLabel="Catalog" mineLabel="My Supplements" mineIcon={Pill} manage={<AdminSupplements />} mine={<UserSupplements simpleMode />} />
   ),
