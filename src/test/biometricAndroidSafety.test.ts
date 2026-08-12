@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const nativeAuthenticate = vi.fn();
+const nativeCheck = vi.fn();
 const packageAuthenticate = vi.fn();
 
 vi.mock("@capacitor/core", () => ({
@@ -9,7 +10,7 @@ vi.mock("@capacitor/core", () => ({
     getPlatform: () => "android",
   },
   registerPlugin: () => ({
-    check: vi.fn(),
+    check: nativeCheck,
     authenticate: nativeAuthenticate,
   }),
 }));
@@ -39,18 +40,28 @@ vi.mock("@/lib/startupDiagnostics", () => ({
   reportStartupError: vi.fn(),
 }));
 
-describe("Android biometric launch safety", () => {
+describe("Android biometric unlock", () => {
   beforeEach(() => {
-    nativeAuthenticate.mockClear();
+    nativeAuthenticate.mockReset();
+    nativeCheck.mockReset();
     packageAuthenticate.mockClear();
   });
 
-  it("fails open without launching either Android biometric activity", async () => {
+  it("uses the first-party plugin and never the crashing third-party one", async () => {
+    nativeAuthenticate.mockResolvedValue({ success: true });
     const { authenticateWithBiometrics, supportsBiometricGate } = await import("@/lib/biometric");
 
-    expect(supportsBiometricGate()).toBe(false);
+    expect(supportsBiometricGate()).toBe(true);
     await expect(authenticateWithBiometrics()).resolves.toBe(true);
-    expect(nativeAuthenticate).not.toHaveBeenCalled();
+    expect(nativeAuthenticate).toHaveBeenCalledTimes(1);
+    expect(packageAuthenticate).not.toHaveBeenCalled();
+  });
+
+  it("fails open (never locks the user out) when the native plugin errors", async () => {
+    nativeAuthenticate.mockRejectedValue(new Error("boom"));
+    const { authenticateWithBiometrics } = await import("@/lib/biometric");
+
+    await expect(authenticateWithBiometrics()).resolves.toBe(true);
     expect(packageAuthenticate).not.toHaveBeenCalled();
   });
 });
