@@ -73,7 +73,7 @@ export default function AdminCoupons() {
 
   useEffect(() => {
     (async () => {
-      const { data } = await (supabase as any).from("packages").select("plan_key, name").eq("active", true).order("name");
+      const { data } = await (supabase as any).from("packages").select("plan_key, name").eq("enabled", true).order("sort_order");
       setPackages((data ?? []).filter((p: any) => p.plan_key !== "onboarding_test"));
     })();
   }, []);
