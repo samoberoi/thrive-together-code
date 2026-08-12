@@ -98,8 +98,8 @@ export function buildUserTourSteps(packageKey: string | null | undefined): TourS
       radius: 999,
     },
     {
-      key: "tab-food",
-      selector: '[data-tour="tab-food"]',
+      key: "tab-diet",
+      selector: '[data-tour="tab-diet"]',
       title: "Food & your plate",
       body: "Your diet plan, Build My Plate and the food library — everything you need to get the plate right.",
       pad: 6,
@@ -125,7 +125,7 @@ export function buildUserTourSteps(packageKey: string | null | undefined): TourS
     },
     {
       key: "coach-chat",
-      selector: '[data-tour="tab-chat"]',
+      selector: '[data-tour="tab-messages"]',
       title: "Talk to your coach",
       body: "This is your private chat with your coach. Send photos of your plate, ask about a reading, or book your next call — they're with you the whole way.",
       paidOnly: true,
