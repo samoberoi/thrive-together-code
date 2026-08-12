@@ -37,6 +37,7 @@ import {
   Scale,
   Gauge,
   Ticket,
+  Monitor,
 } from "lucide-react";
 
 import NotificationCenter from "@/components/NotificationCenter";
@@ -45,6 +46,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { isAdminUser } from "@/lib/roleService";
+import { useIsMobile } from "@/hooks/use-mobile";
 import logoImg from "@/assets/logo.png";
 
 // Lazy: each admin panel is its own chunk so end users (and the admin's first
@@ -302,6 +304,15 @@ const controlCenterTabs = new Set<AdminTab>([
   "coupons",
 ]);
 
+/**
+ * Control Center is a web-only surface: the phone app stays focused on the
+ * day-to-day modules. Users & Coaches stay on mobile because admins need them
+ * on the go.
+ */
+const desktopOnlyTabs = new Set<AdminTab>(
+  [...controlCenterTabs].filter((t) => t !== "users" && t !== "coaches"),
+);
+
 const supplementTabs = new Set<AdminTab>(["supplements"]);
 const dietTabs = new Set<AdminTab>(["diet", "food_condition_rules"]);
 
@@ -406,6 +417,7 @@ export default function AdminDashboard() {
   });
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const { counts: attentionCounts } = useAttentionCounts();
   const adminInitial = (user?.email?.[0] ?? "A").toUpperCase();
   const [adminAllowed, setAdminAllowed] = useState<boolean | null>(null);
@@ -650,6 +662,21 @@ export default function AdminDashboard() {
                       onOpenRBAC={() => selectTab("rbac")}
                       onOpenNotifications={() => selectTab("notifications")}
                     />
+                  ) : isMobile && desktopOnlyTabs.has(activeTab) ? (
+                    <div className="p-8 flex flex-col items-center text-center gap-3">
+                      <Monitor className="w-8 h-8 text-muted-foreground" strokeWidth={1.5} />
+                      <h2 className="text-base font-black text-foreground">Available on web</h2>
+                      <p className="text-sm text-muted-foreground max-w-xs">
+                        Control Center settings are managed from the web console. Open the admin
+                        portal on a desktop browser to make changes here.
+                      </p>
+                      <button
+                        onClick={() => selectTab("overview")}
+                        className="mt-1 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold"
+                      >
+                        Back to Home
+                      </button>
+                    </div>
                   ) : (
                     tabContentMap[activeTab]
                   )}
