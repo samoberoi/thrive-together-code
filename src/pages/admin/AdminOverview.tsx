@@ -13,6 +13,8 @@ import { format, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { whatsappCallUrl } from "@/lib/coachAvailability";
+import CoachActivityRings from "@/components/coach/CoachActivityRings";
+import CoachSelfCheckins from "@/components/coach/CoachSelfCheckins";
 
 interface Profile { user_id: string; name: string | null; phone: string | null; }
 interface Subscription {
