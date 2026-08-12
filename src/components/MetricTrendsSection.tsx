@@ -59,7 +59,6 @@ function prettyDate(d: string) {
  */
 export default function MetricTrendsSection({ userId }: { userId?: string }) {
   const today = todayKey();
-  const [joinDate, setJoinDate] = useState<string>(today);
   const [open, setOpen] = useState<TrendMetric | null>(null);
   const [range, setRange] = useState<RangeKey>("W");
   const [full, setFull] = useState<Record<TrendMetric, TrendPoint[]>>({
@@ -72,7 +71,6 @@ export default function MetricTrendsSection({ userId }: { userId?: string }) {
     (async () => {
       const jd = (await fetchJoinDate(userId)) ?? today;
       if (cancelled) return;
-      setJoinDate(jd);
       // Load the widest window once (quarter or since joining, whichever is
       // longer) and slice it client-side when the toggle changes.
       const earliest = jd && jd < shiftDays(today, 90) ? jd : shiftDays(today, 90);
