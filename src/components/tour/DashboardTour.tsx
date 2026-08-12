@@ -378,10 +378,10 @@ export default function DashboardTour({
             exit={{ opacity: 0, y: -6, scale: 0.98 }}
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
             ref={cardRef}
-            className="absolute left-0 right-0 mx-auto w-[calc(100vw-1.75rem)] max-w-[26rem] px-0"
-            style={{ top: card.top }}
+            className="absolute left-1/2 -translate-x-1/2 w-[calc(100vw-1.75rem)] max-w-[26rem] px-0"
+            style={{ top: card.top, maxHeight: card.maxHeight }}
           >
-            <div className="rounded-3xl bg-background text-foreground shadow-[0_24px_60px_-12px_rgba(0,0,0,0.55)] border border-border overflow-hidden">
+            <div className="rounded-3xl bg-background text-foreground shadow-[0_24px_60px_-12px_rgba(0,0,0,0.55)] border border-border overflow-hidden flex flex-col" style={{ maxHeight: card.maxHeight }}>
               <div className="h-1 w-full bg-muted">
                 <motion.div
                   className="h-full"
