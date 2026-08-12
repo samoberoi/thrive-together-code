@@ -148,8 +148,9 @@ export async function isBiometricAvailable(): Promise<boolean> {
     const info = await BBDOBiometrics.check();
     if (info.available) return true;
   } catch {
-    /* Fall through to the package plugin. */
+    /* Fall through to the package plugin (iOS only). */
   }
+  if (Capacitor.getPlatform() === "android") return false;
   try {
     const info = await BiometricAuth.checkBiometry();
     return info.isAvailable && info.biometryType !== BiometryType.none;
@@ -159,13 +160,13 @@ export async function isBiometricAvailable(): Promise<boolean> {
 }
 
 export async function getBiometryLabel(): Promise<string> {
-  if (Capacitor.getPlatform() === "android") return "Fingerprint";
   try {
     const info = await BBDOBiometrics.check();
     if (info.label) return info.label;
   } catch {
-    /* Fall through to the package plugin. */
+    /* Fall through to the package plugin (iOS only). */
   }
+  if (Capacitor.getPlatform() === "android") return "Fingerprint / Face Unlock";
   try {
     const info = await BiometricAuth.checkBiometry();
     return labelForBiometryType(info.biometryType);
