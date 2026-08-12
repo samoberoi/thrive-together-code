@@ -1389,6 +1389,8 @@ export type Database = {
       coupon_campaigns: {
         Row: {
           active: boolean
+          applicable_cycles: string[] | null
+          applicable_plan_keys: string[] | null
           coupon_count: number
           created_at: string
           created_by: string | null
@@ -1401,10 +1403,13 @@ export type Database = {
           max_redemptions_per_coupon: number
           name: string
           start_date: string
+          total_redemption_limit: number | null
           updated_at: string
         }
         Insert: {
           active?: boolean
+          applicable_cycles?: string[] | null
+          applicable_plan_keys?: string[] | null
           coupon_count?: number
           created_at?: string
           created_by?: string | null
@@ -1417,10 +1422,13 @@ export type Database = {
           max_redemptions_per_coupon?: number
           name: string
           start_date?: string
+          total_redemption_limit?: number | null
           updated_at?: string
         }
         Update: {
           active?: boolean
+          applicable_cycles?: string[] | null
+          applicable_plan_keys?: string[] | null
           coupon_count?: number
           created_at?: string
           created_by?: string | null
@@ -1433,6 +1441,7 @@ export type Database = {
           max_redemptions_per_coupon?: number
           name?: string
           start_date?: string
+          total_redemption_limit?: number | null
           updated_at?: string
         }
         Relationships: []
@@ -6094,7 +6103,12 @@ export type Database = {
         Returns: undefined
       }
       redeem_coupon: {
-        Args: { _amount: number; _code: string; _plan_key?: string }
+        Args: {
+          _amount: number
+          _billing_cycle?: string
+          _code: string
+          _plan_key?: string
+        }
         Returns: Json
       }
       refresh_gamification_for_user: {
@@ -6169,7 +6183,12 @@ export type Database = {
         Returns: Json
       }
       validate_coupon: {
-        Args: { _amount: number; _code: string }
+        Args: {
+          _amount: number
+          _billing_cycle?: string
+          _code: string
+          _plan_key?: string
+        }
         Returns: Json
       }
     }
