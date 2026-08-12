@@ -19,6 +19,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         registerPlugin(BBDOAndroidPushPlugin.class);
+        registerPlugin(BBDOBiometricsPlugin.class);
         super.onCreate(savedInstanceState);
         createBbdoNotificationChannel();
         // Android can recreate this Activity while the system WebView provider
