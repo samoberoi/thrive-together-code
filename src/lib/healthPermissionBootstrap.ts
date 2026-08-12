@@ -120,3 +120,66 @@ export async function ensureNativeHealthPermission(
 
   return inFlight;
 }
+
+/**
+ * Wait until the app is genuinely idle: visible, no native permission activity
+ * in flight, and no biometric lock overlay on screen. Resolves false if that
+ * never happens within the timeout.
+ */
+function waitForQuietForeground(quietMs = 2500, timeoutMs = 30_000): Promise<boolean> {
+  return new Promise((resolve) => {
+    const startedAt = Date.now();
+    const busy = () =>
+      document.visibilityState !== "visible" ||
+      document.documentElement.classList.contains("bb-native-permission-flow") ||
+      !!document.querySelector("[data-biometric-gate]");
+
+    const tick = window.setInterval(() => {
+      if (Date.now() - startedAt > timeoutMs) {
+        window.clearInterval(tick);
+        resolve(false);
+        return;
+      }
+      if (busy()) {
+        quietSince = 0;
+        return;
+      }
+      if (!quietSince) quietSince = Date.now();
+      if (Date.now() - quietSince >= quietMs) {
+        window.clearInterval(tick);
+        resolve(true);
+      }
+    }, 250);
+    let quietSince = 0;
+  });
+}
+
+let autoPromptScheduled = false;
+
+/**
+ * Automatically show the OS health permission sheet once per user/device,
+ * without requiring a manual "Sync" tap. Deliberately deferred until startup
+ * (push prompt + biometric gate) has fully settled, because Android tears down
+ * the WebView when two permission activities overlap.
+ */
+export async function scheduleHealthPermissionAutoPrompt(userId: string): Promise<void> {
+  if (autoPromptScheduled) return;
+  if (!canUseNativeHealth()) return;
+  if (hasAskedHealthPermission(userId)) return;
+  autoPromptScheduled = true;
+
+  try {
+    const state = await getNativeHealthPermissionState();
+    if (state.authorized || !state.canRequest) {
+      void ensureNativeHealthPermission(userId, { allowPrompt: false });
+      return;
+    }
+    const quiet = await waitForQuietForeground();
+    if (!quiet) return;
+    if (hasAskedHealthPermission(userId)) return;
+    logStartupEvent("health permission auto prompt");
+    await ensureNativeHealthPermission(userId, { force: true });
+  } catch (error) {
+    reportStartupError("health permission auto prompt failed", error);
+  }
+}
