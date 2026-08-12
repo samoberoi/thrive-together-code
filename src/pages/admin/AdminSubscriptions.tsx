@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { normalizePlanKey } from "@/lib/subscriptionService";
-import { Search, ChevronRight, ArrowLeft, CreditCard, Sparkles, AlertCircle, Phone, Mail, Calendar, IndianRupee, Activity } from "lucide-react";
+import { Search, ChevronRight, ArrowLeft, CreditCard, Sparkles, AlertCircle, Phone, Mail, Calendar, IndianRupee, Activity, MessageCircle } from "lucide-react";
+import { whatsappCallUrl } from "@/lib/coachAvailability";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
 import DateRangeFilter, { defaultRange, DateRange } from "@/components/admin/DateRangeFilter";
@@ -489,7 +490,21 @@ function BBDORow({ sub, index }: { sub: Sub; index: number }) {
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.02 }} className="liquid-glass rounded-xl sm:rounded-2xl p-4">
       <div className="grid grid-cols-1 sm:flex sm:items-start sm:justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="font-bold text-foreground truncate">{sub.userName}</p>
+          <div className="flex items-center gap-2 min-w-0">
+            <p className="font-bold text-foreground truncate flex-1">{sub.userName}</p>
+            {sub.userPhone && (
+              <a
+                href={whatsappCallUrl(sub.userPhone)}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`WhatsApp ${sub.userName}`}
+                className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-white"
+                style={{ background: "#25D366" }}
+              >
+                <MessageCircle className="w-4 h-4" strokeWidth={2.2} />
+              </a>
+            )}
+          </div>
           <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground mt-1">
             {sub.userPhone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{sub.userPhone}</span>}
             {sub.userEmail && !sub.userEmail.endsWith("@bbd.app") && <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{sub.userEmail}</span>}
@@ -646,11 +661,11 @@ function StatCard({ label, value, tone, onClick }: { label: string; value: numbe
     amber: "text-amber-500",
     purple: "text-purple-500",
   }[tone];
-  const className = `liquid-glass rounded-xl sm:rounded-2xl p-3 sm:p-4 text-left min-w-0 ${onClick ? "hover:bg-accent/40 hover:-translate-y-px transition-all" : ""}`;
+  const className = `liquid-glass rounded-xl sm:rounded-2xl p-2.5 sm:p-4 text-left min-w-0 ${onClick ? "hover:bg-accent/40 hover:-translate-y-px transition-all" : ""}`;
   const content = (
     <>
-      <p className={`text-xl sm:text-2xl font-black break-words ${toneClass}`}>{value}</p>
-      <p className="text-xs text-muted-foreground mt-1">{label}</p>
+      <p className={`text-[17px] sm:text-2xl font-black truncate ${toneClass}`}>{value}</p>
+      <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 truncate">{label}</p>
     </>
   );
   return onClick ? <button onClick={onClick} className={className}>{content}</button> : <div className={className}>{content}</div>;
