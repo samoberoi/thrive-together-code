@@ -263,20 +263,52 @@ export default function DashboardTour({
     return () => ro.disconnect();
   }, [step?.key, open]);
 
+  // Track the *visual* viewport so keyboards / browser chrome never push the card off-screen.
+  const [vh, setVh] = useState(() => (typeof window !== "undefined" ? window.innerHeight : 800));
+  useEffect(() => {
+    if (!open) return;
+    const read = () => setVh(window.visualViewport?.height ?? window.innerHeight);
+    read();
+    window.addEventListener("resize", read);
+    window.addEventListener("orientationchange", read);
+    window.visualViewport?.addEventListener("resize", read);
+    window.visualViewport?.addEventListener("scroll", read);
+    return () => {
+      window.removeEventListener("resize", read);
+      window.removeEventListener("orientationchange", read);
+      window.visualViewport?.removeEventListener("resize", read);
+      window.visualViewport?.removeEventListener("scroll", read);
+    };
+  }, [open]);
+
+  const insets = useMemo(() => {
+    if (typeof window === "undefined") return { top: 14, bottom: 14 };
+    const cs = getComputedStyle(document.documentElement);
+    const num = (v: string) => parseFloat(v || "0") || 0;
+    return {
+      top: 14 + num(cs.getPropertyValue("--sat")),
+      bottom: 14 + num(cs.getPropertyValue("--sab")),
+    };
+  }, []);
+
   const card = useMemo(() => {
-    const vh = typeof window !== "undefined" ? window.innerHeight : 800;
-    const margin = 14;
-    const maxTop = Math.max(margin, vh - cardH - margin);
-    const clamp = (v: number) => Math.min(Math.max(margin, v), maxTop);
-    if (!rect) return { top: clamp(vh / 2 - cardH / 2) };
-    const below = rect.top + rect.height + 14;
-    if (below + cardH <= vh - margin) return { top: below };
-    const above = rect.top - cardH - 14;
-    if (above >= margin) return { top: above };
+    const top = insets.top;
+    const bottom = insets.bottom;
+    const avail = Math.max(140, vh - top - bottom);
+    const h = Math.min(cardH, avail);
+    const maxTop = Math.max(top, vh - bottom - h);
+    const clamp = (v: number) => Math.min(Math.max(top, v), maxTop);
+    const maxHeight = avail;
+    if (!rect) return { top: clamp(vh / 2 - h / 2), maxHeight };
+    const below = rect.top + rect.height + 12;
+    if (below + h <= vh - bottom) return { top: below, maxHeight };
+    const above = rect.top - h - 12;
+    if (above >= top) return { top: above, maxHeight };
     // Anchor fills the screen — park the card at whichever edge has more room.
     const spaceBelow = vh - (rect.top + rect.height);
-    return { top: spaceBelow > rect.top ? clamp(vh - cardH - margin) : clamp(margin) };
-  }, [rect, cardH]);
+    return { top: spaceBelow > rect.top ? maxTop : clamp(top), maxHeight };
+  }, [rect, cardH, vh, insets]);
+
 
   if (!open || typeof document === "undefined") return null;
 
