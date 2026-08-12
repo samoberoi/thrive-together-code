@@ -6,7 +6,6 @@ import { createNotification } from "@/lib/notificationService";
 import { getNotificationSoundSettings } from "@/lib/notificationSoundService";
 import { BBDO_PUSH_CHANNEL_ID } from "@/lib/nativePush";
 import {
-  playCriticalHealthAlert,
   playNotificationSound,
   playSuccess,
   getMasterVolume,
