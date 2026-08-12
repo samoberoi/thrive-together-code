@@ -390,7 +390,8 @@ export default function DashboardTour({
                   transition={{ duration: 0.3 }}
                 />
               </div>
-              <div className="p-4 sm:p-5">
+              <div className="p-4 sm:p-5 overflow-y-auto overscroll-contain" style={{ touchAction: "pan-y" }}>
+
                 <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
                   <Sparkles className="w-3.5 h-3.5" style={{ color: "var(--bbdo-blue)" }} />
                   {total ? `Step ${i + 1} of ${total}` : "Loading tour"}
