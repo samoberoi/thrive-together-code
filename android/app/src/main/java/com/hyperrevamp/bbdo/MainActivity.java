@@ -14,7 +14,7 @@ import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.Bridge;
 
 public class MainActivity extends BridgeActivity {
-    private static final String BBDO_PUSH_CHANNEL_ID = "bbdo-alerts-v11";
+    private static final String BBDO_PUSH_CHANNEL_ID = "bbdo-alerts-v12";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +52,7 @@ public class MainActivity extends BridgeActivity {
         try { manager.deleteNotificationChannel("bbdo-alerts-v8"); } catch (Exception ignored) {}
         try { manager.deleteNotificationChannel("bbdo-alerts-v9"); } catch (Exception ignored) {}
         try { manager.deleteNotificationChannel("bbdo-alerts-v10"); } catch (Exception ignored) {}
+        try { manager.deleteNotificationChannel("bbdo-alerts-v11"); } catch (Exception ignored) {}
 
         if (manager.getNotificationChannel(BBDO_PUSH_CHANNEL_ID) != null) return;
 

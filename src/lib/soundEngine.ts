@@ -319,29 +319,11 @@ export function playHummingbirdChirp() {
       osc.stop(t + delay + 0.1);
     });
 
-    // Wing flutter — soft high-frequency buzz
-    const flutter = ctx.createOscillator();
-    const flutterGain = ctx.createGain();
-    flutter.type = "triangle";
-    flutter.frequency.value = 80; // Wing beat rate
-    const flutterMod = ctx.createOscillator();
-    const modGain = ctx.createGain();
-    flutterMod.type = "sine";
-    flutterMod.frequency.value = 3200;
-    modGain.gain.value = 2000;
-    flutterMod.connect(modGain).connect(flutter.frequency);
-
-    flutterGain.gain.setValueAtTime(0, t);
-    flutterGain.gain.linearRampToValueAtTime(0.015, t + 0.1);
-    flutterGain.gain.linearRampToValueAtTime(0.015, t + 0.5);
-    flutterGain.gain.exponentialRampToValueAtTime(0.001, t + 0.8);
-
-    flutter.connect(flutterGain).connect(ctx.destination);
-    flutter.start(t);
-    flutter.stop(t + 0.8);
-    flutterMod.start(t);
-    flutterMod.stop(t + 0.8);
+    // No wing-flutter/FM buzz layer: it read as an electric crackle under the
+    // chirps. The bundled native sound (bbdo_chime.wav) is rendered from the
+    // exact chirp sequence above so web, iOS and Android sound identical.
   });
+
 }
 
 // ── Level unlock: game-style ascending ──
