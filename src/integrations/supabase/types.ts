@@ -6014,6 +6014,18 @@ export type Database = {
         }
         Returns: boolean
       }
+      insert_patient_notification: {
+        Args: {
+          _action_url: string
+          _body: string
+          _dedupe_window?: string
+          _icon: string
+          _title: string
+          _type: string
+          _user_id: string
+        }
+        Returns: string
+      }
       is_assigned_patient_of_coach: {
         Args: { _coach_row_id: string }
         Returns: boolean
