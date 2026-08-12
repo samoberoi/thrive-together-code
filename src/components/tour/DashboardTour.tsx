@@ -348,7 +348,7 @@ export default function DashboardTour({
             style={{ maxHeight: cardMaxHeight }}
           >
 
-            <div className="rounded-2xl bg-background text-foreground shadow-[0_24px_60px_-12px_rgba(0,0,0,0.55)] border border-border overflow-hidden flex flex-col" style={{ maxHeight: "calc(100dvh - max(env(safe-area-inset-top), 14px) - 4.5rem)" }}>
+            <div className="rounded-2xl bg-background text-foreground shadow-[0_24px_60px_-12px_rgba(0,0,0,0.55)] border border-border overflow-hidden flex flex-col" style={{ maxHeight: cardMaxHeight }}>
               <div className="h-1 w-full bg-muted">
                 <motion.div
                   className="h-full"
