@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const APP_VERSION = (globalThis as any).__APP_VERSION__ ?? "1.0.0";
-export const BBDO_PUSH_CHANNEL_ID = "bbdo-alerts-v12";
+export const BBDO_PUSH_CHANNEL_ID = "bbdo-alerts-v13";
 const ANDROID_FIREBASE_GENERATION = "com.hyperrevamp.bbdo:bbdoapp:73939371932:v4";
 const ANDROID_TOKEN_RESET_KEY = `bbdo_fcm_token_reset_${ANDROID_FIREBASE_GENERATION}`;
 
@@ -195,6 +195,29 @@ async function attachPushListenersOnce() {
       "pushNotificationReceived",
       (n) => {
         console.log("[push] received in-app:", n);
+        if (currentPlatform() !== "android") return;
+
+        // FCM does not display its notification payload while Android has the
+        // app in the foreground. Mirror it through LocalNotifications so a
+        // visible banner and the configured Hummingbird sound are still shown.
+        const title = typeof n.title === "string" && n.title.trim()
+          ? n.title.trim()
+          : "BBDO notification";
+        const body = typeof n.body === "string" && n.body.trim()
+          ? n.body.trim()
+          : "You have a new notification.";
+        void LocalNotifications.schedule({
+          notifications: [{
+            id: Math.floor(Date.now() % 2_147_000_000),
+            title,
+            body,
+            sound: "bbdo_chime.wav",
+            channelId: BBDO_PUSH_CHANNEL_ID,
+            schedule: { at: new Date(Date.now() + 250) },
+            autoCancel: true,
+            extra: n.data ?? {},
+          }],
+        }).catch((err) => console.warn("[push] foreground notification failed", err));
       },
     );
 
@@ -305,7 +328,7 @@ export async function registerNativePush(
           visibility: 1,
           vibration: true,
           lights: true,
-          sound: "bbdo_chime",
+          sound: "bbdo_chime.wav",
         } as const;
         await PushNotifications.createChannel(channel);
         await LocalNotifications.createChannel(channel);
