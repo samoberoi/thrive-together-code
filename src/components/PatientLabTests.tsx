@@ -13,6 +13,7 @@ import { patientPriceFor, useLabTestMarkup } from "@/lib/labTestMarkup";
 import LabOrderDetails from "@/components/lab/LabOrderDetails";
 import ThyrocarePoweredBy from "@/components/lab/ThyrocarePoweredBy";
 import LabBookingDialog from "@/components/lab/LabBookingDialog";
+import { LabTestParametersDialog } from "@/components/lab/LabTestParametersDialog";
 import ExternalTestDialog from "@/components/lab/ExternalTestDialog";
 import LabHistorySection from "@/components/lab/LabHistorySection";
 import {
@@ -730,45 +731,13 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
 
 
 
-      <Dialog open={!!detailsTest} onOpenChange={(o) => !o && setDetailsTest(null)}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FlaskConical className="w-5 h-5 text-primary" />
-              {detailsTest?.product_name}
-            </DialogTitle>
-            <DialogDescription>
-              Free home collection · 10–11 hrs fasting
-            </DialogDescription>
-
-          </DialogHeader>
-          {detailsTest && (() => {
-            const price = patientPriceFor(detailsTest.offer_rate ?? detailsTest.rate, detailsTest.markup_pct, markupPct) ?? 0;
-            const original = Number(detailsTest.rate || 0);
-            return (
-              <div className="space-y-4">
-                <div className="rounded-2xl p-4 text-white" style={{ background: "var(--bbdo-gradient)" }}>
-                  <p className="text-[10px] tracking-[0.18em] uppercase font-bold text-white/80">Your price</p>
-                  <div className="flex items-baseline gap-2">
-                    <p className="text-3xl font-black">₹{price.toLocaleString("en-IN")}</p>
-                    {original > price && (
-                      <p className="text-sm line-through text-white/70">₹{original.toLocaleString("en-IN")}</p>
-                    )}
-                  </div>
-                  <p className="text-xs text-white/85 mt-1">Free home collection · 10–11 hrs fasting</p>
-                </div>
-              </div>
-            );
-          })()}
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDetailsTest(null)}>Close</Button>
-            <Button onClick={() => { if (detailsTest) { startFoundationBooking(detailsTest); setDetailsTest(null); } }}>
-              Buy now
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <LabTestParametersDialog
+        open={!!detailsTest}
+        onOpenChange={(o) => !o && setDetailsTest(null)}
+        testName={detailsTest?.product_name ?? null}
+        productCode={detailsTest?.product_code ?? null}
+        rawData={detailsTest?.raw_data ?? null}
+      />
     </div>
   );
 }

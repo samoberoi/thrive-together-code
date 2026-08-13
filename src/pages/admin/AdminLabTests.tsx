@@ -557,16 +557,14 @@ export default function AdminLabTests() {
                             </span>
                           )}
                         </div>
-                        {t.parameters_count ? (
-                          <button
-                            type="button"
-                            onClick={() => setParamsTest(t)}
-                            className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
-                          >
-                            <ListChecks className="w-3 h-3" />
-                            View {t.parameters_count} parameters
-                          </button>
-                        ) : null}
+                        <button
+                          type="button"
+                          onClick={() => setParamsTest(t)}
+                          className="mt-1 inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary hover:bg-primary/20 transition"
+                        >
+                          <ListChecks className="w-3 h-3" />
+                          View details
+                        </button>
                       </td>
                       <td className="px-3 py-3 text-muted-foreground font-mono text-xs">{t.product_code}</td>
                       <td className="px-3 py-3"><span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold">{t.product_type}</span></td>
