@@ -39,7 +39,7 @@ export default function Messages() {
         return;
       }
       const { data } = await supabase
-        .from("channel_partners" as any)
+        .from("partner_directory" as any)
         .select("id, name, avatar_url, headline")
         .in("id", partnerIds);
       const rows: InstructorRow[] = ((data as any) ?? []).map((p: any) => ({
