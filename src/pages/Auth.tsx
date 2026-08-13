@@ -245,8 +245,29 @@ export default function Auth() {
 
           // Referral codes are now applied at payment time.
 
-
+          // This account may be an existing member (e.g. admin) whose password
+          // was just re-synced — resolve their real destination before falling
+          // back to the onboarding name step.
+          const [privilegedRoute2, profile2, activeSubscription2] = await Promise.all([
+            resolvePrivilegedRouteFast(signedInNewUser.id),
+            fetchProfile(signedInNewUser.id),
+            fetchActiveSubscription(signedInNewUser.id),
+          ]);
+          if (profile2) loadProfileToLocal(profile2);
+          const resolvedRoute =
+            privilegedRoute2 ??
+            (activeSubscription2
+              ? "/home"
+              : profile2?.onboarding_completed
+              ? "/plans"
+              : profile2?.name
+              ? "/setup/purpose"
+              : null);
           setLoading(false);
+          if (resolvedRoute) {
+            go(resolvedRoute);
+            return;
+          }
           setStep("name");
           return;
         }
