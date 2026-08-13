@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { getUser, saveUser } from "@/lib/userStore";
-import { fetchProfile, updateProfile } from "@/lib/profileService";
+import { fetchProfile, updateProfile, normalizeDietSlug } from "@/lib/profileService";
 import { calculateBMI, calculateHealthScore, inferClinicalValues } from "@/lib/healthEngine";
 import type { BodyMetrics, ClinicalData, LifestyleData, DeepProfilingData } from "@/lib/healthEngine";
 import { createNotification } from "@/lib/notificationService";
