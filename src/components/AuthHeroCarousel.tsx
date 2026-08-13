@@ -1,32 +1,17 @@
 import { useEffect, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import supplements from "@/assets/auth-carousel/supplements.png.asset.json";
-import meditation from "@/assets/auth-carousel/meditation.png.asset.json";
-import fasting from "@/assets/auth-carousel/fasting.png.asset.json";
-import activity from "@/assets/auth-carousel/activity.png.asset.json";
-import morningRitual from "@/assets/auth-carousel/morning-ritual.png.asset.json";
-import { resolveAssetUrl } from "@/lib/assetUrl";
+import supplements from "@/assets/auth-carousel-opt/supplements.webp";
+import meditation from "@/assets/auth-carousel-opt/meditation.webp";
+import fasting from "@/assets/auth-carousel-opt/fasting.webp";
+import activity from "@/assets/auth-carousel-opt/activity.webp";
+import morningRitual from "@/assets/auth-carousel-opt/morning-ritual.webp";
 
 const SLIDES = [
-  { url: resolveAssetUrl(fasting.url), alt: "Fasting window — lemon water and morning light" },
-  { url: resolveAssetUrl(activity.url), alt: "Active walking outdoors" },
-  { url: resolveAssetUrl(meditation.url), alt: "Morning meditation and calm" },
-  { url: resolveAssetUrl(supplements.url), alt: "Daily supplement support" },
-  { url: resolveAssetUrl(morningRitual.url), alt: "Morning ritual — lemon water, coffee and mindful start" },
+  { url: fasting, alt: "Fasting window — lemon water and morning light" },
+  { url: activity, alt: "Active walking outdoors" },
+  { url: meditation, alt: "Morning meditation and calm" },
+  { url: supplements, alt: "Daily supplement support" },
+  { url: morningRitual, alt: "Morning ritual — lemon water, coffee and mindful start" },
 ];
-
-// Eagerly warm the browser/CDN cache the moment this module is imported, so
-// the first slide paints instantly and subsequent slides swap without a fetch.
-const preloadedImages: HTMLImageElement[] = [];
-if (typeof window !== "undefined") {
-  SLIDES.forEach((s) => {
-    const img = new Image();
-    img.decoding = "async";
-    (img as HTMLImageElement & { fetchPriority?: string }).fetchPriority = "high";
-    img.src = s.url;
-    preloadedImages.push(img);
-  });
-}
 
 interface Props {
   alt?: string;
@@ -35,6 +20,18 @@ interface Props {
 
 export default function AuthHeroCarousel({ intervalMs = 4200 }: Props) {
   const [i, setI] = useState(0);
+  // Only the first slide is on the critical path; the rest are fetched once the
+  // browser is idle so the login/OTP screen paints immediately.
+  const [warm, setWarm] = useState(false);
+
+  useEffect(() => {
+    const idle =
+      (window as Window & { requestIdleCallback?: (cb: () => void) => number }).requestIdleCallback ??
+      ((cb: () => void) => window.setTimeout(cb, 800));
+    const handle = idle(() => setWarm(true));
+    return () => window.clearTimeout(handle as number);
+  }, []);
+
   useEffect(() => {
     const t = setInterval(() => setI((v) => (v + 1) % SLIDES.length), intervalMs);
     return () => clearInterval(t);
@@ -42,18 +39,24 @@ export default function AuthHeroCarousel({ intervalMs = 4200 }: Props) {
 
   return (
     <>
-      {/* Render every slide once so they're all decoded and ready — only the active one is visible. */}
-      {SLIDES.map((s, idx) => (
-        <img
-          key={idx}
-          src={s.url}
-          alt={s.alt}
-          loading="eager"
-          decoding="async"
-          className="absolute inset-0 w-full h-full object-cover"
-          style={{ opacity: idx === i ? 1 : 0, transition: "opacity 700ms ease-in-out", zIndex: idx === i ? 1 : 0 }}
-        />
-      ))}
+      {SLIDES.map((s, idx) => {
+        if (idx > 0 && !warm && idx !== i) return null;
+        return (
+          <img
+            key={idx}
+            src={s.url}
+            alt={s.alt}
+            width={1400}
+            height={1050}
+            loading={idx === 0 ? "eager" : "lazy"}
+            fetchPriority={idx === 0 ? "high" : "low"}
+            decoding="async"
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ opacity: idx === i ? 1 : 0, transition: "opacity 700ms ease-in-out", zIndex: idx === i ? 1 : 0 }}
+          />
+        );
+      })}
+
       <div className="absolute left-1/2 -translate-x-1/2 bottom-3 flex gap-1.5 z-10">
         {SLIDES.map((_, idx) => (
           <span
