@@ -16,7 +16,7 @@ import { toast } from "sonner";
 
 const APP_VERSION = (globalThis as any).__APP_VERSION__ ?? "1.0.0";
 export const BBDO_PUSH_CHANNEL_ID = "bbdo-alerts-v13";
-const ANDROID_FIREBASE_GENERATION = "com.hyperrevamp.bbdo:bbdoapp:73939371932:v4";
+const ANDROID_FIREBASE_GENERATION = "com.hyperrevamp.bbdo:bbdoapp:73939371932:v5";
 const ANDROID_TOKEN_RESET_KEY = `bbdo_fcm_token_reset_${ANDROID_FIREBASE_GENERATION}`;
 
 const BBDONotifications = registerPlugin<{
@@ -162,23 +162,23 @@ async function refreshAndroidFcmToken(): Promise<string | null> {
   }
 }
 
-async function resetAndroidFcmTokenAfterChannelUpgrade() {
-  if (currentPlatform() !== "android") return;
-  if (localStorage.getItem(ANDROID_TOKEN_RESET_KEY) === "1") return;
+function needsAndroidFcmGenerationReset(): boolean {
+  if (currentPlatform() !== "android") return false;
+  try {
+    return localStorage.getItem(ANDROID_TOKEN_RESET_KEY) !== "1";
+  } catch {
+    return true;
+  }
+}
 
+function markAndroidFcmGenerationReset() {
   try {
     localStorage.removeItem("bbdo_fcm_token_reset_bbdo-alerts-v7");
     localStorage.removeItem("bbdo_fcm_token_reset_com.hyperrevamp.bbdo:bbdoapp:73939371932:v2");
     localStorage.removeItem("bbdo_fcm_token_reset_com.hyperrevamp.bbdo:bbdoapp:73939371932:v3");
-    // Do not unregister/delete the server token here. Channel sound changes are
-    // independent of FCM tokens, and unregistering during app resume can leave
-    // Android with no usable token if the replacement registration event is
-    // delayed by Play Services. Stale rows are removed only after a new token is
-    // successfully upserted, or by the sender when FCM returns UNREGISTERED.
-  } catch (err) {
-    console.warn("[push] android token reset skipped", err);
-  } finally {
     localStorage.setItem(ANDROID_TOKEN_RESET_KEY, "1");
+  } catch {
+    /* A later registration will safely retry. */
   }
 }
 
@@ -278,7 +278,7 @@ function markPushPromptAsked() {
  */
 export async function registerNativePush(
   userId: string,
-  opts: { interactive?: boolean; allowPrompt?: boolean } = {},
+  opts: { interactive?: boolean; allowPrompt?: boolean; forceTokenRefresh?: boolean } = {},
 ): Promise<{ ok: true; token?: string } | { ok: false; reason: string }> {
   if (!isNativePushSupported()) {
     return { ok: false, reason: "not_native" };
@@ -287,7 +287,7 @@ export async function registerNativePush(
   try {
     activeUserId = userId;
     const now = Date.now();
-    if (now - lastAttemptAt < 5_000) {
+    if (!opts.forceTokenRefresh && now - lastAttemptAt < 5_000) {
       const token = lastRegistrationToken ?? (await fetchStoredToken(userId));
       return { ok: true, token: token ?? undefined };
     }
@@ -334,7 +334,6 @@ export async function registerNativePush(
     // WebAudio, otherwise users hear a second synthesized sound.
     if (currentPlatform() === "android") {
       try {
-        await resetAndroidFcmTokenAfterChannelUpgrade();
         const channel = {
           id: BBDO_PUSH_CHANNEL_ID,
           name: "BBDO notifications",
@@ -352,8 +351,25 @@ export async function registerNativePush(
       }
     }
 
+    // Firebase can keep returning a locally cached token even after FCM has
+    // invalidated it as UNREGISTERED. Delete and recreate it once for this app
+    // generation, and whenever a failed delivery explicitly requests a retry.
+    // Only mark the reset complete after the replacement is stored.
+    let refreshedAndroidToken: string | null = null;
+    if (
+      currentPlatform() === "android" &&
+      (opts.forceTokenRefresh || needsAndroidFcmGenerationReset())
+    ) {
+      refreshedAndroidToken = await refreshAndroidFcmToken();
+      if (refreshedAndroidToken) {
+        lastRegistrationToken = refreshedAndroidToken;
+        await upsertToken(userId, refreshedAndroidToken);
+        markAndroidFcmGenerationReset();
+      }
+    }
+
     await PushNotifications.register();
-    const registrationToken = await waitForToken(12_000);
+    const registrationToken = refreshedAndroidToken ?? (await waitForToken(12_000));
     const androidFallbackToken = registrationToken
       ? null
       : storedTokenBeforeRegistration
@@ -370,6 +386,17 @@ export async function registerNativePush(
     console.warn("[push] setup failed", err);
     return { ok: false, reason: err?.message ?? "setup_failed" };
   }
+}
+
+/** Replace an Android token that the backend/FCM has rejected, then persist it. */
+export async function refreshNativePushToken(userId: string) {
+  lastRegistrationToken = null;
+  lastAttemptAt = 0;
+  return registerNativePush(userId, {
+    interactive: false,
+    allowPrompt: false,
+    forceTokenRefresh: true,
+  });
 }
 
 /** UI wrapper: registers and toasts the outcome. */
