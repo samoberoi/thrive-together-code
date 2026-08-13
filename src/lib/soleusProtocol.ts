@@ -9,8 +9,11 @@ export const SOLEUS_DAILY_GOAL = 3;
 // Reuses the admin-uploaded "Soleus Push-Ups" exercise video / thumbnail.
 // Overridable via app_settings("bbdo_soleus_protocol_youtube_id").
 export const SOLEUS_DEFAULT_YOUTUBE_ID = "sggnIlX0KH0";
-export const SOLEUS_DEFAULT_THUMBNAIL =
-  "https://ogmhspwsvzvwqoavlxjn.supabase.co/storage/v1/object/public/avatars/exercise-thumbnails/new/1784658435645-00994c63-49eb-4fc2-9a29-ffe68595b8f7.jpg";
+export const SOLEUS_DEFAULT_THUMBNAIL = supabase.storage
+  .from("avatars")
+  .getPublicUrl(
+    "exercise-thumbnails/new/1784658435645-00994c63-49eb-4fc2-9a29-ffe68595b8f7.jpg",
+  ).data.publicUrl;
 
 export const SOLEUS_PROTOCOL_VIDEO = {
   id: "soleus-push-ups",
