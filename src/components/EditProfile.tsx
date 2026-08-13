@@ -316,6 +316,7 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
 
   // Diet preferences + allergies (loaded from user_diet_profiles)
   const [dietPrefs, setDietPrefs] = useState<string[]>([]);
+  const [dietRowLoaded, setDietRowLoaded] = useState(false);
   const [subPreferences, setSubPreferences] = useState<string[]>([]);
   const [allergenFoodIds, setAllergenFoodIds] = useState<string[]>([]);
 
