@@ -13,6 +13,7 @@ import { patientPriceFor, useLabTestMarkup } from "@/lib/labTestMarkup";
 import LabOrderDetails from "@/components/lab/LabOrderDetails";
 import ThyrocarePoweredBy from "@/components/lab/ThyrocarePoweredBy";
 import LabBookingDialog from "@/components/lab/LabBookingDialog";
+import { LabTestParametersDialog } from "@/components/lab/LabTestParametersDialog";
 import ExternalTestDialog from "@/components/lab/ExternalTestDialog";
 import LabHistorySection from "@/components/lab/LabHistorySection";
 import {
