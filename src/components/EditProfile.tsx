@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { getUser, saveUser } from "@/lib/userStore";
-import { fetchProfile, updateProfile } from "@/lib/profileService";
+import { fetchProfile, updateProfile, normalizeDietSlug } from "@/lib/profileService";
 import { calculateBMI, calculateHealthScore, inferClinicalValues } from "@/lib/healthEngine";
 import type { BodyMetrics, ClinicalData, LifestyleData, DeepProfilingData } from "@/lib/healthEngine";
 import { createNotification } from "@/lib/notificationService";
@@ -316,6 +316,7 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
 
   // Diet preferences + allergies (loaded from user_diet_profiles)
   const [dietPrefs, setDietPrefs] = useState<string[]>([]);
+  const [dietRowLoaded, setDietRowLoaded] = useState(false);
   const [subPreferences, setSubPreferences] = useState<string[]>([]);
   const [allergenFoodIds, setAllergenFoodIds] = useState<string[]>([]);
 
@@ -384,23 +385,27 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
 
     // Load diet preferences + allergies so coach/user can edit allergens.
     loadDietProfile(effectiveUserId).then((dp) => {
-      if (!dp) return;
-      const arr = ((dp as any).diet_preferences as string[] | null) || [];
-      const normalize = (p?: string | null) => {
-        const v = (p || "").toLowerCase().replace(/[-\s]/g, "_");
-        if (!v) return null;
-        if (v === "vegetarian") return "veg";
-        if (v === "nonveg" || v === "non_vegetarian") return "non_veg";
-        return v;
-      };
-      const fromArr = arr.map(normalize).filter(Boolean) as string[];
-      const single = normalize(dp.diet_preference);
+      const arr = ((dp as any)?.diet_preferences as string[] | null) || [];
+      const fromArr = arr.map(normalizeDietSlug).filter(Boolean) as string[];
+      const single = normalizeDietSlug(dp?.diet_preference);
       const finalPrefs = fromArr.length ? fromArr : single ? [single] : [];
       setDietPrefs(finalPrefs);
-      setSubPreferences((dp as any).sub_preferences ?? []);
-      setAllergenFoodIds((dp as any).allergen_food_ids ?? []);
-    }).catch(() => { /* best-effort */ });
+      setDietRowLoaded(true);
+      setSubPreferences((dp as any)?.sub_preferences ?? []);
+      setAllergenFoodIds((dp as any)?.allergen_food_ids ?? []);
+    }).catch(() => { setDietRowLoaded(true); });
   }, [effectiveUserId]);
+
+  // Fallback: brand-new users may not have a user_diet_profiles row yet (it is
+  // written by the debounced onboarding sync). Until then, show the diet choice
+  // captured during onboarding (profiles.lifestyle.diet) instead of "nothing selected".
+  useEffect(() => {
+    if (!dietRowLoaded) return;
+    if (dietPrefs.length > 0) return;
+    const slug = normalizeDietSlug((lifestyle as any)?.diet);
+    if (slug) setDietPrefs([slug]);
+  }, [dietRowLoaded, dietPrefs.length, lifestyle]);
+
 
 
   const uploadAvatarBlob = async (blob: Blob, ext: string) => {

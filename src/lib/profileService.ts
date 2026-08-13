@@ -255,7 +255,7 @@ export async function syncLocalToBackend(userId: string) {
   return ok;
 }
 
-function normalizeDietSlug(p: string | null | undefined): string | null {
+export function normalizeDietSlug(p: string | null | undefined): string | null {
   const v = (p || "").toLowerCase().trim().replace(/[-\s]/g, "_");
   if (!v) return null;
   if (v === "vegetarian") return "veg";
