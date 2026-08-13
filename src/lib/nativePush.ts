@@ -39,6 +39,13 @@ let activeUserId: string | null = null;
 let lastRegistrationToken: string | null = null;
 let tokenWaiters: Array<(token: string) => void> = [];
 let lastAttemptAt = 0;
+// Do not persist this flag. Android may restore WebView localStorage from a
+// previous install, which made a genuinely fresh install believe the system
+// prompt had already been shown. The result was permission="prompt", no prompt,
+// and therefore no FCM token. A process-local guard is enough to prevent the
+// permission-sheet resume loop while still allowing every fresh app launch to
+// recover registration.
+let permissionPromptAttemptedThisLaunch = false;
 
 export function isNativePushSupported(): boolean {
   // Both iOS (APNs) and Android (FCM via google-services.json) are wired up.
@@ -245,24 +252,6 @@ async function attachPushListenersOnce() {
   }
 }
 
-const PUSH_PROMPT_ASKED_KEY = "bbdo_push_prompt_asked";
-
-function hasAskedPushPermission(): boolean {
-  try {
-    return localStorage.getItem(PUSH_PROMPT_ASKED_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
-function markPushPromptAsked() {
-  try {
-    localStorage.setItem(PUSH_PROMPT_ASKED_KEY, "1");
-  } catch {
-    /* ignore */
-  }
-}
-
 /**
  * Call once after the user is signed in. Safe to call again — listeners are
  * only attached the first time; permission is re-checked without prompting
@@ -271,7 +260,7 @@ function markPushPromptAsked() {
  * IMPORTANT (Android): the OS permission sheet steals window focus, which fires
  * `appStateChange` again. Re-prompting on every resume created a prompt →
  * resume → prompt loop that made the status bar / system UI flicker. So we ask
- * at most once per install unless the user explicitly taps "Enable notifications"
+   * at most once per app launch unless the user explicitly taps "Enable notifications"
  * (`interactive: true`).
  */
 export async function registerNativePush(
@@ -300,9 +289,9 @@ export async function registerNativePush(
     if (
       canPrompt &&
       opts.allowPrompt !== false &&
-      (opts.interactive || !hasAskedPushPermission())
+      (opts.interactive || !permissionPromptAttemptedThisLaunch)
     ) {
-      markPushPromptAsked();
+      permissionPromptAttemptedThisLaunch = true;
       perm = await PushNotifications.requestPermissions();
     }
     if (perm.receive !== "granted") {
@@ -317,9 +306,9 @@ export async function registerNativePush(
       let localPerm = await LocalNotifications.checkPermissions();
       if (
         (localPerm.display === "prompt" || localPerm.display === "prompt-with-rationale") &&
-        (opts.interactive || !hasAskedPushPermission())
+        (opts.interactive || !permissionPromptAttemptedThisLaunch)
       ) {
-        markPushPromptAsked();
+        permissionPromptAttemptedThisLaunch = true;
         localPerm = await LocalNotifications.requestPermissions();
       }
     } catch (err) {

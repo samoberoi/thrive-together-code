@@ -69,7 +69,15 @@ describe("Android Health Connect permission safety", () => {
     expect(manifest).toContain("android.intent.action.VIEW_PERMISSION_USAGE");
     expect(manifest).toContain('android:name="android.permission.health.READ_STEPS"');
     expect(manifest).toContain('android:value="bbdo-alerts-v14"');
+    expect(manifest).toContain('android:allowBackup="false"');
+    expect(manifest).toContain('android:fullBackupContent="false"');
     expect(manifest).not.toContain('android:value="bbdo-alerts-v10"');
+  });
+
+  it("does not persist the Android notification prompt guard across reinstalls", () => {
+    const nativePush = readFileSync(resolve(process.cwd(), "src/lib/nativePush.ts"), "utf8");
+    expect(nativePush).toContain("permissionPromptAttemptedThisLaunch");
+    expect(nativePush).not.toContain("bbdo_push_prompt_asked");
   });
 
   it("uses a Capacitor 8-compatible health plugin instead of the legacy Capacitor 5 bridge", () => {
