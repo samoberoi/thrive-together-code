@@ -4,8 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 // - Signs storage URLs directly with built-in image transforms so the CDN
 //   serves an optimized thumbnail, not the full-res original.
 // - Persists signed URLs to localStorage so repeat visits are instant.
-// - Falls back to the generate-food-image edge function only when no
-//   image_url exists on the row yet.
+// - Images are uploaded manually; rows without an image_url simply render
+//   the placeholder.
 
 const BUCKET = "food-images";
 const TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
@@ -71,22 +71,6 @@ async function signPath(path: string): Promise<string | null> {
   return data?.signedUrl || null;
 }
 
-async function generateViaEdge(foodItemId: string): Promise<string | null> {
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return null;
-    const url = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/generate-food-image`;
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-      body: JSON.stringify({ food_item_id: foodItemId }),
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    return (data?.url as string) || null;
-  } catch { return null; }
-}
-
 export function getFoodImageUrl(foodItemId: string): Promise<string | null> {
   const cached = getFromCache(foodItemId);
   if (cached) return Promise.resolve(cached);
@@ -98,9 +82,7 @@ export function getFoodImageUrl(foodItemId: string): Promise<string | null> {
       const url = await signPath(path);
       if (url) { setInCache(foodItemId, url); return url; }
     }
-    const url = await generateViaEdge(foodItemId);
-    if (url) setInCache(foodItemId, url);
-    return url;
+    return null;
   })();
   inflight.set(foodItemId, p);
   p.finally(() => inflight.delete(foodItemId));
