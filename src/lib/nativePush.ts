@@ -211,7 +211,7 @@ async function attachPushListenersOnce() {
             id: Math.floor(Date.now() % 2_147_000_000),
             title,
             body,
-            sound: "bbdo_chime.wav",
+            sound: "bbdo_chime",
             channelId: BBDO_PUSH_CHANNEL_ID,
             schedule: { at: new Date(Date.now() + 250) },
             autoCancel: true,
@@ -328,7 +328,7 @@ export async function registerNativePush(
           visibility: 1,
           vibration: true,
           lights: true,
-          sound: "bbdo_chime.wav",
+          sound: "bbdo_chime",
         } as const;
         await PushNotifications.createChannel(channel);
         await LocalNotifications.createChannel(channel);

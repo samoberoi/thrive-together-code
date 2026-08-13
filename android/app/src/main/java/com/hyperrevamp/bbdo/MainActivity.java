@@ -52,8 +52,8 @@ public class MainActivity extends BridgeActivity {
         try { manager.deleteNotificationChannel("bbdo-alerts-v8"); } catch (Exception ignored) {}
         try { manager.deleteNotificationChannel("bbdo-alerts-v9"); } catch (Exception ignored) {}
         try { manager.deleteNotificationChannel("bbdo-alerts-v10"); } catch (Exception ignored) {}
-        try { manager.deleteNotificationChannel("bbdo-alerts-v11"); } catch (Exception ignored) {}
         try { manager.deleteNotificationChannel("bbdo-alerts-v12"); } catch (Exception ignored) {}
+        try { manager.deleteNotificationChannel("bbdo-alerts-v13"); } catch (Exception ignored) {}
 
         if (manager.getNotificationChannel(BBDO_PUSH_CHANNEL_ID) != null) return;
 
