@@ -10,7 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useConfirm } from "@/components/ConfirmProvider";
 import { toast } from "sonner";
 import FoodItemDetail from "./FoodItemDetail";
-import { getFoodImageUrl, primeFoodImages } from "@/lib/foodImageService";
+import { getFoodImageUrl, primeFoodImages, getCachedFoodImageUrl } from "@/lib/foodImageService";
 import { renderPlate } from "@/lib/plateRenderer";
 import {
   type FoodFilter, type FoodItem, type DietType,
