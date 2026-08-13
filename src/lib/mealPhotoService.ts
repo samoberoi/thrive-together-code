@@ -25,18 +25,45 @@ export interface MealPhoto {
   created_at: string;
 }
 
+/** Downscale + JPEG-compress a camera photo before upload (max 1280px, ~q0.8). */
+async function compressPhoto(file: File): Promise<Blob> {
+  try {
+    const url = URL.createObjectURL(file);
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new Image();
+      el.onload = () => { URL.revokeObjectURL(url); resolve(el); };
+      el.onerror = () => { URL.revokeObjectURL(url); reject(new Error("read failed")); };
+      el.src = url;
+    });
+    const max = 1280;
+    const scale = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return file;
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, "image/jpeg", 0.8));
+    return blob && blob.size < file.size ? blob : file;
+  } catch {
+    return file;
+  }
+}
+
 /** Upload a food photo to storage and return the public URL */
 export async function uploadMealPhoto(
   userId: string,
   file: File,
   mealType: "fmod" | "lmod"
 ): Promise<string> {
-  const ext = file.name.split(".").pop() || "jpg";
+  const blob = await compressPhoto(file);
+  const isJpeg = blob !== file;
+  const ext = isJpeg ? "jpg" : (file.name.split(".").pop() || "jpg");
   const path = `${userId}/${Date.now()}_${mealType}.${ext}`;
 
   const { error } = await supabase.storage
     .from("meal-photos")
-    .upload(path, file, { contentType: file.type, upsert: false });
+    .upload(path, blob, { contentType: isJpeg ? "image/jpeg" : file.type, upsert: false, cacheControl: "31536000" });
   if (error) throw error;
 
   const { data: urlData } = supabase.storage
@@ -45,6 +72,7 @@ export async function uploadMealPhoto(
 
   return urlData.publicUrl;
 }
+
 
 /** Convert a File to base64 string (without data URL prefix) */
 export function fileToBase64(file: File): Promise<string> {
