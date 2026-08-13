@@ -38,6 +38,7 @@ import {
   Gauge,
   Ticket,
   Monitor,
+  UtensilsCrossed,
 } from "lucide-react";
 
 import NotificationCenter from "@/components/NotificationCenter";
@@ -81,6 +82,7 @@ const AdminDietTypes = lazy(() => import("./admin/AdminDietTypes"));
 const AdminBmiCategories = lazy(() => import("./admin/AdminBmiCategories"));
 const AdminOnboardingGrades = lazy(() => import("./admin/AdminOnboardingGrades"));
 const AdminCoupons = lazy(() => import("./admin/AdminCoupons"));
+const AdminDiet = lazy(() => import("./admin/AdminDiet"));
 
 // Admin self-tracking (same modules patients & coaches use).
 import AdminSelfTabs from "@/components/admin/AdminSelfTabs";
@@ -100,6 +102,7 @@ export type AdminTab =
   | "coaches"
   | "admins"
   | "diet"
+  | "food_config"
   | "supplements"
   
   | "food_condition_rules"
@@ -151,6 +154,7 @@ const navItems: NavItem[] = [
     label: "Diet",
     children: [
       { id: "diet", icon: Salad, label: "My Plates" },
+      { id: "food_config", icon: UtensilsCrossed, label: "Food Configuration" },
       { id: "food_condition_rules", icon: HeartPulse, label: "Food ↔ Conditions" },
     ],
   },
@@ -199,6 +203,7 @@ const tabContentMap: Record<AdminTab, React.ReactNode> = {
   coaches: <AdminCoaches />,
   admins: <AdminAdmins />,
   diet: <UserDiet planOverride="intensive" />,
+  food_config: <AdminDiet />,
 
   supplements: (
     <AdminSelfTabs manageLabel="Catalog" mineLabel="My Supplements" mineIcon={Pill} manage={<AdminSupplements />} mine={<UserSupplements simpleMode />} />
@@ -244,6 +249,7 @@ const adminTabs = new Set<AdminTab>([
   "coaches",
   "admins",
   "diet",
+  "food_config",
   "supplements",
   "food_condition_rules",
   "fasting",
@@ -308,11 +314,11 @@ const controlCenterTabs = new Set<AdminTab>([
  * on the go.
  */
 const desktopOnlyTabs = new Set<AdminTab>(
-  [...controlCenterTabs].filter((t) => t !== "users" && t !== "coaches"),
+  [...controlCenterTabs, "food_config" as AdminTab].filter((t) => t !== "users" && t !== "coaches"),
 );
 
 const supplementTabs = new Set<AdminTab>(["supplements"]);
-const dietTabs = new Set<AdminTab>(["diet", "food_condition_rules"]);
+const dietTabs = new Set<AdminTab>(["diet", "food_config", "food_condition_rules"]);
 
 function AdminProfileView({
   email,
