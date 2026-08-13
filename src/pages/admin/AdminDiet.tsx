@@ -941,7 +941,7 @@ function ItemImageControl({ item, onChanged }: { item: Item; onChanged: () => vo
       contentType: file.type, upsert: true,
     });
     if (up.error) { toast.error(up.error.message); setBusy(false); return; }
-    await supabase.from("food_items").update({ image_url: path }).eq("id", item.id);
+    await supabase.from("food_items").update({ image_url: path, updated_at: new Date().toISOString() }).eq("id", item.id);
     logAudit({ module: "Diet", action: "upload", target_type: "food_item_image", target_id: item.id, target_label: item.name, metadata: { path } });
     setBusy(false);
     toast.success("Image uploaded");
@@ -1012,7 +1012,7 @@ function ItemImageEditor({ item, onChanged }: { item: Item; onChanged: () => voi
       contentType: file.type, upsert: true,
     });
     if (up.error) { toast.error(up.error.message); setBusy(false); return; }
-    await supabase.from("food_items").update({ image_url: path }).eq("id", item.id);
+    await supabase.from("food_items").update({ image_url: path, updated_at: new Date().toISOString() }).eq("id", item.id);
     logAudit({ module: "Diet", action: "upload", target_type: "food_item_image", target_id: item.id, target_label: item.name, metadata: { path } });
     setBusy(false);
     toast.success("Image uploaded");
