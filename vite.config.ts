@@ -18,10 +18,11 @@ const LEGACY_SUPABASE_PROJECT_ID = "ogmhspwsvzvwqoavlxjn";
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
+  // Never use the legacy backend, in any mode (dev preview included).
   const isLegacy =
-    mode === "production" &&
-    (env.VITE_SUPABASE_PROJECT_ID === LEGACY_SUPABASE_PROJECT_ID ||
-      (env.VITE_SUPABASE_URL ?? "").includes(LEGACY_SUPABASE_PROJECT_ID));
+    env.VITE_SUPABASE_PROJECT_ID === LEGACY_SUPABASE_PROJECT_ID ||
+    (env.VITE_SUPABASE_URL ?? "").includes(LEGACY_SUPABASE_PROJECT_ID);
+
 
   const supabaseUrl = (!isLegacy && env.VITE_SUPABASE_URL) || FALLBACK_SUPABASE_URL;
   const supabaseKey = (!isLegacy && env.VITE_SUPABASE_PUBLISHABLE_KEY) || FALLBACK_SUPABASE_PUBLISHABLE_KEY;

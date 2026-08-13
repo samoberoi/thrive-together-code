@@ -84,6 +84,11 @@ export default function CoachInbox({ coachId, openPatientId }: CoachInboxProps) 
     setLoading(false);
   };
 
+  // Keep latest active conversation in a ref so the realtime channel is
+  // subscribed once instead of being torn down every time a chat is opened.
+  const activeConvoRef = useRef<ConvoWithMeta | null>(null);
+  useEffect(() => { activeConvoRef.current = activeConvo; }, [activeConvo]);
+
   // Realtime for new messages across all conversations
   useEffect(() => {
     if (!user) return;
@@ -94,14 +99,15 @@ export default function CoachInbox({ coachId, openPatientId }: CoachInboxProps) 
         { event: "INSERT", schema: "public", table: "chat_messages" },
         (payload) => {
           const newMsg = payload.new as unknown as ChatMessage;
+          const active = activeConvoRef.current;
           // Update active conversation messages
-          if (activeConvo && newMsg.conversation_id === activeConvo.id) {
+          if (active && newMsg.conversation_id === active.id) {
             setMessages((prev) => {
               if (prev.some((m) => m.id === newMsg.id)) return prev;
               return [...prev, newMsg];
             });
             if (newMsg.sender_role === "patient") {
-              markConversationRead(activeConvo.id, "coach");
+              markConversationRead(active.id, "coach");
             }
           }
           // Update conversation list
@@ -113,7 +119,7 @@ export default function CoachInbox({ coachId, openPatientId }: CoachInboxProps) 
                     last_message: newMsg,
                     last_message_at: newMsg.created_at,
                     coach_unread_count:
-                      activeConvo?.id === c.id
+                      active?.id === c.id
                         ? c.coach_unread_count
                         : newMsg.sender_role === "patient"
                         ? c.coach_unread_count + 1
@@ -132,7 +138,8 @@ export default function CoachInbox({ coachId, openPatientId }: CoachInboxProps) 
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [user, activeConvo]);
+  }, [user]);
+
 
   // Auto-scroll
   useEffect(() => {
@@ -154,10 +161,24 @@ export default function CoachInbox({ coachId, openPatientId }: CoachInboxProps) 
     if (!msg || !user || !activeConvo) return;
     setInput("");
     setSending(true);
-    await sendMessage(activeConvo.id, user.id, "coach", msg);
+    const sent = await sendMessage(activeConvo.id, user.id, "coach", msg);
+    if (sent) {
+      // Optimistic append so the message shows instantly even if realtime lags.
+      setMessages((prev) => (prev.some((m) => m.id === sent.id) ? prev : [...prev, sent]));
+      setConversations((prev) =>
+        prev
+          .map((c) =>
+            c.id === sent.conversation_id
+              ? { ...c, last_message: sent, last_message_at: sent.created_at }
+              : c
+          )
+          .sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime())
+      );
+    }
     setSending(false);
     // Do not auto-open keyboard after sending; user taps input to reopen.
   };
+
 
   const formatTime = (dateStr: string) => {
     const d = new Date(dateStr);
