@@ -94,10 +94,15 @@ export default function PatientChat({ coach, onBack }: PatientChatProps) {
     if (!text) setInput("");
     setSending(true);
     setShowQuickQuestions(false);
-    await sendMessage(conversation.id, user.id, "patient", msg, isPredefined);
+    const sent = await sendMessage(conversation.id, user.id, "patient", msg, isPredefined);
+    if (sent) {
+      // Optimistic append so the message shows instantly even if realtime lags.
+      setMessages((prev) => (prev.some((m) => m.id === sent.id) ? prev : [...prev, sent]));
+    }
     setSending(false);
     // Do not auto-open keyboard after sending; user taps input to reopen.
   };
+
 
   const formatTime = (dateStr: string) =>
     new Date(dateStr).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });

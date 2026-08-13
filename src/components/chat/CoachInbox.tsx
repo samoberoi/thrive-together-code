@@ -154,10 +154,24 @@ export default function CoachInbox({ coachId, openPatientId }: CoachInboxProps) 
     if (!msg || !user || !activeConvo) return;
     setInput("");
     setSending(true);
-    await sendMessage(activeConvo.id, user.id, "coach", msg);
+    const sent = await sendMessage(activeConvo.id, user.id, "coach", msg);
+    if (sent) {
+      // Optimistic append so the message shows instantly even if realtime lags.
+      setMessages((prev) => (prev.some((m) => m.id === sent.id) ? prev : [...prev, sent]));
+      setConversations((prev) =>
+        prev
+          .map((c) =>
+            c.id === sent.conversation_id
+              ? { ...c, last_message: sent, last_message_at: sent.created_at }
+              : c
+          )
+          .sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime())
+      );
+    }
     setSending(false);
     // Do not auto-open keyboard after sending; user taps input to reopen.
   };
+
 
   const formatTime = (dateStr: string) => {
     const d = new Date(dateStr);
