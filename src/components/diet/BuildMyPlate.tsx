@@ -183,13 +183,28 @@ export default function BuildMyPlate({ onClose, onSaved }: { onClose: () => void
 
   // Prefetch food images for visible section
   useEffect(() => {
-    sectionItems.forEach((it) => {
-      if (imageUrls[it.id] === undefined) {
-        setImageUrls((prev) => ({ ...prev, [it.id]: null }));
-        getFoodImageUrl(it.id).then((url) => setImageUrls((prev) => ({ ...prev, [it.id]: url })));
-      }
+    const pending = sectionItems.filter((it) => imageUrls[it.id] === undefined);
+    if (!pending.length) return;
+    // Batch-sign the whole visible section in one pass (avoids one query per item),
+    // then only fall back to the per-item resolver for rows with no image yet.
+    const next: Record<string, string | null> = {};
+    pending.forEach((it) => { next[it.id] = getCachedFoodImageUrl(it.id) ?? null; });
+    setImageUrls((prev) => ({ ...prev, ...next }));
+    void primeFoodImages(pending as any).then(() => {
+      const primed: Record<string, string | null> = {};
+      pending.forEach((it) => {
+        const url = getCachedFoodImageUrl(it.id);
+        if (url) primed[it.id] = url;
+      });
+      if (Object.keys(primed).length) setImageUrls((prev) => ({ ...prev, ...primed }));
+      pending
+        .filter((it) => !getCachedFoodImageUrl(it.id) && !(it as any).image_url)
+        .forEach((it) => {
+          getFoodImageUrl(it.id).then((url) => setImageUrls((prev) => ({ ...prev, [it.id]: url })));
+        });
     });
   }, [sectionItems]); // eslint-disable-line react-hooks/exhaustive-deps
+
 
   // Helpers
   const selectionMap = useMemo(() => {
