@@ -11,7 +11,7 @@ const APNS_PRIVATE_KEY = Deno.env.get("APNS_PRIVATE_KEY") ?? "";
 const APNS_BUNDLE_ID = Deno.env.get("APNS_BUNDLE_ID") ?? "com.hyperrevamp.bbdo";
 const APNS_ENVIRONMENT = (Deno.env.get("APNS_ENVIRONMENT") ?? "sandbox").toLowerCase();
 const FCM_SERVICE_ACCOUNT_JSON = Deno.env.get("FCM_SERVICE_ACCOUNT_JSON") ?? "";
-const BBDO_PUSH_CHANNEL_ID = "bbdo-alerts-v13";
+const BBDO_PUSH_CHANNEL_ID = "bbdo-alerts-v14";
 const BBDO_PUSH_SOUND = "bbdo_chime";
 const BBDO_IOS_PUSH_SOUND = "bbdo_chime.wav";
 
@@ -240,10 +240,6 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json(405, { ok: false, error: "Method not allowed" });
 
   try {
-    if (!APNS_KEY_ID || !APNS_TEAM_ID || !APNS_PRIVATE_KEY) {
-      return json(503, { ok: false, error: "APNs credentials are not configured yet" });
-    }
-
     const raw = (await req.json().catch(() => null)) as PushBody | null;
     const authHeader = req.headers.get("Authorization") ?? "";
     const bearer = authHeader.replace(/^Bearer\s+/i, "").trim();
@@ -349,7 +345,8 @@ Deno.serve(async (req) => {
       await new Promise((resolve) => setTimeout(resolve, delaySeconds * 1000));
     }
 
-    const jwt = iosTokens.length ? await createApnsJwt() : "";
+    const apnsConfigured = Boolean(APNS_KEY_ID && APNS_TEAM_ID && APNS_PRIVATE_KEY);
+    const jwt = iosTokens.length && apnsConfigured ? await createApnsJwt() : "";
     const hosts = apnsHosts();
     // APNs normal alerts must use a plain sound string. The previous dictionary
     // form is only reliable for critical-alert entitlement payloads and can be
@@ -367,7 +364,7 @@ Deno.serve(async (req) => {
       type: "app_notification",
     };
 
-    const iosResults = await Promise.all(iosTokens.map(async (row) => {
+    const iosResults = await Promise.all((apnsConfigured ? iosTokens : []).map(async (row) => {
       const attempts: ApnsAttempt[] = [];
       const first = await sendApnsAttempt(row.token, jwt, apnsPayload, hosts[0]);
       attempts.push(first);

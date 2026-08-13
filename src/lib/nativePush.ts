@@ -15,8 +15,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const APP_VERSION = (globalThis as any).__APP_VERSION__ ?? "1.0.0";
-export const BBDO_PUSH_CHANNEL_ID = "bbdo-alerts-v13";
-const ANDROID_FIREBASE_GENERATION = "com.hyperrevamp.bbdo:bbdoapp:73939371932:v5";
+export const BBDO_PUSH_CHANNEL_ID = "bbdo-alerts-v14";
+const ANDROID_FIREBASE_GENERATION = "com.hyperrevamp.bbdo:bbdoapp:73939371932:v6";
 const ANDROID_TOKEN_RESET_KEY = `bbdo_fcm_token_reset_${ANDROID_FIREBASE_GENERATION}`;
 
 const BBDONotifications = registerPlugin<{
@@ -105,8 +105,6 @@ async function fetchStoredToken(userId: string): Promise<string | null> {
 }
 
 function waitForToken(timeoutMs = 8_000): Promise<string | null> {
-  if (lastRegistrationToken) return Promise.resolve(lastRegistrationToken);
-
   return new Promise((resolve) => {
     const timer = window.setTimeout(() => {
       tokenWaiters = tokenWaiters.filter((waiter) => waiter !== done);
@@ -289,11 +287,11 @@ export async function registerNativePush(
     const now = Date.now();
     if (!opts.forceTokenRefresh && now - lastAttemptAt < 5_000) {
       const token = lastRegistrationToken ?? (await fetchStoredToken(userId));
-      return { ok: true, token: token ?? undefined };
+      if (token) return { ok: true, token };
+      // Do not debounce an incomplete registration. A missing token means the
+      // phone still cannot receive remote pushes and setup must continue.
     }
     lastAttemptAt = now;
-
-    const storedTokenBeforeRegistration = await fetchStoredToken(userId);
 
     await attachPushListenersOnce();
 
@@ -369,19 +367,24 @@ export async function registerNativePush(
     }
 
     await PushNotifications.register();
-    const registrationToken = refreshedAndroidToken ?? (await waitForToken(12_000));
-    const androidFallbackToken = registrationToken
-      ? null
-      : storedTokenBeforeRegistration
-        ? await getAndroidFcmTokenFallback()
-        : await refreshAndroidFcmToken();
-    const resolvedToken = registrationToken ?? androidFallbackToken;
+    const registrationToken = refreshedAndroidToken ?? (await waitForToken(8_000));
+    // On Android, FirebaseMessaging.getToken() is the authoritative result.
+    // The Capacitor registration event is not guaranteed to fire when Firebase
+    // reuses an existing token, which previously left signed-in users with no
+    // database token while the UI incorrectly reported registration success.
+    const directAndroidToken = currentPlatform() === "android"
+      ? await getAndroidFcmTokenFallback()
+      : null;
+    const resolvedToken = directAndroidToken ?? registrationToken;
     if (resolvedToken) {
       lastRegistrationToken = resolvedToken;
       await upsertToken(userId, resolvedToken);
     }
-    const token = resolvedToken ?? (await fetchStoredToken(userId));
-    return { ok: true, token: token ?? undefined };
+    const verifiedToken = await fetchStoredToken(userId);
+    if (!verifiedToken || (resolvedToken && verifiedToken !== resolvedToken)) {
+      return { ok: false, reason: "token_not_registered" };
+    }
+    return { ok: true, token: verifiedToken };
   } catch (err: any) {
     console.warn("[push] setup failed", err);
     return { ok: false, reason: err?.message ?? "setup_failed" };
