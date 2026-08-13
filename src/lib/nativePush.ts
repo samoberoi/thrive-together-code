@@ -105,8 +105,6 @@ async function fetchStoredToken(userId: string): Promise<string | null> {
 }
 
 function waitForToken(timeoutMs = 8_000): Promise<string | null> {
-  if (lastRegistrationToken) return Promise.resolve(lastRegistrationToken);
-
   return new Promise((resolve) => {
     const timer = window.setTimeout(() => {
       tokenWaiters = tokenWaiters.filter((waiter) => waiter !== done);
@@ -293,8 +291,6 @@ export async function registerNativePush(
     }
     lastAttemptAt = now;
 
-    const storedTokenBeforeRegistration = await fetchStoredToken(userId);
-
     await attachPushListenersOnce();
 
     let perm = await PushNotifications.checkPermissions();
@@ -369,19 +365,24 @@ export async function registerNativePush(
     }
 
     await PushNotifications.register();
-    const registrationToken = refreshedAndroidToken ?? (await waitForToken(12_000));
-    const androidFallbackToken = registrationToken
-      ? null
-      : storedTokenBeforeRegistration
-        ? await getAndroidFcmTokenFallback()
-        : await refreshAndroidFcmToken();
-    const resolvedToken = registrationToken ?? androidFallbackToken;
+    const registrationToken = refreshedAndroidToken ?? (await waitForToken(8_000));
+    // On Android, FirebaseMessaging.getToken() is the authoritative result.
+    // The Capacitor registration event is not guaranteed to fire when Firebase
+    // reuses an existing token, which previously left signed-in users with no
+    // database token while the UI incorrectly reported registration success.
+    const directAndroidToken = currentPlatform() === "android"
+      ? await getAndroidFcmTokenFallback()
+      : null;
+    const resolvedToken = directAndroidToken ?? registrationToken;
     if (resolvedToken) {
       lastRegistrationToken = resolvedToken;
       await upsertToken(userId, resolvedToken);
     }
-    const token = resolvedToken ?? (await fetchStoredToken(userId));
-    return { ok: true, token: token ?? undefined };
+    const verifiedToken = await fetchStoredToken(userId);
+    if (!verifiedToken || (resolvedToken && verifiedToken !== resolvedToken)) {
+      return { ok: false, reason: "token_not_registered" };
+    }
+    return { ok: true, token: verifiedToken };
   } catch (err: any) {
     console.warn("[push] setup failed", err);
     return { ok: false, reason: err?.message ?? "setup_failed" };

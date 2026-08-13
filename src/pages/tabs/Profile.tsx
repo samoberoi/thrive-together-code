@@ -936,8 +936,7 @@ export default function Profile({ onClose, isDark = true, onToggleTheme }: Profi
                       const registration = await registerNativePush(user.id);
                       if (registration.ok === false) {
                         toast.error(registration.reason === "permission_denied" ? "Enable notifications in phone settings." : `Push setup failed: ${registration.reason}`);
-                      } else if (!registration.token) {
-                        toast.warning("Phone permission is on, but the push token is not ready yet. Try again in a few seconds.");
+                        return;
                       }
 
                       let remote = await sendRemoteHealthPushResult("BBDO push test", "Lock your phone — this should beep when it arrives.", { delaySeconds: 8 });
