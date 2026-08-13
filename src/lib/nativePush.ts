@@ -287,7 +287,9 @@ export async function registerNativePush(
     const now = Date.now();
     if (!opts.forceTokenRefresh && now - lastAttemptAt < 5_000) {
       const token = lastRegistrationToken ?? (await fetchStoredToken(userId));
-      return { ok: true, token: token ?? undefined };
+      if (token) return { ok: true, token };
+      // Do not debounce an incomplete registration. A missing token means the
+      // phone still cannot receive remote pushes and setup must continue.
     }
     lastAttemptAt = now;
 
