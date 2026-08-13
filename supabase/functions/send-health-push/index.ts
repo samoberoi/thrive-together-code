@@ -257,7 +257,23 @@ Deno.serve(async (req) => {
     const delaySeconds = validDelaySeconds(raw?.delaySeconds);
 
     if (raw?.backendDispatch === true) {
-      if (bearer !== ANON_KEY) return json(401, { ok: false, error: "Invalid backend dispatch token" });
+      let dispatchAuthorized = bearer === ANON_KEY || bearer === SERVICE_ROLE;
+      if (!dispatchAuthorized) {
+        // Key rotation / format migration safety net: accept any credential of THIS
+        // project that can read a service-role-only table (anon/authenticated cannot).
+        try {
+          const probe = await fetch(
+            `${SUPABASE_URL}/rest/v1/user_roles?select=user_id&limit=1`,
+            { headers: { apikey: bearer, Authorization: `Bearer ${bearer}` } },
+          );
+          dispatchAuthorized = probe.ok;
+        } catch (_e) {
+          dispatchAuthorized = false;
+        }
+      }
+      if (!dispatchAuthorized) {
+        return json(401, { ok: false, error: "Invalid backend dispatch token" });
+      }
       const notificationId = validUuid(raw.notificationId);
       if (!notificationId) return json(400, { ok: false, error: "Valid notificationId is required" });
 
