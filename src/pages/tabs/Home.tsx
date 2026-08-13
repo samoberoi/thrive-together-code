@@ -1353,7 +1353,7 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
             aria-label={`Message your coach ${coachName}`}
           >
             {coachAvatar ? (
-              <img
+              <img loading="lazy" decoding="async"
                 src={coachAvatar}
                 alt={coachName}
                 className="w-7 h-7 rounded-full object-cover ring-1 ring-border"
@@ -1472,7 +1472,7 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
             <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-emerald-500/10 blur-2xl pointer-events-none" />
             <div className="relative flex items-start gap-3">
               {nextMeeting.coach_avatar ? (
-                <img
+                <img loading="lazy" decoding="async"
                   src={nextMeeting.coach_avatar}
                   alt={nextMeeting.coach_name ?? "Coach"}
                   className="w-12 h-12 rounded-2xl object-cover shrink-0 ring-1 ring-border"
@@ -2029,7 +2029,7 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
                 return (
                   <div key={m.id} className="flex items-center gap-3 p-2.5 rounded-xl bg-primary/5">
                     {m.photo_url ? (
-                      <img
+                      <img loading="lazy" decoding="async"
                         src={m.photo_url}
                         alt={label}
                         className="w-12 h-12 rounded-xl object-cover shrink-0 bg-primary/10"

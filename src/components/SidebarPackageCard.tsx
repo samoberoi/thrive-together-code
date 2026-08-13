@@ -45,7 +45,7 @@ export default function SidebarPackageCard() {
       let partnerName = "Yoga";
       if (row.partner_id) {
         const { data: p } = await supabase
-          .from("channel_partners" as any)
+          .from("partner_directory" as any)
           .select("name")
           .eq("id", row.partner_id)
           .maybeSingle();

@@ -158,7 +158,7 @@ function PostCard({
           {likersPreview.slice(0, 3).map((l) => (
             <div key={l.user_id} className="w-5 h-5 rounded-full ring-2 ring-card bg-muted overflow-hidden flex items-center justify-center">
               {l.avatar_url
-                ? <img src={l.avatar_url} alt="" className="w-full h-full object-cover" />
+                ? <img loading="lazy" decoding="async" src={l.avatar_url} alt="" className="w-full h-full object-cover" />
                 : <span className="text-[9px] font-bold text-foreground">{(l.name || "?")[0]}</span>}
             </div>
           ))}
@@ -210,7 +210,7 @@ function PostCard({
                     <li key={l.user_id} className="flex items-center gap-3 rounded-2xl px-1 py-3">
                       <div className="w-11 h-11 rounded-full bg-muted overflow-hidden flex items-center justify-center flex-shrink-0 ring-1 ring-border/60">
                         {l.avatar_url
-                          ? <img src={l.avatar_url} alt="" className="w-full h-full object-cover" />
+                          ? <img loading="lazy" decoding="async" src={l.avatar_url} alt="" className="w-full h-full object-cover" />
                           : <span className="text-sm font-black text-foreground">{(l.name || "?")[0]}</span>}
                       </div>
                       <span className="min-w-0 flex-1 text-[15px] font-bold text-foreground truncate">{l.name}</span>
@@ -236,7 +236,7 @@ function PostCard({
       <div className="flex items-center gap-3 mb-3">
         <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden ring-2 ring-[var(--bbdo-blue)]/15">
           {post.user_avatar ? (
-            <img src={post.user_avatar} alt="" className="w-full h-full object-cover" />
+            <img loading="lazy" decoding="async" src={post.user_avatar} alt="" className="w-full h-full object-cover" />
           ) : (
             <span className="text-foreground font-bold text-sm">{(post.user_name || "?")[0]}</span>
           )}
@@ -309,7 +309,7 @@ function PostCard({
                   <div key={c.id} className="flex items-start gap-2">
                     <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden">
                       {c.user_avatar ? (
-                        <img src={c.user_avatar} alt="" className="w-full h-full object-cover" />
+                        <img loading="lazy" decoding="async" src={c.user_avatar} alt="" className="w-full h-full object-cover" />
                       ) : (
                         <span className="text-foreground text-[10px] font-bold">{(c.user_name || "?")[0]}</span>
                       )}
@@ -418,7 +418,7 @@ function CreatePostSheet({
         {/* Image preview */}
         {previewUrl && (
           <div className="relative mt-3 rounded-2xl overflow-hidden border border-border">
-            <img src={previewUrl} alt="" className="w-full max-h-72 object-cover" />
+            <img loading="lazy" decoding="async" src={previewUrl} alt="" className="w-full max-h-72 object-cover" />
             {uploading && (
               <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                 <Loader2 className="w-5 h-5 text-white animate-spin" />

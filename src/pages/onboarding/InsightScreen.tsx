@@ -2,8 +2,14 @@ import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import * as Icons from "lucide-react";
-import { ChevronRight, Heart } from "lucide-react";
+import { ChevronRight, Heart, Sparkles, Activity, HeartPulse, Scale, Droplet, Flame, Brain, Moon, Apple, Dumbbell, ShieldCheck, TrendingUp, TrendingDown, AlertTriangle, Gauge } from "lucide-react";
+
+// Curated icon map — importing the whole lucide-react namespace pulled ~700KB
+// into this onboarding chunk.
+const GRADE_ICONS: Record<string, React.ElementType> = {
+  Sparkles, Activity, HeartPulse, Heart, Scale, Droplet, Flame, Brain, Moon,
+  Apple, Dumbbell, ShieldCheck, TrendingUp, TrendingDown, AlertTriangle, Gauge,
+};
 import SoundToggle from "@/components/SoundToggle";
 import { setPhase } from "@/lib/musicEngine";
 import { fetchOnboardingGrade, getCachedOnboardingGrade, type OnboardingGrade } from "@/lib/onboardingGrade";
@@ -27,7 +33,7 @@ const WaistArrowsIcon = ({ className, strokeWidth, style }: { className?: string
 
 const getGradeIcon = (icon: string) => {
   if (icon === "WaistArrows") return WaistArrowsIcon;
-  return ((Icons as any)[icon] ?? Icons.Sparkles) as React.ElementType;
+  return (GRADE_ICONS[icon] ?? Sparkles) as React.ElementType;
 };
 
 export default function InsightScreen() {

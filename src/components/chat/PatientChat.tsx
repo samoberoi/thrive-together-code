@@ -146,7 +146,7 @@ export default function PatientChat({ coach, onBack }: PatientChatProps) {
           </button>
           <div className="relative shrink-0">
             {coachAvatar ? (
-              <img src={coachAvatar} alt={coachName} className="w-11 h-11 rounded-full object-cover ring-1 ring-border/60" />
+              <img loading="lazy" decoding="async" src={coachAvatar} alt={coachName} className="w-11 h-11 rounded-full object-cover ring-1 ring-border/60" />
             ) : (
               <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[var(--bbdo-blue)] to-[var(--bbdo-red)] text-white flex items-center justify-center text-sm font-black ring-1 ring-border/60">
                 {initialsOf(coachName)}
@@ -168,7 +168,7 @@ export default function PatientChat({ coach, onBack }: PatientChatProps) {
           {messages.length === 0 ? (
             <div className="min-h-[55vh] flex flex-col items-center justify-center text-center gap-4 px-4">
               {coachAvatar ? (
-                <img src={coachAvatar} alt={coachName} className="w-20 h-20 rounded-full object-cover ring-4 ring-white shadow-lg" />
+                <img loading="lazy" decoding="async" src={coachAvatar} alt={coachName} className="w-20 h-20 rounded-full object-cover ring-4 ring-white shadow-lg" />
               ) : (
                 <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[var(--bbdo-blue)] to-[var(--bbdo-red)] text-white flex items-center justify-center text-xl font-black ring-4 ring-white shadow-lg">
                   {initialsOf(coachName)}
@@ -226,7 +226,7 @@ export default function PatientChat({ coach, onBack }: PatientChatProps) {
                         <div className={`flex items-end gap-2 max-w-[82%] ${isMe ? "flex-row-reverse" : ""}`}>
                           {!isMe && !groupedWithNext ? (
                             coachAvatar ? (
-                              <img src={coachAvatar} alt="" className="w-6 h-6 rounded-full object-cover shrink-0" />
+                              <img loading="lazy" decoding="async" src={coachAvatar} alt="" className="w-6 h-6 rounded-full object-cover shrink-0" />
                             ) : (
                               <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[var(--bbdo-blue)] to-[var(--bbdo-red)] text-white text-[9px] font-black flex items-center justify-center shrink-0">
                                 {initialsOf(coachName)}

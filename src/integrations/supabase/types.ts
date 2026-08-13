@@ -269,6 +269,13 @@ export type Database = {
             referencedRelation: "channel_partners"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "channel_partner_packages_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_directory"
+            referencedColumns: ["id"]
+          },
         ]
       }
       channel_partner_slot_templates: {
@@ -341,6 +348,13 @@ export type Database = {
             referencedRelation: "channel_partners"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "channel_partner_slot_templates_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_directory"
+            referencedColumns: ["id"]
+          },
         ]
       }
       channel_partner_slots: {
@@ -411,6 +425,13 @@ export type Database = {
             columns: ["partner_id"]
             isOneToOne: false
             referencedRelation: "channel_partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "channel_partner_slots_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_directory"
             referencedColumns: ["id"]
           },
           {
@@ -3537,6 +3558,13 @@ export type Database = {
             referencedRelation: "channel_partners"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "partner_chat_conversations_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_directory"
+            referencedColumns: ["id"]
+          },
         ]
       }
       partner_chat_messages: {
@@ -5531,6 +5559,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "yoga_booking_instances_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_directory"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "yoga_booking_instances_slot_id_fkey"
             columns: ["slot_id"]
             isOneToOne: false
@@ -5626,6 +5661,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "yoga_bookings_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_directory"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "yoga_bookings_slot_id_fkey"
             columns: ["slot_id"]
             isOneToOne: false
@@ -5704,6 +5746,63 @@ export type Database = {
           specialization?: string | null
           total_consultations?: number | null
           total_ratings?: number | null
+        }
+        Relationships: []
+      }
+      partner_directory: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          certifications: string[] | null
+          city: string | null
+          experience_years: number | null
+          headline: string | null
+          id: string | null
+          instagram_url: string | null
+          is_active: boolean | null
+          languages: string[] | null
+          name: string | null
+          partner_type: string | null
+          service_locations: string[] | null
+          state: string | null
+          user_id: string | null
+          website_url: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          certifications?: string[] | null
+          city?: string | null
+          experience_years?: number | null
+          headline?: string | null
+          id?: string | null
+          instagram_url?: string | null
+          is_active?: boolean | null
+          languages?: string[] | null
+          name?: string | null
+          partner_type?: string | null
+          service_locations?: string[] | null
+          state?: string | null
+          user_id?: string | null
+          website_url?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          certifications?: string[] | null
+          city?: string | null
+          experience_years?: number | null
+          headline?: string | null
+          id?: string | null
+          instagram_url?: string | null
+          is_active?: boolean | null
+          languages?: string[] | null
+          name?: string | null
+          partner_type?: string | null
+          service_locations?: string[] | null
+          state?: string | null
+          user_id?: string | null
+          website_url?: string | null
         }
         Relationships: []
       }

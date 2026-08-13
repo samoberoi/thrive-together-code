@@ -297,7 +297,7 @@ export default function CoachProfile({ onSignOut, onReplayTour }: { onSignOut: (
         {/* Avatar Edit */}
         <motion.div className="liquid-glass rounded-3xl p-5 flex flex-col items-center" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}>
           <div className="relative">
-            <img src={avatarSrc} alt="Avatar" className="w-24 h-24 rounded-2xl object-cover" />
+            <img loading="lazy" decoding="async" src={avatarSrc} alt="Avatar" className="w-24 h-24 rounded-2xl object-cover" />
             <button
               onClick={() => avatarRef.current?.click()}
               disabled={avatarUploading}
@@ -373,7 +373,7 @@ export default function CoachProfile({ onSignOut, onReplayTour }: { onSignOut: (
 
       {/* Hero Card */}
       <motion.div className="liquid-glass rounded-3xl p-6 flex flex-col items-center text-center" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-        <img src={avatarSrc} alt={coach.name} className="w-20 h-20 rounded-2xl object-cover mb-4" />
+        <img loading="lazy" decoding="async" src={avatarSrc} alt={coach.name} className="w-20 h-20 rounded-2xl object-cover mb-4" />
         <h2 className="text-foreground font-black text-lg">{coach.name}</h2>
         <p className="text-muted-foreground text-sm mt-0.5">{coach.specialization}</p>
         <span className="inline-block text-[10px] font-bold text-primary bg-primary/10 px-3 py-1 rounded-full border border-primary/20 mt-2">

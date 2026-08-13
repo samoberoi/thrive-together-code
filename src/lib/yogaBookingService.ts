@@ -51,7 +51,7 @@ export interface YogaBooking {
 export async function fetchPartnersAndPackages(type = "yoga") {
   const [{ data: partners }, { data: pkgs }] = await Promise.all([
     supabase
-      .from("channel_partners" as any)
+      .from("partner_directory" as any)
       .select("*")
       .eq("partner_type", type)
       .eq("is_active", true),
@@ -186,7 +186,7 @@ export async function requestCustomSlot(input: {
 
   // Fetch partner user_id + requester name, then create a notification
   const [{ data: partner }, { data: profile }] = await Promise.all([
-    supabase.from("channel_partners" as any).select("user_id, name").eq("id", input.partner_id).maybeSingle(),
+    supabase.from("partner_directory" as any).select("user_id, name").eq("id", input.partner_id).maybeSingle(),
     supabase.from("profiles" as any).select("name").eq("user_id", auth.user.id).maybeSingle(),
   ]);
   const partnerUserId = (partner as any)?.user_id as string | null;
@@ -334,7 +334,7 @@ export async function fetchTodaysYogaClasses(): Promise<TodayYogaClass[]> {
       .from("yoga_booking_instances" as any)
       .select("booking_id, slot_id")
       .in("booking_id", bookingIds),
-    supabase.from("channel_partners" as any).select("id, name, avatar_url").in("id", partnerIds),
+    supabase.from("partner_directory" as any).select("id, name, avatar_url").in("id", partnerIds),
     supabase
       .from("channel_partner_slot_templates" as any)
       .select("id, meet_link, duration_min")

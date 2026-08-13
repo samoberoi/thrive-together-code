@@ -207,7 +207,7 @@ export default function CoachInbox({ coachId, openPatientId }: CoachInboxProps) 
           <button onClick={() => setActiveConvo(null)} className="p-1.5 rounded-xl hover:bg-accent transition-colors">
             <ArrowLeft className="w-5 h-5 text-foreground" />
           </button>
-          <img
+          <img loading="lazy" decoding="async"
             src={activeConvo.patient_avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(activeConvo.patient_name || "P")}&background=random`}
             alt={activeConvo.patient_name || "Patient"}
             className="w-10 h-10 rounded-full object-cover"
@@ -345,7 +345,7 @@ export default function CoachInbox({ coachId, openPatientId }: CoachInboxProps) 
               whileTap={{ scale: 0.98 }}
             >
               <div className="relative">
-                <img
+                <img loading="lazy" decoding="async"
                   src={convo.patient_avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(convo.patient_name || "P")}&background=random`}
                   alt={convo.patient_name || "Patient"}
                   className="w-12 h-12 rounded-full object-cover"

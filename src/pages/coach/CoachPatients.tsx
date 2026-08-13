@@ -407,7 +407,7 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
           <div className="flex items-start gap-4">
             <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
               {selectedPatient.avatar_url ? (
-                <img src={selectedPatient.avatar_url} alt="" className="w-14 h-14 rounded-2xl object-cover" />
+                <img loading="lazy" decoding="async" src={selectedPatient.avatar_url} alt="" className="w-14 h-14 rounded-2xl object-cover" />
               ) : (
                 <span className="text-primary font-black text-xl">
                   {(selectedPatient.name ?? "?")[0].toUpperCase()}
@@ -944,7 +944,7 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
                   <div className="relative w-10 h-10 flex-shrink-0">
                     <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center overflow-hidden">
                       {p.avatar_url ? (
-                        <img src={p.avatar_url} alt="" className="w-10 h-10 rounded-xl object-cover" />
+                        <img loading="lazy" decoding="async" src={p.avatar_url} alt="" className="w-10 h-10 rounded-xl object-cover" />
                       ) : (
                         <span className="text-primary font-bold text-sm">
                           {(p.name ?? "?")[0].toUpperCase()}
