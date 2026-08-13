@@ -43,7 +43,7 @@ import HealthScoreRing from "@/components/HealthScoreRing";
 import BbdoBadgeGrid from "@/components/badges/BbdoBadgeGrid";
 import { playNotificationSound, getMasterVolume, setMasterVolume, getMuted, setMuted } from "@/lib/soundEngine";
 import { getNotificationSoundSettings } from "@/lib/notificationSoundService";
-import { registerNativePush, registerNativePushWithToast, isNativePushSupported } from "@/lib/nativePush";
+import { refreshNativePushToken, registerNativePush, registerNativePushWithToast, isNativePushSupported, currentPlatform } from "@/lib/nativePush";
 import { sendLocalHealthAlert, sendRemoteHealthPushResult } from "@/lib/healthAlerts";
 
 const APP_VERSION = (globalThis as any).__APP_VERSION__ ?? "1.0.0";
@@ -940,7 +940,13 @@ export default function Profile({ onClose, isDark = true, onToggleTheme }: Profi
                         toast.warning("Phone permission is on, but the push token is not ready yet. Try again in a few seconds.");
                       }
 
-                      const remote = await sendRemoteHealthPushResult("BBDO push test", "Lock your phone — this should beep when it arrives.", { delaySeconds: 8 });
+                      let remote = await sendRemoteHealthPushResult("BBDO push test", "Lock your phone — this should beep when it arrives.", { delaySeconds: 8 });
+                      if (!remote.ok && currentPlatform() === "android") {
+                        const refreshed = await refreshNativePushToken(user.id);
+                        if (refreshed.ok && refreshed.token) {
+                          remote = await sendRemoteHealthPushResult("BBDO push test", "Android push registration repaired — this should beep when it arrives.", { delaySeconds: 3 });
+                        }
+                      }
                       if (remote.ok) {
                         toast.success(`Phone push queued — lock the phone now (${remote.sent ?? 0}/${remote.attempted ?? 0})`);
                       } else {
