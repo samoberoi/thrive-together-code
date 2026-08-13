@@ -30,6 +30,7 @@ const BBDONotifications = registerPlugin<{
 
 const BBDOAndroidPush = registerPlugin<{
   getToken: () => Promise<{ token?: string }>;
+  refreshToken: () => Promise<{ token?: string }>;
 }>("BBDOAndroidPush");
 
 let registered = false;
@@ -145,6 +146,18 @@ async function getAndroidFcmTokenFallback(): Promise<string | null> {
     return token || null;
   } catch (err) {
     console.warn("[push] android direct FCM token fallback failed", err);
+    return null;
+  }
+}
+
+async function refreshAndroidFcmToken(): Promise<string | null> {
+  if (currentPlatform() !== "android") return null;
+  try {
+    const result = await BBDOAndroidPush.refreshToken();
+    const token = typeof result?.token === "string" ? result.token.trim() : "";
+    return token || null;
+  } catch (err) {
+    console.warn("[push] android FCM token refresh failed", err);
     return null;
   }
 }
@@ -280,6 +293,8 @@ export async function registerNativePush(
     }
     lastAttemptAt = now;
 
+    const storedTokenBeforeRegistration = await fetchStoredToken(userId);
+
     await attachPushListenersOnce();
 
     let perm = await PushNotifications.checkPermissions();
@@ -339,7 +354,11 @@ export async function registerNativePush(
 
     await PushNotifications.register();
     const registrationToken = await waitForToken(12_000);
-    const androidFallbackToken = registrationToken ? null : await getAndroidFcmTokenFallback();
+    const androidFallbackToken = registrationToken
+      ? null
+      : storedTokenBeforeRegistration
+        ? await getAndroidFcmTokenFallback()
+        : await refreshAndroidFcmToken();
     const resolvedToken = registrationToken ?? androidFallbackToken;
     if (resolvedToken) {
       lastRegistrationToken = resolvedToken;

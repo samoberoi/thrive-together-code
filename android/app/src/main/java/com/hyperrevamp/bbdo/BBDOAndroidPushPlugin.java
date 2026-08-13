@@ -32,4 +32,30 @@ public class BBDOAndroidPushPlugin extends Plugin {
                 call.resolve(result);
             });
     }
+
+    @PluginMethod
+    public void refreshToken(PluginCall call) {
+        FirebaseMessaging.getInstance().setAutoInitEnabled(true);
+        FirebaseMessaging.getInstance().deleteToken()
+            .addOnCompleteListener(deleteTask -> {
+                if (!deleteTask.isSuccessful()) {
+                    Exception exception = deleteTask.getException();
+                    call.reject(exception != null ? exception.getMessage() : "Unable to reset FCM token");
+                    return;
+                }
+
+                FirebaseMessaging.getInstance().getToken()
+                    .addOnCompleteListener(tokenTask -> {
+                        if (!tokenTask.isSuccessful()) {
+                            Exception exception = tokenTask.getException();
+                            call.reject(exception != null ? exception.getMessage() : "Unable to refresh FCM token");
+                            return;
+                        }
+
+                        JSObject result = new JSObject();
+                        result.put("token", tokenTask.getResult());
+                        call.resolve(result);
+                    });
+            });
+    }
 }
