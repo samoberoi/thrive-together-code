@@ -16,7 +16,10 @@ import { toast } from "sonner";
 
 const APP_VERSION = (globalThis as any).__APP_VERSION__ ?? "1.0.0";
 export const BBDO_PUSH_CHANNEL_ID = "bbdo-alerts-v14";
-const ANDROID_FIREBASE_GENERATION = "com.hyperrevamp.bbdo:bbdoapp:73939371932:v6";
+// Force one authoritative FCM token rotation after the backend-project move.
+// This prevents a token accepted by the old sender from remaining attached to
+// the same installation after native dispatch is rebound to the new backend.
+const ANDROID_FIREBASE_GENERATION = "com.hyperrevamp.bbdo:bbdoapp:73939371932:backend-migration-v7";
 const ANDROID_TOKEN_RESET_KEY = `bbdo_fcm_token_reset_${ANDROID_FIREBASE_GENERATION}`;
 
 const BBDONotifications = registerPlugin<{
