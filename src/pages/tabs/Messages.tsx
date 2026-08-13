@@ -103,7 +103,7 @@ export default function Messages() {
             >
               <div className="w-11 h-11 rounded-full overflow-hidden bg-primary/10 ring-1 ring-border shrink-0 flex items-center justify-center">
                 {i.avatar_url ? (
-                  <img src={i.avatar_url} alt={i.name ?? "Instructor"} className="w-full h-full object-cover" />
+                  <img loading="lazy" decoding="async" src={i.avatar_url} alt={i.name ?? "Instructor"} className="w-full h-full object-cover" />
                 ) : (
                   <span className="text-primary font-black text-sm">
                     {(i.name ?? "I").trim().charAt(0).toUpperCase()}

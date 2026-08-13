@@ -417,7 +417,7 @@ export default function CoachLabTests() {
                   className="w-full text-left p-4 sm:p-5"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-2xl bg-primary/10 flex items-center justify-center overflow-hidden shrink-0">{patient.avatar_url ? <img src={patient.avatar_url} alt="" className="w-11 h-11 rounded-2xl object-cover" /> : <span className="text-primary font-bold text-sm">{(patient.name ?? "?")[0].toUpperCase()}</span>}</div>
+                    <div className="w-11 h-11 rounded-2xl bg-primary/10 flex items-center justify-center overflow-hidden shrink-0">{patient.avatar_url ? <img loading="lazy" decoding="async" src={patient.avatar_url} alt="" className="w-11 h-11 rounded-2xl object-cover" /> : <span className="text-primary font-bold text-sm">{(patient.name ?? "?")[0].toUpperCase()}</span>}</div>
                     <div className="min-w-0 flex-1">
                       <h3 className="font-semibold text-foreground text-[15px] leading-tight truncate">{patient.name || "Unnamed"}</h3>
                       <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
