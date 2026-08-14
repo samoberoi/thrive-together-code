@@ -44,11 +44,12 @@ Deno.serve(async (req) => {
     if (!staff) {
       const { data: profiles } = await admin
         .from("profiles")
-        .select("id, phone")
+        .select("user_id, phone")
         .limit(5000);
       const ids = new Set((profiles ?? [])
         .filter((p: any) => last10(String(p.phone ?? "")) === phone)
-        .map((p: any) => p.id));
+        .map((p: any) => p.user_id)
+        .filter(Boolean));
 
       // Older staff accounts may have no phone on their profile because their
       // login identity is stored as <phone>@bbd.app. Include those auth IDs.
