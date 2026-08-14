@@ -36,9 +36,9 @@ Deno.serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const jwt = authHeader.slice(7);
-    // Validate against the auth server (works for both legacy and asymmetric signing keys).
-    const { data: userData, error: userErr } = await admin.auth.getUser(jwt);
+    // Validate the caller using the same user-scoped client that executes the
+    // subscription RPCs. This avoids mixing a user token with the admin client.
+    const { data: userData, error: userErr } = await asUser.auth.getUser();
     const userId = userData?.user?.id;
     if (userErr || typeof userId !== "string") {
       console.error("auth failed", userErr?.message);
@@ -46,7 +46,8 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    const planKey: string = body.plan_key || "onboarding_test";
+    const planKey = typeof body.plan_key === "string" ? body.plan_key.trim() : "";
+    if (!planKey) return json({ error: "A package is required" }, 400);
     const billingCycle: string = CYCLE_MONTHS[body.billing_cycle] ? body.billing_cycle : "monthly";
     const mode: string = ["new", "upgrade", "downgrade", "renewal"].includes(body.mode) ? body.mode : "new";
     const couponCode: string | null = typeof body.coupon_code === "string" && body.coupon_code.trim()
@@ -126,7 +127,7 @@ Deno.serve(async (req) => {
       return json({ error: order?.error?.description || "Razorpay error" }, 400);
     }
 
-    await admin.from("razorpay_payments").insert({
+    const { error: paymentInsertError } = await admin.from("razorpay_payments").insert({
       user_id: userId,
       plan_key: planKey,
       order_id: order.id,
@@ -145,6 +146,10 @@ Deno.serve(async (req) => {
         assigns_coach: pkg.assigns_coach !== false,
       },
     });
+    if (paymentInsertError) {
+      console.error("Payment order record failed", paymentInsertError.message);
+      return json({ error: "The order was created but could not be recorded. Please try again." }, 500);
+    }
 
     return json({
       order_id: order.id,

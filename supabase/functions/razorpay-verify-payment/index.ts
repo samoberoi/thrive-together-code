@@ -41,9 +41,9 @@ Deno.serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const jwt = authHeader.slice(7);
-    // Validate against the auth server (works for both legacy and asymmetric signing keys).
-    const { data: userData, error: userErr } = await admin.auth.getUser(jwt);
+    // Validate through the user-scoped client so auth and subscription RPCs
+    // consistently use the caller's session.
+    const { data: userData, error: userErr } = await asUser.auth.getUser();
     const userId = userData?.user?.id;
     if (userErr || typeof userId !== "string") {
       console.error("auth failed", userErr?.message);
@@ -64,13 +64,6 @@ Deno.serve(async (req) => {
       .eq("order_id", razorpay_order_id)
       .maybeSingle();
 
-    await admin.from("razorpay_payments").update({
-      payment_id: razorpay_payment_id,
-      signature: razorpay_signature,
-      signature_verified: verified,
-      status: verified ? "paid" : "signature_failed",
-    }).eq("order_id", razorpay_order_id);
-
     if (!verified) return json({ verified: false }, 400);
 
     if (!existing || existing.user_id !== userId) {
@@ -79,6 +72,14 @@ Deno.serve(async (req) => {
 
     // Idempotency: never activate the same order twice.
     if (existing.status === "paid") return json({ verified: true, already_processed: true });
+
+    const { error: paymentUpdateError } = await admin.from("razorpay_payments").update({
+      payment_id: razorpay_payment_id,
+      signature: razorpay_signature,
+      signature_verified: true,
+      status: "paid",
+    }).eq("order_id", razorpay_order_id);
+    if (paymentUpdateError) throw new Error("Could not record the verified payment");
 
     const notes = (existing.notes ?? {}) as Record<string, any>;
     const months = Number(notes.duration_months ?? 1) || 1;
