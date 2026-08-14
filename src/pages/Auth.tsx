@@ -121,22 +121,86 @@ export default function Auth() {
   }, [navigate]);
 
   const sendOtp = async () => {
-    if (phone.length < 10) return;
+    if (phone.length < 10 || loading) return;
     setLoading(true);
+    setOtpError("");
+    setMsg91AccessToken(null);
     saveUser({ profile: { phone, country: country.name, country_code: country.dial } as any });
-    // Simulate OTP send
-    await new Promise((r) => setTimeout(r, 150));
-    setLoading(false);
-    setStep("otp");
+
+    if (isDevPhone(phone)) {
+      setLoading(false);
+      setStep("otp");
+      setOtp("");
+      setResendCooldown(30);
+      return;
+    }
+
+    try {
+      const identifier = `${country.dial.replace(/\D/g, "")}${phone}`;
+      const reqId = await msg91SendOtp(identifier);
+      setMsg91ReqId(reqId);
+      setStep("otp");
+      setOtp("");
+      setResendCooldown(30);
+    } catch (error) {
+      toast.error((error as Error).message || "Could not send the code. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resendOtp = async () => {
+    if (resendCooldown > 0 || loading) return;
+    setOtpError("");
+    setMsg91AccessToken(null);
+
+    if (isDevPhone(phone)) {
+      setResendCooldown(30);
+      toast.success("Use the test code to continue.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await msg91RetryOtp(msg91ReqId);
+      setResendCooldown(30);
+      toast.success("Code sent again.");
+    } catch (error) {
+      toast.error((error as Error).message || "Could not resend the code.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const verifyOtp = async () => {
-    if (otp !== DEFAULT_OTP) {
-      setOtpError("Invalid OTP. Please enter 111111");
-      return;
-    }
+    if (otp.length < 6 || loading) return;
     setOtpError("");
     setLoading(true);
+
+    // 1) Verify the code with MSG91 (widget client-side), then confirm server-side.
+    try {
+      let accessToken = msg91AccessToken;
+      if (!isDevPhone(phone) && !accessToken) {
+        accessToken = await msg91VerifyOtp(otp, msg91ReqId);
+        setMsg91AccessToken(accessToken);
+      }
+
+      const { data: verifyData, error: verifyError } = await supabase.functions.invoke("msg91-verify-otp", {
+        body: { phone, otp, accessToken },
+      });
+      if (verifyError || !verifyData?.ok) {
+        setOtpError("Wrong code. Please try again.");
+        setOtp("");
+        setLoading(false);
+        return;
+      }
+    } catch (error) {
+      setOtpError((error as Error).message || "Wrong code. Please try again.");
+      setOtp("");
+      setLoading(false);
+      return;
+    }
+
 
     try {
       try { localStorage.removeItem(EXPLICIT_LOGOUT_KEY); } catch {}
