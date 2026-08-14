@@ -178,7 +178,7 @@ export default function Auth() {
   };
 
   const verifyOtp = async () => {
-    if (otp.length < 6 || loading) return;
+    if (otp.length < 4 || loading) return;
     setOtpError("");
     setLoading(true);
 
@@ -472,7 +472,7 @@ export default function Auth() {
                   What's your <br /> phone number?
                 </h1>
                 <p className="text-muted-foreground text-[14px] mt-3 leading-relaxed">
-                  We'll text you a 6-digit code to verify it's you. No spam, ever.
+                  We'll text you a 4-digit code to verify it's you. No spam, ever.
                 </p>
 
                 <div className="mt-6">
@@ -592,7 +592,7 @@ export default function Auth() {
               {/* Bottom half content */}
               <div className="flex flex-col flex-1 px-6 pt-8 pb-[calc(env(safe-area-inset-bottom)+var(--bbdo-native-bottom-guard,0px)+1rem)]">
                 <h1 className="text-foreground text-[26px] leading-[1.1] font-black tracking-[-0.03em]">
-                  Enter the 6-digit code
+                  Enter the 4-digit code
                 </h1>
                 <p className="text-muted-foreground text-[14px] mt-2 leading-relaxed">
                   Sent to <span className="text-foreground font-bold tabular">{country.dial} {phone}</span>{" "}
@@ -600,9 +600,9 @@ export default function Auth() {
                 </p>
 
                 <div className="mt-6 flex justify-center">
-                  <InputOTP maxLength={6} value={otp} onChange={(v) => { setOtp(v); if (otpError) setOtpError(""); }}>
+                  <InputOTP maxLength={4} value={otp} onChange={(v) => { setOtp(v); if (otpError) setOtpError(""); }}>
                     <InputOTPGroup className="gap-2.5">
-                      {[0, 1, 2, 3, 4, 5].map((i) => (
+                      {[0, 1, 2, 3].map((i) => (
                         <InputOTPSlot
                           key={i}
                           index={i}
@@ -633,7 +633,7 @@ export default function Auth() {
                 <div className="ob-bottom">
                   <motion.button
                     onClick={verifyOtp}
-                    disabled={otp.length < 6 || loading}
+                    disabled={otp.length < 4 || loading}
                     whileTap={{ scale: 0.98 }}
                     className="ob-cta gradient-blue glow-blue disabled:opacity-40"
                   >
