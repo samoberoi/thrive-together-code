@@ -1,10 +1,5 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { createClient } from "npm:@supabase/supabase-js@2";
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 async function hmacSha256Hex(key: string, message: string): Promise<string> {
   const enc = new TextEncoder();
@@ -24,7 +19,7 @@ Deno.serve(async (req) => {
     const expected = await hmacSha256Hex(WH_SECRET, raw);
     if (expected !== signature) {
       console.warn("Webhook signature mismatch");
-      return new Response("invalid signature", { status: 400 });
+      return new Response("invalid signature", { status: 400, headers: corsHeaders });
     }
 
     const event = JSON.parse(raw);

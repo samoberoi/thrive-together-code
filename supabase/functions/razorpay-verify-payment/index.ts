@@ -1,10 +1,5 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { createClient } from "npm:@supabase/supabase-js@2";
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 const CYCLE_LABEL: Record<string, string> = {
   monthly: "Monthly",
@@ -29,22 +24,27 @@ async function hmacSha256Hex(key: string, message: string): Promise<string> {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
   try {
     const KEY_SECRET = Deno.env.get("RAZORPAY_KEY_SECRET");
     if (!KEY_SECRET) throw new Error("Razorpay secret not configured");
 
     const authHeader = req.headers.get("Authorization") ?? "";
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-    const admin = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const asUser = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
+    if (!authHeader.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+    const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!SUPABASE_URL || !ANON_KEY || !SERVICE_ROLE_KEY) throw new Error("Payment backend is not configured");
+    const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+    const asUser = createClient(SUPABASE_URL, ANON_KEY, {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const jwt = authHeader.replace("Bearer ", "");
-    const { data: userData } = await admin.auth.getUser(jwt);
-    const user = userData?.user;
-    if (!user) return json({ error: "Unauthorized" }, 401);
+    const jwt = authHeader.slice(7);
+    const { data: claimsData, error: claimsError } = await asUser.auth.getClaims(jwt);
+    const userId = claimsData?.claims?.sub;
+    if (claimsError || typeof userId !== "string") return json({ error: "Unauthorized" }, 401);
 
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = await req.json();
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
 
     if (!verified) return json({ verified: false }, 400);
 
-    if (!existing || existing.user_id !== user.id) {
+    if (!existing || existing.user_id !== userId) {
       return json({ error: "Order does not belong to this user" }, 403);
     }
 

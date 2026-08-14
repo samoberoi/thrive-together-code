@@ -1,10 +1,5 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { createClient } from "npm:@supabase/supabase-js@2";
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 const CYCLE_MONTHS: Record<string, number> = {
   monthly: 1,
@@ -22,6 +17,7 @@ function json(body: unknown, status = 200) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
   try {
     const KEY_ID = Deno.env.get("RAZORPAY_KEY_ID");
@@ -29,17 +25,21 @@ Deno.serve(async (req) => {
     if (!KEY_ID || !KEY_SECRET) throw new Error("Razorpay keys not configured");
 
     const authHeader = req.headers.get("Authorization") ?? "";
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-    const admin = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    if (!authHeader.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+    const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!SUPABASE_URL || !ANON_KEY || !SERVICE_ROLE_KEY) throw new Error("Payment backend is not configured");
+    const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
     // User-scoped client so auth.uid()-based RPCs (proration, coupon rules) work.
-    const asUser = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
+    const asUser = createClient(SUPABASE_URL, ANON_KEY, {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const jwt = authHeader.replace("Bearer ", "");
-    const { data: userData } = await admin.auth.getUser(jwt);
-    const user = userData?.user;
-    if (!user) return json({ error: "Unauthorized" }, 401);
+    const jwt = authHeader.slice(7);
+    const { data: claimsData, error: claimsError } = await asUser.auth.getClaims(jwt);
+    const userId = claimsData?.claims?.sub;
+    if (claimsError || typeof userId !== "string") return json({ error: "Unauthorized" }, 401);
 
     const body = await req.json().catch(() => ({}));
     const planKey: string = body.plan_key || "onboarding_test";
@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
     amount = Math.max(0, amount - couponDiscount);
 
     const amountPaise = Math.max(100, Math.round(amount * 100));
-    const receipt = `bbdo_${user.id.slice(0, 8)}_${Date.now()}`;
+    const receipt = `bbdo_${userId.slice(0, 8)}_${Date.now()}`;
 
     const auth = btoa(`${KEY_ID}:${KEY_SECRET}`);
     const rzpRes = await fetch("https://api.razorpay.com/v1/orders", {
@@ -113,7 +113,7 @@ Deno.serve(async (req) => {
         amount: amountPaise,
         currency: "INR",
         receipt,
-        notes: { user_id: user.id, plan_key: planKey, cycle: billingCycle, mode, source: "bbdo" },
+        notes: { user_id: userId, plan_key: planKey, cycle: billingCycle, mode, source: "bbdo" },
       }),
     });
     const order = await rzpRes.json();
@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
     }
 
     await admin.from("razorpay_payments").insert({
-      user_id: user.id,
+      user_id: userId,
       plan_key: planKey,
       order_id: order.id,
       amount_paise: amountPaise,
