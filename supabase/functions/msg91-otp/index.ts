@@ -51,7 +51,10 @@ Deno.serve(async (req) => {
         }
       };
       probes.templates = await raw(`${API}/otp/templates`);
-      probes.balance = await raw("https://control.msg91.com/api/balance.php?type=4&authkey=" + authKey);
+      for (const t of ["1", "2", "4", "6"]) {
+        probes[`balance_type_${t}`] = await raw(`https://control.msg91.com/api/balance.php?type=${t}&authkey=${authKey}`);
+      }
+      probes.reqLog = await raw(`${API}/report/logs/p`, "POST");
       probes.send = await raw(`${API}/otp?mobile=${mobile}&otp_length=${OTP_LENGTH}&otp_expiry=${OTP_EXPIRY_MIN}`, "POST");
       probes.hasTemplate = Boolean(Deno.env.get("MSG91_TEMPLATE_ID"));
       probes.hasSender = Boolean(Deno.env.get("MSG91_SENDER_ID"));
