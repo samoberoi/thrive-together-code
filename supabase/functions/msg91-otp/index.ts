@@ -73,10 +73,11 @@ Deno.serve(async (req) => {
       const out: Record<string, unknown> = {};
       for (const url of [
         "https://control.msg91.com/api/v5/otp/templates",
-        "https://control.msg91.com/api/v5/widget/getWidgetData",
+        "https://api.msg91.com/api/v5/otp/templates",
+        "https://control.msg91.com/api/v5/otp?mobile=" + identifier + "&otp_length=4",
       ]) {
-        const r = await fetch(url, { headers: { authkey: authKey, "Content-Type": "application/json" } });
-        out[url] = await r.text().then((t) => t.slice(0, 1500));
+        const r = await fetch(url, { method: url.includes("/otp?") ? "POST" : "GET", headers: { authkey: authKey, "Content-Type": "application/json" } });
+        out[url] = await r.text().then((t) => t.slice(0, 800));
       }
       return json(out);
     }
