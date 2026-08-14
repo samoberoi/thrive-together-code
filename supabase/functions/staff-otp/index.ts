@@ -85,26 +85,9 @@ Deno.serve(async (req) => {
     }
     if (!staff) return json({ ok: false, error: "Not a staff number" }, 403);
 
-    const defaultOtp = Deno.env.get("STAFF_DEFAULT_OTP") ?? "";
-    if (!/^\d{4,8}$/.test(defaultOtp)) {
-      return json({ ok: false, error: "Staff login code is not configured" }, 500);
-    }
-
-    if (action === "send" || action === "retry") {
-      return json({ ok: true, staff: true, reqId: crypto.randomUUID() });
-    }
-
-    if (action === "verify") {
-      if (otp !== defaultOtp) return json({ ok: false, error: "Wrong code. Please try again." }, 401);
-      return json({ ok: true });
-    }
-
-    // ---- Legacy SMS implementation retained below for easy restoration. ---
     const authKey = Deno.env.get("MSG91_AUTH_KEY") ?? "";
     if (!authKey) return json({ ok: false, error: "SMS service is not configured" }, 500);
 
-    const templateId = Deno.env.get("MSG91_TEMPLATE_ID") ?? "";
-    const senderId = Deno.env.get("MSG91_SENDER_ID") ?? "";
     const mobile = `${dial}${phone}`;
 
     const call = async (path: string, method: "GET" | "POST" = "GET") => {
@@ -123,20 +106,20 @@ Deno.serve(async (req) => {
       return { failed, data };
     };
 
-    if (action === "sms-send" || action === "sms-retry") {
+    if (action === "send" || action === "retry") {
       const params = new URLSearchParams({
         mobile,
         otp_length: String(OTP_LENGTH),
         otp_expiry: String(OTP_EXPIRY_MIN),
       });
-      if (templateId) params.set("template_id", templateId);
-      if (senderId) params.set("sender", senderId);
+      // Use MSG91's account-default OTP template and SMS channel, exactly like
+      // the working end-user route. Do not pass stale template or sender IDs.
       const { failed, data } = await call(`otp?${params.toString()}`, "POST");
       if (failed) return json({ ok: false, error: data?.message || "Could not send the code" }, 400);
-      return json({ ok: true, reqId: data?.request_id ?? null });
+      return json({ ok: true, staff: true, reqId: data?.request_id ?? null });
     }
 
-    if (action === "sms-verify") {
+    if (action === "verify") {
       if (otp.length !== OTP_LENGTH) return json({ ok: false, error: `Enter the ${OTP_LENGTH}-digit code` }, 400);
       const { failed, data } = await call(`otp/verify?mobile=${mobile}&otp=${otp}`);
       if (failed) return json({ ok: false, error: data?.message || "Wrong code. Please try again." }, 401);

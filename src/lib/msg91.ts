@@ -101,13 +101,6 @@ async function callStaffOtpFunction(action: "check" | "send" | "retry" | "verify
 }
 
 export async function startStaffOtp(phone: string, dial: string): Promise<{ staff: boolean; reqId: string | null }> {
-  const data = await callStaffOtpFunction("send", { phone, dial });
-  const reqId = data.reqId ?? null;
-  // Older live isolates returned a request ID without the explicit staff flag.
-  // A request ID is only issued after server-side staff authorization.
-  return { staff: data.staff === true || reqId !== null, reqId };
-}
-
-export async function staffVerifyOtp(phone: string, dial: string, otp: string): Promise<void> {
-  await callStaffOtpFunction("verify", { phone, dial, otp });
+  const data = await callStaffOtpFunction("check", { phone, dial });
+  return { staff: data.staff === true, reqId: null };
 }

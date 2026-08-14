@@ -21,7 +21,7 @@ import AuthHeroCarousel from "@/components/AuthHeroCarousel";
 import { toast } from "sonner";
 import { persistSupabaseSessionToNative } from "@/lib/nativePersistence";
 import { resolvePostAuthRoute } from "@/lib/accessControl";
-import { msg91SendOtp, msg91VerifyOtp, startStaffOtp, staffVerifyOtp } from "@/lib/msg91";
+import { msg91SendOtp, msg91VerifyOtp, startStaffOtp } from "@/lib/msg91";
 
 
 function withTimeout<T>(promise: Promise<T>, fallback: T, ms = 2500): Promise<T> {
@@ -142,9 +142,7 @@ export default function Auth() {
 
     try {
       const staffResult = await startStaffOtp(phone, country.dial);
-      const reqId = staffResult.staff
-        ? staffResult.reqId
-        : await msg91SendOtp(identifier);
+      const reqId = await msg91SendOtp(identifier);
       setStaffOtp(staffResult.staff);
       setMsg91ReqId(reqId);
       setStep("otp");
@@ -162,9 +160,7 @@ export default function Auth() {
     setOtpError("");
     setLoading(true);
     try {
-      const reqId = staffOtp
-        ? (await startStaffOtp(phone, country.dial)).reqId
-        : await msg91SendOtp(identifier);
+      const reqId = await msg91SendOtp(identifier);
       setMsg91ReqId(reqId);
       setOtp("");
       setResendCooldown(30);
@@ -183,16 +179,12 @@ export default function Auth() {
     setLoading(true);
 
     try {
-      if (staffOtp) {
-        await staffVerifyOtp(phone, country.dial, submitted);
-      } else {
-        const accessToken = await msg91VerifyOtp(submitted, msg91ReqId);
-        const { data, error } = await supabase.functions.invoke("msg91-verify-otp", {
-          body: { phone: identifier, otp: submitted, accessToken },
-        });
-        if (error || !data?.ok) {
-          throw new Error(data?.error || "Verification failed. Please try again.");
-        }
+      const accessToken = await msg91VerifyOtp(submitted, msg91ReqId);
+      const { data, error } = await supabase.functions.invoke("msg91-verify-otp", {
+        body: { phone: identifier, otp: submitted, accessToken },
+      });
+      if (error || !data?.ok) {
+        throw new Error(data?.error || "Verification failed. Please try again.");
       }
     } catch (error) {
       setOtpError((error as Error).message || "Wrong code. Please try again.");
