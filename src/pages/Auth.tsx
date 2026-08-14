@@ -158,8 +158,7 @@ export default function Auth() {
     setOtpError("");
     setLoading(true);
     try {
-      const reqId = await msg91RetryOtp(identifier);
-      setMsg91ReqId(reqId);
+      await msg91RetryOtp(msg91ReqId);
       setOtp("");
       setResendCooldown(30);
       toast.success("Code sent again.");
@@ -176,9 +175,13 @@ export default function Auth() {
     setOtpError("");
     setLoading(true);
 
-    // Single server-side verification against MSG91.
+    // Verify in the configured widget, then validate its access token on the backend.
     try {
-      await msg91VerifyOtp(identifier, submitted);
+      const accessToken = await msg91VerifyOtp(submitted, msg91ReqId);
+      const { data, error } = await supabase.functions.invoke("msg91-verify-otp", {
+        body: { phone: identifier, otp: submitted, accessToken },
+      });
+      if (error || !data?.ok) throw new Error(data?.error || "Verification failed. Please try again.");
     } catch (error) {
       setOtpError((error as Error).message || "Wrong code. Please try again.");
       setOtp("");
