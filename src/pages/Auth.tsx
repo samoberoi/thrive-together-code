@@ -48,6 +48,10 @@ export default function Auth() {
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [otpError, setOtpError] = useState("");
+  const [msg91ReqId, setMsg91ReqId] = useState<string | null>(null);
+  const [msg91AccessToken, setMsg91AccessToken] = useState<string | null>(null);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
   const [name, setName] = useState("");
   const [emailInput, setEmailInput] = useState("");
   const [emailError, setEmailError] = useState("");
