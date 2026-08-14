@@ -1,1 +1,8 @@
 project_id = "obnmevwjgleelpvmstjd"
+
+[functions.msg91-verify-otp]
+verify_jwt = false
+
+[functions.ensure-phone-user]
+verify_jwt = false
+
