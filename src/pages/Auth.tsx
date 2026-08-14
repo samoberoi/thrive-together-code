@@ -49,7 +49,6 @@ export default function Auth() {
   const [otp, setOtp] = useState("");
   const [otpError, setOtpError] = useState("");
   const [msg91ReqId, setMsg91ReqId] = useState<string | null>(null);
-  const [staffBypass, setStaffBypass] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [name, setName] = useState("");
   const [emailInput, setEmailInput] = useState("");
@@ -134,30 +133,6 @@ export default function Auth() {
 
   const identifier = `${country.dial.replace(/\D/g, "")}${phone}`;
 
-  const dial = country.dial.replace(/\D/g, "");
-
-  const checkStaff = async (): Promise<boolean> => {
-    try {
-      const { data } = await supabase.functions.invoke("staff-otp", {
-        body: { action: "check", phone },
-      });
-      return Boolean((data as { staff?: boolean } | null)?.staff);
-    } catch {
-      return false;
-    }
-  };
-
-  // Admins and coaches get a real MSG91 SMS sent and verified fully
-  // server-side (no browser widget). End users keep the widget flow.
-  const staffSendOtp = async () => {
-    const { data, error } = await supabase.functions.invoke("staff-otp", {
-      body: { action: "send", phone, dial },
-    });
-    if (error || !(data as { ok?: boolean } | null)?.ok) {
-      throw new Error((data as { error?: string } | null)?.error || "Could not send the code.");
-    }
-  };
-
   const sendOtp = async () => {
     if (phone.length < 10 || loading) return;
     setLoading(true);
@@ -165,15 +140,8 @@ export default function Auth() {
     saveUser({ profile: { phone, country: country.name, country_code: country.dial } as any });
 
     try {
-      const staff = await checkStaff();
-      setStaffBypass(staff);
-      if (staff) {
-        await staffSendOtp();
-        setMsg91ReqId(null);
-      } else {
-        const reqId = await msg91SendOtp(identifier);
-        setMsg91ReqId(reqId);
-      }
+      const reqId = await msg91SendOtp(identifier);
+      setMsg91ReqId(reqId);
       setStep("otp");
       setOtp("");
       setResendCooldown(30);
@@ -189,14 +157,9 @@ export default function Auth() {
     setOtpError("");
     setLoading(true);
     try {
-      if (staffBypass) {
-        await staffSendOtp();
-        setMsg91ReqId(null);
-      } else {
-        // Start a fresh transaction in the same configured MSG91 Widget flow.
-        const reqId = await msg91SendOtp(identifier);
-        setMsg91ReqId(reqId);
-      }
+      // Start a fresh transaction in the same configured MSG91 Widget flow.
+      const reqId = await msg91SendOtp(identifier);
+      setMsg91ReqId(reqId);
       setOtp("");
       setResendCooldown(30);
       toast.success("New verification code sent.");
@@ -216,21 +179,12 @@ export default function Auth() {
     // Verify in the exact transaction that dispatched this code, then
     // validate the result on the backend.
     try {
-      if (staffBypass) {
-        const { data, error } = await supabase.functions.invoke("staff-otp", {
-          body: { action: "verify", phone, dial, otp: submitted },
-        });
-        if (error || !(data as { ok?: boolean } | null)?.ok) {
-          throw new Error((data as { error?: string } | null)?.error || "Wrong code. Please try again.");
-        }
-      } else {
-        const accessToken = await msg91VerifyOtp(submitted, msg91ReqId);
-        const { data, error } = await supabase.functions.invoke("msg91-verify-otp", {
-          body: { phone: identifier, otp: submitted, accessToken },
-        });
-        if (error || !data?.ok) {
-          throw new Error(data?.error || "Verification failed. Please try again.");
-        }
+      const accessToken = await msg91VerifyOtp(submitted, msg91ReqId);
+      const { data, error } = await supabase.functions.invoke("msg91-verify-otp", {
+        body: { phone: identifier, otp: submitted, accessToken },
+      });
+      if (error || !data?.ok) {
+        throw new Error(data?.error || "Verification failed. Please try again.");
       }
     } catch (error) {
       setOtpError((error as Error).message || "Wrong code. Please try again.");
