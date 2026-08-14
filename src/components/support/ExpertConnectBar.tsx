@@ -24,14 +24,22 @@ function readCachedPackageKey(): string | null {
 export const EXPERT_CONNECT_MESSAGE =
   "Hello Colonel Gautam Guha. I've joined the BBDO Foundation Care Plan and would like to request an Expert Connect. Thank you.";
 
-function openWhatsApp(_context?: string) {
-  const text = encodeURIComponent(EXPERT_CONNECT_MESSAGE);
+const EXPERT_CONNECT_MESSAGE_INTENSIVE =
+  "Hello Colonel Gautam Guha. I've joined the BBDO Total Transformation Plan and would like to request an Expert Connect. Thank you.";
+
+/** Package tiers eligible for Expert Connect: Package 1 (foundation) and Package 3 (intensive). */
+const FOUNDATION_KEYS = ["foundation", "starter"];
+const INTENSIVE_KEYS = ["intensive", "pro"];
+
+function openWhatsApp(message: string) {
+  const text = encodeURIComponent(message);
   window.open(`https://wa.me/${EXPERT_CONNECT_NUMBER}?text=${text}`, "_blank", "noopener,noreferrer");
 }
 
 
 /**
- * Expert Connect — WhatsApp support bar shown only for Package 1 (foundation) users.
+ * Expert Connect — WhatsApp support bar shown for Package 1 (foundation) and
+ * Package 3 (intensive) users.
  * Resolves the tier synchronously (prop first, then cached value) so it renders
  * in the same frame as the "All sections" sheet — no pop-in.
  */
@@ -45,13 +53,14 @@ export default function ExpertConnectBar({
   className?: string;
 }) {
   const key = packageKey ?? readCachedPackageKey();
-  const isFoundation = key === "foundation" || key === "starter";
-  if (!isFoundation) return null;
+  const isFoundation = !!key && FOUNDATION_KEYS.includes(key);
+  const isIntensive = !!key && INTENSIVE_KEYS.includes(key);
+  if (!isFoundation && !isIntensive) return null;
 
   return (
     <button
       type="button"
-      onClick={() => openWhatsApp(context)}
+      onClick={() => openWhatsApp(isIntensive ? EXPERT_CONNECT_MESSAGE_INTENSIVE : EXPERT_CONNECT_MESSAGE)}
       aria-label="Expert Connect on WhatsApp"
       className={`no-pill w-full flex items-center justify-center gap-2 rounded-2xl h-12 px-4 text-white font-black tracking-tight shadow-card active:scale-[0.99] transition-transform ${className}`}
       style={{ background: "#25D366" }}
