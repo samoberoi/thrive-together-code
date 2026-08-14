@@ -18,8 +18,6 @@ Deno.serve(async (req) => {
     });
 
   const authKey = Deno.env.get("MSG91_AUTH_KEY") ?? "";
-  const templateId = Deno.env.get("MSG91_TEMPLATE_ID") ?? "";
-  const senderId = Deno.env.get("MSG91_SENDER_ID") ?? "";
   if (!authKey) return json({ error: "SMS service is not configured" }, 500);
 
   const call = async (path: string, method: "GET" | "POST" = "GET") => {
@@ -44,10 +42,9 @@ Deno.serve(async (req) => {
       otp_length: String(OTP_LENGTH),
       otp_expiry: String(OTP_EXPIRY_MIN),
     });
-    // When these are absent MSG91 uses the account's default OTP template,
-    // which is the intended configuration for this project.
-    if (templateId) params.set("template_id", templateId);
-    if (senderId) params.set("sender", senderId);
+    // Intentionally use the account's default OTP template and SMS channel.
+    // This exactly matches the working MSG91 Widget process (use_default=true)
+    // and avoids stale template/sender secrets accepting but not delivering.
     return call(`otp?${params.toString()}`, "POST");
   };
 
@@ -84,7 +81,7 @@ Deno.serve(async (req) => {
     if (action === "health") {
       return json({
         ok: true,
-        mode: templateId ? "configured-template" : "default-template",
+        mode: "default-template",
         otpLength: OTP_LENGTH,
       });
     }
