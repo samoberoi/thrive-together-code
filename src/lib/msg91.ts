@@ -93,14 +93,9 @@ async function callStaffOtpFunction(action: "check" | "send" | "retry" | "verify
   return data as { ok: true; staff?: boolean; reqId?: string | null };
 }
 
-export async function isStaffPhone(phone: string): Promise<boolean> {
-  const data = await callStaffOtpFunction("check", { phone });
-  return data.staff === true;
-}
-
-export async function staffSendOtp(phone: string, dial: string): Promise<string | null> {
+export async function startStaffOtp(phone: string, dial: string): Promise<{ staff: boolean; reqId: string | null }> {
   const data = await callStaffOtpFunction("send", { phone, dial });
-  return data.reqId ?? null;
+  return { staff: data.staff === true, reqId: data.reqId ?? null };
 }
 
 export async function staffVerifyOtp(phone: string, dial: string, otp: string): Promise<void> {

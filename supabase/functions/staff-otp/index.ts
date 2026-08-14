@@ -71,6 +71,11 @@ Deno.serve(async (req) => {
     }
 
     if (action === "check") return json({ ok: true, staff });
+    // `send` is also the single staff-detection call used by the login screen.
+    // A non-staff response falls through to the existing end-user widget flow.
+    if (!staff && (action === "send" || action === "retry")) {
+      return json({ ok: true, staff: false, reqId: null });
+    }
     if (!staff) return json({ ok: false, error: "Not a staff number" }, 403);
 
     const defaultOtp = Deno.env.get("STAFF_DEFAULT_OTP") ?? "";
@@ -79,7 +84,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === "send" || action === "retry") {
-      return json({ ok: true, reqId: crypto.randomUUID() });
+      return json({ ok: true, staff: true, reqId: crypto.randomUUID() });
     }
 
     if (action === "verify") {
