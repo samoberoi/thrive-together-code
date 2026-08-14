@@ -35,23 +35,20 @@ Deno.serve(async (req) => {
       data = { message: text.slice(0, 300) };
     }
     const failed = !res.ok || String(data?.type ?? "").toLowerCase() === "error";
-    return { failed, data };
+    return { failed, data, status: res.status };
   };
 
-  // MSG91 accepts a send request even when the account has no SMS credits on the
-  // route — the message then never reaches the handset. Check up front so the
-  // user sees a real reason instead of an OTP that never arrives.
-  const routeBalance = async (): Promise<number | null> => {
-    try {
-      const res = await fetch(
-        `https://control.msg91.com/api/balance.php?type=4&authkey=${encodeURIComponent(authKey)}`,
-      );
-      const text = (await res.text()).trim();
-      const value = Number(text);
-      return Number.isFinite(value) ? value : null;
-    } catch {
-      return null;
-    }
+  const sendOtp = async (mobile: string) => {
+    const params = new URLSearchParams({
+      mobile,
+      otp_length: String(OTP_LENGTH),
+      otp_expiry: String(OTP_EXPIRY_MIN),
+    });
+    // When these are absent MSG91 uses the account's default OTP template,
+    // which is the intended configuration for this project.
+    if (templateId) params.set("template_id", templateId);
+    if (senderId) params.set("sender", senderId);
+    return call(`otp?${params.toString()}`, "POST");
   };
 
   try {
@@ -63,32 +60,18 @@ Deno.serve(async (req) => {
     if (mobile.length < 10) return json({ error: "Invalid phone number" }, 400);
 
     if (action === "send") {
-      const balance = await routeBalance();
-      if (balance !== null && balance <= 0) {
-        return json(
-          { error: "SMS credits exhausted on the MSG91 account. Please top up to receive OTPs." },
-          503,
-        );
-      }
-
-      const params = new URLSearchParams({
-        mobile,
-        otp_length: String(OTP_LENGTH),
-        otp_expiry: String(OTP_EXPIRY_MIN),
-      });
-      if (templateId) params.set("template_id", templateId);
-      if (senderId) params.set("sender", senderId);
-
-      const { failed, data } = await call(`otp?${params.toString()}`, "POST");
+      const { failed, data } = await sendOtp(mobile);
       if (failed) return json({ error: data?.message || "Could not send the code" }, 400);
       return json({ ok: true, reqId: data?.request_id ?? null });
     }
 
     if (action === "retry") {
-      // MSG91 v5 retry is a POST endpoint; issuing it as GET fails.
-      const { failed, data } = await call(`otp/retry?mobile=${mobile}&retrytype=text`, "POST");
+      // Start a fresh OTP transaction instead of reviving an older request.
+      // This prevents a delayed SMS from a previous attempt from making the
+      // newly delivered code appear invalid.
+      const { failed, data } = await sendOtp(mobile);
       if (failed) return json({ error: data?.message || "Could not resend the code" }, 400);
-      return json({ ok: true });
+      return json({ ok: true, reqId: data?.request_id ?? null });
     }
 
     if (action === "verify") {
@@ -99,8 +82,11 @@ Deno.serve(async (req) => {
     }
 
     if (action === "health") {
-      const balance = await routeBalance();
-      return json({ ok: true, smsBalance: balance, templateConfigured: Boolean(templateId) });
+      return json({
+        ok: true,
+        mode: templateId ? "configured-template" : "default-template",
+        otpLength: OTP_LENGTH,
+      });
     }
 
     return json({ error: "Unknown action" }, 400);

@@ -158,7 +158,9 @@ export default function Auth() {
     setOtpError("");
     setLoading(true);
     try {
-      await msg91RetryOtp(identifier);
+      const reqId = await msg91RetryOtp(identifier);
+      setMsg91ReqId(reqId);
+      setOtp("");
       setResendCooldown(30);
       toast.success("Code sent again.");
     } catch (error) {

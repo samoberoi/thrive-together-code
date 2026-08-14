@@ -9,7 +9,20 @@ type OtpResponse = { ok?: boolean; reqId?: string | null; error?: string };
 
 async function callOtp(payload: Record<string, unknown>, fallbackError: string): Promise<OtpResponse> {
   const { data, error } = await supabase.functions.invoke<OtpResponse>("msg91-otp", { body: payload });
-  if (error && !data) throw new Error(fallbackError);
+  if (error && !data) {
+    const response = (error as { context?: Response }).context;
+    if (response) {
+      try {
+        const body = await response.clone().json() as OtpResponse;
+        throw new Error(body.error || fallbackError);
+      } catch (responseError) {
+        if (responseError instanceof Error && responseError.message !== "Unexpected end of JSON input") {
+          throw responseError;
+        }
+      }
+    }
+    throw new Error(fallbackError);
+  }
   if (!data?.ok) throw new Error(data?.error || fallbackError);
   return data;
 }
@@ -21,8 +34,9 @@ export async function msg91SendOtp(identifier: string): Promise<string | null> {
 }
 
 /** Resends the OTP over SMS. */
-export async function msg91RetryOtp(identifier: string): Promise<void> {
-  await callOtp({ action: "retry", identifier }, "Could not resend the code.");
+export async function msg91RetryOtp(identifier: string): Promise<string | null> {
+  const data = await callOtp({ action: "retry", identifier }, "Could not resend the code.");
+  return data.reqId ?? null;
 }
 
 /** Verifies the OTP server-side. Throws when the code is wrong or expired. */
