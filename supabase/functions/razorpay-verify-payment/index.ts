@@ -42,9 +42,13 @@ Deno.serve(async (req) => {
     });
 
     const jwt = authHeader.slice(7);
-    const { data: claimsData, error: claimsError } = await asUser.auth.getClaims(jwt);
-    const userId = claimsData?.claims?.sub;
-    if (claimsError || typeof userId !== "string") return json({ error: "Unauthorized" }, 401);
+    // Validate against the auth server (works for both legacy and asymmetric signing keys).
+    const { data: userData, error: userErr } = await admin.auth.getUser(jwt);
+    const userId = userData?.user?.id;
+    if (userErr || typeof userId !== "string") {
+      console.error("auth failed", userErr?.message);
+      return json({ error: "Unauthorized" }, 401);
+    }
 
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = await req.json();
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
