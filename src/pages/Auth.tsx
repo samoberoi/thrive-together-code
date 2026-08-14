@@ -21,7 +21,7 @@ import AuthHeroCarousel from "@/components/AuthHeroCarousel";
 import { toast } from "sonner";
 import { persistSupabaseSessionToNative } from "@/lib/nativePersistence";
 import { resolvePostAuthRoute } from "@/lib/accessControl";
-import { msg91SendOtp, msg91VerifyOtp } from "@/lib/msg91";
+import { msg91DirectSendOtp, msg91DirectVerifyOtp, msg91SendOtp, msg91VerifyOtp } from "@/lib/msg91";
 
 
 function withTimeout<T>(promise: Promise<T>, fallback: T, ms = 2500): Promise<T> {
@@ -49,6 +49,7 @@ export default function Auth() {
   const [otp, setOtp] = useState("");
   const [otpError, setOtpError] = useState("");
   const [msg91ReqId, setMsg91ReqId] = useState<string | null>(null);
+  const [directOtp, setDirectOtp] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [name, setName] = useState("");
   const [emailInput, setEmailInput] = useState("");
@@ -133,6 +134,13 @@ export default function Auth() {
 
   const identifier = `${country.dial.replace(/\D/g, "")}${phone}`;
 
+  const isStaffNumber = async (): Promise<boolean> => {
+    const { data, error } = await supabase.functions.invoke("staff-otp", {
+      body: { action: "check", phone },
+    });
+    return !error && Boolean((data as { staff?: boolean } | null)?.staff);
+  };
+
   const sendOtp = async () => {
     if (phone.length < 10 || loading) return;
     setLoading(true);
@@ -140,7 +148,11 @@ export default function Auth() {
     saveUser({ profile: { phone, country: country.name, country_code: country.dial } as any });
 
     try {
-      const reqId = await msg91SendOtp(identifier);
+      const staff = await isStaffNumber();
+      const reqId = staff
+        ? await msg91DirectSendOtp(identifier)
+        : await msg91SendOtp(identifier);
+      setDirectOtp(staff);
       setMsg91ReqId(reqId);
       setStep("otp");
       setOtp("");
@@ -158,7 +170,9 @@ export default function Auth() {
     setLoading(true);
     try {
       // Start a fresh transaction in the same configured MSG91 Widget flow.
-      const reqId = await msg91SendOtp(identifier);
+      const reqId = directOtp
+        ? await msg91DirectSendOtp(identifier)
+        : await msg91SendOtp(identifier);
       setMsg91ReqId(reqId);
       setOtp("");
       setResendCooldown(30);
@@ -179,12 +193,16 @@ export default function Auth() {
     // Verify in the exact transaction that dispatched this code, then
     // validate the result on the backend.
     try {
+      if (directOtp) {
+        await msg91DirectVerifyOtp(identifier, submitted);
+      } else {
       const accessToken = await msg91VerifyOtp(submitted, msg91ReqId);
       const { data, error } = await supabase.functions.invoke("msg91-verify-otp", {
         body: { phone: identifier, otp: submitted, accessToken },
       });
       if (error || !data?.ok) {
         throw new Error(data?.error || "Verification failed. Please try again.");
+      }
       }
     } catch (error) {
       setOtpError((error as Error).message || "Wrong code. Please try again.");
