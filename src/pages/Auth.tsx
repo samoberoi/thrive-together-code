@@ -616,6 +616,18 @@ export default function Auth() {
                   <p className="text-destructive text-[13px] text-center mt-4 font-semibold">{otpError}</p>
                 )}
 
+                <div className="mt-4 text-center">
+                  <button
+                    onClick={resendOtp}
+                    disabled={resendCooldown > 0 || loading}
+                    className="text-[13px] font-bold text-primary disabled:text-muted-foreground disabled:font-semibold"
+                  >
+                    {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : "Resend code"}
+                  </button>
+                </div>
+
+
+
 
                 <div className="ob-bottom">
                   <motion.button
