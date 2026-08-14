@@ -2,8 +2,7 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 // Staff OTP (admins + coaches).
-// Real MSG91 SMS, sent and verified entirely server-side on this project —
-// no browser widget, no domain whitelisting, no fixed default code.
+// Staff membership and OTP verification are enforced entirely server-side.
 // End-user OTP is untouched and still uses the MSG91 widget flow.
 
 const MSG91 = "https://control.msg91.com/api/v5";
@@ -45,16 +44,28 @@ Deno.serve(async (req) => {
     if (!staff) {
       const { data: profiles } = await admin
         .from("profiles")
-        .select("user_id, phone")
+        .select("id, phone")
         .limit(5000);
-      const ids = (profiles ?? [])
+      const ids = new Set((profiles ?? [])
         .filter((p: any) => last10(String(p.phone ?? "")) === phone)
-        .map((p: any) => p.user_id);
-      if (ids.length) {
+        .map((p: any) => p.id));
+
+      // Older staff accounts may have no phone on their profile because their
+      // login identity is stored as <phone>@bbd.app. Include those auth IDs.
+      for (let page = 1; page <= 10; page += 1) {
+        const { data: authPage, error: authError } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
+        if (authError) break;
+        for (const user of authPage.users) {
+          if (last10(String(user.email ?? "").split("@")[0]) === phone) ids.add(user.id);
+        }
+        if (authPage.users.length < 1000) break;
+      }
+
+      if (ids.size) {
         const { data: roles } = await admin
           .from("user_roles")
           .select("user_id, role")
-          .in("user_id", ids);
+          .in("user_id", [...ids]);
         staff = (roles ?? []).some((r: any) => r.role === "admin" || r.role === "coach");
       }
     }
@@ -62,7 +73,21 @@ Deno.serve(async (req) => {
     if (action === "check") return json({ ok: true, staff });
     if (!staff) return json({ ok: false, error: "Not a staff number" }, 403);
 
-    // ---- MSG91 server-side OTP --------------------------------------------
+    const defaultOtp = Deno.env.get("STAFF_DEFAULT_OTP") ?? "";
+    if (!/^\d{4,8}$/.test(defaultOtp)) {
+      return json({ ok: false, error: "Staff login code is not configured" }, 500);
+    }
+
+    if (action === "send" || action === "retry") {
+      return json({ ok: true, reqId: crypto.randomUUID() });
+    }
+
+    if (action === "verify") {
+      if (otp !== defaultOtp) return json({ ok: false, error: "Wrong code. Please try again." }, 401);
+      return json({ ok: true });
+    }
+
+    // ---- Legacy SMS implementation retained below for easy restoration. ---
     const authKey = Deno.env.get("MSG91_AUTH_KEY") ?? "";
     if (!authKey) return json({ ok: false, error: "SMS service is not configured" }, 500);
 
@@ -86,7 +111,7 @@ Deno.serve(async (req) => {
       return { failed, data };
     };
 
-    if (action === "send" || action === "retry") {
+    if (action === "sms-send" || action === "sms-retry") {
       const params = new URLSearchParams({
         mobile,
         otp_length: String(OTP_LENGTH),
@@ -99,7 +124,7 @@ Deno.serve(async (req) => {
       return json({ ok: true, reqId: data?.request_id ?? null });
     }
 
-    if (action === "verify") {
+    if (action === "sms-verify") {
       if (otp.length !== OTP_LENGTH) return json({ ok: false, error: `Enter the ${OTP_LENGTH}-digit code` }, 400);
       const { failed, data } = await call(`otp/verify?mobile=${mobile}&otp=${otp}`);
       if (failed) return json({ ok: false, error: data?.message || "Wrong code. Please try again." }, 401);
