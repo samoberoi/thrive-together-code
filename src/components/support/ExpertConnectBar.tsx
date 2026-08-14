@@ -38,7 +38,8 @@ function openWhatsApp(message: string) {
 
 
 /**
- * Expert Connect — WhatsApp support bar shown only for Package 1 (foundation) users.
+ * Expert Connect — WhatsApp support bar shown for Package 1 (foundation) and
+ * Package 3 (intensive) users.
  * Resolves the tier synchronously (prop first, then cached value) so it renders
  * in the same frame as the "All sections" sheet — no pop-in.
  */
@@ -52,13 +53,14 @@ export default function ExpertConnectBar({
   className?: string;
 }) {
   const key = packageKey ?? readCachedPackageKey();
-  const isFoundation = key === "foundation" || key === "starter";
-  if (!isFoundation) return null;
+  const isFoundation = !!key && FOUNDATION_KEYS.includes(key);
+  const isIntensive = !!key && INTENSIVE_KEYS.includes(key);
+  if (!isFoundation && !isIntensive) return null;
 
   return (
     <button
       type="button"
-      onClick={() => openWhatsApp(context)}
+      onClick={() => openWhatsApp(isIntensive ? EXPERT_CONNECT_MESSAGE_INTENSIVE : EXPERT_CONNECT_MESSAGE)}
       aria-label="Expert Connect on WhatsApp"
       className={`no-pill w-full flex items-center justify-center gap-2 rounded-2xl h-12 px-4 text-white font-black tracking-tight shadow-card active:scale-[0.99] transition-transform ${className}`}
       style={{ background: "#25D366" }}
