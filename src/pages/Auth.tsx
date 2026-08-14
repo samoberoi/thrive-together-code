@@ -49,6 +49,7 @@ export default function Auth() {
   const [otp, setOtp] = useState("");
   const [otpError, setOtpError] = useState("");
   const [msg91ReqId, setMsg91ReqId] = useState<string | null>(null);
+  const [staffBypass, setStaffBypass] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [name, setName] = useState("");
   const [emailInput, setEmailInput] = useState("");
