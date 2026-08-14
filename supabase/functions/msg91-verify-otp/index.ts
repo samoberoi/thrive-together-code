@@ -1,9 +1,5 @@
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
-const DEV_OTPS: Record<string, string> = {
-  "7777777777": "111111",
-  "8373914073": "111111",
-};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -22,11 +18,9 @@ Deno.serve(async (req) => {
 
     if (phone.length < 10) return json({ error: "Invalid phone number" }, 400);
 
-    // Dev/test numbers bypass MSG91 entirely.
-    if (DEV_OTPS[phone] !== undefined) {
-      if (DEV_OTPS[phone] !== otp) return json({ error: "Wrong code" }, 401);
-      return json({ ok: true, dev: true });
-    }
+    void otp; // OTP itself is verified by the MSG91 widget; we validate the access token.
+
+
 
     if (!accessToken || accessToken.length < 10) {
       return json({ error: "Missing verification token" }, 400);

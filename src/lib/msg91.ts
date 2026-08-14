@@ -20,13 +20,6 @@ declare global {
   }
 }
 
-/** Numbers that bypass real SMS and accept the static dev OTP. */
-export const DEV_PHONES = new Set<string>(["7777777777", "8373914073"]);
-export const DEV_OTP = "111111";
-
-export function isDevPhone(phone: string) {
-  return DEV_PHONES.has(phone.replace(/\D/g, ""));
-}
 
 /** Wait until the widget script has finished loading (it is async). */
 export async function waitForMsg91(timeoutMs = 8000): Promise<boolean> {

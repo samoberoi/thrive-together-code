@@ -21,7 +21,7 @@ import AuthHeroCarousel from "@/components/AuthHeroCarousel";
 import { toast } from "sonner";
 import { persistSupabaseSessionToNative } from "@/lib/nativePersistence";
 import { resolvePostAuthRoute } from "@/lib/accessControl";
-import { isDevPhone, msg91RetryOtp, msg91SendOtp, msg91VerifyOtp } from "@/lib/msg91";
+import { msg91RetryOtp, msg91SendOtp, msg91VerifyOtp } from "@/lib/msg91";
 
 
 function withTimeout<T>(promise: Promise<T>, fallback: T, ms = 2500): Promise<T> {
@@ -140,13 +140,8 @@ export default function Auth() {
     setMsg91AccessToken(null);
     saveUser({ profile: { phone, country: country.name, country_code: country.dial } as any });
 
-    if (isDevPhone(phone)) {
-      setLoading(false);
-      setStep("otp");
-      setOtp("");
-      setResendCooldown(30);
-      return;
-    }
+
+
 
     try {
       const identifier = `${country.dial.replace(/\D/g, "")}${phone}`;
@@ -167,11 +162,8 @@ export default function Auth() {
     setOtpError("");
     setMsg91AccessToken(null);
 
-    if (isDevPhone(phone)) {
-      setResendCooldown(30);
-      toast.success("Use the test code to continue.");
-      return;
-    }
+
+
 
     setLoading(true);
     try {
@@ -193,10 +185,11 @@ export default function Auth() {
     // 1) Verify the code with MSG91 (widget client-side), then confirm server-side.
     try {
       let accessToken = msg91AccessToken;
-      if (!isDevPhone(phone) && !accessToken) {
+      if (!accessToken) {
         accessToken = await msg91VerifyOtp(otp, msg91ReqId);
         setMsg91AccessToken(accessToken);
       }
+
 
       const { data: verifyData, error: verifyError } = await supabase.functions.invoke("msg91-verify-otp", {
         body: { phone, otp, accessToken },

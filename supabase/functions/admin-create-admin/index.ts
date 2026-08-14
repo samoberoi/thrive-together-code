@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, userId, phone, message: `Admin created. Login with phone ${phone}, OTP 111111` }),
+      JSON.stringify({ success: true, userId, phone, message: `Admin created. Login with phone ${phone} using SMS OTP` }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
   } catch (error) {
