@@ -174,7 +174,7 @@ export default function AdminAdmins() {
                 </button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Creates a new account with full admin access. The admin signs in using their phone and OTP (default <span className="font-mono">111111</span>).
+                Creates a new account with full admin access. The admin signs in using their phone number and a real SMS OTP.
               </p>
               <div className="grid sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
