@@ -21,7 +21,7 @@ import AuthHeroCarousel from "@/components/AuthHeroCarousel";
 import { toast } from "sonner";
 import { persistSupabaseSessionToNative } from "@/lib/nativePersistence";
 import { resolvePostAuthRoute } from "@/lib/accessControl";
-import { msg91RetryOtp, msg91SendOtp, msg91VerifyOtp } from "@/lib/msg91";
+import { msg91DirectSendOtp, msg91DirectVerifyOtp, msg91RetryOtp, msg91SendOtp, msg91VerifyOtp } from "@/lib/msg91";
 
 
 function withTimeout<T>(promise: Promise<T>, fallback: T, ms = 2500): Promise<T> {
@@ -50,6 +50,8 @@ export default function Auth() {
   const [otpError, setOtpError] = useState("");
   const [msg91ReqId, setMsg91ReqId] = useState<string | null>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
+  // True once we fall back to the direct MSG91 API (widget blocked this number).
+  const [directSms, setDirectSms] = useState(false);
 
   const [name, setName] = useState("");
   const [emailInput, setEmailInput] = useState("");
@@ -138,6 +140,7 @@ export default function Auth() {
     if (phone.length < 10 || loading) return;
     setLoading(true);
     setOtpError("");
+    setDirectSms(false);
     saveUser({ profile: { phone, country: country.name, country_code: country.dial } as any });
 
     try {
@@ -153,17 +156,51 @@ export default function Auth() {
     }
   };
 
+  /** Sends the code straight through the MSG91 API (no widget, no per-number widget limit). */
+  const sendOtpDirect = async (announce = true) => {
+    const reqId = await msg91DirectSendOtp(identifier);
+    setMsg91ReqId(reqId);
+    setDirectSms(true);
+    setOtp("");
+    setResendCooldown(30);
+    if (announce) toast.success("Code sent by SMS.");
+  };
+
   const resendOtp = async () => {
     if (resendCooldown > 0 || loading) return;
     setOtpError("");
     setLoading(true);
     try {
-      await msg91RetryOtp(msg91ReqId);
-      setOtp("");
-      setResendCooldown(30);
-      toast.success("Code sent again.");
+      if (directSms) {
+        await sendOtpDirect();
+      } else {
+        try {
+          await msg91RetryOtp(msg91ReqId);
+          setOtp("");
+          setResendCooldown(30);
+          toast.success("Code sent again.");
+        } catch {
+          // Widget resend blocked (this is what happens on the admin numbers) —
+          // fall back to the direct API so the SMS actually goes out.
+          await sendOtpDirect();
+        }
+      }
     } catch (error) {
       toast.error((error as Error).message || "Could not resend the code.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /** Manual escape hatch when the widget reports success but no SMS arrives. */
+  const sendBackupSms = async () => {
+    if (loading) return;
+    setLoading(true);
+    setOtpError("");
+    try {
+      await sendOtpDirect();
+    } catch (error) {
+      toast.error((error as Error).message || "Could not send the code. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -176,12 +213,17 @@ export default function Auth() {
     setLoading(true);
 
     // Verify in the configured widget, then validate its access token on the backend.
+    // Codes sent through the direct route are verified server-side instead.
     try {
-      const accessToken = await msg91VerifyOtp(submitted, msg91ReqId);
-      const { data, error } = await supabase.functions.invoke("msg91-verify-otp", {
-        body: { phone: identifier, otp: submitted, accessToken },
-      });
-      if (error || !data?.ok) throw new Error(data?.error || "Verification failed. Please try again.");
+      if (directSms) {
+        await msg91DirectVerifyOtp(identifier, submitted);
+      } else {
+        const accessToken = await msg91VerifyOtp(submitted, msg91ReqId);
+        const { data, error } = await supabase.functions.invoke("msg91-verify-otp", {
+          body: { phone: identifier, otp: submitted, accessToken },
+        });
+        if (error || !data?.ok) throw new Error(data?.error || "Verification failed. Please try again.");
+      }
     } catch (error) {
       setOtpError((error as Error).message || "Wrong code. Please try again.");
       setOtp("");
@@ -620,6 +662,16 @@ export default function Auth() {
                     >
                       {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : "Resend code"}
                     </button>
+                    {!directSms && (
+                      <div className="mt-2">
+                        <button
+                          onClick={sendBackupSms}
+                          className="text-[12px] font-semibold text-muted-foreground underline underline-offset-2"
+                        >
+                          Didn't get it? Send code by SMS
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
 
