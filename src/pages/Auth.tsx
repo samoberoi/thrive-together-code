@@ -580,7 +580,16 @@ export default function Auth() {
                 </p>
 
                 <div className="mt-6 flex justify-center">
-                  <InputOTP maxLength={4} value={otp} onChange={(v) => { setOtp(v); if (otpError) setOtpError(""); }}>
+                  <InputOTP
+                    maxLength={4}
+                    value={otp}
+                    disabled={loading}
+                    onChange={(v) => {
+                      setOtp(v);
+                      if (otpError) setOtpError("");
+                      if (v.length === 4 && !loading) void verifyOtp(v);
+                    }}
+                  >
                     <InputOTPGroup className="gap-2.5">
                       {[0, 1, 2, 3].map((i) => (
                         <InputOTPSlot
@@ -597,23 +606,27 @@ export default function Auth() {
                   <p className="text-destructive text-[13px] text-center mt-4 font-semibold">{otpError}</p>
                 )}
 
-                <div className="mt-4 text-center">
-                  <button
-                    onClick={resendOtp}
-                    disabled={resendCooldown > 0 || loading}
-                    className="text-[13px] font-bold text-primary disabled:text-muted-foreground disabled:font-semibold"
-                  >
-                    {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : "Resend code"}
-                  </button>
-                </div>
+                {/* Resend disappears as soon as the code is submitted / being verified. */}
+                {!loading && otp.length < 4 && (
+                  <div className="mt-4 text-center">
+                    <button
+                      onClick={resendOtp}
+                      disabled={resendCooldown > 0}
+                      className="text-[13px] font-bold text-primary disabled:text-muted-foreground disabled:font-semibold"
+                    >
+                      {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : "Resend code"}
+                    </button>
+                  </div>
+                )}
 
 
 
 
                 <div className="ob-bottom">
                   <motion.button
-                    onClick={verifyOtp}
+                    onClick={() => void verifyOtp()}
                     disabled={otp.length < 4 || loading}
+
                     whileTap={{ scale: 0.98 }}
                     className="ob-cta gradient-blue glow-blue disabled:opacity-40"
                   >
