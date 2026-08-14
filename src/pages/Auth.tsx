@@ -48,7 +48,6 @@ export default function Auth() {
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [otpError, setOtpError] = useState("");
-  const [msg91ReqId, setMsg91ReqId] = useState<string | null>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [name, setName] = useState("");
   const [emailInput, setEmailInput] = useState("");
@@ -140,8 +139,7 @@ export default function Auth() {
     saveUser({ profile: { phone, country: country.name, country_code: country.dial } as any });
 
     try {
-      const reqId = await msg91DirectSendOtp(identifier);
-      setMsg91ReqId(reqId);
+      await msg91DirectSendOtp(identifier);
       setStep("otp");
       setOtp("");
       setResendCooldown(30);
@@ -158,8 +156,7 @@ export default function Auth() {
     setLoading(true);
     try {
       // Start one fresh server-side SMS transaction for every account type.
-      const reqId = await msg91DirectSendOtp(identifier);
-      setMsg91ReqId(reqId);
+      await msg91DirectSendOtp(identifier);
       setOtp("");
       setResendCooldown(30);
       toast.success("New verification code sent.");
