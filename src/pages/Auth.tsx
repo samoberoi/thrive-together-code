@@ -21,7 +21,7 @@ import AuthHeroCarousel from "@/components/AuthHeroCarousel";
 import { toast } from "sonner";
 import { persistSupabaseSessionToNative } from "@/lib/nativePersistence";
 import { resolvePostAuthRoute } from "@/lib/accessControl";
-import { isStaffPhone, msg91SendOtp, msg91VerifyOtp, staffSendOtp, staffVerifyOtp } from "@/lib/msg91";
+import { msg91SendOtp, msg91VerifyOtp, startStaffOtp, staffVerifyOtp } from "@/lib/msg91";
 
 
 function withTimeout<T>(promise: Promise<T>, fallback: T, ms = 2500): Promise<T> {
@@ -141,11 +141,11 @@ export default function Auth() {
     saveUser({ profile: { phone, country: country.name, country_code: country.dial } as any });
 
     try {
-      const staff = await isStaffPhone(phone);
-      const reqId = staff
-        ? await staffSendOtp(phone, country.dial)
+      const staffResult = await startStaffOtp(phone, country.dial);
+      const reqId = staffResult.staff
+        ? staffResult.reqId
         : await msg91SendOtp(identifier);
-      setStaffOtp(staff);
+      setStaffOtp(staffResult.staff);
       setMsg91ReqId(reqId);
       setStep("otp");
       setOtp("");
@@ -163,7 +163,7 @@ export default function Auth() {
     setLoading(true);
     try {
       const reqId = staffOtp
-        ? await staffSendOtp(phone, country.dial)
+        ? (await startStaffOtp(phone, country.dial)).reqId
         : await msg91SendOtp(identifier);
       setMsg91ReqId(reqId);
       setOtp("");

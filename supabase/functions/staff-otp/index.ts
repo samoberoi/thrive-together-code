@@ -38,27 +38,34 @@ Deno.serve(async (req) => {
     // ---- Is this phone an admin or a coach? -------------------------------
     let staff = false;
 
-    const { data: coachRows } = await admin.from("coaches").select("phone").limit(1000);
-    if ((coachRows ?? []).some((c: any) => last10(String(c.phone ?? "")) === phone)) staff = true;
+    const phoneVariants = [phone, `91${phone}`, `+91${phone}`];
+    const { data: coachRows } = await admin
+      .from("coaches")
+      .select("phone")
+      .in("phone", phoneVariants)
+      .limit(1);
+    if ((coachRows ?? []).length > 0) staff = true;
 
     if (!staff) {
       const { data: profiles } = await admin
         .from("profiles")
-        .select("id, phone")
-        .limit(5000);
+        .select("user_id, phone")
+        .in("phone", phoneVariants)
+        .limit(10);
       const ids = new Set((profiles ?? [])
-        .filter((p: any) => last10(String(p.phone ?? "")) === phone)
-        .map((p: any) => p.id));
+        .map((p: any) => p.user_id)
+        .filter(Boolean));
 
-      // Older staff accounts may have no phone on their profile because their
-      // login identity is stored as <phone>@bbd.app. Include those auth IDs.
-      for (let page = 1; page <= 10; page += 1) {
-        const { data: authPage, error: authError } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
-        if (authError) break;
-        for (const user of authPage.users) {
-          if (last10(String(user.email ?? "").split("@")[0]) === phone) ids.add(user.id);
+      // Only scan legacy auth identities when there is no matching profile.
+      if (!ids.size) {
+        for (let page = 1; page <= 10; page += 1) {
+          const { data: authPage, error: authError } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
+          if (authError) break;
+          for (const user of authPage.users) {
+            if (last10(String(user.email ?? "").split("@")[0]) === phone) ids.add(user.id);
+          }
+          if (authPage.users.length < 1000) break;
         }
-        if (authPage.users.length < 1000) break;
       }
 
       if (ids.size) {
@@ -71,6 +78,11 @@ Deno.serve(async (req) => {
     }
 
     if (action === "check") return json({ ok: true, staff });
+    // `send` is also the single staff-detection call used by the login screen.
+    // A non-staff response falls through to the existing end-user widget flow.
+    if (!staff && (action === "send" || action === "retry")) {
+      return json({ ok: true, staff: false, reqId: null });
+    }
     if (!staff) return json({ ok: false, error: "Not a staff number" }, 403);
 
     const defaultOtp = Deno.env.get("STAFF_DEFAULT_OTP") ?? "";
@@ -79,7 +91,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === "send" || action === "retry") {
-      return json({ ok: true, reqId: crypto.randomUUID() });
+      return json({ ok: true, staff: true, reqId: crypto.randomUUID() });
     }
 
     if (action === "verify") {

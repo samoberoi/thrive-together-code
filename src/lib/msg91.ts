@@ -15,8 +15,6 @@ declare global {
 type WidgetData = { message?: string; request_id?: string; reqId?: string; "access-token"?: string; accessToken?: string };
 type WidgetError = { message?: string };
 
-import { supabase } from "@/integrations/supabase/client";
-
 async function waitForWidget(timeoutMs = 10000): Promise<void> {
   const started = Date.now();
   while (Date.now() - started < timeoutMs) {
@@ -85,22 +83,29 @@ export async function msg91VerifyOtp(otp: string, reqId?: string | null): Promis
 // ---------------------------------------------------------------------------
 
 async function callStaffOtpFunction(action: "check" | "send" | "retry" | "verify", payload: Record<string, unknown>) {
-  const { data, error } = await supabase.functions.invoke("staff-otp", {
-    body: { action, ...payload },
+  const backendUrl = import.meta.env.VITE_SUPABASE_URL;
+  const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  const response = await fetch(`${backendUrl}/functions/v1/staff-otp`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: publishableKey,
+      Authorization: `Bearer ${publishableKey}`,
+    },
+    body: JSON.stringify({ action, ...payload }),
   });
-  if (error) throw new Error(error.message || "SMS service is unavailable. Please try again.");
+  const data = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(data?.error || "SMS service is unavailable. Please try again.");
   if (!data?.ok) throw new Error((data as { error?: string })?.error || "SMS service failed. Please try again.");
   return data as { ok: true; staff?: boolean; reqId?: string | null };
 }
 
-export async function isStaffPhone(phone: string): Promise<boolean> {
-  const data = await callStaffOtpFunction("check", { phone });
-  return data.staff === true;
-}
-
-export async function staffSendOtp(phone: string, dial: string): Promise<string | null> {
+export async function startStaffOtp(phone: string, dial: string): Promise<{ staff: boolean; reqId: string | null }> {
   const data = await callStaffOtpFunction("send", { phone, dial });
-  return data.reqId ?? null;
+  const reqId = data.reqId ?? null;
+  // Older live isolates returned a request ID without the explicit staff flag.
+  // A request ID is only issued after server-side staff authorization.
+  return { staff: data.staff === true || reqId !== null, reqId };
 }
 
 export async function staffVerifyOtp(phone: string, dial: string, otp: string): Promise<void> {
