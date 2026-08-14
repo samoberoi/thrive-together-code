@@ -4,19 +4,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Check, Flame, Lock, Rocket, User, Star, Gift, Ticket } from "lucide-react";
 import { getUser } from "@/lib/userStore";
 import { useAuth } from "@/contexts/AuthContext";
-import { createSubscription, changeSubscriptionPlan, previewPlanChange, type PlanChangePreview } from "@/lib/subscriptionService";
+import { previewPlanChange, type PlanChangePreview } from "@/lib/subscriptionService";
 import { supabase } from "@/integrations/supabase/client";
 import { getSelectedPlan, CYCLE_LABEL } from "@/lib/packageService";
 import { autoAssignCoach, fetchAssignedCoach, coachTypeLabel, type Coach } from "@/lib/coachService";
 import { sendWelcomeNotification } from "@/lib/notificationService";
-import { validateCoupon, redeemCoupon, type CouponValidation } from "@/lib/couponService";
+import { validateCoupon, type CouponValidation } from "@/lib/couponService";
 import logoImg from "@/assets/logo.png";
 
 declare global {
   interface Window { Razorpay: any }
 }
-
-const RAZORPAY_TEST_PLAN_KEY = "onboarding_test";
 
 type PaymentUser = { id: string; email?: string | null };
 
@@ -156,10 +154,8 @@ export default function Payment() {
 
   const finalizePostPayment = async (user: PaymentUser) => {
     if (!plan) return;
-    if (coupon?.valid && coupon.code) {
-      const res = await redeemCoupon(coupon.code, baseAmount, plan.plan_key, plan.billing_cycle);
-      if (!res.valid) console.warn("Coupon could not be recorded:", res.reason);
-    }
+    // Coupon redemption and subscription activation happen server-side after
+    // Razorpay signature verification, so they are never faked from the client.
     if (plan.assigns_coach !== false) {
       await autoAssignCoach(user.id, plan.plan_key);
       const c = await fetchAssignedCoach(user.id);
@@ -183,9 +179,15 @@ export default function Payment() {
     if (!ok) throw new Error("Failed to load Razorpay checkout.");
 
     const { data, error } = await supabase.functions.invoke("razorpay-create-order", {
-      body: { plan_key: plan!.plan_key },
+      body: {
+        plan_key: plan!.plan_key,
+        billing_cycle: plan!.billing_cycle,
+        mode: changeMode,
+        coupon_code: coupon?.valid ? coupon.code : null,
+      },
     });
     if (error) throw error;
+    if (data?.error) throw new Error(data.error);
     if (!data?.order_id) throw new Error("Could not create order.");
 
     await new Promise<void>((resolve, reject) => {
@@ -241,41 +243,10 @@ export default function Payment() {
 
     setLoading(true);
     try {
-      if (plan.plan_key === RAZORPAY_TEST_PLAN_KEY) {
-        // Live Razorpay flow for the ₹1 test plan only.
-        await handleRazorpayPay(effectiveUser);
-        await finalizePostPayment(effectiveUser);
-      } else if (isPlanChange) {
-        // Upgrade starts today with prorated credit; downgrade is scheduled for current expiry.
-        await new Promise((r) => setTimeout(r, 1200));
-        await changeSubscriptionPlan({
-          plan_id: plan.plan_key,
-          plan_name: `${plan.name} — ${CYCLE_LABEL[plan.billing_cycle]}`,
-          plan_price: payableAmount,
-          duration_months: duration,
-          mode: changeMode,
-        });
-        await finalizePostPayment(effectiveUser);
-      } else {
-        // Mock flow for all other plans.
-        await new Promise((r) => setTimeout(r, 1200));
-
-        const now = new Date();
-        const expiresAt = new Date(now);
-        expiresAt.setMonth(expiresAt.getMonth() + duration);
-
-        await createSubscription({
-          user_id: effectiveUser.id,
-          plan_id: plan.plan_key,
-          plan_name: `${plan.name} — ${CYCLE_LABEL[plan.billing_cycle]}`,
-          plan_price: payableAmount,
-          duration_months: duration,
-          started_at: now.toISOString(),
-          expires_at: expiresAt.toISOString(),
-        });
-
-        await finalizePostPayment(effectiveUser);
-      }
+      // Every package — new purchase, upgrade, downgrade or renewal — goes
+      // through live Razorpay checkout.
+      await handleRazorpayPay(effectiveUser);
+      await finalizePostPayment(effectiveUser);
     } catch (e: any) {
       console.error("Payment failed", e);
       setError(e?.message ?? "Payment failed. Please try again.");
@@ -283,6 +254,7 @@ export default function Payment() {
       setLoading(false);
     }
   };
+
 
   useEffect(() => {
     if (step === "success") {
@@ -345,22 +317,13 @@ export default function Payment() {
               )}
             </div>
 
-            <div className="flex flex-col gap-3 mb-8">
-              <div className="liquid-glass rounded-2xl px-4 py-4">
-                <p className="text-xs text-muted-foreground mb-1">Card number</p>
-                <input placeholder="4242 4242 4242 4242" className="bg-transparent text-foreground font-medium text-base outline-none w-full placeholder:text-muted-foreground/50" />
-              </div>
-              <div className="flex gap-3">
-                <div className="flex-1 liquid-glass rounded-2xl px-4 py-4">
-                  <p className="text-xs text-muted-foreground mb-1">Expiry</p>
-                  <input placeholder="MM/YY" className="bg-transparent text-foreground font-medium text-base outline-none w-full placeholder:text-muted-foreground/50" />
-                </div>
-                <div className="flex-1 liquid-glass rounded-2xl px-4 py-4">
-                  <p className="text-xs text-muted-foreground mb-1">CVV</p>
-                  <input placeholder="123" className="bg-transparent text-foreground font-medium text-base outline-none w-full placeholder:text-muted-foreground/50" />
-                </div>
-              </div>
+            <div className="liquid-glass rounded-2xl px-4 py-4 mb-8 flex items-center gap-3">
+              <Lock className="w-4 h-4 text-primary shrink-0" strokeWidth={1.8} />
+              <p className="text-xs text-muted-foreground leading-snug">
+                You'll pay securely via Razorpay — UPI, cards, netbanking and wallets are all supported.
+              </p>
             </div>
+
 
             {/* Referral code */}
             <div className="mb-4">
