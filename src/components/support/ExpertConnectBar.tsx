@@ -24,8 +24,15 @@ function readCachedPackageKey(): string | null {
 export const EXPERT_CONNECT_MESSAGE =
   "Hello Colonel Gautam Guha. I've joined the BBDO Foundation Care Plan and would like to request an Expert Connect. Thank you.";
 
-function openWhatsApp(_context?: string) {
-  const text = encodeURIComponent(EXPERT_CONNECT_MESSAGE);
+const EXPERT_CONNECT_MESSAGE_INTENSIVE =
+  "Hello Colonel Gautam Guha. I've joined the BBDO Total Transformation Plan and would like to request an Expert Connect. Thank you.";
+
+/** Package tiers eligible for Expert Connect: Package 1 (foundation) and Package 3 (intensive). */
+const FOUNDATION_KEYS = ["foundation", "starter"];
+const INTENSIVE_KEYS = ["intensive", "pro"];
+
+function openWhatsApp(message: string) {
+  const text = encodeURIComponent(message);
   window.open(`https://wa.me/${EXPERT_CONNECT_NUMBER}?text=${text}`, "_blank", "noopener,noreferrer");
 }
 
