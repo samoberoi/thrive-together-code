@@ -1,12 +1,12 @@
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
-// Server-side MSG91 widget OTP flow.
-// Works even when the browser widget script is blocked (native webviews,
-// ad-blockers, poor networks) — which is why some users never received an SMS.
+// Server-side MSG91 OTP (API v5). Runs entirely on the backend so it works
+// identically on web, Android and iOS — no browser widget, no captcha, no
+// domain whitelisting. 4-digit codes for every user, including admins.
 
-const WIDGET_ID = "356b71685561353436363635";
-const TOKEN_AUTH = "478181TOAfR90F2N691ae1eeP1";
-const BASE = "https://control.msg91.com/api/v5/widget";
+const API = "https://control.msg91.com/api/v5";
+const OTP_LENGTH = 4;
+const OTP_EXPIRY_MIN = 10;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -17,69 +17,47 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
-  const post = async (path: string, payload: Record<string, unknown>) => {
-    const res = await fetch(`${BASE}/${path}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ widgetId: WIDGET_ID, tokenAuth: TOKEN_AUTH, ...payload }),
+  const authKey = Deno.env.get("MSG91_AUTH_KEY") ?? "";
+  if (!authKey) return json({ error: "SMS service is not configured" }, 500);
+
+  const call = async (path: string, method: "GET" | "POST" = "GET") => {
+    const res = await fetch(`${API}/${path}`, {
+      method,
+      headers: { authkey: authKey, "Content-Type": "application/json" },
     });
     const data = await res.json().catch(() => ({} as any));
-    const isError = !res.ok || String(data?.type ?? "").toLowerCase() === "error";
-    return { isError, data, status: res.status };
+    const failed = !res.ok || String(data?.type ?? "").toLowerCase() === "error";
+    return { failed, data };
   };
 
   try {
     const body = await req.json().catch(() => ({} as any));
     const action = String(body?.action ?? "");
-    const identifier = String(body?.identifier ?? "").replace(/\D/g, "");
-    const reqId = typeof body?.reqId === "string" ? body.reqId : "";
+    const mobile = String(body?.identifier ?? "").replace(/\D/g, "");
     const otp = String(body?.otp ?? "").replace(/\D/g, "");
 
-    if (action === "send" || action === "retry") {
-      if (identifier.length < 10) return json({ error: "Invalid phone number" }, 400);
-      const { isError, data } = action === "send"
-        ? await post("sendOtp", { identifier })
-        : await post("retryOtp", { reqId: reqId || undefined, identifier, retryChannel: "11" });
-      if (isError) return json({ error: data?.message || "Could not send the code" }, 400);
-      return json({ ok: true, reqId: data?.message ? String(data.message) : reqId || null });
+    if (mobile.length < 10) return json({ error: "Invalid phone number" }, 400);
+
+    if (action === "send") {
+      const { failed, data } = await call(
+        `otp?mobile=${mobile}&otp_length=${OTP_LENGTH}&otp_expiry=${OTP_EXPIRY_MIN}`,
+        "POST",
+      );
+      if (failed) return json({ error: data?.message || "Could not send the code" }, 400);
+      return json({ ok: true, reqId: data?.request_id ?? null });
     }
 
-    if (action === "verify") {
-      if (!otp) return json({ error: "Enter the code" }, 400);
-      if (!reqId) return json({ error: "Session expired. Request a new code." }, 400);
-      const { isError, data } = await post("verifyOtp", { reqId, otp });
-      if (isError) return json({ error: data?.message || "Wrong code" }, 401);
-
-      // `message` is the access token when verification succeeds — validate it
-      // against MSG91 so a spoofed client response can never mint a session.
-      const accessToken = typeof data?.message === "string" ? data.message : "";
-      const authKey = Deno.env.get("MSG91_AUTH_KEY");
-      if (accessToken && authKey) {
-        const res = await fetch("https://control.msg91.com/api/v5/widget/verifyAccessToken", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ authkey: authKey, "access-token": accessToken }),
-        });
-        const v = await res.json().catch(() => ({} as any));
-        if (!res.ok || String(v?.type ?? "").toLowerCase() === "error") {
-          return json({ error: v?.message || "Verification failed" }, 401);
-        }
-      }
+    if (action === "retry") {
+      const { failed, data } = await call(`otp/retry?mobile=${mobile}&retrytype=text`);
+      if (failed) return json({ error: data?.message || "Could not resend the code" }, 400);
       return json({ ok: true });
     }
 
-    if (action === "templates") {
-      const authKey = Deno.env.get("MSG91_AUTH_KEY") ?? "";
-      const out: Record<string, unknown> = {};
-      for (const url of [
-        "https://control.msg91.com/api/v5/otp/templates",
-        "https://api.msg91.com/api/v5/otp/templates",
-        "https://control.msg91.com/api/v5/otp?mobile=" + identifier + "&otp_length=4",
-      ]) {
-        const r = await fetch(url, { method: url.includes("/otp?") ? "POST" : "GET", headers: { authkey: authKey, "Content-Type": "application/json" } });
-        out[url] = await r.text().then((t) => t.slice(0, 800));
-      }
-      return json(out);
+    if (action === "verify") {
+      if (otp.length !== OTP_LENGTH) return json({ error: "Enter the 4-digit code" }, 400);
+      const { failed, data } = await call(`otp/verify?mobile=${mobile}&otp=${otp}`);
+      if (failed) return json({ error: data?.message || "Wrong code" }, 401);
+      return json({ ok: true });
     }
 
     return json({ error: "Unknown action" }, 400);
