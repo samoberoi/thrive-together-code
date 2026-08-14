@@ -49,6 +49,7 @@ export default function Auth() {
   const [otp, setOtp] = useState("");
   const [otpError, setOtpError] = useState("");
   const [msg91ReqId, setMsg91ReqId] = useState<string | null>(null);
+  const [staffBypass, setStaffBypass] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [name, setName] = useState("");
   const [emailInput, setEmailInput] = useState("");
@@ -133,6 +134,17 @@ export default function Auth() {
 
   const identifier = `${country.dial.replace(/\D/g, "")}${phone}`;
 
+  const checkStaffBypass = async (): Promise<boolean> => {
+    try {
+      const { data } = await supabase.functions.invoke("staff-otp", {
+        body: { action: "check", phone },
+      });
+      return Boolean((data as { staff?: boolean } | null)?.staff);
+    } catch {
+      return false;
+    }
+  };
+
   const sendOtp = async () => {
     if (phone.length < 10 || loading) return;
     setLoading(true);
@@ -140,6 +152,16 @@ export default function Auth() {
     saveUser({ profile: { phone, country: country.name, country_code: country.dial } as any });
 
     try {
+      // Admins and coaches bypass MSG91 and use the fixed staff code.
+      const staff = await checkStaffBypass();
+      setStaffBypass(staff);
+      if (staff) {
+        setMsg91ReqId(null);
+        setStep("otp");
+        setOtp("");
+        setResendCooldown(0);
+        return;
+      }
       const reqId = await msg91SendOtp(identifier);
       setMsg91ReqId(reqId);
       setStep("otp");
@@ -155,6 +177,10 @@ export default function Auth() {
   const resendOtp = async () => {
     if (resendCooldown > 0 || loading) return;
     setOtpError("");
+    if (staffBypass) {
+      setOtp("");
+      return;
+    }
     setLoading(true);
     try {
       // Start a fresh transaction in the same configured MSG91 Widget flow.
@@ -179,12 +205,21 @@ export default function Auth() {
     // Verify in the exact Widget transaction that dispatched this code, then
     // validate MSG91's short-lived verification token on the backend.
     try {
-      const accessToken = await msg91VerifyOtp(submitted, msg91ReqId);
-      const { data, error } = await supabase.functions.invoke("msg91-verify-otp", {
-        body: { phone: identifier, otp: submitted, accessToken },
-      });
-      if (error || !data?.ok) {
-        throw new Error(data?.error || "Verification failed. Please try again.");
+      if (staffBypass) {
+        const { data, error } = await supabase.functions.invoke("staff-otp", {
+          body: { action: "verify", phone, otp: submitted },
+        });
+        if (error || !(data as { ok?: boolean } | null)?.ok) {
+          throw new Error((data as { error?: string } | null)?.error || "Wrong code. Please try again.");
+        }
+      } else {
+        const accessToken = await msg91VerifyOtp(submitted, msg91ReqId);
+        const { data, error } = await supabase.functions.invoke("msg91-verify-otp", {
+          body: { phone: identifier, otp: submitted, accessToken },
+        });
+        if (error || !data?.ok) {
+          throw new Error(data?.error || "Verification failed. Please try again.");
+        }
       }
     } catch (error) {
       setOtpError((error as Error).message || "Wrong code. Please try again.");
@@ -192,6 +227,7 @@ export default function Auth() {
       setLoading(false);
       return;
     }
+
 
 
 
