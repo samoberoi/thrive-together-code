@@ -38,6 +38,26 @@ Deno.serve(async (req) => {
 
     if (mobile.length < 10) return json({ error: "Invalid phone number" }, 400);
 
+
+    if (action === "diag") {
+      const probes: Record<string, unknown> = {};
+      const raw = async (url: string, method: "GET" | "POST" = "GET") => {
+        try {
+          const res = await fetch(url, { method, headers: { authkey: authKey, "Content-Type": "application/json" } });
+          const text = await res.text();
+          return { status: res.status, body: text.slice(0, 800) };
+        } catch (e) {
+          return { error: String(e) };
+        }
+      };
+      probes.templates = await raw(`${API}/otp/templates`);
+      probes.balance = await raw("https://control.msg91.com/api/balance.php?type=4&authkey=" + authKey);
+      probes.send = await raw(`${API}/otp?mobile=${mobile}&otp_length=${OTP_LENGTH}&otp_expiry=${OTP_EXPIRY_MIN}`, "POST");
+      probes.hasTemplate = Boolean(Deno.env.get("MSG91_TEMPLATE_ID"));
+      probes.hasSender = Boolean(Deno.env.get("MSG91_SENDER_ID"));
+      return json({ ok: true, probes });
+    }
+
     if (action === "send") {
       const { failed, data } = await call(
         `otp?mobile=${mobile}&otp_length=${OTP_LENGTH}&otp_expiry=${OTP_EXPIRY_MIN}`,
