@@ -21,7 +21,7 @@ import AuthHeroCarousel from "@/components/AuthHeroCarousel";
 import { toast } from "sonner";
 import { persistSupabaseSessionToNative } from "@/lib/nativePersistence";
 import { resolvePostAuthRoute } from "@/lib/accessControl";
-import { msg91RetryOtp, msg91SendOtp, msg91VerifyOtp } from "@/lib/msg91";
+import { msg91DirectSendOtp, msg91DirectVerifyOtp, msg91RetryOtp, msg91SendOtp, msg91VerifyOtp } from "@/lib/msg91";
 
 
 function withTimeout<T>(promise: Promise<T>, fallback: T, ms = 2500): Promise<T> {
