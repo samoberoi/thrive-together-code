@@ -24,7 +24,27 @@
     <meta name="twitter:title" content="Bye Bye Diabetes">
     <meta name="twitter:description" content="A science-backed metabolic correction system to reverse diabetes and restore your health.">
     <meta name="twitter:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/2684b4bd-e83a-4671-8ec4-75cd9bff363b/id-preview-7a9a6244--c700f153-c318-4052-909f-7d8091bd7aed.lovable.app-1771486378777.png">
+
+    <!-- MSG91 OTP widget (exposes window.sendOtp / verifyOtp / retryOtp) -->
+    <script>
+      var msg91Configuration = {
+        widgetId: "356b71685561353436363635",
+        tokenAuth: "478181TOAfR90F2N691ae1eeP1",
+        exposeMethods: true,
+        success: function (data) { console.info("MSG91 widget success", data); },
+        failure: function (error) { console.warn("MSG91 widget failure", error); }
+      };
+      (function (c, d) {
+        var s = d.createElement("script");
+        s.type = "text/javascript";
+        s.async = true;
+        s.src = "https://verify.msg91.com/otp-provider.js";
+        s.onload = function () { if (window.initSendOTP) window.initSendOTP(c); };
+        d.getElementsByTagName("head")[0].appendChild(s);
+      })(msg91Configuration, document);
+    </script>
   </head>
+
 
   <body>
     <div id="root"></div>
