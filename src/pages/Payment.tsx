@@ -319,22 +319,13 @@ export default function Payment() {
               )}
             </div>
 
-            <div className="flex flex-col gap-3 mb-8">
-              <div className="liquid-glass rounded-2xl px-4 py-4">
-                <p className="text-xs text-muted-foreground mb-1">Card number</p>
-                <input placeholder="4242 4242 4242 4242" className="bg-transparent text-foreground font-medium text-base outline-none w-full placeholder:text-muted-foreground/50" />
-              </div>
-              <div className="flex gap-3">
-                <div className="flex-1 liquid-glass rounded-2xl px-4 py-4">
-                  <p className="text-xs text-muted-foreground mb-1">Expiry</p>
-                  <input placeholder="MM/YY" className="bg-transparent text-foreground font-medium text-base outline-none w-full placeholder:text-muted-foreground/50" />
-                </div>
-                <div className="flex-1 liquid-glass rounded-2xl px-4 py-4">
-                  <p className="text-xs text-muted-foreground mb-1">CVV</p>
-                  <input placeholder="123" className="bg-transparent text-foreground font-medium text-base outline-none w-full placeholder:text-muted-foreground/50" />
-                </div>
-              </div>
+            <div className="liquid-glass rounded-2xl px-4 py-4 mb-8 flex items-center gap-3">
+              <Lock className="w-4 h-4 text-primary shrink-0" strokeWidth={1.8} />
+              <p className="text-xs text-muted-foreground leading-snug">
+                You'll pay securely via Razorpay — UPI, cards, netbanking and wallets are all supported.
+              </p>
             </div>
+
 
             {/* Referral code */}
             <div className="mb-4">
