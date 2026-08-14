@@ -21,7 +21,7 @@ import AuthHeroCarousel from "@/components/AuthHeroCarousel";
 import { toast } from "sonner";
 import { persistSupabaseSessionToNative } from "@/lib/nativePersistence";
 import { resolvePostAuthRoute } from "@/lib/accessControl";
-import { msg91DirectSendOtp, msg91DirectVerifyOtp } from "@/lib/msg91";
+import { msg91SendOtp, msg91VerifyOtp } from "@/lib/msg91";
 
 
 function withTimeout<T>(promise: Promise<T>, fallback: T, ms = 2500): Promise<T> {
@@ -48,6 +48,7 @@ export default function Auth() {
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [otpError, setOtpError] = useState("");
+  const [msg91ReqId, setMsg91ReqId] = useState<string | null>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [name, setName] = useState("");
   const [emailInput, setEmailInput] = useState("");
@@ -139,7 +140,8 @@ export default function Auth() {
     saveUser({ profile: { phone, country: country.name, country_code: country.dial } as any });
 
     try {
-      await msg91DirectSendOtp(identifier);
+      const reqId = await msg91SendOtp(identifier);
+      setMsg91ReqId(reqId);
       setStep("otp");
       setOtp("");
       setResendCooldown(30);
@@ -155,8 +157,9 @@ export default function Auth() {
     setOtpError("");
     setLoading(true);
     try {
-      // Start one fresh server-side SMS transaction for every account type.
-      await msg91DirectSendOtp(identifier);
+      // Start a fresh transaction in the same configured MSG91 Widget flow.
+      const reqId = await msg91SendOtp(identifier);
+      setMsg91ReqId(reqId);
       setOtp("");
       setResendCooldown(30);
       toast.success("New verification code sent.");
@@ -173,9 +176,16 @@ export default function Auth() {
     setOtpError("");
     setLoading(true);
 
-    // Verify against the same server-side SMS transaction used for dispatch.
+    // Verify in the exact Widget transaction that dispatched this code, then
+    // validate MSG91's short-lived verification token on the backend.
     try {
-      await msg91DirectVerifyOtp(identifier, submitted);
+      const accessToken = await msg91VerifyOtp(submitted, msg91ReqId);
+      const { data, error } = await supabase.functions.invoke("msg91-verify-otp", {
+        body: { phone: identifier, otp: submitted, accessToken },
+      });
+      if (error || !data?.ok) {
+        throw new Error(data?.error || "Verification failed. Please try again.");
+      }
     } catch (error) {
       setOtpError((error as Error).message || "Wrong code. Please try again.");
       setOtp("");
