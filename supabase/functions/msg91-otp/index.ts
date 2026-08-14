@@ -68,6 +68,19 @@ Deno.serve(async (req) => {
       return json({ ok: true });
     }
 
+    if (action === "templates") {
+      const authKey = Deno.env.get("MSG91_AUTH_KEY") ?? "";
+      const out: Record<string, unknown> = {};
+      for (const url of [
+        "https://control.msg91.com/api/v5/otp/templates",
+        "https://control.msg91.com/api/v5/widget/getWidgetData",
+      ]) {
+        const r = await fetch(url, { headers: { authkey: authKey, "Content-Type": "application/json" } });
+        out[url] = await r.text().then((t) => t.slice(0, 1500));
+      }
+      return json(out);
+    }
+
     return json({ error: "Unknown action" }, 400);
   } catch (error) {
     return json({ error: (error as Error).message || "Server error" }, 500);
