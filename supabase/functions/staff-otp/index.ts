@@ -56,15 +56,16 @@ Deno.serve(async (req) => {
         .map((p: any) => p.user_id)
         .filter(Boolean));
 
-      // Older staff accounts may have no phone on their profile because their
-      // login identity is stored as <phone>@bbd.app. Include those auth IDs.
-      for (let page = 1; page <= 10; page += 1) {
-        const { data: authPage, error: authError } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
-        if (authError) break;
-        for (const user of authPage.users) {
-          if (last10(String(user.email ?? "").split("@")[0]) === phone) ids.add(user.id);
+      // Only scan legacy auth identities when there is no matching profile.
+      if (!ids.size) {
+        for (let page = 1; page <= 10; page += 1) {
+          const { data: authPage, error: authError } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
+          if (authError) break;
+          for (const user of authPage.users) {
+            if (last10(String(user.email ?? "").split("@")[0]) === phone) ids.add(user.id);
+          }
+          if (authPage.users.length < 1000) break;
         }
-        if (authPage.users.length < 1000) break;
       }
 
       if (ids.size) {
