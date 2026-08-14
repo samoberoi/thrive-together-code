@@ -662,6 +662,16 @@ export default function Auth() {
                     >
                       {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : "Resend code"}
                     </button>
+                    {!directSms && (
+                      <div className="mt-2">
+                        <button
+                          onClick={sendBackupSms}
+                          className="text-[12px] font-semibold text-muted-foreground underline underline-offset-2"
+                        >
+                          Didn't get it? Send code by SMS
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
 
