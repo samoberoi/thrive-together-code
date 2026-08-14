@@ -76,3 +76,34 @@ export async function msg91VerifyOtp(otp: string, reqId?: string | null): Promis
     );
   });
 }
+
+// ---------------------------------------------------------------------------
+// Direct (server-side) SMS fallback.
+// The MSG91 browser widget silently drops sends for numbers that hit its
+// per-number request limit — the transaction shows in the MSG91 console but no
+// SMS goes out. That is what blocks the admin numbers. These helpers call the
+// `msg91-otp` edge function, which talks to the MSG91 API v5 directly, so a
+// blocked widget can never stop delivery.
+// ---------------------------------------------------------------------------
+
+import { supabase } from "@/integrations/supabase/client";
+
+async function callOtpFunction(action: "send" | "retry" | "verify", payload: Record<string, unknown>) {
+  const { data, error } = await supabase.functions.invoke("msg91-otp", {
+    body: { action, ...payload },
+  });
+  if (error) throw new Error(error.message || "SMS service is unavailable. Please try again.");
+  if (!data?.ok) throw new Error((data as { error?: string })?.error || "SMS service failed. Please try again.");
+  return data as { ok: true; reqId?: string | null };
+}
+
+/** Sends an OTP straight through the MSG91 API, bypassing the browser widget. */
+export async function msg91DirectSendOtp(identifier: string): Promise<string | null> {
+  const data = await callOtpFunction("send", { identifier });
+  return data.reqId ?? null;
+}
+
+/** Verifies an OTP that was sent through the direct (non-widget) route. */
+export async function msg91DirectVerifyOtp(identifier: string, otp: string): Promise<void> {
+  await callOtpFunction("verify", { identifier, otp });
+}
