@@ -4,19 +4,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Check, Flame, Lock, Rocket, User, Star, Gift, Ticket } from "lucide-react";
 import { getUser } from "@/lib/userStore";
 import { useAuth } from "@/contexts/AuthContext";
-import { createSubscription, changeSubscriptionPlan, previewPlanChange, type PlanChangePreview } from "@/lib/subscriptionService";
+import { previewPlanChange, type PlanChangePreview } from "@/lib/subscriptionService";
 import { supabase } from "@/integrations/supabase/client";
 import { getSelectedPlan, CYCLE_LABEL } from "@/lib/packageService";
 import { autoAssignCoach, fetchAssignedCoach, coachTypeLabel, type Coach } from "@/lib/coachService";
 import { sendWelcomeNotification } from "@/lib/notificationService";
-import { validateCoupon, redeemCoupon, type CouponValidation } from "@/lib/couponService";
+import { validateCoupon, type CouponValidation } from "@/lib/couponService";
 import logoImg from "@/assets/logo.png";
 
 declare global {
   interface Window { Razorpay: any }
 }
-
-const RAZORPAY_TEST_PLAN_KEY = "onboarding_test";
 
 type PaymentUser = { id: string; email?: string | null };
 
