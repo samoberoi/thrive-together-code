@@ -21,8 +21,8 @@ import AuthHeroCarousel from "@/components/AuthHeroCarousel";
 import { toast } from "sonner";
 import { persistSupabaseSessionToNative } from "@/lib/nativePersistence";
 import { resolvePostAuthRoute } from "@/lib/accessControl";
+import { isDevPhone, msg91RetryOtp, msg91SendOtp, msg91VerifyOtp } from "@/lib/msg91";
 
-const DEFAULT_OTP = "111111";
 
 function withTimeout<T>(promise: Promise<T>, fallback: T, ms = 2500): Promise<T> {
   return Promise.race([
