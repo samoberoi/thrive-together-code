@@ -49,7 +49,6 @@ export default function Auth() {
   const [otp, setOtp] = useState("");
   const [otpError, setOtpError] = useState("");
   const [msg91ReqId, setMsg91ReqId] = useState<string | null>(null);
-  const [msg91AccessToken, setMsg91AccessToken] = useState<string | null>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
 
   const [name, setName] = useState("");
@@ -133,18 +132,15 @@ export default function Auth() {
 
 
 
+  const identifier = `${country.dial.replace(/\D/g, "")}${phone}`;
+
   const sendOtp = async () => {
     if (phone.length < 10 || loading) return;
     setLoading(true);
     setOtpError("");
-    setMsg91AccessToken(null);
     saveUser({ profile: { phone, country: country.name, country_code: country.dial } as any });
 
-
-
-
     try {
-      const identifier = `${country.dial.replace(/\D/g, "")}${phone}`;
       const reqId = await msg91SendOtp(identifier);
       setMsg91ReqId(reqId);
       setStep("otp");
@@ -160,14 +156,9 @@ export default function Auth() {
   const resendOtp = async () => {
     if (resendCooldown > 0 || loading) return;
     setOtpError("");
-    setMsg91AccessToken(null);
-
-
-
-
     setLoading(true);
     try {
-      await msg91RetryOtp(msg91ReqId);
+      await msg91RetryOtp(identifier);
       setResendCooldown(30);
       toast.success("Code sent again.");
     } catch (error) {
@@ -177,35 +168,23 @@ export default function Auth() {
     }
   };
 
-  const verifyOtp = async () => {
-    if (otp.length < 4 || loading) return;
+  const verifyOtp = async (code?: string) => {
+    const submitted = (code ?? otp).replace(/\D/g, "");
+    if (submitted.length < 4 || loading) return;
     setOtpError("");
     setLoading(true);
 
-    // 1) Verify the code with MSG91 (widget client-side), then confirm server-side.
+    // Single server-side verification against MSG91.
     try {
-      let accessToken = msg91AccessToken;
-      if (!accessToken) {
-        accessToken = await msg91VerifyOtp(otp, msg91ReqId);
-        setMsg91AccessToken(accessToken);
-      }
-
-
-      const { data: verifyData, error: verifyError } = await supabase.functions.invoke("msg91-verify-otp", {
-        body: { phone, otp, accessToken },
-      });
-      if (verifyError || !verifyData?.ok) {
-        setOtpError("Wrong code. Please try again.");
-        setOtp("");
-        setLoading(false);
-        return;
-      }
+      await msg91VerifyOtp(identifier, submitted);
     } catch (error) {
       setOtpError((error as Error).message || "Wrong code. Please try again.");
       setOtp("");
       setLoading(false);
       return;
     }
+
+
 
 
     try {
@@ -600,7 +579,16 @@ export default function Auth() {
                 </p>
 
                 <div className="mt-6 flex justify-center">
-                  <InputOTP maxLength={4} value={otp} onChange={(v) => { setOtp(v); if (otpError) setOtpError(""); }}>
+                  <InputOTP
+                    maxLength={4}
+                    value={otp}
+                    disabled={loading}
+                    onChange={(v) => {
+                      setOtp(v);
+                      if (otpError) setOtpError("");
+                      if (v.length === 4 && !loading) void verifyOtp(v);
+                    }}
+                  >
                     <InputOTPGroup className="gap-2.5">
                       {[0, 1, 2, 3].map((i) => (
                         <InputOTPSlot
@@ -617,23 +605,27 @@ export default function Auth() {
                   <p className="text-destructive text-[13px] text-center mt-4 font-semibold">{otpError}</p>
                 )}
 
-                <div className="mt-4 text-center">
-                  <button
-                    onClick={resendOtp}
-                    disabled={resendCooldown > 0 || loading}
-                    className="text-[13px] font-bold text-primary disabled:text-muted-foreground disabled:font-semibold"
-                  >
-                    {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : "Resend code"}
-                  </button>
-                </div>
+                {/* Resend disappears as soon as the code is submitted / being verified. */}
+                {!loading && otp.length < 4 && (
+                  <div className="mt-4 text-center">
+                    <button
+                      onClick={resendOtp}
+                      disabled={resendCooldown > 0}
+                      className="text-[13px] font-bold text-primary disabled:text-muted-foreground disabled:font-semibold"
+                    >
+                      {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : "Resend code"}
+                    </button>
+                  </div>
+                )}
 
 
 
 
                 <div className="ob-bottom">
                   <motion.button
-                    onClick={verifyOtp}
+                    onClick={() => void verifyOtp()}
                     disabled={otp.length < 4 || loading}
+
                     whileTap={{ scale: 0.98 }}
                     className="ob-cta gradient-blue glow-blue disabled:opacity-40"
                   >
