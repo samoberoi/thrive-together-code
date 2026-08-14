@@ -21,8 +21,8 @@ import AuthHeroCarousel from "@/components/AuthHeroCarousel";
 import { toast } from "sonner";
 import { persistSupabaseSessionToNative } from "@/lib/nativePersistence";
 import { resolvePostAuthRoute } from "@/lib/accessControl";
+import { isDevPhone, msg91RetryOtp, msg91SendOtp, msg91VerifyOtp } from "@/lib/msg91";
 
-const DEFAULT_OTP = "111111";
 
 function withTimeout<T>(promise: Promise<T>, fallback: T, ms = 2500): Promise<T> {
   return Promise.race([
@@ -48,6 +48,10 @@ export default function Auth() {
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [otpError, setOtpError] = useState("");
+  const [msg91ReqId, setMsg91ReqId] = useState<string | null>(null);
+  const [msg91AccessToken, setMsg91AccessToken] = useState<string | null>(null);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
   const [name, setName] = useState("");
   const [emailInput, setEmailInput] = useState("");
   const [emailError, setEmailError] = useState("");
@@ -115,28 +119,101 @@ export default function Auth() {
 
     prepareSession();
 
+
     return () => {
       cancelled = true;
     };
   }, [navigate]);
 
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setTimeout(() => setResendCooldown((s) => s - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
+
+
+
   const sendOtp = async () => {
-    if (phone.length < 10) return;
+    if (phone.length < 10 || loading) return;
     setLoading(true);
+    setOtpError("");
+    setMsg91AccessToken(null);
     saveUser({ profile: { phone, country: country.name, country_code: country.dial } as any });
-    // Simulate OTP send
-    await new Promise((r) => setTimeout(r, 150));
-    setLoading(false);
-    setStep("otp");
+
+    if (isDevPhone(phone)) {
+      setLoading(false);
+      setStep("otp");
+      setOtp("");
+      setResendCooldown(30);
+      return;
+    }
+
+    try {
+      const identifier = `${country.dial.replace(/\D/g, "")}${phone}`;
+      const reqId = await msg91SendOtp(identifier);
+      setMsg91ReqId(reqId);
+      setStep("otp");
+      setOtp("");
+      setResendCooldown(30);
+    } catch (error) {
+      toast.error((error as Error).message || "Could not send the code. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resendOtp = async () => {
+    if (resendCooldown > 0 || loading) return;
+    setOtpError("");
+    setMsg91AccessToken(null);
+
+    if (isDevPhone(phone)) {
+      setResendCooldown(30);
+      toast.success("Use the test code to continue.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await msg91RetryOtp(msg91ReqId);
+      setResendCooldown(30);
+      toast.success("Code sent again.");
+    } catch (error) {
+      toast.error((error as Error).message || "Could not resend the code.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const verifyOtp = async () => {
-    if (otp !== DEFAULT_OTP) {
-      setOtpError("Invalid OTP. Please enter 111111");
-      return;
-    }
+    if (otp.length < 6 || loading) return;
     setOtpError("");
     setLoading(true);
+
+    // 1) Verify the code with MSG91 (widget client-side), then confirm server-side.
+    try {
+      let accessToken = msg91AccessToken;
+      if (!isDevPhone(phone) && !accessToken) {
+        accessToken = await msg91VerifyOtp(otp, msg91ReqId);
+        setMsg91AccessToken(accessToken);
+      }
+
+      const { data: verifyData, error: verifyError } = await supabase.functions.invoke("msg91-verify-otp", {
+        body: { phone, otp, accessToken },
+      });
+      if (verifyError || !verifyData?.ok) {
+        setOtpError("Wrong code. Please try again.");
+        setOtp("");
+        setLoading(false);
+        return;
+      }
+    } catch (error) {
+      setOtpError((error as Error).message || "Wrong code. Please try again.");
+      setOtp("");
+      setLoading(false);
+      return;
+    }
+
 
     try {
       try { localStorage.removeItem(EXPLICIT_LOGOUT_KEY); } catch {}
@@ -546,6 +623,18 @@ export default function Auth() {
                 {otpError && (
                   <p className="text-destructive text-[13px] text-center mt-4 font-semibold">{otpError}</p>
                 )}
+
+                <div className="mt-4 text-center">
+                  <button
+                    onClick={resendOtp}
+                    disabled={resendCooldown > 0 || loading}
+                    className="text-[13px] font-bold text-primary disabled:text-muted-foreground disabled:font-semibold"
+                  >
+                    {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : "Resend code"}
+                  </button>
+                </div>
+
+
 
 
                 <div className="ob-bottom">
