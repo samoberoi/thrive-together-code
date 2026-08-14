@@ -38,16 +38,21 @@ Deno.serve(async (req) => {
     // ---- Is this phone an admin or a coach? -------------------------------
     let staff = false;
 
-    const { data: coachRows } = await admin.from("coaches").select("phone").limit(1000);
-    if ((coachRows ?? []).some((c: any) => last10(String(c.phone ?? "")) === phone)) staff = true;
+    const phoneVariants = [phone, `91${phone}`, `+91${phone}`];
+    const { data: coachRows } = await admin
+      .from("coaches")
+      .select("phone")
+      .in("phone", phoneVariants)
+      .limit(1);
+    if ((coachRows ?? []).length > 0) staff = true;
 
     if (!staff) {
       const { data: profiles } = await admin
         .from("profiles")
         .select("user_id, phone")
-        .limit(5000);
+        .in("phone", phoneVariants)
+        .limit(10);
       const ids = new Set((profiles ?? [])
-        .filter((p: any) => last10(String(p.phone ?? "")) === phone)
         .map((p: any) => p.user_id)
         .filter(Boolean));
 
