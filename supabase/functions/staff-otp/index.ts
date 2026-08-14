@@ -46,14 +46,26 @@ Deno.serve(async (req) => {
         .from("profiles")
         .select("id, phone")
         .limit(5000);
-      const ids = (profiles ?? [])
+      const ids = new Set((profiles ?? [])
         .filter((p: any) => last10(String(p.phone ?? "")) === phone)
-        .map((p: any) => p.id);
-      if (ids.length) {
+        .map((p: any) => p.id));
+
+      // Older staff accounts may have no phone on their profile because their
+      // login identity is stored as <phone>@bbd.app. Include those auth IDs.
+      for (let page = 1; page <= 10; page += 1) {
+        const { data: authPage, error: authError } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
+        if (authError) break;
+        for (const user of authPage.users) {
+          if (last10(String(user.email ?? "").split("@")[0]) === phone) ids.add(user.id);
+        }
+        if (authPage.users.length < 1000) break;
+      }
+
+      if (ids.size) {
         const { data: roles } = await admin
           .from("user_roles")
           .select("user_id, role")
-          .in("user_id", ids);
+          .in("user_id", [...ids]);
         staff = (roles ?? []).some((r: any) => r.role === "admin" || r.role === "coach");
       }
     }
