@@ -50,6 +50,8 @@ export default function Auth() {
   const [otpError, setOtpError] = useState("");
   const [msg91ReqId, setMsg91ReqId] = useState<string | null>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
+  // True once we fall back to the direct MSG91 API (widget blocked this number).
+  const [directSms, setDirectSms] = useState(false);
 
   const [name, setName] = useState("");
   const [emailInput, setEmailInput] = useState("");
