@@ -119,6 +119,7 @@ export default function Auth() {
 
     prepareSession();
 
+
     return () => {
       cancelled = true;
     };
