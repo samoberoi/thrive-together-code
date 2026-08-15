@@ -773,13 +773,13 @@ final class BBDOYouTubePlayerViewController: UIViewController, WKNavigationDeleg
             URLQueryItem(name: "cc_lang_pref", value: "none"),
             URLQueryItem(name: "hl", value: "en"),
             URLQueryItem(name: "iv_load_policy", value: "3"),
-            URLQueryItem(name: "origin", value: "https://app.byebyediabetes.com"),
-            URLQueryItem(name: "widget_referrer", value: "https://app.byebyediabetes.com")
+            URLQueryItem(name: "origin", value: "https://bbdo.hyperrevamp.com"),
+            URLQueryItem(name: "widget_referrer", value: "https://bbdo.hyperrevamp.com")
         ]
         guard let url = components.url else { return }
         var request = URLRequest(url: url)
-        request.setValue("https://app.byebyediabetes.com/", forHTTPHeaderField: "Referer")
-        request.setValue("https://app.byebyediabetes.com", forHTTPHeaderField: "Origin")
+        request.setValue("https://bbdo.hyperrevamp.com/", forHTTPHeaderField: "Referer")
+        request.setValue("https://bbdo.hyperrevamp.com", forHTTPHeaderField: "Origin")
         webView?.load(request)
     }
 
