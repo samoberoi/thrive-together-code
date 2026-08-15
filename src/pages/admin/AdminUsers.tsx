@@ -7,6 +7,8 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import ExportCsvButton from "@/components/admin/ExportCsvButton";
 import ImportCsvButton from "@/components/admin/ImportCsvButton";
+import AdminUserProfileSheet from "@/components/admin/AdminUserProfileSheet";
+
 
 
 interface UserProfile {
