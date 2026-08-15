@@ -112,21 +112,32 @@ export default function AdminUsers() {
   const adherenceIds = useMemo(() => users.map((u) => u.user_id), [users]);
   const { map: adherence, loading: adherenceLoading } = useAdherence(adherenceIds);
 
+  const packageOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const u of users) set.add(packageLabel(u.user_id));
+    const list = Array.from(set).filter((l) => l !== "No package").sort((a, b) => a.localeCompare(b));
+    if (set.has("No package")) list.push("No package");
+    return list;
+  }, [users, subsByUser, pkgNames]);
+
   const filtered = useMemo(
     () =>
       users.filter((u) => {
+        const label = packageLabel(u.user_id);
+        if (packageFilter !== "all" && label !== packageFilter) return false;
         const q = search.toLowerCase().trim();
         if (!q) return true;
         return (
           u.name?.toLowerCase().includes(q) ||
           u.phone?.includes(q) ||
           u.city?.toLowerCase().includes(q) ||
-          packageLabel(u.user_id).toLowerCase().includes(q) ||
+          label.toLowerCase().includes(q) ||
           u.coach_name?.toLowerCase().includes(q)
         );
       }),
-    [users, search, subsByUser, pkgNames]
+    [users, search, packageFilter, subsByUser, pkgNames]
   );
+
 
   if (loading) {
     return (
