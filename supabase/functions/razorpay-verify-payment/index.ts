@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
 
     const { data: existing } = await admin
       .from("razorpay_payments")
-      .select("id, user_id, plan_key, amount_paise, status, notes")
+      .select("id, user_id, plan_key, amount_paise, status, notes, created_at")
       .eq("order_id", razorpay_order_id)
       .maybeSingle();
 
@@ -70,23 +70,43 @@ Deno.serve(async (req) => {
       return json({ error: "Order does not belong to this user" }, 403);
     }
 
-    // Idempotency: never activate the same order twice.
-    if (existing.status === "paid") return json({ verified: true, already_processed: true });
-
-    const { error: paymentUpdateError } = await admin.from("razorpay_payments").update({
-      payment_id: razorpay_payment_id,
-      signature: razorpay_signature,
-      signature_verified: true,
-      status: "paid",
-    }).eq("order_id", razorpay_order_id);
-    if (paymentUpdateError) throw new Error("Could not record the verified payment");
-
     const notes = (existing.notes ?? {}) as Record<string, any>;
     const months = Number(notes.duration_months ?? 1) || 1;
     const cycle = String(notes.billing_cycle ?? "monthly");
     const mode = String(notes.mode ?? "new");
     const paidAmount = (existing.amount_paise ?? 0) / 100;
     const planName = `${notes.name ?? existing.plan_key} — ${CYCLE_LABEL[cycle] ?? CYCLE_LABEL.monthly}`;
+
+    // The Razorpay webhook can mark the row paid before this browser callback
+    // arrives. Payment status alone therefore does not mean the subscription
+    // was activated. Only return early when activation was explicitly recorded,
+    // or a matching subscription created for this order already exists.
+    if (existing.status === "paid") {
+      if (notes.subscription_activated === true) {
+        return json({ verified: true, already_processed: true, subscription_activated: true });
+      }
+      const paymentCreatedAt = new Date(existing.created_at);
+      paymentCreatedAt.setMinutes(paymentCreatedAt.getMinutes() - 10);
+      const expectedStatus = mode === "downgrade" ? "scheduled" : "active";
+      const { data: matchingSubscription } = await admin
+        .from("subscriptions")
+        .select("id")
+        .eq("user_id", existing.user_id)
+        .eq("plan_id", existing.plan_key)
+        .eq("status", expectedStatus)
+        .gte("created_at", paymentCreatedAt.toISOString())
+        .limit(1)
+        .maybeSingle();
+      if (matchingSubscription) {
+        await admin.from("razorpay_payments").update({
+          payment_id: razorpay_payment_id,
+          signature: razorpay_signature,
+          signature_verified: true,
+          notes: { ...notes, subscription_activated: true },
+        }).eq("id", existing.id);
+        return json({ verified: true, already_processed: true, subscription_activated: true });
+      }
+    }
 
     if (mode === "upgrade" || mode === "downgrade") {
       const { error } = await asUser.rpc("change_subscription_plan", {
@@ -96,7 +116,7 @@ Deno.serve(async (req) => {
         _duration_months: months,
         _mode: mode,
       });
-      if (error) console.error("change_subscription_plan failed", error);
+      if (error) throw new Error(`Could not activate the paid plan: ${error.message}`);
     } else {
       const { error } = await asUser.rpc("complete_demo_payment", {
         _plan_id: existing.plan_key,
@@ -134,7 +154,18 @@ Deno.serve(async (req) => {
       if (error) console.warn("redeem_coupon failed", error);
     }
 
-    return json({ verified: true, duration_months: months, mode });
+    // Mark the payment fully processed only after access has been activated.
+    // This prevents a webhook/browser race from stranding a paid customer.
+    const { error: paymentUpdateError } = await admin.from("razorpay_payments").update({
+      payment_id: razorpay_payment_id,
+      signature: razorpay_signature,
+      signature_verified: true,
+      status: "paid",
+      notes: { ...notes, subscription_activated: true },
+    }).eq("id", existing.id);
+    if (paymentUpdateError) throw new Error("Could not record the verified payment");
+
+    return json({ verified: true, subscription_activated: true, duration_months: months, mode });
   } catch (e) {
     console.error(e);
     return json({ error: (e as Error).message }, 500);

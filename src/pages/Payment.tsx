@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Check, Flame, Lock, Rocket, User, Star, Gift, Ticket } from "lucide-react";
 import { getUser } from "@/lib/userStore";
 import { useAuth } from "@/contexts/AuthContext";
-import { previewPlanChange, type PlanChangePreview } from "@/lib/subscriptionService";
+import { fetchActiveSubscription, previewPlanChange, type PlanChangePreview } from "@/lib/subscriptionService";
 import { supabase } from "@/integrations/supabase/client";
 import { getSelectedPlan, CYCLE_LABEL } from "@/lib/packageService";
 import { autoAssignCoach, fetchAssignedCoach, coachTypeLabel, type Coach } from "@/lib/coachService";
@@ -17,6 +17,15 @@ declare global {
 }
 
 type PaymentUser = { id: string; email?: string | null };
+
+async function waitForPaidAccess(userId: string): Promise<void> {
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const subscription = await fetchActiveSubscription(userId);
+    if (subscription) return;
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+  throw new Error("Payment was received, but your plan is still being activated. Please contact support; you will not be asked to pay again.");
+}
 
 // Domains registered/approved on the Razorpay merchant account.
 const APPROVED_CHECKOUT_ORIGIN = "https://bbdo.hyperrevamp.com";
@@ -230,6 +239,7 @@ export default function Payment() {
               reject(new Error("Payment received but verification failed. Contact support."));
               return;
             }
+            if (changeMode !== "downgrade") await waitForPaidAccess(user.id);
             resolve();
           } catch (e: any) {
             reject(e);
