@@ -55,6 +55,8 @@ export default function AdminUsers() {
   const [pkgNames, setPkgNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [packageFilter, setPackageFilter] = useState<string>("all");
+
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
   const [nudgeTarget, setNudgeTarget] = useState<{ userId: string; name: string } | null>(null);
