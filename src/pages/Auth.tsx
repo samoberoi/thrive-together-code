@@ -172,6 +172,12 @@ export default function Auth() {
   const resendOtp = async () => {
     if (resendCooldown > 0 || loading) return;
     setOtpError("");
+    if (isFixedOtpPhone) {
+      setOtp("");
+      setResendCooldown(30);
+      toast.success("Use your fixed access code.");
+      return;
+    }
     setLoading(true);
     try {
       const reqId = await msg91SendOtp(identifier);
@@ -192,6 +198,14 @@ export default function Auth() {
     setOtpError("");
     setLoading(true);
 
+    if (isFixedOtpPhone) {
+      if (submitted !== FIXED_OTP_CODE) {
+        setOtpError("Wrong code. Please try again.");
+        setOtp("");
+        setLoading(false);
+        return;
+      }
+    } else {
     try {
       const accessToken = await msg91VerifyOtp(submitted, msg91ReqId);
       const { data, error } = await supabase.functions.invoke("msg91-verify-otp", {
@@ -200,6 +214,14 @@ export default function Auth() {
       if (error || !data?.ok) {
         throw new Error(data?.error || "Verification failed. Please try again.");
       }
+    } catch (error) {
+      setOtpError((error as Error).message || "Wrong code. Please try again.");
+      setOtp("");
+      setLoading(false);
+      return;
+    }
+    }
+
     } catch (error) {
       setOtpError((error as Error).message || "Wrong code. Please try again.");
       setOtp("");
