@@ -8,6 +8,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { whatsappCallUrl } from "@/lib/coachAvailability";
 import { cn } from "@/lib/utils";
+import AdminUserProfileSheet from "@/components/admin/AdminUserProfileSheet";
 
 
 type PlanKey = "foundation" | "active" | "intensive";
@@ -112,6 +113,7 @@ export default function AdminUsersInsights() {
   const [activeTab, setActiveTab] = useState<PlanKey>("foundation");
   const [query, setQuery] = useState("");
   const [severityFilter, setSeverityFilter] = useState<Severity | "all">("all");
+  const [profileUserId, setProfileUserId] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -447,6 +449,7 @@ export default function AdminUsersInsights() {
             </ul>
           )}
         </motion.div>
+        <AdminUserProfileSheet userId={profileUserId} onOpenChange={(o) => !o && setProfileUserId(null)} />
 
         {/* Coach load (only meaningful for plans with coaches) */}
         {coachLoad.length > 0 && (
