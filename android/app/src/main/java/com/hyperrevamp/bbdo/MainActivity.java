@@ -43,6 +43,16 @@ public class MainActivity extends BridgeActivity {
         settings.setLoadWithOverviewMode(false);
         settings.setUseWideViewPort(false);
         settings.setTextZoom(100);
+        // Razorpay Checkout hides UPI when the user agent identifies an Android
+        // WebView (the "; wv" marker). Presenting a plain Chrome mobile UA makes
+        // Checkout offer UPI Intent/Collect exactly like a mobile browser.
+        try {
+            String ua = settings.getUserAgentString();
+            if (ua != null && ua.contains("; wv")) {
+                settings.setUserAgentString(ua.replace("; wv", ""));
+            }
+        } catch (Exception ignored) {}
+
         // Razorpay Checkout launches UPI apps via `upi:`/`intent:` URLs. A plain
         // WebView refuses to load those schemes, so Checkout hides UPI entirely.
         // Handing them to the system lets GPay/PhonePe/Paytm open normally.
