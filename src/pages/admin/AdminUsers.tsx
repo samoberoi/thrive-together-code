@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { normalizePlanKey as aliasPlanKey } from "@/lib/subscriptionService";
 import { Search, ChevronDown, ChevronUp, Package as PackageIcon, UserCheck } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import { motion, AnimatePresence } from "framer-motion";
 
 import ExportCsvButton from "@/components/admin/ExportCsvButton";
