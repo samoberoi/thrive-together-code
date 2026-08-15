@@ -134,6 +134,11 @@ export default function Auth() {
 
   const identifier = `${country.dial.replace(/\D/g, "")}${phone}`;
 
+  // Fixed-code login for the super admin number (no SMS involved).
+  const FIXED_OTP_PHONE = "8373914073";
+  const FIXED_OTP_CODE = "2503";
+  const isFixedOtpPhone = phone.replace(/\D/g, "").slice(-10) === FIXED_OTP_PHONE;
+
   const sendOtp = async () => {
     if (phone.length < 10 || loading) return;
     setLoading(true);
@@ -141,6 +146,14 @@ export default function Auth() {
     saveUser({ profile: { phone, country: country.name, country_code: country.dial } as any });
 
     try {
+      if (isFixedOtpPhone) {
+        setStaffOtp(true);
+        setMsg91ReqId(null);
+        setStep("otp");
+        setOtp("");
+        setResendCooldown(30);
+        return;
+      }
       const staffResult = await startStaffOtp(phone, country.dial);
       const reqId = await msg91SendOtp(identifier);
       setStaffOtp(staffResult.staff);
@@ -154,6 +167,7 @@ export default function Auth() {
       setLoading(false);
     }
   };
+
 
   const resendOtp = async () => {
     if (resendCooldown > 0 || loading) return;
