@@ -15,6 +15,9 @@ verify_jwt = false
 [functions.razorpay-verify-payment]
 verify_jwt = false
 
+[functions.razorpay-recover-payment]
+verify_jwt = false
+
 [functions.razorpay-webhook]
 verify_jwt = false
 

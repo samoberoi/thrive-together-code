@@ -84,10 +84,32 @@ export default function Payment() {
   const [couponStatus, setCouponStatus] = useState<"idle" | "applying" | "valid" | "invalid">("idle");
   const [couponMessage, setCouponMessage] = useState("");
   const [coupon, setCoupon] = useState<CouponValidation | null>(null);
+  const [recoveringPayment, setRecoveringPayment] = useState(true);
 
   const baseAmount = preview ? preview.amount_due : (plan?.total_price ?? 0);
   const couponDiscount = coupon?.valid ? Number(coupon.discount_amount ?? 0) : 0;
   const payableAmount = Math.max(baseAmount - couponDiscount, 0);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!authUser) {
+      setRecoveringPayment(false);
+      return;
+    }
+
+    let cancelled = false;
+    void supabase.functions.invoke("razorpay-recover-payment", { body: {} }).then(async ({ data, error }) => {
+      if (cancelled) return;
+      if (!error && data?.recovered) {
+        await finalizePostPayment(authUser);
+      }
+    }).finally(() => {
+      if (!cancelled) setRecoveringPayment(false);
+    });
+    return () => { cancelled = true; };
+    // Recovery runs once for the authenticated account on page entry.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, authUser?.id]);
 
   const applyCoupon = async () => {
     const code = couponCode.trim();
@@ -449,8 +471,8 @@ export default function Payment() {
             )}
 
             <div className="ob-bottom">
-              <motion.button onClick={handlePay} disabled={loading || authLoading || !plan} className="ob-cta gradient-blue glow-blue disabled:opacity-40" whileTap={{ scale: 0.98 }}>
-                {loading ? (<><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Processing...</>) : (<><Rocket className="w-5 h-5" strokeWidth={1.8} /> Start My Journey</>)}
+              <motion.button onClick={handlePay} disabled={loading || authLoading || recoveringPayment || !plan} className="ob-cta gradient-blue glow-blue disabled:opacity-40" whileTap={{ scale: 0.98 }}>
+                {loading || recoveringPayment ? (<><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {recoveringPayment ? "Checking payment..." : "Processing..."}</>) : (<><Rocket className="w-5 h-5" strokeWidth={1.8} /> Start My Journey</>)}
               </motion.button>
             </div>
 
