@@ -503,11 +503,16 @@ function SearchExport({ search, setSearch, placeholder, filename, rows }: { sear
   );
 }
 
-function BBDORow({ sub, index }: { sub: Sub; index: number }) {
+function BBDORow({ sub, index, onOpenProfile }: { sub: Sub; index: number; onOpenProfile?: (userId: string) => void }) {
   const daysLeft = differenceInDays(new Date(sub.expires_at), new Date());
   const renewSoon = daysLeft >= 0 && daysLeft <= 30;
   return (
-    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.02 }} className="liquid-glass rounded-xl sm:rounded-2xl p-4">
+    <motion.div
+      role={onOpenProfile ? "button" : undefined}
+      tabIndex={onOpenProfile ? 0 : undefined}
+      onClick={() => onOpenProfile?.(sub.user_id)}
+      onKeyDown={(e) => { if (onOpenProfile && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onOpenProfile(sub.user_id); } }}
+      initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.02 }} className={`liquid-glass rounded-xl sm:rounded-2xl p-4 ${onOpenProfile ? "cursor-pointer hover:bg-accent/30 transition-colors" : ""}`}>
       <div className="grid grid-cols-1 sm:flex sm:items-start sm:justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 min-w-0">
@@ -515,6 +520,7 @@ function BBDORow({ sub, index }: { sub: Sub; index: number }) {
             {sub.userPhone && (
               <a
                 href={whatsappCallUrl(sub.userPhone)}
+                onClick={(e) => e.stopPropagation()}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={`WhatsApp ${sub.userName}`}
@@ -544,11 +550,16 @@ function BBDORow({ sub, index }: { sub: Sub; index: number }) {
   );
 }
 
-function YogaRow({ sub, index }: { sub: YogaSub; index: number }) {
+function YogaRow({ sub, index, onOpenProfile }: { sub: YogaSub; index: number; onOpenProfile?: (userId: string) => void }) {
   const daysLeft = differenceInDays(new Date(sub.expires_on), new Date());
   const renewSoon = daysLeft >= 0 && daysLeft <= 15;
   return (
-    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.02 }} className="liquid-glass rounded-2xl p-4 flex items-start justify-between gap-3">
+    <motion.div
+      role={onOpenProfile ? "button" : undefined}
+      tabIndex={onOpenProfile ? 0 : undefined}
+      onClick={() => onOpenProfile?.(sub.user_id)}
+      onKeyDown={(e) => { if (onOpenProfile && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onOpenProfile(sub.user_id); } }}
+      initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.02 }} className={`liquid-glass rounded-2xl p-4 flex items-start justify-between gap-3 ${onOpenProfile ? "cursor-pointer hover:bg-accent/30 transition-colors" : ""}`}>
       <div className="min-w-0 flex-1">
         <p className="font-bold truncate">{sub.userName}</p>
         {sub.userPhone && <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1"><Phone className="w-3 h-3" />{sub.userPhone}</p>}
@@ -579,6 +590,7 @@ function RenewalBlock({ expiresAt, daysLeft, renewSoon }: { expiresAt: string; d
 
 interface ListRowData {
   id: string;
+  userId: string;
   type: "BBDO" | "Yoga";
   userName: string;
   userPhone: string;
@@ -599,6 +611,7 @@ function getListRows(view: Extract<View, { kind: "list" }>, activeSubs: Sub[], r
     .filter((s) => view.filter !== "renewals" || betweenRenewalDays(s.expires_at, 30))
     .map((s) => ({
       id: `bbdo-${s.id}`,
+      userId: s.user_id,
       type: "BBDO" as const,
       userName: s.userName || "Unknown",
       userPhone: s.userPhone || "",
@@ -613,6 +626,7 @@ function getListRows(view: Extract<View, { kind: "list" }>, activeSubs: Sub[], r
     .filter((y) => view.filter !== "renewals" || betweenRenewalDays(y.expires_on, 15))
     .map((y) => ({
       id: `yoga-${y.id}`,
+      userId: y.user_id,
       type: "Yoga" as const,
       userName: y.userName || "Unknown",
       userPhone: y.userPhone || "",
@@ -631,11 +645,16 @@ function betweenRenewalDays(date: string, days: number) {
   return left >= 0 && left <= days;
 }
 
-function ListRow({ row, index }: { row: ListRowData; index: number }) {
+function ListRow({ row, index, onOpenProfile }: { row: ListRowData; index: number; onOpenProfile?: (userId: string) => void }) {
   const daysLeft = differenceInDays(new Date(row.expiresAt), new Date());
   const renewSoon = row.type === "BBDO" ? betweenRenewalDays(row.expiresAt, 30) : betweenRenewalDays(row.expiresAt, 15);
   return (
-    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.02 }} className="liquid-glass rounded-2xl p-4 flex items-start justify-between gap-3">
+    <motion.div
+      role={onOpenProfile ? "button" : undefined}
+      tabIndex={onOpenProfile ? 0 : undefined}
+      onClick={() => row.userId && onOpenProfile?.(row.userId)}
+      onKeyDown={(e) => { if (onOpenProfile && row.userId && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onOpenProfile(row.userId); } }}
+      initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.02 }} className={`liquid-glass rounded-2xl p-4 flex items-start justify-between gap-3 ${onOpenProfile ? "cursor-pointer hover:bg-accent/30 transition-colors" : ""}`}>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 flex-wrap">
           <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${row.type === "BBDO" ? "bg-primary/10 text-primary" : "bg-emerald-500/10 text-emerald-600"}`}>{row.type}</span>
