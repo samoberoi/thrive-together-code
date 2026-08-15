@@ -330,7 +330,11 @@ export default function AdminUsers() {
           )}
         </div>
       </div>
+
+      <AdminUserProfileSheet userId={profileUserId} onOpenChange={(o) => !o && setProfileUserId(null)} />
     </div>
+
+
 
   );
 }
