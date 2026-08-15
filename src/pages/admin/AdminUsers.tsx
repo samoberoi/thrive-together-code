@@ -155,7 +155,9 @@ export default function AdminUsers() {
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-foreground">User Management</h1>
           <p className="text-muted-foreground text-sm">
-            {users.length} {users.length === 1 ? "user" : "users"} total
+            {filtered.length === users.length
+              ? `${users.length} ${users.length === 1 ? "user" : "users"} total`
+              : `${filtered.length} of ${users.length} users`}
           </p>
         </div>
         <div className="grid grid-cols-2 sm:flex gap-2 w-full sm:w-auto">
@@ -168,7 +170,24 @@ export default function AdminUsers() {
               className="pl-9"
             />
           </div>
+          <Select value={packageFilter} onValueChange={setPackageFilter}>
+            <SelectTrigger className="col-span-2 w-full sm:w-56">
+              <div className="flex items-center gap-2 min-w-0">
+                <PackageIcon className="w-4 h-4 text-muted-foreground shrink-0" />
+                <SelectValue placeholder="All packages" />
+              </div>
+            </SelectTrigger>
+            <SelectContent className="bg-popover z-50">
+              <SelectItem value="all">All packages</SelectItem>
+              {packageOptions.map((p) => (
+                <SelectItem key={p} value={p}>
+                  {p}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <ExportCsvButton filename="users" rows={filtered as any} className="w-full justify-center sm:w-fit" />
+
           <ImportCsvButton table="profiles" onImported={() => window.location.reload()} className="w-full justify-center sm:w-fit" />
         </div>
 
