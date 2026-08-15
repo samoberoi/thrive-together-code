@@ -10,6 +10,10 @@ import DateRangeFilter, { defaultRange, allTimeRange, inRange, DateRange } from 
 import AdminUserProfileSheet from "@/components/admin/AdminUserProfileSheet";
 import ExportCsvButton from "@/components/admin/ExportCsvButton";
 import ImportCsvButton from "@/components/admin/ImportCsvButton";
+import AdherencePill from "@/components/admin/AdherencePill";
+import AdherenceNudgeDialog from "@/components/admin/AdherenceNudgeDialog";
+import { useAdherence } from "@/hooks/useAdherence";
+import type { AdherenceSummary } from "@/lib/adherenceService";
 
 import { differenceInDays } from "date-fns";
 
@@ -99,6 +103,25 @@ export default function AdminSubscriptions() {
   const [view, setView] = useState<View>({ kind: "hub" });
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<"bbdo" | "yoga">("bbdo");
+  const [nudgeTarget, setNudgeTarget] = useState<{ userId: string; name: string } | null>(null);
+
+  const adherenceIds = useMemo(
+    () => [
+      ...activeSubs.map((s) => s.user_id),
+      ...rangeSubs.map((s) => s.user_id),
+      ...yogaActiveSubs.map((y) => y.user_id),
+    ],
+    [activeSubs, rangeSubs, yogaActiveSubs],
+  );
+  const { map: adherence, loading: adherenceLoading } = useAdherence(adherenceIds);
+  const nudgeDialog = (
+    <AdherenceNudgeDialog
+      open={!!nudgeTarget}
+      onClose={() => setNudgeTarget(null)}
+      userName={nudgeTarget?.name ?? ""}
+      summary={nudgeTarget ? adherence.get(nudgeTarget.userId) ?? null : null}
+    />
+  );
 
   useEffect(() => { load(); }, [range]);
 
@@ -269,16 +292,27 @@ export default function AdminSubscriptions() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <StatCard label="Total Users" value={list.length} tone="primary" />
           <StatCard label="With Coach" value={withCoach} tone="emerald" />
-          <StatCard label="Renewing ≤30d" value={renewingSoon} tone="amber" />
+          <StatCard label="Off track today" value={list.filter((s) => adherence.get(s.user_id) && !adherence.get(s.user_id)!.onTrack).length} tone="amber" />
           <StatCard label="Active Revenue" value={inr(totalRev)} tone="purple" />
         </div>
 
         <SearchExport search={search} setSearch={setSearch} placeholder="Search user, phone, coach..." filename={`${view.planKey}-subscribers`} rows={list as any} />
         <div className="space-y-3">
-          {list.map((s, i) => <BBDORow key={s.id} sub={s} index={i} onOpenProfile={setProfileUserId} />)}
+          {list.map((s, i) => (
+            <BBDORow
+              key={s.id}
+              sub={s}
+              index={i}
+              onOpenProfile={setProfileUserId}
+              adherence={adherence.get(s.user_id)}
+              adherenceLoading={adherenceLoading}
+              onNudge={() => setNudgeTarget({ userId: s.user_id, name: s.userName || "Member" })}
+            />
+          ))}
           {list.length === 0 && <EmptyState label="No subscribers in this plan for the selected period" />}
         </div>
         <AdminUserProfileSheet userId={profileUserId} onOpenChange={(o) => !o && setProfileUserId(null)} />
+        {nudgeDialog}
       </div>
     );
   }
@@ -312,6 +346,7 @@ export default function AdminSubscriptions() {
           {list.length === 0 && <EmptyState label="No subscribers in this yoga package for the selected period" />}
         </div>
         <AdminUserProfileSheet userId={profileUserId} onOpenChange={(o) => !o && setProfileUserId(null)} />
+        {nudgeDialog}
       </div>
     );
   }
@@ -335,10 +370,21 @@ export default function AdminSubscriptions() {
         </div>
         <SearchExport search={search} setSearch={setSearch} placeholder="Search user, phone, coach, instructor, package..." filename={view.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")} rows={list as any} />
         <div className="space-y-3">
-          {list.map((row, i) => <ListRow key={row.id} row={row} index={i} onOpenProfile={setProfileUserId} />)}
+          {list.map((row, i) => (
+            <ListRow
+              key={row.id}
+              row={row}
+              index={i}
+              onOpenProfile={setProfileUserId}
+              adherence={adherence.get(row.userId)}
+              adherenceLoading={adherenceLoading}
+              onNudge={() => setNudgeTarget({ userId: row.userId, name: row.userName })}
+            />
+          ))}
           {list.length === 0 && <EmptyState label="No matching subscription records" />}
         </div>
         <AdminUserProfileSheet userId={profileUserId} onOpenChange={(o) => !o && setProfileUserId(null)} />
+        {nudgeDialog}
       </div>
     );
   }
@@ -503,7 +549,7 @@ function SearchExport({ search, setSearch, placeholder, filename, rows }: { sear
   );
 }
 
-function BBDORow({ sub, index, onOpenProfile }: { sub: Sub; index: number; onOpenProfile?: (userId: string) => void }) {
+function BBDORow({ sub, index, onOpenProfile, adherence, adherenceLoading, onNudge }: { sub: Sub; index: number; onOpenProfile?: (userId: string) => void; adherence?: AdherenceSummary; adherenceLoading?: boolean; onNudge?: () => void }) {
   const daysLeft = differenceInDays(new Date(sub.expires_at), new Date());
   const renewSoon = daysLeft >= 0 && daysLeft <= 30;
   return (
@@ -542,6 +588,7 @@ function BBDORow({ sub, index, onOpenProfile }: { sub: Sub; index: number; onOpe
               <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">No coach</span>
             )}
             <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">{sub.duration_months}mo · {inr(sub.plan_price)}</span>
+            {onNudge && <AdherencePill summary={adherence} loading={adherenceLoading} onNudge={onNudge} />}
           </div>
         </div>
         <div className="pt-3 border-t border-border sm:pt-0 sm:border-0"><RenewalBlock expiresAt={sub.expires_at} daysLeft={daysLeft} renewSoon={renewSoon} /></div>
@@ -645,7 +692,7 @@ function betweenRenewalDays(date: string, days: number) {
   return left >= 0 && left <= days;
 }
 
-function ListRow({ row, index, onOpenProfile }: { row: ListRowData; index: number; onOpenProfile?: (userId: string) => void }) {
+function ListRow({ row, index, onOpenProfile, adherence, adherenceLoading, onNudge }: { row: ListRowData; index: number; onOpenProfile?: (userId: string) => void; adherence?: AdherenceSummary; adherenceLoading?: boolean; onNudge?: () => void }) {
   const daysLeft = differenceInDays(new Date(row.expiresAt), new Date());
   const renewSoon = row.type === "BBDO" ? betweenRenewalDays(row.expiresAt, 30) : betweenRenewalDays(row.expiresAt, 15);
   return (
@@ -667,6 +714,7 @@ function ListRow({ row, index, onOpenProfile }: { row: ListRowData; index: numbe
         <div className="mt-2 flex flex-wrap gap-2 text-xs">
           <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">{row.owner}</span>
           <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">{inr(row.amount)}</span>
+          {onNudge && row.type === "BBDO" && <AdherencePill summary={adherence} loading={adherenceLoading} onNudge={onNudge} />}
         </div>
       </div>
       <RenewalBlock expiresAt={row.expiresAt} daysLeft={daysLeft} renewSoon={renewSoon} />
