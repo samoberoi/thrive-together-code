@@ -17,6 +17,7 @@ import android.widget.Toast;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.Bridge;
 import com.getcapacitor.BridgeWebViewClient;
+import com.ionicframework.capacitor.Checkout;
 
 public class MainActivity extends BridgeActivity {
     private static final String BBDO_PUSH_CHANNEL_ID = "bbdo-alerts-v14";
@@ -25,6 +26,7 @@ public class MainActivity extends BridgeActivity {
     protected void onCreate(Bundle savedInstanceState) {
         registerPlugin(BBDOAndroidPushPlugin.class);
         registerPlugin(BBDOBiometricsPlugin.class);
+        registerPlugin(Checkout.class);
         super.onCreate(savedInstanceState);
         createBbdoNotificationChannel();
         // Android can recreate this Activity while the system WebView provider

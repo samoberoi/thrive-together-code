@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { Capacitor } from "@capacitor/core";
+import { Checkout } from "capacitor-razorpay";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, Flame, Lock, Rocket, User, Star, Gift, Ticket } from "lucide-react";
@@ -225,9 +227,6 @@ export default function Payment() {
       throw new Error("Redirecting to the secure checkout domain…");
     }
 
-    const ok = await loadRazorpayScript();
-    if (!ok) throw new Error("Failed to load Razorpay checkout.");
-
     const { data, error } = await supabase.functions.invoke("razorpay-create-order", {
       body: {
         plan_key: plan!.plan_key,
@@ -240,23 +239,47 @@ export default function Payment() {
     if (data?.error) throw new Error(data.error);
     if (!data?.order_id) throw new Error("Could not create order.");
 
+    const contact = (user.email ?? "").endsWith("@bbd.app")
+      ? (user.email ?? "").split("@")[0]
+      : undefined;
+    const checkoutOptions = {
+      key: data.key_id,
+      amount: String(data.amount),
+      currency: data.currency,
+      order_id: data.order_id,
+      name: "Bye Bye Diabetes",
+      description: data.plan_name || plan!.name,
+      image: "https://bbdo.hyperrevamp.com/favicon.ico",
+      prefill: { email: user.email ?? undefined, contact },
+      theme: { color: "#248CCB" },
+      retry: { enabled: true, max_count: 1 },
+    };
+
+    // A WebView checkout cannot reliably discover or launch installed UPI apps.
+    // Native shells therefore use Razorpay's Android/iOS SDK; browsers continue
+    // to use Standard Web Checkout below.
+    if (Capacitor.isNativePlatform()) {
+      const result = await Checkout.open(checkoutOptions as any);
+      const response = result?.response as any;
+      if (!response?.razorpay_payment_id || !response?.razorpay_order_id || !response?.razorpay_signature) {
+        throw new Error("Razorpay did not return a complete payment confirmation.");
+      }
+      const { data: verified, error: verifyError } = await supabase.functions.invoke("razorpay-verify-payment", {
+        body: response,
+      });
+      if (verifyError || !verified?.verified) {
+        throw new Error("Payment received but verification failed. Contact support.");
+      }
+      if (changeMode !== "downgrade") await waitForPaidAccess(user.id);
+      return;
+    }
+
+    const ok = await loadRazorpayScript();
+    if (!ok) throw new Error("Failed to load Razorpay checkout.");
+
     await new Promise<void>((resolve, reject) => {
       const rzp = new window.Razorpay({
-        key: data.key_id,
-        amount: data.amount,
-        currency: data.currency,
-        order_id: data.order_id,
-        name: "Bye Bye Diabetes",
-        description: data.plan_name || plan!.name,
-        image: "https://bbdo.hyperrevamp.com/favicon.ico",
-        prefill: {
-          email: user.email ?? undefined,
-          // A contact is required for Razorpay to offer UPI Collect; the phone
-          // login stores the number as <phone>@bbd.app.
-          contact: (user.email ?? "").endsWith("@bbd.app")
-            ? (user.email ?? "").split("@")[0]
-            : undefined,
-        },
+        ...checkoutOptions,
         // Explicitly surface UPI. Without this, Checkout inside an Android
         // WebView can drop UPI from the default method list.
         method: { upi: true, card: true, netbanking: true, wallet: true },

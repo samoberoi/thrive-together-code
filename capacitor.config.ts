@@ -55,6 +55,7 @@ const config: CapacitorConfig = {
       "@capacitor/share",
       "@capawesome/capacitor-badge",
       "@capgo/capacitor-health",
+      "capacitor-razorpay",
     ],
   },
 };
