@@ -18,6 +18,18 @@ declare global {
 
 type PaymentUser = { id: string; email?: string | null };
 
+// Domains registered/approved on the Razorpay merchant account.
+const APPROVED_CHECKOUT_ORIGIN = "https://bbdo.hyperrevamp.com";
+const APPROVED_CHECKOUT_HOSTS = ["bbdo.hyperrevamp.com", "localhost", "127.0.0.1"];
+
+function isApprovedCheckoutOrigin(): boolean {
+  const host = window.location.hostname;
+  // Native shells run on the approved hostname via Capacitor's server config.
+  if (window.location.protocol === "capacitor:" || window.location.protocol === "file:") return true;
+  if (host.endsWith(".lovable.app") || host.endsWith(".lovableproject.com")) return true;
+  return APPROVED_CHECKOUT_HOSTS.includes(host);
+}
+
 function loadRazorpayScript(): Promise<boolean> {
   return new Promise((resolve) => {
     const src = "https://checkout.razorpay.com/v1/checkout.js";
