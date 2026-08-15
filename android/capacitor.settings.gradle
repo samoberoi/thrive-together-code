@@ -25,3 +25,6 @@ project(':capawesome-capacitor-badge').projectDir = new File('../node_modules/@c
 
 include ':capgo-capacitor-health'
 project(':capgo-capacitor-health').projectDir = new File('../node_modules/@capgo/capacitor-health/android')
+
+include ':capacitor-razorpay'
+project(':capacitor-razorpay').projectDir = new File('../node_modules/capacitor-razorpay/android')
