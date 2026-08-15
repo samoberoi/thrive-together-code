@@ -4,12 +4,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Check, Flame, Lock, Rocket, User, Star, Gift, Ticket } from "lucide-react";
 import { getUser } from "@/lib/userStore";
 import { useAuth } from "@/contexts/AuthContext";
-import { previewPlanChange, type PlanChangePreview } from "@/lib/subscriptionService";
+import { fetchActiveSubscription, previewPlanChange, type PlanChangePreview } from "@/lib/subscriptionService";
 import { supabase } from "@/integrations/supabase/client";
 import { getSelectedPlan, CYCLE_LABEL } from "@/lib/packageService";
 import { autoAssignCoach, fetchAssignedCoach, coachTypeLabel, type Coach } from "@/lib/coachService";
 import { sendWelcomeNotification } from "@/lib/notificationService";
 import { validateCoupon, type CouponValidation } from "@/lib/couponService";
+import { updateProfile } from "@/lib/profileService";
 import logoImg from "@/assets/logo.png";
 
 declare global {
@@ -17,6 +18,15 @@ declare global {
 }
 
 type PaymentUser = { id: string; email?: string | null };
+
+async function waitForPaidAccess(userId: string): Promise<void> {
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const subscription = await fetchActiveSubscription(userId);
+    if (subscription) return;
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+  throw new Error("Payment was received, but your plan is still being activated. Please contact support; you will not be asked to pay again.");
+}
 
 // Domains registered/approved on the Razorpay merchant account.
 const APPROVED_CHECKOUT_ORIGIN = "https://bbdo.hyperrevamp.com";
@@ -75,10 +85,32 @@ export default function Payment() {
   const [couponStatus, setCouponStatus] = useState<"idle" | "applying" | "valid" | "invalid">("idle");
   const [couponMessage, setCouponMessage] = useState("");
   const [coupon, setCoupon] = useState<CouponValidation | null>(null);
+  const [recoveringPayment, setRecoveringPayment] = useState(true);
 
   const baseAmount = preview ? preview.amount_due : (plan?.total_price ?? 0);
   const couponDiscount = coupon?.valid ? Number(coupon.discount_amount ?? 0) : 0;
   const payableAmount = Math.max(baseAmount - couponDiscount, 0);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!authUser) {
+      setRecoveringPayment(false);
+      return;
+    }
+
+    let cancelled = false;
+    void supabase.functions.invoke("razorpay-recover-payment", { body: {} }).then(async ({ data, error }) => {
+      if (cancelled) return;
+      if (!error && data?.recovered) {
+        await finalizePostPayment(authUser);
+      }
+    }).finally(() => {
+      if (!cancelled) setRecoveringPayment(false);
+    });
+    return () => { cancelled = true; };
+    // Recovery runs once for the authenticated account on page entry.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, authUser?.id]);
 
   const applyCoupon = async () => {
     const code = couponCode.trim();
@@ -173,10 +205,8 @@ export default function Payment() {
       const c = await fetchAssignedCoach(user.id);
       setAssignedCoach(c);
     }
-    await supabase
-      .from("profiles" as any)
-      .update({ onboarding_completed: true } as any)
-      .eq("user_id", user.id);
+    const profileUpdated = await updateProfile(user.id, { onboarding_completed: true });
+    if (!profileUpdated) throw new Error("Your payment succeeded, but account setup could not be completed.");
     await sendWelcomeNotification(user.id);
     try {
       await (supabase as any).rpc("seed_onboarding_notifications", { _user_id: user.id });
@@ -230,6 +260,7 @@ export default function Payment() {
               reject(new Error("Payment received but verification failed. Contact support."));
               return;
             }
+            if (changeMode !== "downgrade") await waitForPaidAccess(user.id);
             resolve();
           } catch (e: any) {
             reject(e);
@@ -439,8 +470,8 @@ export default function Payment() {
             )}
 
             <div className="ob-bottom">
-              <motion.button onClick={handlePay} disabled={loading || authLoading || !plan} className="ob-cta gradient-blue glow-blue disabled:opacity-40" whileTap={{ scale: 0.98 }}>
-                {loading ? (<><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Processing...</>) : (<><Rocket className="w-5 h-5" strokeWidth={1.8} /> Start My Journey</>)}
+              <motion.button onClick={handlePay} disabled={loading || authLoading || recoveringPayment || !plan} className="ob-cta gradient-blue glow-blue disabled:opacity-40" whileTap={{ scale: 0.98 }}>
+                {loading || recoveringPayment ? (<><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {recoveringPayment ? "Checking payment..." : "Processing..."}</>) : (<><Rocket className="w-5 h-5" strokeWidth={1.8} /> Start My Journey</>)}
               </motion.button>
             </div>
 
