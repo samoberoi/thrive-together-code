@@ -8,6 +8,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import ExportCsvButton from "@/components/admin/ExportCsvButton";
 import ImportCsvButton from "@/components/admin/ImportCsvButton";
 import AdminUserProfileSheet from "@/components/admin/AdminUserProfileSheet";
+import AdherencePill from "@/components/admin/AdherencePill";
+import AdherenceNudgeDialog from "@/components/admin/AdherenceNudgeDialog";
+import { useAdherence } from "@/hooks/useAdherence";
 
 
 
@@ -54,6 +57,7 @@ export default function AdminUsers() {
   const [search, setSearch] = useState("");
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
+  const [nudgeTarget, setNudgeTarget] = useState<{ userId: string; name: string } | null>(null);
 
 
   useEffect(() => {
@@ -104,6 +108,9 @@ export default function AdminUsers() {
     const key = aliasPlanKey(sub.plan_id);
     return (key && pkgNames[key]) || sub.plan_name || "—";
   };
+
+  const adherenceIds = useMemo(() => users.map((u) => u.user_id), [users]);
+  const { map: adherence, loading: adherenceLoading } = useAdherence(adherenceIds);
 
   const filtered = useMemo(
     () =>
@@ -197,6 +204,13 @@ export default function AdminUsers() {
                     <div className="min-w-0">
                       <p className="text-foreground font-semibold text-sm truncate">{user.name || "Unnamed"}</p>
                       <p className="text-muted-foreground text-xs truncate">{user.phone || "No phone"}</p>
+                      <div className="mt-1">
+                        <AdherencePill
+                          summary={adherence.get(user.user_id)}
+                          loading={adherenceLoading}
+                          onNudge={() => setNudgeTarget({ userId: user.user_id, name: user.name || "Member" })}
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -334,6 +348,12 @@ export default function AdminUsers() {
       </div>
 
       <AdminUserProfileSheet userId={profileUserId} onOpenChange={(o) => !o && setProfileUserId(null)} />
+      <AdherenceNudgeDialog
+        open={!!nudgeTarget}
+        onClose={() => setNudgeTarget(null)}
+        userName={nudgeTarget?.name ?? ""}
+        summary={nudgeTarget ? adherence.get(nudgeTarget.userId) ?? null : null}
+      />
     </div>
 
 
