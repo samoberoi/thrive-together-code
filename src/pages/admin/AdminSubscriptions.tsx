@@ -249,7 +249,8 @@ export default function AdminSubscriptions() {
   if (view.kind === "bbdo-plan") {
     const list = (perPlan.get(view.planKey) || []).filter((s) => {
       const q = search.toLowerCase();
-      return !q || s.userName?.toLowerCase().includes(q) || s.userPhone?.includes(q) || s.coachName?.toLowerCase().includes(q);
+      const matchesSearch = !q || s.userName?.toLowerCase().includes(q) || s.userPhone?.includes(q) || s.coachName?.toLowerCase().includes(q);
+      return matchesSearch && inRange(detailRange, s.started_at);
     });
     const totalRev = list.reduce((sum, s) => sum + s.plan_price, 0);
     const withCoach = list.filter((s) => s.coachName).length;
@@ -260,7 +261,10 @@ export default function AdminSubscriptions() {
 
     return (
       <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-        <HeaderBack onBack={backToHub} title={`${planNumber(view.planKey)} · ${view.planName}`} subtitle={`${list.length} active subscriber${list.length === 1 ? "" : "s"} · ${inr(totalRev)} active revenue`} />
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+          <HeaderBack onBack={backToHub} title={`${planNumber(view.planKey)} · ${view.planName}`} subtitle={`${list.length} active subscriber${list.length === 1 ? "" : "s"} · ${inr(totalRev)} active revenue · ${detailRange.label}`} />
+          <DateRangeFilter value={detailRange} onChange={setDetailRange} className="self-start shrink-0" />
+        </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <StatCard label="Total Users" value={list.length} tone="primary" />
@@ -271,9 +275,10 @@ export default function AdminSubscriptions() {
 
         <SearchExport search={search} setSearch={setSearch} placeholder="Search user, phone, coach..." filename={`${view.planKey}-subscribers`} rows={list as any} />
         <div className="space-y-3">
-          {list.map((s, i) => <BBDORow key={s.id} sub={s} index={i} />)}
-          {list.length === 0 && <EmptyState label="No active subscribers in this plan" />}
+          {list.map((s, i) => <BBDORow key={s.id} sub={s} index={i} onOpenProfile={setProfileUserId} />)}
+          {list.length === 0 && <EmptyState label="No subscribers in this plan for the selected period" />}
         </div>
+        <AdminUserProfileSheet userId={profileUserId} onOpenChange={(o) => !o && setProfileUserId(null)} />
       </div>
     );
   }
@@ -281,7 +286,8 @@ export default function AdminSubscriptions() {
   if (view.kind === "yoga-package") {
     const list = (perYogaPkg.get(view.packageId) || []).filter((y) => {
       const q = search.toLowerCase();
-      return !q || y.userName?.toLowerCase().includes(q) || y.userPhone?.includes(q) || y.partnerName?.toLowerCase().includes(q);
+      const matchesSearch = !q || y.userName?.toLowerCase().includes(q) || y.userPhone?.includes(q) || y.partnerName?.toLowerCase().includes(q);
+      return matchesSearch && inRange(detailRange, y.starts_on || y.created_at);
     });
     const totalRev = list.reduce((s, y) => s + (y.price_inr || 0), 0);
     const renewingSoon = list.filter((y) => {
@@ -291,7 +297,10 @@ export default function AdminSubscriptions() {
 
     return (
       <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-        <HeaderBack onBack={backToHub} title={view.packageName} subtitle={`${list.length} active yoga subscriber${list.length === 1 ? "" : "s"} · ${inr(totalRev)} active revenue`} />
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+          <HeaderBack onBack={backToHub} title={view.packageName} subtitle={`${list.length} active yoga subscriber${list.length === 1 ? "" : "s"} · ${inr(totalRev)} active revenue · ${detailRange.label}`} />
+          <DateRangeFilter value={detailRange} onChange={setDetailRange} className="self-start shrink-0" />
+        </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           <StatCard label="Active" value={list.length} tone="primary" />
           <StatCard label="Renewing ≤15d" value={renewingSoon} tone="amber" />
@@ -299,9 +308,10 @@ export default function AdminSubscriptions() {
         </div>
         <SearchExport search={search} setSearch={setSearch} placeholder="Search user, phone, instructor..." filename={`yoga-${view.packageId}-subscribers`} rows={list as any} />
         <div className="space-y-3">
-          {list.map((y, i) => <YogaRow key={y.id} sub={y} index={i} />)}
-          {list.length === 0 && <EmptyState label="No active subscribers in this yoga package" />}
+          {list.map((y, i) => <YogaRow key={y.id} sub={y} index={i} onOpenProfile={setProfileUserId} />)}
+          {list.length === 0 && <EmptyState label="No subscribers in this yoga package for the selected period" />}
         </div>
+        <AdminUserProfileSheet userId={profileUserId} onOpenChange={(o) => !o && setProfileUserId(null)} />
       </div>
     );
   }
@@ -314,7 +324,10 @@ export default function AdminSubscriptions() {
     const total = list.reduce((sum, row) => sum + row.amount, 0);
     return (
       <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-        <HeaderBack onBack={backToHub} title={view.title} subtitle={`${list.length} record${list.length === 1 ? "" : "s"} · ${inr(total)}`} />
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+          <HeaderBack onBack={backToHub} title={view.title} subtitle={`${list.length} record${list.length === 1 ? "" : "s"} · ${inr(total)}`} />
+          <DateRangeFilter value={range} onChange={setRange} className="self-start shrink-0" />
+        </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           <StatCard label="Records" value={list.length} tone="primary" />
           <StatCard label="BBDO" value={list.filter((r) => r.type === "BBDO").length} tone="emerald" />
@@ -322,12 +335,14 @@ export default function AdminSubscriptions() {
         </div>
         <SearchExport search={search} setSearch={setSearch} placeholder="Search user, phone, coach, instructor, package..." filename={view.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")} rows={list as any} />
         <div className="space-y-3">
-          {list.map((row, i) => <ListRow key={row.id} row={row} index={i} />)}
+          {list.map((row, i) => <ListRow key={row.id} row={row} index={i} onOpenProfile={setProfileUserId} />)}
           {list.length === 0 && <EmptyState label="No matching subscription records" />}
         </div>
+        <AdminUserProfileSheet userId={profileUserId} onOpenChange={(o) => !o && setProfileUserId(null)} />
       </div>
     );
   }
+
 
   return (
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
