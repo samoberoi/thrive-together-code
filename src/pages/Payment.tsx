@@ -249,8 +249,28 @@ export default function Payment() {
         name: "Bye Bye Diabetes",
         description: data.plan_name || plan!.name,
         image: "https://bbdo.hyperrevamp.com/favicon.ico",
-        prefill: { email: user.email ?? undefined },
+        prefill: {
+          email: user.email ?? undefined,
+          // A contact is required for Razorpay to offer UPI Collect; the phone
+          // login stores the number as <phone>@bbd.app.
+          contact: (user.email ?? "").endsWith("@bbd.app")
+            ? (user.email ?? "").split("@")[0]
+            : undefined,
+        },
+        // Explicitly surface UPI. Without this, Checkout inside an Android
+        // WebView can drop UPI from the default method list.
+        method: { upi: true, card: true, netbanking: true, wallet: true },
+        config: {
+          display: {
+            blocks: {
+              upi: { name: "Pay via UPI", instruments: [{ method: "upi" }] },
+            },
+            sequence: ["block.upi"],
+            preferences: { show_default_blocks: true },
+          },
+        },
         theme: { color: "#248CCB" },
+
         handler: async (resp: any) => {
           try {
             const { data: v, error: vErr } = await supabase.functions.invoke("razorpay-verify-payment", {
