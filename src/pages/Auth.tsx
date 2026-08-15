@@ -241,6 +241,18 @@ export default function Auth() {
 
     try {
       try { localStorage.removeItem(EXPLICIT_LOGOUT_KEY); } catch {}
+      // The fixed superadmin code bypasses the SMS provider, but it must still
+      // create/refresh a real backend session before entering the admin area.
+      // Re-sync the deterministic phone account first so an old password can
+      // never leave this account stuck after a valid 2503 verification.
+      if (isFixedOtpPhone) {
+        const { data: ensured, error: ensureError } = await supabase.functions.invoke("ensure-phone-user", {
+          body: { phone: FIXED_OTP_PHONE, country: country.name, country_code: country.dial },
+        });
+        if (ensureError || !ensured?.ok) {
+          throw new Error(ensured?.error || "Could not prepare the superadmin session.");
+        }
+      }
       // Try sign in first (existing user)
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
@@ -267,9 +279,13 @@ export default function Auth() {
           saveUser({ profile: { phone, country: country.name, country_code: country.dial } as any });
           loadProfileToLocal(profile);
         }
-        if (privilegedRoute) {
+        // This number is an explicitly configured superadmin. Its database
+        // role is still enforced by AdminDashboard; this avoids customer-flow
+        // fallback if a role request is briefly slow immediately after login.
+        const destination = isFixedOtpPhone ? "/admin-dashboard" : privilegedRoute;
+        if (destination) {
           setLoading(false);
-          go(privilegedRoute);
+          go(destination);
           return;
         }
         const route = activeSubscription
