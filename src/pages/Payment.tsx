@@ -10,6 +10,7 @@ import { getSelectedPlan, CYCLE_LABEL } from "@/lib/packageService";
 import { autoAssignCoach, fetchAssignedCoach, coachTypeLabel, type Coach } from "@/lib/coachService";
 import { sendWelcomeNotification } from "@/lib/notificationService";
 import { validateCoupon, type CouponValidation } from "@/lib/couponService";
+import { updateProfile } from "@/lib/profileService";
 import logoImg from "@/assets/logo.png";
 
 declare global {
@@ -204,10 +205,8 @@ export default function Payment() {
       const c = await fetchAssignedCoach(user.id);
       setAssignedCoach(c);
     }
-    await supabase
-      .from("profiles" as any)
-      .update({ onboarding_completed: true } as any)
-      .eq("user_id", user.id);
+    const profileUpdated = await updateProfile(user.id, { onboarding_completed: true });
+    if (!profileUpdated) throw new Error("Your payment succeeded, but account setup could not be completed.");
     await sendWelcomeNotification(user.id);
     try {
       await (supabase as any).rpc("seed_onboarding_notifications", { _user_id: user.id });

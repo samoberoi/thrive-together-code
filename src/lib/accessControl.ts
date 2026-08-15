@@ -31,7 +31,7 @@ export async function resolvePostAuthRoute(
     isAdminUser(userId),
     isCoachUser(userId),
     isChannelPartner(userId),
-    fetchProfile(userId),
+    fetchProfile(userId, { force: true }),
     fetchActiveSubscription(userId),
   ]);
 
@@ -51,7 +51,7 @@ export async function resolveProtectedAccess(userId: string): Promise<ProtectedA
     isAdminUser(userId),
     isCoachUser(userId),
     isChannelPartner(userId),
-    fetchProfile(userId),
+    fetchProfile(userId, { force: true }),
     fetchActiveSubscription(userId),
   ]);
 
