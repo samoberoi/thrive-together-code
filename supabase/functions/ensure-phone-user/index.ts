@@ -8,6 +8,8 @@ const BodySchema = z.object({
   country_code: z.string().max(8).nullable().optional(),
 });
 
+const SUPERADMIN_PHONE = "8373914073";
+
 async function findUserByEmail(admin: any, email: string) {
   for (let page = 1; page <= 20; page += 1) {
     const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
@@ -74,6 +76,16 @@ Deno.serve(async (req) => {
       { onConflict: "user_id" },
     );
     await admin.from("user_roles").upsert({ user_id: user.id, role: "user" }, { onConflict: "user_id,role" });
+
+    // This fixed-code account is the designated superadmin. The production
+    // database can contain a stale role row from an older auth-user identity,
+    // so bind the admin role to the identity that was actually authenticated.
+    if (phone === SUPERADMIN_PHONE) {
+      const { error: roleError } = await admin
+        .from("user_roles")
+        .upsert({ user_id: user.id, role: "admin" }, { onConflict: "user_id,role" });
+      if (roleError) throw roleError;
+    }
 
     return new Response(JSON.stringify({ ok: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
