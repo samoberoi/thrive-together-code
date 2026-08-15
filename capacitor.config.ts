@@ -7,8 +7,10 @@ const config: CapacitorConfig = {
   // Serve the WebView from a real-looking https origin so YouTube's IFrame API
   // accepts the Referer header (otherwise it fails with Error 153 —
   // embedder.identity.missing.referrer). Applies to both platforms.
+  // IMPORTANT: this hostname is also the origin Razorpay Checkout sees, so it
+  // must be a domain registered/approved on the Razorpay merchant account.
   server: {
-    hostname: "app.byebyediabetes.com",
+    hostname: "bbdo.hyperrevamp.com",
     androidScheme: "https",
     iosScheme: "https",
   },
