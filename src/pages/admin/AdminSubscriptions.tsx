@@ -6,9 +6,11 @@ import { Search, ChevronRight, ArrowLeft, CreditCard, Sparkles, AlertCircle, Pho
 import { whatsappCallUrl } from "@/lib/coachAvailability";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
-import DateRangeFilter, { defaultRange, DateRange } from "@/components/admin/DateRangeFilter";
+import DateRangeFilter, { defaultRange, allTimeRange, inRange, DateRange } from "@/components/admin/DateRangeFilter";
+import AdminUserProfileSheet from "@/components/admin/AdminUserProfileSheet";
 import ExportCsvButton from "@/components/admin/ExportCsvButton";
 import ImportCsvButton from "@/components/admin/ImportCsvButton";
+
 import { differenceInDays } from "date-fns";
 
 interface Sub {
