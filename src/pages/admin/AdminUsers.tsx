@@ -51,6 +51,8 @@ export default function AdminUsers() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
+  const [profileUserId, setProfileUserId] = useState<string | null>(null);
+
 
   useEffect(() => {
     loadAll();
