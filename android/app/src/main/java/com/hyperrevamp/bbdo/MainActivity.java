@@ -8,10 +8,15 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.content.Intent;
 import android.webkit.WebSettings;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebView;
+import android.widget.Toast;
 
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.Bridge;
+import com.getcapacitor.BridgeWebViewClient;
 
 public class MainActivity extends BridgeActivity {
     private static final String BBDO_PUSH_CHANNEL_ID = "bbdo-alerts-v14";
@@ -38,6 +43,63 @@ public class MainActivity extends BridgeActivity {
         settings.setLoadWithOverviewMode(false);
         settings.setUseWideViewPort(false);
         settings.setTextZoom(100);
+        // Razorpay Checkout launches UPI apps via `upi:`/`intent:` URLs. A plain
+        // WebView refuses to load those schemes, so Checkout hides UPI entirely.
+        // Handing them to the system lets GPay/PhonePe/Paytm open normally.
+        bridge.getWebView().setWebViewClient(new UpiAwareWebViewClient(bridge));
+    }
+
+    private class UpiAwareWebViewClient extends BridgeWebViewClient {
+        UpiAwareWebViewClient(Bridge bridge) {
+            super(bridge);
+        }
+
+        @Override
+        public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+            if (request != null && request.getUrl() != null
+                && launchExternalApp(request.getUrl().toString())) {
+                return true;
+            }
+            return super.shouldOverrideUrlLoading(view, request);
+        }
+
+        @Override
+        public boolean shouldOverrideUrlLoading(WebView view, String url) {
+            if (launchExternalApp(url)) return true;
+            return super.shouldOverrideUrlLoading(view, url);
+        }
+    }
+
+    private boolean launchExternalApp(String url) {
+        if (url == null) return false;
+        String scheme = Uri.parse(url).getScheme();
+        if (scheme == null) return false;
+        scheme = scheme.toLowerCase();
+        boolean isAppLink = scheme.equals("upi") || scheme.equals("intent")
+            || scheme.equals("tez") || scheme.equals("phonepe") || scheme.equals("paytmmp")
+            || scheme.equals("gpay") || scheme.equals("bhim") || scheme.equals("credpay")
+            || scheme.equals("mailto") || scheme.equals("tel") || scheme.equals("sms")
+            || scheme.equals("whatsapp") || scheme.equals("market");
+        if (!isAppLink) return false;
+
+        try {
+            Intent intent;
+            if (scheme.equals("intent")) {
+                intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
+            } else {
+                intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+            }
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+            return true;
+        } catch (Exception e) {
+            if (scheme.equals("upi") || scheme.equals("intent")) {
+                Toast.makeText(this, "No UPI app found. Please pick another payment method.",
+                    Toast.LENGTH_LONG).show();
+                return true;
+            }
+            return false;
+        }
     }
 
     private void createBbdoNotificationChannel() {
