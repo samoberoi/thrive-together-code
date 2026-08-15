@@ -32,16 +32,27 @@ function withTimeout<T>(promise: Promise<T>, fallback: T, ms = 2500): Promise<T>
 }
 
 async function resolvePrivilegedRouteFast(userId: string): Promise<string | null> {
-  const [isAdmin, isCoach, isPartner] = await Promise.all([
-    withTimeout(isAdminUser(userId), false),
-    withTimeout(isCoachUser(userId), false),
-    withTimeout(isChannelPartner(userId), false),
-  ]);
-  if (isAdmin) return "/admin-dashboard";
-  if (isCoach) return "/coach-dashboard";
-  if (isPartner) return "/partner-dashboard";
-  return null;
+  // Role lookups decide whether staff land on their dashboard, so a slow
+  // network must never silently downgrade them to the customer plans page.
+  const check = async () => {
+    const [isAdmin, isCoach, isPartner] = await Promise.all([
+      withTimeout(isAdminUser(userId), null as boolean | null, 8000),
+      withTimeout(isCoachUser(userId), null as boolean | null, 8000),
+      withTimeout(isChannelPartner(userId), null as boolean | null, 8000),
+    ]);
+    if (isAdmin) return "/admin-dashboard";
+    if (isCoach) return "/coach-dashboard";
+    if (isPartner) return "/partner-dashboard";
+    const inconclusive = isAdmin === null || isCoach === null || isPartner === null;
+    return inconclusive ? undefined : null;
+  };
+
+  const first = await check();
+  if (first !== undefined) return first;
+  const second = await check();
+  return second ?? null;
 }
+
 
 export default function Auth() {
   const [step, setStep] = useState<"phone" | "otp" | "name">("phone");
