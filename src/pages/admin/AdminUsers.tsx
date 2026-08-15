@@ -172,9 +172,17 @@ export default function AdminUsers() {
             const coach = user.coach_name || (sub && aliasPlanKey(sub.plan_id) === "foundation" ? "—" : "Unassigned");
             return (
               <motion.div key={user.id} layout>
-                <button
-                  onClick={() => setExpandedUser(isExpanded ? null : user.id)}
-                  className="w-full grid grid-cols-[minmax(0,1fr)_auto] md:grid-cols-[minmax(0,2fr)_minmax(0,1.4fr)_minmax(0,1.6fr)_minmax(0,1.4fr)_110px_24px] gap-3 md:gap-4 items-center px-3 sm:px-4 py-3 text-left hover:bg-muted/30 transition-colors"
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setProfileUserId(user.user_id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setProfileUserId(user.user_id);
+                    }
+                  }}
+                  className="w-full grid grid-cols-[minmax(0,1fr)_auto] md:grid-cols-[minmax(0,2fr)_minmax(0,1.4fr)_minmax(0,1.6fr)_minmax(0,1.4fr)_110px_24px] gap-3 md:gap-4 items-center px-3 sm:px-4 py-3 text-left hover:bg-muted/30 transition-colors cursor-pointer"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -219,13 +227,24 @@ export default function AdminUsers() {
                   </div>
 
                   <div className="flex items-center justify-end">
-                    {isExpanded ? (
-                      <ChevronUp className="w-4 h-4 text-muted-foreground" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                    )}
+                    <button
+                      type="button"
+                      aria-label={isExpanded ? "Collapse details" : "Expand details"}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setExpandedUser(isExpanded ? null : user.id);
+                      }}
+                      className="p-1 rounded-md hover:bg-muted"
+                    >
+                      {isExpanded ? (
+                        <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                      )}
+                    </button>
                   </div>
-                </button>
+                </div>
+
 
                 {/* Mobile pills */}
                 <div className="md:hidden px-3 sm:px-4 pb-3 grid grid-cols-1 min-[430px]:grid-cols-2 gap-1.5">
