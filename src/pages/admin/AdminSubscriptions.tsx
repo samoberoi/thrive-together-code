@@ -94,11 +94,14 @@ export default function AdminSubscriptions() {
   const [yogaPackages, setYogaPackages] = useState<YogaPackageRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [range, setRange] = useState<DateRange>(defaultRange());
+  const [detailRange, setDetailRange] = useState<DateRange>(allTimeRange());
+  const [profileUserId, setProfileUserId] = useState<string | null>(null);
   const [view, setView] = useState<View>({ kind: "hub" });
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<"bbdo" | "yoga">("bbdo");
 
   useEffect(() => { load(); }, [range]);
+
 
   useEffect(() => {
     const requestedTab = searchParams.get("subscriptionTab");
