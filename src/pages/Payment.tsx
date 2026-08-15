@@ -175,6 +175,14 @@ export default function Payment() {
   };
 
   const handleRazorpayPay = async (user: PaymentUser) => {
+    // Razorpay declines any checkout whose originating domain is not registered
+    // on the merchant account. Only the approved domains below may open checkout;
+    // anything else (e.g. app.byebyediabetes.com) is redirected first.
+    if (!isApprovedCheckoutOrigin()) {
+      window.location.replace(`${APPROVED_CHECKOUT_ORIGIN}/payment`);
+      throw new Error("Redirecting to the secure checkout domain…");
+    }
+
     const ok = await loadRazorpayScript();
     if (!ok) throw new Error("Failed to load Razorpay checkout.");
 
