@@ -222,12 +222,7 @@ export default function Auth() {
     }
     }
 
-    } catch (error) {
-      setOtpError((error as Error).message || "Wrong code. Please try again.");
-      setOtp("");
-      setLoading(false);
-      return;
-    }
+
 
 
 
