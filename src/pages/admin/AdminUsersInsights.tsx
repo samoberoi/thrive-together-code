@@ -8,6 +8,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { whatsappCallUrl } from "@/lib/coachAvailability";
 import { cn } from "@/lib/utils";
+import AdminUserProfileSheet from "@/components/admin/AdminUserProfileSheet";
 
 
 type PlanKey = "foundation" | "active" | "intensive";
@@ -112,6 +113,7 @@ export default function AdminUsersInsights() {
   const [activeTab, setActiveTab] = useState<PlanKey>("foundation");
   const [query, setQuery] = useState("");
   const [severityFilter, setSeverityFilter] = useState<Severity | "all">("all");
+  const [profileUserId, setProfileUserId] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -397,8 +399,13 @@ export default function AdminUsersInsights() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: Math.min(idx, 6) * 0.02, duration: 0.18 }}
-                  className="px-3 sm:px-5 py-4 hover:bg-accent/40 transition-colors grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3 sm:gap-4"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setProfileUserId(r.user_id)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setProfileUserId(r.user_id); } }}
+                  className="px-3 sm:px-5 py-4 hover:bg-accent/40 transition-colors cursor-pointer grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3 sm:gap-4"
                 >
+
                   <Avatar name={r.name} severity={r.severity} />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -442,6 +449,7 @@ export default function AdminUsersInsights() {
             </ul>
           )}
         </motion.div>
+        <AdminUserProfileSheet userId={profileUserId} onOpenChange={(o) => !o && setProfileUserId(null)} />
 
         {/* Coach load (only meaningful for plans with coaches) */}
         {coachLoad.length > 0 && (
