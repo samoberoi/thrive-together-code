@@ -319,8 +319,23 @@ async function availableSlots(payload: any) {
 
 
 async function createOrder(payload: any, userId: string) {
-  const required = ["beneficiary", "mobile", "pincode", "productCodes"];
+  const required = ["beneficiary", "mobile", "pincode", "address", "productCodes"];
   for (const k of required) if (!payload?.[k]) return json({ error: `${k} required` }, 400);
+
+  // Thyrocare validates the final address string at 25–200 characters. Older
+  // app builds can submit a short/whitespace-heavy profile address, so enforce
+  // the vendor contract here rather than requiring users to update the app.
+  const rawAddress = String(payload.address || "").replace(/\s+/g, " ").trim();
+  const addressParts = [
+    rawAddress,
+    String(payload.city || "").trim(),
+    String(payload.state || "").trim(),
+    String(payload.pincode || "").trim(),
+    "India",
+  ].filter(Boolean);
+  let bookingAddress = Array.from(new Set(addressParts)).join(", ");
+  if (bookingAddress.length < 25) bookingAddress = `${bookingAddress}, Home collection address`;
+  bookingAddress = bookingAddress.slice(0, 200).trim();
 
   // Look up product details from cached catalog
   const { data: catalog } = await sbAdmin
@@ -355,11 +370,9 @@ async function createOrder(payload: any, userId: string) {
 
   const reqBody = {
     address: {
-      houseNo: payload.address || "",
-      street: payload.address || "",
-      addressLine1: payload.address || "",
-      addressLine2: "",
-      landmark: "",
+      houseNo: bookingAddress,
+      street: bookingAddress,
+      addressLine1: bookingAddress,
       city: payload.city || "",
       state: payload.state || "",
       country: "India",
@@ -408,7 +421,7 @@ async function createOrder(payload: any, userId: string) {
         email: payload.email && !/@bbd\.app$/i.test(payload.email) ? payload.email : "",
         attributes: {
           ulcUniqueCode: "",
-          patientAddress: payload.address || "",
+          patientAddress: bookingAddress,
           externalPatientId: userId,
         },
         items,
@@ -448,7 +461,7 @@ async function createOrder(payload: any, userId: string) {
       mobile: payload.mobile,
       email: payload.email,
       pincode: payload.pincode,
-      address: payload.address,
+      address: bookingAddress,
       collection_date: payload.collection_date,
       collection_slot: payload.collection_slot,
       amount: respBody?.data?.amount || null,
