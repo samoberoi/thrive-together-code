@@ -256,23 +256,33 @@ export default function Payment() {
     };
 
     // A WebView checkout cannot reliably discover or launch installed UPI apps.
-    // Native shells therefore use Razorpay's Android/iOS SDK; browsers continue
-    // to use Standard Web Checkout below.
-    if (Capacitor.isNativePlatform()) {
-      const result = await Checkout.open(checkoutOptions as any);
-      const response = result?.response as any;
-      if (!response?.razorpay_payment_id || !response?.razorpay_order_id || !response?.razorpay_signature) {
-        throw new Error("Razorpay did not return a complete payment confirmation.");
+    // Native shells therefore use Razorpay's Android/iOS SDK when the plugin is
+    // actually registered in the build; otherwise (e.g. current iOS builds where
+    // the SDK is not linked) we fall back to Standard Web Checkout below.
+    const nativeCheckoutAvailable =
+      Capacitor.isNativePlatform() && Capacitor.isPluginAvailable("Checkout");
+    if (nativeCheckoutAvailable) {
+      try {
+        const result = await Checkout.open(checkoutOptions as any);
+        const response = result?.response as any;
+        if (!response?.razorpay_payment_id || !response?.razorpay_order_id || !response?.razorpay_signature) {
+          throw new Error("Razorpay did not return a complete payment confirmation.");
+        }
+        const { data: verified, error: verifyError } = await supabase.functions.invoke("razorpay-verify-payment", {
+          body: response,
+        });
+        if (verifyError || !verified?.verified) {
+          throw new Error("Payment received but verification failed. Contact support.");
+        }
+        if (changeMode !== "downgrade") await waitForPaidAccess(user.id);
+        return;
+      } catch (e: any) {
+        const msg = String(e?.message || e);
+        // Only fall through to web checkout when the bridge itself is missing.
+        if (!/not implemented|unimplemented|not available/i.test(msg)) throw e;
       }
-      const { data: verified, error: verifyError } = await supabase.functions.invoke("razorpay-verify-payment", {
-        body: response,
-      });
-      if (verifyError || !verified?.verified) {
-        throw new Error("Payment received but verification failed. Contact support.");
-      }
-      if (changeMode !== "downgrade") await waitForPaidAccess(user.id);
-      return;
     }
+
 
     const ok = await loadRazorpayScript();
     if (!ok) throw new Error("Failed to load Razorpay checkout.");
