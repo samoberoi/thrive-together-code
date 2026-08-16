@@ -57,20 +57,34 @@ export async function fetchMyReferrals(userId: string): Promise<Referral[]> {
   return (data as unknown as Referral[]) ?? [];
 }
 
-/** Build a shareable referral link */
-export function buildShareLink(code: string): string {
-  const baseUrl = window.location.origin;
-  return `${baseUrl}/auth?ref=${code}`;
+/** Reward days credited to the referrer, by the referred user's plan duration. */
+export const REFERRAL_REWARD_DAYS_BY_MONTHS: Record<number, number> = {
+  12: 60, // yearly → 2 months free
+  6: 30,  // half-yearly → 1 month free
+  3: 15,  // quarterly → 15 days free
+  1: 7,   // monthly → 1 week free
+};
+
+/** Invite message — no web URL; users install from the app stores and paste the code. */
+export function buildShareMessage(code: string): string {
+  return [
+    `Hey! I've been using ByeByeDiabetes (BBDO) to manage my health and it's been amazing.`,
+    ``,
+    `Download the app from the App Store (iOS) or Google Play Store (Android), then copy and paste this referral code during sign-up:`,
+    ``,
+    code,
+    ``,
+    `Yearly plan = 2 months free for me, 6 months = 1 month, quarterly = 15 days, monthly = 1 week. Thanks for joining! 🎉`,
+  ].join("\n");
 }
 
 /** Share via Web Share API or copy to clipboard */
 export async function shareReferralCode(code: string, userName: string): Promise<"shared" | "copied" | "failed"> {
-  const link = buildShareLink(code);
-  const text = `Hey! I've been using ByeByeDiabetes to manage my health and it's been amazing. Join using my referral code ${code} and we both get rewarded! 🎉`;
+  const text = buildShareMessage(code);
 
   if (navigator.share) {
     try {
-      await navigator.share({ title: "Join ByeByeDiabetes", text, url: link });
+      await navigator.share({ title: "Join ByeByeDiabetes", text });
       return "shared";
     } catch {
       // User cancelled
@@ -79,7 +93,7 @@ export async function shareReferralCode(code: string, userName: string): Promise
 
   // Fallback: copy to clipboard
   try {
-    await navigator.clipboard.writeText(`${text}\n${link}`);
+    await navigator.clipboard.writeText(text);
     return "copied";
   } catch {
     return "failed";
