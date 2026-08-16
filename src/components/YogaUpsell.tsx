@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
+import { payForService } from "@/lib/servicePayment";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -623,7 +624,7 @@ export default function YogaUpsell() {
                   disabled={submitting}
                   className="bg-[var(--bbdo-red)] hover:bg-[var(--bbdo-red)]/90 text-white"
                 >
-                  {submitting ? "Processing…" : `Pay ₹${selected?.price_inr.toLocaleString("en-IN")} (demo)`}
+                  {submitting ? "Processing…" : `Pay ₹${selected?.price_inr.toLocaleString("en-IN")}`}
                 </Button>
               </>
             ) : customMode ? (
