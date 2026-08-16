@@ -65,6 +65,25 @@ export async function scheduleMeeting(input: {
   agenda?: string | null;
   created_by?: string | null;
 }) {
+  // A second meeting booked for the same patient + coach on the same calendar day is a
+  // reschedule, not an extra session. Cancel the earlier one so the patient's app doesn't
+  // keep showing the stale time (e.g. 11:30 AM after a move to 2 PM).
+  try {
+    const at = new Date(input.scheduled_at);
+    const dayStart = new Date(at.getFullYear(), at.getMonth(), at.getDate(), 0, 0, 0, 0);
+    const dayEnd = new Date(at.getFullYear(), at.getMonth(), at.getDate(), 23, 59, 59, 999);
+    await supabase
+      .from("coach_meetings")
+      .update({ status: "cancelled" })
+      .eq("user_id", input.user_id)
+      .eq("coach_id", input.coach_id)
+      .eq("status", "scheduled")
+      .gte("scheduled_at", dayStart.toISOString())
+      .lte("scheduled_at", dayEnd.toISOString());
+  } catch (e) {
+    console.error("Could not cancel superseded meeting", e);
+  }
+
   const { data, error } = await supabase
     .from("coach_meetings")
     .insert({
@@ -82,6 +101,15 @@ export async function scheduleMeeting(input: {
   if (error) throw error;
   return data as CoachMeeting;
 }
+
+/** Move an existing meeting to a new time (keeps the same row, so no duplicate shows up). */
+export async function rescheduleMeeting(id: string, scheduled_at: string, duration_min?: number) {
+  const patch: any = { scheduled_at, status: "scheduled" };
+  if (duration_min) patch.duration_min = duration_min;
+  const { error } = await supabase.from("coach_meetings").update(patch).eq("id", id);
+  if (error) throw error;
+}
+
 
 export async function updateMeetingStatus(id: string, status: MeetingStatus, notes?: string) {
   const { error } = await supabase
