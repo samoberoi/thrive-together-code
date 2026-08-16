@@ -401,7 +401,8 @@ async function createOrder(payload: any, userId: string) {
       enteredBy: "BBDOApp",
       source: "B2C-CREATE-ORDER-API",
     },
-    paymentDetails: { payType: "POSTPAID" },
+    // We collect payment ourselves via Razorpay, so Thyrocare orders are always PREPAID.
+    paymentDetails: { payType: "PREPAID" },
     attributes: {
       remarks: payload.notes || "",
       phleboNotes: "",
