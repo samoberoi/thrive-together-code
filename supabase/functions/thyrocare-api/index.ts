@@ -370,6 +370,9 @@ async function createOrder(payload: any, userId: string) {
 
   const reqBody = {
     address: {
+      // Thyrocare validates this canonical `address` field at 25–200 chars.
+      // Keep the component fields below for compatibility with older API variants.
+      address: bookingAddress,
       houseNo: bookingAddress,
       street: bookingAddress,
       addressLine1: bookingAddress,
