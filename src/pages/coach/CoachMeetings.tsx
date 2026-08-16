@@ -36,10 +36,14 @@ export default function CoachMeetings() {
     const ids = (assigns ?? []).map((a: any) => a.user_id);
     if (ids.length) {
       const { data: profs } = await supabase.from("profiles").select("user_id, name, phone").in("user_id", ids);
+      const validProfiles = (profs ?? []).filter((profile) => Boolean(profile.name || profile.phone));
       const map: Record<string, PatientLite> = {};
-      (profs ?? []).forEach((p: any) => (map[p.user_id] = p));
+      validProfiles.forEach((p: any) => (map[p.user_id] = p));
       setPatients(map);
-      setPatientList((profs ?? []) as PatientLite[]);
+      setPatientList(validProfiles as PatientLite[]);
+    } else {
+      setPatients({});
+      setPatientList([]);
     }
     setLoading(false);
   };

@@ -65,23 +65,51 @@ export async function scheduleMeeting(input: {
   agenda?: string | null;
   created_by?: string | null;
 }) {
-  // A second meeting booked for the same patient + coach on the same calendar day is a
-  // reschedule, not an extra session. Cancel the earlier one so the patient's app doesn't
-  // keep showing the stale time (e.g. 11:30 AM after a move to 2 PM).
-  try {
-    const at = new Date(input.scheduled_at);
-    const dayStart = new Date(at.getFullYear(), at.getMonth(), at.getDate(), 0, 0, 0, 0);
-    const dayEnd = new Date(at.getFullYear(), at.getMonth(), at.getDate(), 23, 59, 59, 999);
-    await supabase
+  // Scheduling again for this patient on the same day is a reschedule. Reuse an existing
+  // row instead of inserting, which also avoids the partial unique slot index rejecting an
+  // already-created 2 PM row after a previous retry.
+  const at = new Date(input.scheduled_at);
+  const dayStart = new Date(at.getFullYear(), at.getMonth(), at.getDate(), 0, 0, 0, 0);
+  const dayEnd = new Date(at.getFullYear(), at.getMonth(), at.getDate(), 23, 59, 59, 999);
+  const { data: sameDay, error: lookupError } = await supabase
+    .from("coach_meetings")
+    .select("id, scheduled_at, status")
+    .eq("user_id", input.user_id)
+    .eq("coach_id", input.coach_id)
+    .gte("scheduled_at", dayStart.toISOString())
+    .lte("scheduled_at", dayEnd.toISOString())
+    .order("created_at", { ascending: false });
+  if (lookupError) throw lookupError;
+
+  const exact = (sameDay ?? []).find((meeting) => meeting.scheduled_at === input.scheduled_at);
+  const reusable = exact ?? (sameDay ?? []).find((meeting) => meeting.status === "scheduled");
+  if (reusable) {
+    const otherScheduledIds = (sameDay ?? [])
+      .filter((meeting) => meeting.status === "scheduled" && meeting.id !== reusable.id)
+      .map((meeting) => meeting.id);
+    if (otherScheduledIds.length > 0) {
+      const { error: cancelError } = await supabase
+        .from("coach_meetings")
+        .update({ status: "cancelled" })
+        .in("id", otherScheduledIds);
+      if (cancelError) throw cancelError;
+    }
+
+    const { data, error } = await supabase
       .from("coach_meetings")
-      .update({ status: "cancelled" })
-      .eq("user_id", input.user_id)
-      .eq("coach_id", input.coach_id)
-      .eq("status", "scheduled")
-      .gte("scheduled_at", dayStart.toISOString())
-      .lte("scheduled_at", dayEnd.toISOString());
-  } catch (e) {
-    console.error("Could not cancel superseded meeting", e);
+      .update({
+        scheduled_at: input.scheduled_at,
+        duration_min: input.duration_min ?? 30,
+        meeting_link: input.meeting_link ?? null,
+        meeting_type: input.meeting_type,
+        agenda: input.agenda ?? null,
+        status: "scheduled",
+      })
+      .eq("id", reusable.id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data as CoachMeeting;
   }
 
   const { data, error } = await supabase

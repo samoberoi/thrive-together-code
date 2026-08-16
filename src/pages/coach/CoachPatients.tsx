@@ -195,10 +195,11 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
         }
       });
 
-      const merged = (assignments as any[]).map((a) => {
+      const merged = (assignments as any[]).flatMap((a) => {
         const p = (profiles as any[])?.find((pr) => pr.user_id === a.user_id);
+        if (!p) return [];
         const s = subByUser.get(a.user_id);
-        return { ...a, ...p, plan_name: s?.plan_name ?? null, plan_expires_at: s?.expires_at ?? null };
+        return [{ ...a, ...p, plan_name: s?.plan_name ?? null, plan_expires_at: s?.expires_at ?? null }];
       });
       setPatients(merged);
 
