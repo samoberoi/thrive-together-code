@@ -197,7 +197,8 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
 
       const merged = (assignments as any[]).flatMap((a) => {
         const p = (profiles as any[])?.find((pr) => pr.user_id === a.user_id);
-        if (!p) return [];
+        // Never surface purged or incomplete placeholder accounts as coach patients.
+        if (!p || (!p.name?.trim() && !p.phone?.trim())) return [];
         const s = subByUser.get(a.user_id);
         return [{ ...a, ...p, plan_name: s?.plan_name ?? null, plan_expires_at: s?.expires_at ?? null }];
       });
