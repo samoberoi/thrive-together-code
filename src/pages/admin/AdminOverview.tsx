@@ -106,7 +106,7 @@ export default function AdminOverview() {
     [allActiveSubs]
   );
   const activeSubsCount = allActiveSubs.length;
-  const activeAssignments = assignments.length;
+  const activeAssignments = assignments.filter((a) => profileMap.has(a.user_id)).length;
   const coachCount = coaches.length;
 
   const packageBreakdown = useMemo(() => {
@@ -162,12 +162,16 @@ export default function AdminOverview() {
     return coaches
       .map((c) => {
         const ids = byCoach.get(c.id) ?? [];
-        const patients = ids.map((uid) => ({
-          user_id: uid,
-          name: profileMap.get(uid)?.name || "Unnamed",
-          phone: profileMap.get(uid)?.phone || "",
-          onTrack: activeLoggerIds.has(uid),
-        }));
+        // Skip orphaned assignments (user purged, profile row gone) — they used to
+        // render as ghost "Unnamed / No phone" patients and inflate the counts.
+        const patients = ids
+          .filter((uid) => profileMap.has(uid))
+          .map((uid) => ({
+            user_id: uid,
+            name: profileMap.get(uid)?.name || "Unnamed",
+            phone: profileMap.get(uid)?.phone || "",
+            onTrack: activeLoggerIds.has(uid),
+          }));
         const onTrack = patients.filter((p) => p.onTrack).length;
         return {
           id: c.id,
