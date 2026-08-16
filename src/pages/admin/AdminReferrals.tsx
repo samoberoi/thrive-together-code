@@ -77,31 +77,25 @@ export default function AdminReferrals() {
           </div>
           <div>
             <h2 className="font-bold text-foreground">Referral Reward</h2>
-            <p className="text-xs text-muted-foreground">Days added to the referrer's active plan when a referred user subscribes.</p>
+            <p className="text-xs text-muted-foreground">Days added to the referrer's active plan, based on the plan the referred user buys.</p>
           </div>
         </div>
-        <div className="flex flex-wrap items-end gap-3">
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">Reward (days)</label>
-            <input
-              type="number"
-              min={1}
-              max={365}
-              value={rewardDays}
-              onChange={(e) => setRewardDays(parseInt(e.target.value) || 0)}
-              className="block mt-1 w-32 px-3 py-2 rounded-xl border border-border bg-white text-foreground font-bold text-lg"
-            />
-          </div>
-          <button
-            onClick={saveRewardDays}
-            disabled={savingDays || rewardDays < 1}
-            className="px-4 py-2.5 rounded-xl bg-[var(--bbdo-red)] text-white font-semibold text-sm flex items-center gap-2 disabled:opacity-50"
-          >
-            <Save className="w-4 h-4" />
-            {savingDays ? "Saving…" : "Save"}
-          </button>
-          <p className="text-xs text-muted-foreground ml-auto">Applies to all future qualifying referrals.</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[
+            { plan: "Yearly", days: "60 days (2 months)" },
+            { plan: "6 Months", days: "30 days (1 month)" },
+            { plan: "Quarterly", days: "15 days" },
+            { plan: "Monthly", days: "7 days (1 week)" },
+          ].map((t) => (
+            <div key={t.plan} className="rounded-xl border border-border p-3">
+              <div className="text-xs text-muted-foreground">{t.plan} plan</div>
+              <div className="font-bold text-foreground">{t.days}</div>
+            </div>
+          ))}
         </div>
+        <p className="text-xs text-muted-foreground mt-3">
+          Reward days are credited automatically to the referrer's active plan when the referred user's subscription goes live.
+        </p>
       </div>
 
       {/* Stats */}
