@@ -51,7 +51,7 @@ export default function ReferAndEarn({ onBack }: ReferAndEarnProps) {
 
   const completedReferrals = referrals.filter((r) => r.status === "completed").length;
   const pendingReferrals = referrals.filter((r) => r.status === "pending").length;
-  const rewardsEarned = referrals.filter((r) => r.reward_granted).length;
+  const rewardsEarned = referrals.reduce((sum, r) => sum + (r.reward_granted ? (r as any).reward_days ?? 0 : 0), 0);
 
   return (
     <div className="min-h-dvh flex flex-col bg-background">
@@ -82,12 +82,12 @@ export default function ReferAndEarn({ onBack }: ReferAndEarnProps) {
                 </div>
                 <div className="min-w-0">
                   <h3 className="text-foreground font-black text-lg leading-tight break-words">Share & Earn</h3>
-                  <p className="text-muted-foreground text-xs leading-snug break-words">Get 1 month free for every friend who joins</p>
+                  <p className="text-muted-foreground text-xs leading-snug break-words">Up to 2 months free for every friend who joins</p>
                 </div>
               </div>
               <p className="text-muted-foreground text-sm leading-relaxed mb-5">
                 Share your referral code with friends & family. When they become a BBDO member,
-                you get <span className="text-primary font-bold">1 month free extension</span> on your plan!
+                you get free days added to your plan — <span className="text-primary font-bold">2 months</span> for a yearly plan, 1 month for 6 months, 15 days for quarterly and 1 week for monthly.
               </p>
 
               {/* Referral Code Display */}
@@ -142,7 +142,7 @@ export default function ReferAndEarn({ onBack }: ReferAndEarnProps) {
               <div className="liquid-glass rounded-2xl p-3 min-w-0 flex flex-col items-center gap-1 text-center">
                 <Trophy className="w-4 h-4 text-warning" strokeWidth={1.8} />
                 <p className="text-foreground text-xl font-black leading-tight break-words">{rewardsEarned}</p>
-                <p className="text-muted-foreground text-[10px] font-medium leading-tight break-words">Months Earned</p>
+                <p className="text-muted-foreground text-[10px] font-medium leading-tight break-words">Days Earned</p>
               </div>
             </motion.div>
 
@@ -159,7 +159,7 @@ export default function ReferAndEarn({ onBack }: ReferAndEarnProps) {
                   { step: "1", title: "Share your code", desc: "Send your unique code to friends & family" },
                   { step: "2", title: "They sign up", desc: "Your friend joins BBDO using your referral code" },
                   { step: "3", title: "They subscribe", desc: "Once they become a paying member" },
-                  { step: "4", title: "You earn!", desc: "Get 1 month free extension on your plan" },
+                  { step: "4", title: "You earn!", desc: "Yearly = 2 months free, 6 months = 1 month, quarterly = 15 days, monthly = 1 week" },
                 ].map((item, i) => (
                   <div key={i} className="flex items-start gap-3">
                     <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">

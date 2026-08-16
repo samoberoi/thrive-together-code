@@ -14,6 +14,7 @@ export interface Referral {
   referral_code: string;
   status: string;
   reward_granted: boolean;
+  reward_days?: number | null;
   created_at: string;
 }
 
