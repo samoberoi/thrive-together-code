@@ -336,6 +336,11 @@ async function createOrder(payload: any, userId: string) {
   let bookingAddress = Array.from(new Set(addressParts)).join(", ");
   if (bookingAddress.length < 25) bookingAddress = `${bookingAddress}, Home collection address`;
   bookingAddress = bookingAddress.slice(0, 200).trim();
+  // A house/flat identifier is validated separately and must not contain the
+  // complete postal address. Older clients only send one combined string, so
+  // derive a compact identifier server-side without requiring an app update.
+  const firstAddressPart = rawAddress.split(",").map((part) => part.trim()).find(Boolean);
+  const houseNo = (firstAddressPart || "House").slice(0, 25);
 
   // Look up product details from cached catalog
   const { data: catalog } = await sbAdmin
@@ -373,7 +378,7 @@ async function createOrder(payload: any, userId: string) {
       // Thyrocare validates this canonical `address` field at 25–200 chars.
       // Keep the component fields below for compatibility with older API variants.
       address: bookingAddress,
-      houseNo: bookingAddress,
+      houseNo,
       street: bookingAddress,
       addressLine1: bookingAddress,
       city: payload.city || "",
