@@ -106,7 +106,7 @@ export default function AdminOverview() {
     [allActiveSubs]
   );
   const activeSubsCount = allActiveSubs.length;
-  const activeAssignments = assignments.length;
+  const activeAssignments = assignments.filter((a) => profileMap.has(a.user_id)).length;
   const coachCount = coaches.length;
 
   const packageBreakdown = useMemo(() => {
