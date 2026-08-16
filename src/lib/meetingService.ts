@@ -104,7 +104,7 @@ export async function scheduleMeeting(input: {
 
 /** Move an existing meeting to a new time (keeps the same row, so no duplicate shows up). */
 export async function rescheduleMeeting(id: string, scheduled_at: string, duration_min?: number) {
-  const patch: Record<string, unknown> = { scheduled_at, status: "scheduled" };
+  const patch: any = { scheduled_at, status: "scheduled" };
   if (duration_min) patch.duration_min = duration_min;
   const { error } = await supabase.from("coach_meetings").update(patch).eq("id", id);
   if (error) throw error;
