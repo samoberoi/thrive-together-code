@@ -164,12 +164,18 @@ async function createLink(kind: Kind, refId: string) {
     notes: { kind, ref_id: refId, short_url: link.short_url, link_id: link.id, description: billable.description },
   });
 
-  await admin.rpc("create_notification", {
-    _user_id: billable.userId,
-    _title: kind === "yoga" ? "Complete your yoga package payment" : "Complete your lab test payment",
-    _body: `₹${billable.amountInr} is pending for ${billable.description}. Tap to pay securely: ${link.short_url}`,
-    _type: "payment",
-  }).catch?.((e: unknown) => console.error("notify failed", e));
+  try {
+    await admin.rpc("create_notification", {
+      _user_id: billable.userId,
+      _title: kind === "yoga" ? "Complete your yoga package payment" : "Complete your lab test payment",
+      _body: `₹${billable.amountInr} is pending for ${billable.description}. Tap to pay securely: ${link.short_url}`,
+      _type: "payment",
+      _icon: "💳",
+      _action_url: link.short_url,
+    });
+  } catch (e) {
+    console.error("notify failed", e);
+  }
 
   return json({ ok: true, short_url: link.short_url, amount_inr: billable.amountInr });
 }
@@ -217,7 +223,7 @@ async function createOrder(kind: Kind, refId: string, userId: string) {
   });
 }
 
-export async function settle(kind: Kind, refId: string, paymentId: string) {
+async function settle(kind: Kind, refId: string, paymentId: string) {
   if (kind === "yoga") {
     await admin
       .from("yoga_bookings")
