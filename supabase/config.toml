@@ -24,3 +24,6 @@ verify_jwt = false
 
 [functions.staff-otp]
 verify_jwt = false
+
+[functions.razorpay-service-payment]
+verify_jwt = false
