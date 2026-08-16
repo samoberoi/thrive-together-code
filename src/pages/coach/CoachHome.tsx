@@ -461,8 +461,11 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
       }
     });
 
-    const enriched: PatientSummary[] = (assignments as any[]).map((a) => {
+    const enriched: PatientSummary[] = (assignments as any[]).flatMap((a) => {
       const profile = (profiles as any[])?.find((p) => p.user_id === a.user_id);
+      // Purged accounts can leave an assignment behind. Exclude those rows from every
+      // coach Home KPI and patient card instead of displaying an Unknown patient.
+      if (!profile || (!profile.name?.trim() && !profile.phone?.trim())) return [];
       const sub = (subs as any[])?.find((s) => s.user_id === a.user_id);
       const hasFasting = fastProtoSet.has(a.user_id);
       const hasSupp = suppPlanSet.has(a.user_id);
@@ -512,7 +515,7 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
       const previousWeightValue = weightHistoryByUser.get(a.user_id)?.[1]
         ?? (profile?.weight != null && latestWeightValue != null && Number(profile.weight) !== Number(latestWeightValue) ? Number(profile.weight) : null);
 
-      return {
+      return [{
         user_id: a.user_id,
         assigned_at: a.assigned_at,
         name: profile?.name ?? null,
@@ -542,7 +545,7 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
         doneCount,
         applicableCount,
         onTrack,
-      };
+      }];
     });
 
     setPatients(enriched);
