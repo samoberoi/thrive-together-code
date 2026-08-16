@@ -25,19 +25,39 @@ Deno.serve(async (req) => {
     const event = JSON.parse(raw);
     const payment = event?.payload?.payment?.entity;
     const order = event?.payload?.order?.entity;
-    const orderId = payment?.order_id || order?.id;
+    const link = event?.payload?.payment_link?.entity;
+    // Payment links are recorded under their link id, plan orders under the order id.
+    const orderId = link?.id || payment?.order_id || order?.id;
     if (!orderId) return new Response("ok", { headers: corsHeaders });
 
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const status = event?.event === "payment.captured" || event?.event === "order.paid" ? "paid"
-      : event?.event === "payment.failed" ? "failed"
-      : event?.event ?? "unknown";
+    const paidEvent = event?.event === "payment.captured"
+      || event?.event === "order.paid"
+      || event?.event === "payment_link.paid";
+    const status = paidEvent ? "paid" : event?.event === "payment.failed" ? "failed" : event?.event ?? "unknown";
 
-    await supabase.from("razorpay_payments").update({
+    const { data: rows } = await supabase.from("razorpay_payments").update({
       status,
       payment_id: payment?.id ?? undefined,
       raw_event: event,
-    }).eq("order_id", orderId);
+    }).eq("order_id", orderId).select("plan_key, notes");
+
+    // Add-on services (lab tests, yoga packages) are marked paid on their own rows.
+    if (paidEvent) {
+      for (const row of rows ?? []) {
+        const notes = (row as any)?.notes || {};
+        if (!notes.kind || !notes.ref_id) continue;
+        if (notes.kind === "yoga") {
+          await supabase.from("yoga_bookings")
+            .update({ payment_status: "paid", payment_ref: payment?.id ?? orderId })
+            .eq("id", notes.ref_id);
+        } else if (notes.kind === "lab") {
+          await supabase.from("thyrocare_orders")
+            .update({ payment_status: "paid" })
+            .eq("id", notes.ref_id);
+        }
+      }
+    }
 
     return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {

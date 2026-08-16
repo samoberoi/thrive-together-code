@@ -3,6 +3,7 @@ import { MapPin, X } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { payForService } from "@/lib/servicePayment";
 import { Button } from "@/components/ui/button";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -153,7 +154,21 @@ export default function LabBookingDialog({ open, onClose, productCodes, recommen
       if (error) throw error;
       if (!data?.ok) throw new Error(data?.error || data?.thyrocare?.message || "Booking failed");
       const orderId = data?.order?.thyrocare_order_id || data?.thyrocare?.orderId || data?.thyrocare?.data?.orderId;
-      toast.success(orderId ? `Booked! Order ID: ${orderId}` : "Order placed! You'll get updates here.");
+
+      // Collect payment for the booking before closing. If the member abandons
+      // checkout, the backend has already sent them a payment link.
+      const bookingRowId = data?.order?.id as string | undefined;
+      if (bookingRowId) {
+        try {
+          await payForService("lab", bookingRowId);
+        } catch (payErr: any) {
+          toast.error(`${payErr?.message || "Payment not completed"} — we've sent you a payment link.`);
+          onBooked?.();
+          onClose();
+          return;
+        }
+      }
+      toast.success(orderId ? `Paid & booked! Order ID: ${orderId}` : "Order placed! You'll get updates here.");
       onBooked?.();
       onClose();
     } catch (e: any) {

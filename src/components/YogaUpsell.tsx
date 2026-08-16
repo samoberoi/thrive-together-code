@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
+import { payForService } from "@/lib/servicePayment";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -140,7 +141,7 @@ export default function YogaUpsell() {
     if (!selected) return;
     setSubmitting(true);
     try {
-      await createBooking({
+      const booking = await createBooking({
         partner_id: selected.partner_id,
         package_id: selected.id,
         package_type: selected.package_type,
@@ -152,8 +153,10 @@ export default function YogaUpsell() {
         preferred_days: preferredDays,
         notes: notes || null,
       });
+      // Bookings are created unpaid; Razorpay collects before the seat is confirmed.
+      const paid = await payForService("yoga", (booking as any).id);
       toast({
-        title: "Payment successful (demo)",
+        title: paid ? "Payment successful" : "Booking confirmed",
         description: templateId
           ? "Your seat is reserved for the next 8 classes — meet link is on your home screen."
           : "Your instructor will revert with a confirmed schedule.",
@@ -161,11 +164,17 @@ export default function YogaUpsell() {
       await load();
       closeDialog();
     } catch (e: any) {
-      toast({ title: "Booking failed", description: e.message ?? String(e), variant: "destructive" });
+      toast({
+        title: "Payment not completed",
+        description: `${e.message ?? String(e)} A payment link has also been sent to you — your booking stays reserved until then.`,
+        variant: "destructive",
+      });
+      await load();
     } finally {
       setSubmitting(false);
     }
   }
+
 
   async function submitCustomRequest() {
     if (!selected) return;
@@ -615,7 +624,7 @@ export default function YogaUpsell() {
                   disabled={submitting}
                   className="bg-[var(--bbdo-red)] hover:bg-[var(--bbdo-red)]/90 text-white"
                 >
-                  {submitting ? "Processing…" : `Pay ₹${selected?.price_inr.toLocaleString("en-IN")} (demo)`}
+                  {submitting ? "Processing…" : `Pay ₹${selected?.price_inr.toLocaleString("en-IN")}`}
                 </Button>
               </>
             ) : customMode ? (
