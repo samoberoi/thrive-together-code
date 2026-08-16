@@ -77,7 +77,7 @@ export default function AdminReferrals() {
           </div>
           <div>
             <h2 className="font-bold text-foreground">Referral Reward</h2>
-            <p className="text-xs text-muted-foreground">Days added to the referrer's active plan when a referred user subscribes.</p>
+            <p className="text-xs text-muted-foreground">Days added to the referrer's active plan, based on the plan the referred user buys.</p>
           </div>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
