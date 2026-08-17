@@ -150,6 +150,133 @@ function extractFromText(text: string, params: any[]) {
   return results;
 }
 
+/** A marker row as printed on the report (independent of our catalog). */
+export type DiscoveredRow = {
+  label: string;              // printed test name, normalised
+  display: string;            // printed test name, title-ish case
+  value: number | null;
+  text: string | null;        // "< 5.5", "Negative", …
+  unit: string | null;
+  refLow: number | null;
+  refHigh: number | null;
+};
+
+const NOISE_RE = /(TEST NAME|TECHNOLOGY|BIO\.? REF|METHOD|SAMPLE TYPE|PATIENT|REFERRED BY|ADDRESS|PAGE|TESTS DONE|DISCLAIMER|PLEASE CORRELATE|REPORT|PROCESSED AT|SCAN QR|GUIDELINE)/;
+
+function titleCase(label: string) {
+  return label.toLowerCase().replace(/\b([a-z0-9])/g, (m) => m.toUpperCase()).replace(/\s+/g, " ").trim();
+}
+
+function parseRef(text: string): { refLow: number | null; refHigh: number | null } {
+  const t = text.replace(/\s+/g, " ");
+  let m = t.match(/(?:^|\s)([<>]=?)\s*(\d+(?:\.\d+)?)/);
+  if (m) {
+    const n = Number(m[2]);
+    return m[1].startsWith("<") ? { refLow: 0, refHigh: n } : { refLow: n, refHigh: null };
+  }
+  m = t.match(/(?:LESS THAN)\s*(\d+(?:\.\d+)?)/i);
+  if (m) return { refLow: 0, refHigh: Number(m[1]) };
+  m = t.match(/(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)/);
+  if (m) return { refLow: Number(m[1]), refHigh: Number(m[2]) };
+  return { refLow: null, refHigh: null };
+}
+
+/** Every result row printed on the report — including markers we don't know yet. */
+function discoverRows(text: string): DiscoveredRow[] {
+  const lines = text.split(/\n+/).map((l) => l.replace(/\s+/g, " ").trim()).filter(Boolean);
+  const out: DiscoveredRow[] = [];
+  const seen = new Set<string>();
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const tech = TECH_RE.exec(line);
+    if (!tech) continue;
+    const label = normLabel(line.slice(0, tech.index));
+    if (label.length < 3 || NOISE_RE.test(label) || seen.has(label)) continue;
+    let rest = line.slice(tech.index + tech[0].length);
+    let m = rest.match(/^\s*([<>]?)\s*(\d+(?:\.\d+)?)\s*([A-Za-zµμ%][A-Za-zµμ%/0-9.^ -]*)?/);
+    if (!m && lines[i + 1] && !TECH_RE.test(lines[i + 1])) {
+      rest = lines[i + 1];
+      m = rest.match(/^\s*([<>]?)\s*(\d+(?:\.\d+)?)\s*([A-Za-zµμ%][A-Za-zµμ%/0-9.^ -]*)?/);
+    }
+    if (!m) continue;
+    const numeric = Number(m[2]);
+    if (!Number.isFinite(numeric)) continue;
+    const unitRaw = (m[3] || "").split(/\s{2,}|<|>/)[0].trim();
+    const tail = rest.slice((m.index || 0) + m[0].length);
+    const refInline = parseRef(tail);
+    const refFollow = refInline.refLow == null && refInline.refHigh == null
+      ? parseRef(lines.slice(i + 1, i + 5).filter((l) => /REF|LESS THAN|NORMAL|ADULTS/i.test(l)).join(" "))
+      : refInline;
+    seen.add(label);
+    out.push({
+      label,
+      display: titleCase(label),
+      value: m[1] ? null : numeric,
+      text: m[1] ? `${m[1]} ${numeric}` : null,
+      unit: unitRaw ? unitRaw.slice(0, 24) : null,
+      refLow: refFollow.refLow,
+      refHigh: refFollow.refHigh,
+    });
+  }
+  return out;
+}
+
+/** Match a printed label to a catalog parameter using aliases + sample-type guard. */
+function matchCatalog(label: string, catalog: any[]) {
+  for (const p of catalog) {
+    const aliases = [...(aliasMap[String(p.code)] || []), p.name, p.code]
+      .filter(Boolean).map((a) => normLabel(String(a)));
+    const hit = aliases.find((a) =>
+      a.length >= 3 &&
+      (label === a || label === `${a}:` || label.startsWith(`${a} `)) &&
+      contextMatches(label, a)
+    );
+    if (hit) return p;
+  }
+  return null;
+}
+
+function slugCode(label: string) {
+  return label.replace(/[^A-Z0-9]+/g, "_").replace(/^_|_$/g, "").slice(0, 28) || "UNKNOWN";
+}
+
+/**
+ * Make sure every marker printed on a report exists in lab_parameters, so the
+ * catalog grows automatically as labs add new analytes.
+ */
+async function ensureCatalog(rows: DiscoveredRow[], catalog: any[]) {
+  const resolved = new Map<string, any>();
+  const toCreate: any[] = [];
+  let order = 900;
+  for (const row of rows) {
+    const known = matchCatalog(row.label, catalog);
+    if (known) { resolved.set(row.label, known); continue; }
+    const code = slugCode(row.label);
+    if (catalog.some((p: any) => String(p.code) === code)) {
+      resolved.set(row.label, catalog.find((p: any) => String(p.code) === code));
+      continue;
+    }
+    const created = {
+      code,
+      name: row.display,
+      unit: row.unit,
+      ref_low: row.refLow,
+      ref_high: row.refHigh,
+      direction: "in_range",
+      display_order: order++,
+      product_codes: [],
+    };
+    toCreate.push(created);
+    resolved.set(row.label, created);
+  }
+  if (toCreate.length) {
+    const { error } = await sbAdmin.from("lab_parameters").upsert(toCreate, { onConflict: "code" });
+    if (error) console.error("lab_parameters auto-create failed", error.message);
+    else console.log("lab_parameters auto-created", toCreate.map((p) => p.code).join(","));
+  }
+  return resolved;
+}
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
