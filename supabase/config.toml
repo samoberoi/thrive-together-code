@@ -27,3 +27,6 @@ verify_jwt = false
 
 [functions.razorpay-service-payment]
 verify_jwt = false
+
+[functions.thyrocare-api]
+verify_jwt = false
