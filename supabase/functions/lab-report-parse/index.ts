@@ -67,12 +67,48 @@ async function extractPdfText(bytes: Uint8Array): Promise<string> {
 }
 
 const aliasMap: Record<string, string[]> = {
-  HBA: ["HbA1c"], HBA1C: ["HbA1c"], CHOL: ["TOTAL CHOLESTEROL"], HCHO: ["HDL CHOLESTEROL - DIRECT", "HDL CHOLESTEROL"],
+  HBA: ["HBA1C", "GLYCOSYLATED HEMOGLOBIN"], HBA1C: ["HBA1C", "GLYCOSYLATED HEMOGLOBIN"],
+  FBS: ["FASTING BLOOD SUGAR(GLUCOSE)", "FASTING BLOOD SUGAR", "GLUCOSE FASTING", "BLOOD SUGAR (F)"],
+  CHOL: ["TOTAL CHOLESTEROL", "CHOLESTEROL - TOTAL"], HCHO: ["HDL CHOLESTEROL - DIRECT", "HDL CHOLESTEROL"],
   LDL: ["LDL CHOLESTEROL - DIRECT", "LDL CHOLESTEROL"], TRIG: ["TRIGLYCERIDES"], VLDL: ["VLDL CHOLESTEROL"], NHDL: ["NON-HDL CHOLESTEROL"],
   "TC/H": ["TC/ HDL CHOLESTEROL RATIO", "TC / HDL CHOLESTEROL RATIO"], "TRI/H": ["TRIG / HDL RATIO", "TRIG/HDL RATIO"], "LDL/": ["LDL / HDL RATIO", "LDL/HDL RATIO"], "HD/LD": ["HDL / LDL RATIO", "HDL/LDL RATIO"],
-  SCRE: ["CREATININE - SERUM"], UALB: ["URINARY MICROALBUMIN"], TSH: ["THYROID STIMULATING HORMONE", "ULTRASENSITIVE TSH", "TSH"], T3: ["TOTAL TRIIODOTHYRONINE", "TOTAL T3"], T4: ["TOTAL THYROXINE", "TOTAL T4"], FT3: ["FREE TRIIODOTHYRONINE", "FREE T3"], FT4: ["FREE THYROXINE", "FREE T4"],
-  VITD: ["25-OH VITAMIN D (TOTAL)", "VITAMIN D (25-OH)"], "25OHD": ["25-OH VITAMIN D (TOTAL)"], VITB12: ["VITAMIN B-12", "VITAMIN B12"], B12: ["VITAMIN B-12", "VITAMIN B12"], HB: ["HEMOGLOBIN"], UREA: ["UREA"], URIC: ["URIC ACID"], CALC: ["CALCIUM"], GGT: ["GAMMA GLUTAMYL TRANSFERASE", "GGT"], ALP: ["ALKALINE PHOSPHATASE"], TBIL: ["BILIRUBIN - TOTAL", "TOTAL BILIRUBIN"], ALB: ["ALBUMIN"], TP: ["PROTEIN - TOTAL", "TOTAL PROTEIN"], IRON: ["IRON"], FERR: ["FERRITIN"], TIBC: ["TOTAL IRON BINDING CAPACITY", "TIBC"], HSCRP: ["HIGH SENSITIVITY C-REACTIVE PROTEIN", "HS-CRP"], CRP: ["C-REACTIVE PROTEIN"], INSF: ["INSULIN - FASTING", "FASTING INSULIN"], HOMA: ["HOMA INSULIN RESISTANCE INDEX", "HOMA-IR"],
+  SCRE: ["CREATININE - SERUM", "SERUM CREATININE", "CREATININE-SERUM"],
+  UALB: ["URINARY MICROALBUMIN", "URINE MICROALBUMIN"],
+  SGOT: ["ASPARTATE AMINOTRANSFERASE (SGOT )", "ASPARTATE AMINOTRANSFERASE (SGOT)", "ASPARTATE AMINOTRANSFERASE", "SGOT (AST)"],
+  SGPT: ["ALANINE TRANSAMINASE (SGPT)", "ALANINE TRANSAMINASE", "SGPT (ALT)"],
+  TSH: ["THYROID STIMULATING HORMONE", "ULTRASENSITIVE TSH", "TSH"], T3: ["TOTAL TRIIODOTHYRONINE", "TOTAL T3"], T4: ["TOTAL THYROXINE", "TOTAL T4"], FT3: ["FREE TRIIODOTHYRONINE", "FREE T3"], FT4: ["FREE THYROXINE", "FREE T4"],
+  VITD: ["25-OH VITAMIN D (TOTAL)", "VITAMIN D (25-OH)"], "25OHD": ["25-OH VITAMIN D (TOTAL)"], VITD3: ["25-OH VITAMIN D (TOTAL)"], VITB12: ["VITAMIN B-12", "VITAMIN B12"], B12: ["VITAMIN B-12", "VITAMIN B12"],
+  HB: ["HEMOGLOBIN"], UREA: ["UREA"], URIC: ["URIC ACID"], CALC: ["CALCIUM"], GGT: ["GAMMA GLUTAMYL TRANSFERASE", "GGT"], ALP: ["ALKALINE PHOSPHATASE"], TBIL: ["BILIRUBIN - TOTAL", "TOTAL BILIRUBIN"], ALB: ["ALBUMIN - SERUM", "ALBUMIN"], TP: ["PROTEIN - TOTAL", "TOTAL PROTEIN"], IRON: ["IRON"], FERR: ["FERRITIN"], TIBC: ["TOTAL IRON BINDING CAPACITY", "TIBC"], HSCRP: ["HIGH SENSITIVITY C-REACTIVE PROTEIN", "HS-CRP"], CRP: ["C-REACTIVE PROTEIN"], INSF: ["INSULIN - FASTING", "FASTING INSULIN"], HOMA: ["HOMA INSULIN RESISTANCE INDEX", "HOMA-IR"],
 };
+
+const TECH_RE =
+  /\b(PHOTOMETRY|CALCULATED|H\.P\.L\.C|HPLC|CMIA|ECLIA|CLIA|COLORIMETRY|TURBIDIMETRY|ISE|IMPEDANCE|NEPHELOMETRY|IMMUNOTURBIDIMETRY)\b/;
+
+function normLabel(s: string) {
+  return s.toUpperCase().replace(/[^A-Z0-9./()<>\- ]/g, " ").replace(/\s+/g, " ").trim();
+}
+
+/** Word groups that must agree between the printed test name and the alias,
+ *  so urine analytes never get stored as blood analytes (and ratios/derived
+ *  values never overwrite the direct measurement). */
+const CONTEXT_GROUPS = [["URINE", "URINARY"], ["RATIO"], ["AVERAGE"], ["EST.", "ESTIMATED", "EGFR"], ["INDEX"]];
+
+function contextMatches(label: string, alias: string) {
+  for (const group of CONTEXT_GROUPS) {
+    const inLabel = group.some((w) => label.includes(w));
+    const inAlias = group.some((w) => alias.includes(w));
+    if (inLabel !== inAlias) return false;
+  }
+  return true;
+}
+
+/** Test-name portion of a report row: everything before the technology column
+ *  (or before the first numeric value when the technology column is missing). */
+function labelOf(line: string) {
+  const t = TECH_RE.exec(line);
+  const raw = t ? line.slice(0, t.index) : line.split(/(?:^|\s)[<>]?\s*\d/)[0];
+  return normLabel(raw);
+}
 
 function extractFromText(text: string, params: any[]) {
   const lines = text.split(/\n+/).map((l) => l.replace(/\s+/g, " ").trim()).filter(Boolean);
@@ -80,14 +116,24 @@ function extractFromText(text: string, params: any[]) {
   const seen = new Set<string>();
   for (const p of params) {
     const code = String(p.code);
-    const aliases = [...(aliasMap[code] || []), p.name, code].filter(Boolean).map((a) => String(a).toUpperCase());
-    for (const line of lines) {
-      const upper = line.toUpperCase();
-      const alias = aliases.find((a) => upper.includes(a));
+    const aliases = [...(aliasMap[code] || []), p.name, code].filter(Boolean).map((a) => normLabel(String(a)));
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const label = labelOf(line);
+      if (label.length < 3) continue;
+      // Exact test-name match only (no loose substring), plus sample/derivation guard.
+      const alias = aliases.find((a) =>
+        a.length >= 3 &&
+        (label === a || label === `${a}:` || label.startsWith(`${a} `)) &&
+        contextMatches(label, a)
+      );
       if (!alias) continue;
-      const rest = line.slice(upper.indexOf(alias) + alias.length).replace(/^(PHOTOMETRY|CALCULATED|H\.P\.L\.C|CMIA|ECLIA|COLORIMETRY|TURBIDIMETRY|ISE)\b/i, "").trim();
-      const m = rest.match(/(?:^|\s)([<>]?)\s*(\d+(?:\.\d+)?)\s*([A-Za-zµμ%/0-9.^-]+)?/);
+      const after = line.slice(label.length);
+      let m = after.match(/(?:^|\s)([<>]?)\s*(\d+(?:\.\d+)?)\s*([A-Za-zµμ%/0-9.^-]+)?/);
+      // Some rows print the value on the next line.
+      if (!m && lines[i + 1]) m = lines[i + 1].match(/^\s*([<>]?)\s*(\d+(?:\.\d+)?)\s*([A-Za-zµμ%/0-9.^-]+)?/);
       if (!m) continue;
+      if (m[1]) break; // "<5.5" style — not a measured value, skip this parameter
       const value = Number(m[2]);
       if (!Number.isFinite(value) || seen.has(code)) continue;
       results.push({ code, value, unit: m[3] || p.unit || null });
@@ -97,6 +143,7 @@ function extractFromText(text: string, params: any[]) {
   }
   return results;
 }
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -201,6 +248,8 @@ Return JSON in this exact shape:
 Rules:
 - value must be a number (e.g. 5.6, 110, 12). No strings, no ranges.
 - If the PDF shows ranges like "<10" or "Negative", omit that row.
+- Never mix sample types: a URINE/URINARY analyte (e.g. "CREATININE - URINE") must NEVER be returned for a serum/blood code, and vice versa.
+- Never return derived/ratio/average rows (e.g. "SGOT / SGPT RATIO", "AVERAGE BLOOD GLUCOSE", "eGFR") as the direct analyte value.
 - Do not invent values. Only include parameters you actually see in the PDF.`;
 
     if (!extracted.length) {
