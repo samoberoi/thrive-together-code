@@ -73,13 +73,19 @@ const aliasMap: Record<string, string[]> = {
   LDL: ["LDL CHOLESTEROL - DIRECT", "LDL CHOLESTEROL"], TRIG: ["TRIGLYCERIDES"], VLDL: ["VLDL CHOLESTEROL"], NHDL: ["NON-HDL CHOLESTEROL"],
   "TC/H": ["TC/ HDL CHOLESTEROL RATIO", "TC / HDL CHOLESTEROL RATIO"], "TRI/H": ["TRIG / HDL RATIO", "TRIG/HDL RATIO"], "LDL/": ["LDL / HDL RATIO", "LDL/HDL RATIO"], "HD/LD": ["HDL / LDL RATIO", "HDL/LDL RATIO"],
   SCRE: ["CREATININE - SERUM", "SERUM CREATININE", "CREATININE-SERUM"],
-  UALB: ["URINARY MICROALBUMIN", "URINE MICROALBUMIN"],
+  UCRE: ["CREATININE - URINE", "URINE CREATININE", "URINARY CREATININE", "CREATININE-URINE"],
+  UALB: ["URINARY MICROALBUMIN", "URINE MICROALBUMIN", "MICROALBUMIN - URINE"],
+  UACR: ["URI. ALBUMIN/CREATININE RATIO (UA/C)", "URINE ALBUMIN/CREATININE RATIO", "ALBUMIN/CREATININE RATIO"],
+  EGFR: ["EST. GLOMERULAR FILTRATION RATE (EGFR)", "ESTIMATED GLOMERULAR FILTRATION RATE", "EGFR"],
+  ABG: ["AVERAGE BLOOD GLUCOSE (ABG)", "AVERAGE BLOOD GLUCOSE", "ESTIMATED AVERAGE GLUCOSE"],
+  OTPT: ["SGOT / SGPT RATIO", "SGOT/SGPT RATIO", "AST / ALT RATIO"],
   SGOT: ["ASPARTATE AMINOTRANSFERASE (SGOT )", "ASPARTATE AMINOTRANSFERASE (SGOT)", "ASPARTATE AMINOTRANSFERASE", "SGOT (AST)"],
   SGPT: ["ALANINE TRANSAMINASE (SGPT)", "ALANINE TRANSAMINASE", "SGPT (ALT)"],
   TSH: ["THYROID STIMULATING HORMONE", "ULTRASENSITIVE TSH", "TSH"], T3: ["TOTAL TRIIODOTHYRONINE", "TOTAL T3"], T4: ["TOTAL THYROXINE", "TOTAL T4"], FT3: ["FREE TRIIODOTHYRONINE", "FREE T3"], FT4: ["FREE THYROXINE", "FREE T4"],
   VITD: ["25-OH VITAMIN D (TOTAL)", "VITAMIN D (25-OH)"], "25OHD": ["25-OH VITAMIN D (TOTAL)"], VITD3: ["25-OH VITAMIN D (TOTAL)"], VITB12: ["VITAMIN B-12", "VITAMIN B12"], B12: ["VITAMIN B-12", "VITAMIN B12"],
   HB: ["HEMOGLOBIN"], UREA: ["UREA"], URIC: ["URIC ACID"], CALC: ["CALCIUM"], GGT: ["GAMMA GLUTAMYL TRANSFERASE", "GGT"], ALP: ["ALKALINE PHOSPHATASE"], TBIL: ["BILIRUBIN - TOTAL", "TOTAL BILIRUBIN"], ALB: ["ALBUMIN - SERUM", "ALBUMIN"], TP: ["PROTEIN - TOTAL", "TOTAL PROTEIN"], IRON: ["IRON"], FERR: ["FERRITIN"], TIBC: ["TOTAL IRON BINDING CAPACITY", "TIBC"], HSCRP: ["HIGH SENSITIVITY C-REACTIVE PROTEIN", "HS-CRP"], CRP: ["C-REACTIVE PROTEIN"], INSF: ["INSULIN - FASTING", "FASTING INSULIN"], HOMA: ["HOMA INSULIN RESISTANCE INDEX", "HOMA-IR"],
 };
+
 
 const TECH_RE =
   /\b(PHOTOMETRY|CALCULATED|H\.P\.L\.C|HPLC|CMIA|ECLIA|CLIA|COLORIMETRY|TURBIDIMETRY|ISE|IMPEDANCE|NEPHELOMETRY|IMMUNOTURBIDIMETRY)\b/;
@@ -142,6 +148,165 @@ function extractFromText(text: string, params: any[]) {
     }
   }
   return results;
+}
+
+/** A marker row as printed on the report (independent of our catalog). */
+export type DiscoveredRow = {
+  label: string;              // printed test name, normalised
+  display: string;            // printed test name, title-ish case
+  value: number | null;
+  text: string | null;        // "< 5.5", "Negative", …
+  unit: string | null;
+  refLow: number | null;
+  refHigh: number | null;
+};
+
+const NOISE_RE = /(TEST NAME|TECHNOLOGY|BIO\.? REF|METHOD|SAMPLE TYPE|PATIENT|REFERRED BY|ADDRESS|PAGE|TESTS DONE|DISCLAIMER|PLEASE CORRELATE|REPORT|PROCESSED AT|SCAN QR|GUIDELINE)/;
+
+const KEEP_UPPER = /^(HDL|LDL|VLDL|TC|SGOT|SGPT|AST|ALT|HBA1C|EGFR|ABG|UA\/C|CRP|TSH|GGT|ALP|TIBC|T3|T4|FT3|FT4|B12|UREA|II|III)$/i;
+
+function titleCase(label: string) {
+  return label.split(/\s+/).map((w) => {
+    const bare = w.replace(/[()]/g, "");
+    if (KEEP_UPPER.test(bare)) return w.toUpperCase();
+    return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+  }).join(" ").trim();
+}
+
+/** Split the "value tail" into a clean unit and any reference text that followed it. */
+function splitUnit(raw: string) {
+  const tokens = (raw || "").trim().split(/\s+/).filter(Boolean);
+  const unit: string[] = [];
+  let i = 0;
+  for (; i < tokens.length; i++) {
+    const t = tokens[i];
+    if (/^[<>]?\d/.test(t) || /^\d+(\.\d+)?-/.test(t)) break;
+    unit.push(t);
+    if (unit.length >= 4) { i++; break; }
+  }
+  return { unit: unit.join(" ").trim() || null, tail: tokens.slice(i).join(" ") };
+}
+
+
+function parseRef(text: string): { refLow: number | null; refHigh: number | null } {
+  const t = text.replace(/\s+/g, " ");
+  let m = t.match(/(?:^|\s)([<>]=?)\s*(\d+(?:\.\d+)?)/);
+  if (m) {
+    const n = Number(m[2]);
+    return m[1].startsWith("<") ? { refLow: 0, refHigh: n } : { refLow: n, refHigh: null };
+  }
+  m = t.match(/(?:LESS THAN)\s*(\d+(?:\.\d+)?)/i);
+  if (m) return { refLow: 0, refHigh: Number(m[1]) };
+  m = t.match(/(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)/);
+  if (m) return { refLow: Number(m[1]), refHigh: Number(m[2]) };
+  return { refLow: null, refHigh: null };
+}
+
+/** Every result row printed on the report — including markers we don't know yet. */
+function discoverRows(text: string): DiscoveredRow[] {
+  const lines = text.split(/\n+/).map((l) => l.replace(/\s+/g, " ").trim()).filter(Boolean);
+  const out: DiscoveredRow[] = [];
+  const seen = new Set<string>();
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const tech = TECH_RE.exec(line);
+    if (!tech) continue;
+    const label = normLabel(line.slice(0, tech.index));
+    if (label.length < 3 || NOISE_RE.test(label) || seen.has(label)) continue;
+    let rest = line.slice(tech.index + tech[0].length);
+    let m = rest.match(/^\s*([<>]?)\s*(\d+(?:\.\d+)?)\s*([A-Za-zµμ%][A-Za-zµμ%/0-9.^ -]*)?/);
+    if (!m && lines[i + 1] && !TECH_RE.test(lines[i + 1])) {
+      rest = lines[i + 1];
+      m = rest.match(/^\s*([<>]?)\s*(\d+(?:\.\d+)?)\s*([A-Za-zµμ%][A-Za-zµμ%/0-9.^ -]*)?/);
+    }
+    if (!m) continue;
+    const numeric = Number(m[2]);
+    if (!Number.isFinite(numeric)) continue;
+    const { unit: unitClean, tail: unitTail } = splitUnit(m[3] || "");
+    const tail = `${unitTail} ${rest.slice((m.index || 0) + m[0].length)}`;
+    const refInline = parseRef(tail);
+    const refFollow = refInline.refLow == null && refInline.refHigh == null
+      ? parseRef(lines.slice(i + 1, i + 5).filter((l) => /REF|LESS THAN|NORMAL|ADULTS/i.test(l)).join(" "))
+      : refInline;
+    seen.add(label);
+    out.push({
+      label,
+      display: titleCase(label),
+      value: m[1] ? null : numeric,
+      text: m[1] ? `${m[1]} ${numeric}` : null,
+      unit: unitClean ? unitClean.slice(0, 24) : null,
+
+      refLow: refFollow.refLow,
+      refHigh: refFollow.refHigh,
+    });
+  }
+  return out;
+}
+
+/** Match a printed label to a catalog parameter using aliases + sample-type guard. */
+function matchCatalog(label: string, catalog: any[]) {
+  for (const p of catalog) {
+    const aliases = [...(aliasMap[String(p.code)] || []), p.name, p.code]
+      .filter(Boolean).map((a) => normLabel(String(a)));
+    const hit = aliases.find((a) =>
+      a.length >= 3 &&
+      (label === a || label === `${a}:` || label.startsWith(`${a} `)) &&
+      contextMatches(label, a)
+    );
+    if (hit) return p;
+  }
+  return null;
+}
+
+function slugCode(label: string) {
+  return label.replace(/[^A-Z0-9]+/g, "_").replace(/^_|_$/g, "").slice(0, 28) || "UNKNOWN";
+}
+
+/** Preferred short code for a printed label when we already know the analyte. */
+function preferredCode(label: string) {
+  for (const [code, aliases] of Object.entries(aliasMap)) {
+    const hit = aliases.map((a) => normLabel(a)).find((a) =>
+      (label === a || label.startsWith(`${a} `)) && contextMatches(label, a)
+    );
+    if (hit) return code;
+  }
+  return null;
+}
+
+/**
+ * Make sure every marker printed on a report exists in lab_parameters, so the
+ * catalog grows automatically as labs add new analytes.
+ */
+async function ensureCatalog(rows: DiscoveredRow[], catalog: any[]) {
+  const resolved = new Map<string, any>();
+  const toCreate: any[] = [];
+  let order = 900;
+  for (const row of rows) {
+    const known = matchCatalog(row.label, catalog);
+    if (known) { resolved.set(row.label, known); continue; }
+    const code = preferredCode(row.label) || slugCode(row.label);
+    const existing = catalog.find((p: any) => String(p.code) === code);
+    if (existing) { resolved.set(row.label, existing); continue; }
+
+    const created = {
+      code,
+      name: row.display,
+      unit: row.unit,
+      ref_low: row.refLow,
+      ref_high: row.refHigh,
+      direction: "in_range",
+      display_order: order++,
+      product_codes: [],
+    };
+    toCreate.push(created);
+    resolved.set(row.label, created);
+  }
+  if (toCreate.length) {
+    const { error } = await sbAdmin.from("lab_parameters").upsert(toCreate, { onConflict: "code" });
+    if (error) console.error("lab_parameters auto-create failed", error.message);
+    else console.log("lab_parameters auto-created", toCreate.map((p) => p.code).join(","));
+  }
+  return resolved;
 }
 
 
@@ -221,10 +386,13 @@ Deno.serve(async (req) => {
     if (!params?.length) return json({ error: "no catalog parameters" }, 400);
 
     const pdf = await fetchPdf(report.report_url);
+    let pdfText = "";
     let extracted: Array<{ code: string; value: number; unit?: string | null }> = [];
     try {
-      extracted = extractFromText(await extractPdfText(pdf.bytes), params);
+      pdfText = await extractPdfText(pdf.bytes);
+      extracted = extractFromText(pdfText, params);
     } catch (e) {
+
       console.error("pdf text extraction failed", String((e as Error).message || e));
     }
 
@@ -302,32 +470,65 @@ Rules:
       return new Date().toISOString();
     })();
 
-    const rows = extracted
-      .map((e) => {
-        const p: any = byCode.get(String(e.code));
-        if (!p) return null;
-        const num = typeof e.value === "number" ? e.value : Number(e.value);
-        if (!Number.isFinite(num)) return null;
-        return {
-          user_id: order.user_id,
-          order_id: order.id,
-          report_id: report.id,
-          parameter_code: p.code,
-          parameter_name: p.name,
-          value_numeric: num,
-          value_text: null,
-          unit: e.unit || p.unit || null,
-          ref_low: p.ref_low,
-          ref_high: p.ref_high,
-          observed_at: observedAt,
-          source: "auto_pdf",
-        };
-      })
-      .filter(Boolean);
+    const base = {
+      user_id: order.user_id,
+      order_id: order.id,
+      report_id: report.id,
+      observed_at: observedAt,
+      source: "auto_pdf",
+    };
+    const rowByCode = new Map<string, any>();
+
+    // 1) Everything printed on the report, catalog-growing: unknown markers get
+    //    a lab_parameters entry created on the fly so nothing is ever dropped.
+    if (pdfText) {
+      const discovered = discoverRows(pdfText);
+      if (discovered.length) {
+        const { data: allParams } = await sbAdmin
+          .from("lab_parameters")
+          .select("code, name, unit, ref_low, ref_high, group_name");
+        const resolved = await ensureCatalog(discovered, allParams || []);
+        for (const row of discovered) {
+          const p: any = resolved.get(row.label);
+          if (!p) continue;
+          rowByCode.set(String(p.code), {
+            ...base,
+            parameter_code: p.code,
+            parameter_name: p.name,
+            value_numeric: row.value,
+            value_text: row.text,
+            unit: row.unit || p.unit || null,
+            ref_low: p.ref_low ?? row.refLow,
+            ref_high: p.ref_high ?? row.refHigh,
+          });
+        }
+      }
+    }
+
+    // 2) Catalog/AI extraction fills anything the row scanner missed.
+    for (const e of extracted) {
+      const p: any = byCode.get(String(e.code));
+      if (!p || rowByCode.has(String(p.code))) continue;
+      const num = typeof e.value === "number" ? e.value : Number(e.value);
+      if (!Number.isFinite(num)) continue;
+      rowByCode.set(String(p.code), {
+        ...base,
+        parameter_code: p.code,
+        parameter_name: p.name,
+        value_numeric: num,
+        value_text: null,
+        unit: e.unit || p.unit || null,
+        ref_low: p.ref_low,
+        ref_high: p.ref_high,
+      });
+    }
+
+    const rows = [...rowByCode.values()];
 
     if (!rows.length) {
       return json({ ok: false, count: 0, message: "No values extracted from PDF" }, 200);
     }
+
 
     // Replace any prior rows for this order
     await sbAdmin.from("lab_results").delete().eq("user_id", order.user_id).eq("order_id", order.id);

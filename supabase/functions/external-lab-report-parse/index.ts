@@ -163,9 +163,36 @@ Rules:
     });
 
     if (!rows.length) throw new Error("No marker values could be read from this report");
+
+    // Grow the marker catalog: any analyte in the report we don't know yet is
+    // added to lab_parameters so future reports map to a real parameter.
+    const knownCodes = new Set((catalogParams || []).map((p: any) => normalize(String(p.code || ""))));
+    const newParams = new Map<string, any>();
+    for (const row of rows) {
+      const code = String(row.parameter_code || "").trim();
+      if (!code || knownCodes.has(normalize(code)) || newParams.has(code)) continue;
+      newParams.set(code, {
+        code,
+        name: row.parameter_name || code,
+        unit: row.unit,
+        ref_low: row.ref_low,
+        ref_high: row.ref_high,
+        direction: "in_range",
+        display_order: 950,
+        product_codes: [],
+      });
+    }
+    if (newParams.size) {
+      const { error: catErr } = await admin
+        .from("lab_parameters")
+        .upsert([...newParams.values()], { onConflict: "code" });
+      if (catErr) console.error("lab_parameters auto-create failed", catErr.message);
+    }
+
     await admin.from("lab_results").delete().eq("external_report_id", report.id);
     const { error: insertError } = await admin.from("lab_results").insert(rows);
     if (insertError) throw new Error(insertError.message);
+
     await admin.from("external_lab_reports").update({
       status: "reviewed",
       reviewed_at: new Date().toISOString(),
