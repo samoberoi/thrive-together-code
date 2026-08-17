@@ -573,19 +573,29 @@ async function fetchReport(payload: any, userId: string) {
   }
   if (!order) return json({ ok: true, data, warning: "no local order" });
 
+  // Never destroy an already-delivered report because a later vendor call failed.
+  const { data: existing } = await sbAdmin
+    .from("thyrocare_reports")
+    .select("id, report_url")
+    .eq("order_id", order.id);
+  const hasGoodExisting = (existing || []).some((r: any) => !!r.report_url);
+
   if (!okUrl) {
     console.error("fetch_report failed", { orderId, leadId, status: lastStatus, detail: lastText.slice(0, 500) });
-    await sbAdmin.from("thyrocare_reports").delete().eq("order_id", order.id);
-    await sbAdmin.from("thyrocare_reports").insert({
-      order_id: order.id,
-      user_id: order.user_id,
-      report_url: null,
-      report_type: "Report ready — vendor file fetch failed",
-      parameters: { status: lastStatus, detail: lastText.slice(0, 800), orderId, leadId },
-      raw_data: data,
-    });
+    if (!hasGoodExisting) {
+      await sbAdmin.from("thyrocare_reports").delete().eq("order_id", order.id);
+      await sbAdmin.from("thyrocare_reports").insert({
+        order_id: order.id,
+        user_id: order.user_id,
+        report_url: null,
+        report_type: "Report ready — vendor file fetch failed",
+        parameters: { status: lastStatus, detail: lastText.slice(0, 800), orderId, leadId },
+        raw_data: data,
+      });
+    }
     return json({ ok: false, status: lastStatus, data, detail: lastText.slice(0, 800) }, 200);
   }
+
 
   const directReportUrl =
     (typeof lastText === "string" && /^https?:\/\//i.test(lastText.trim()) ? lastText.trim() : null) ||
