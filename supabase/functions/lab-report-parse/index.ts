@@ -222,8 +222,8 @@ function discoverRows(text: string): DiscoveredRow[] {
     if (!m) continue;
     const numeric = Number(m[2]);
     if (!Number.isFinite(numeric)) continue;
-    const unitRaw = (m[3] || "").split(/\s{2,}|<|>/)[0].trim();
-    const tail = rest.slice((m.index || 0) + m[0].length);
+    const { unit: unitClean, tail: unitTail } = splitUnit(m[3] || "");
+    const tail = `${unitTail} ${rest.slice((m.index || 0) + m[0].length)}`;
     const refInline = parseRef(tail);
     const refFollow = refInline.refLow == null && refInline.refHigh == null
       ? parseRef(lines.slice(i + 1, i + 5).filter((l) => /REF|LESS THAN|NORMAL|ADULTS/i.test(l)).join(" "))
@@ -234,7 +234,8 @@ function discoverRows(text: string): DiscoveredRow[] {
       display: titleCase(label),
       value: m[1] ? null : numeric,
       text: m[1] ? `${m[1]} ${numeric}` : null,
-      unit: unitRaw ? unitRaw.slice(0, 24) : null,
+      unit: unitClean ? unitClean.slice(0, 24) : null,
+
       refLow: refFollow.refLow,
       refHigh: refFollow.refHigh,
     });
