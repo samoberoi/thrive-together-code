@@ -438,32 +438,65 @@ Rules:
       return new Date().toISOString();
     })();
 
-    const rows = extracted
-      .map((e) => {
-        const p: any = byCode.get(String(e.code));
-        if (!p) return null;
-        const num = typeof e.value === "number" ? e.value : Number(e.value);
-        if (!Number.isFinite(num)) return null;
-        return {
-          user_id: order.user_id,
-          order_id: order.id,
-          report_id: report.id,
-          parameter_code: p.code,
-          parameter_name: p.name,
-          value_numeric: num,
-          value_text: null,
-          unit: e.unit || p.unit || null,
-          ref_low: p.ref_low,
-          ref_high: p.ref_high,
-          observed_at: observedAt,
-          source: "auto_pdf",
-        };
-      })
-      .filter(Boolean);
+    const base = {
+      user_id: order.user_id,
+      order_id: order.id,
+      report_id: report.id,
+      observed_at: observedAt,
+      source: "auto_pdf",
+    };
+    const rowByCode = new Map<string, any>();
+
+    // 1) Everything printed on the report, catalog-growing: unknown markers get
+    //    a lab_parameters entry created on the fly so nothing is ever dropped.
+    if (pdfText) {
+      const discovered = discoverRows(pdfText);
+      if (discovered.length) {
+        const { data: allParams } = await sbAdmin
+          .from("lab_parameters")
+          .select("code, name, unit, ref_low, ref_high, group_name");
+        const resolved = await ensureCatalog(discovered, allParams || []);
+        for (const row of discovered) {
+          const p: any = resolved.get(row.label);
+          if (!p) continue;
+          rowByCode.set(String(p.code), {
+            ...base,
+            parameter_code: p.code,
+            parameter_name: p.name,
+            value_numeric: row.value,
+            value_text: row.text,
+            unit: row.unit || p.unit || null,
+            ref_low: p.ref_low ?? row.refLow,
+            ref_high: p.ref_high ?? row.refHigh,
+          });
+        }
+      }
+    }
+
+    // 2) Catalog/AI extraction fills anything the row scanner missed.
+    for (const e of extracted) {
+      const p: any = byCode.get(String(e.code));
+      if (!p || rowByCode.has(String(p.code))) continue;
+      const num = typeof e.value === "number" ? e.value : Number(e.value);
+      if (!Number.isFinite(num)) continue;
+      rowByCode.set(String(p.code), {
+        ...base,
+        parameter_code: p.code,
+        parameter_name: p.name,
+        value_numeric: num,
+        value_text: null,
+        unit: e.unit || p.unit || null,
+        ref_low: p.ref_low,
+        ref_high: p.ref_high,
+      });
+    }
+
+    const rows = [...rowByCode.values()];
 
     if (!rows.length) {
       return json({ ok: false, count: 0, message: "No values extracted from PDF" }, 200);
     }
+
 
     // Replace any prior rows for this order
     await sbAdmin.from("lab_results").delete().eq("user_id", order.user_id).eq("order_id", order.id);
