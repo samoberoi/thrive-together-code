@@ -174,21 +174,26 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
               }).catch(() => null),
             ),
           ).then(async () => {
-            const { data: o2 } = await supabase.from("thyrocare_orders" as any)
+            const { data: o2, error: o2Err } = await supabase.from("thyrocare_orders" as any)
               .select("id, recommendation_id, product_codes, thyrocare_order_id, thyrocare_lead_id, status, status_detail, beneficiary_name, beneficiary_age, beneficiary_gender, mobile, email, pincode, address, collection_date, collection_slot, amount, raw_response, created_at")
               .eq("user_id", user.id).order("created_at", { ascending: false });
             const refreshedRaw = (((o2 as any) || []) as Order[]);
             const refreshedOrders = refreshedRaw.filter(
               (o) => !!o.thyrocare_order_id && !["failed", "cancelled"].includes((o.status || "").toLowerCase()),
             );
+            // Never wipe an already-rendered history: if the refresh errored or came
+            // back empty, keep what we loaded on first paint.
+            const keepPrevious = !!o2Err || (refreshedOrders.length === 0 && orderList.length > 0);
+            const nextOrders = keepPrevious ? orderList : refreshedOrders;
+            if (o2Err) console.error("[PatientLabTests] order refresh failed", o2Err);
             const map2: Record<string, Order> = {};
-            for (const o of refreshedOrders) {
+            for (const o of nextOrders) {
               if (o.recommendation_id && !map2[o.recommendation_id]) map2[o.recommendation_id] = o;
             }
-            setOrders(refreshedOrders);
+            setOrders(nextOrders);
             setOrdersByRec(map2);
 
-            const doneOrders = refreshedOrders.filter((o) => {
+            const doneOrders = nextOrders.filter((o) => {
               const raw = o.raw_response || {};
               const rawStatus = String(raw.orderStatus || raw.status || "").toLowerCase();
               const reportReady = raw?.orderOptions?.isReportReady === true || raw?.patients?.some?.((p: any) => p?.isReportAvailable === true);
@@ -206,12 +211,15 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
                   }).catch(() => null),
                 ),
               );
-              const { data: rep2 } = await supabase.from("thyrocare_reports" as any)
+              const { data: rep2, error: rep2Err } = await supabase.from("thyrocare_reports" as any)
                 .select("id, report_url, report_type, delivered_at, order_id, parameters")
                 .eq("user_id", user.id).order("delivered_at", { ascending: false });
-              setReports((rep2 as any) || []);
+              const refreshedReports = ((rep2 as any) || []) as any[];
+              if (!rep2Err && refreshedReports.length) setReports(refreshedReports);
+              setMarkerRevision((v) => v + 1);
             }
-          }).catch(() => {});
+          }).catch((e) => console.error("[PatientLabTests] background refresh failed", e));
+
         }
 
 
