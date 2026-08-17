@@ -84,13 +84,8 @@ export async function fetchPosts(limit = 50, categorySlug: string | null = null)
   const { data: posts, error } = await q;
   if (error || !posts) return [];
 
-  const userIds = [...new Set(posts.map((p: any) => p.user_id))];
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("user_id, name, avatar_url")
-    .in("user_id", userIds as string[]);
-
-  const profileMap = new Map((profiles || []).map((p) => [p.user_id, p]));
+  const userIds = [...new Set(posts.map((p: any) => p.user_id))] as string[];
+  const profileMap = await fetchAuthorProfiles(userIds);
 
   return posts.map((p: any) => {
     const profile = profileMap.get(p.user_id);
