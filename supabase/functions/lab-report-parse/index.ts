@@ -163,9 +163,30 @@ export type DiscoveredRow = {
 
 const NOISE_RE = /(TEST NAME|TECHNOLOGY|BIO\.? REF|METHOD|SAMPLE TYPE|PATIENT|REFERRED BY|ADDRESS|PAGE|TESTS DONE|DISCLAIMER|PLEASE CORRELATE|REPORT|PROCESSED AT|SCAN QR|GUIDELINE)/;
 
+const KEEP_UPPER = /^(HDL|LDL|VLDL|TC|SGOT|SGPT|AST|ALT|HBA1C|EGFR|ABG|UA\/C|CRP|TSH|GGT|ALP|TIBC|T3|T4|FT3|FT4|B12|UREA|II|III)$/i;
+
 function titleCase(label: string) {
-  return label.toLowerCase().replace(/\b([a-z0-9])/g, (m) => m.toUpperCase()).replace(/\s+/g, " ").trim();
+  return label.split(/\s+/).map((w) => {
+    const bare = w.replace(/[()]/g, "");
+    if (KEEP_UPPER.test(bare)) return w.toUpperCase();
+    return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+  }).join(" ").trim();
 }
+
+/** Split the "value tail" into a clean unit and any reference text that followed it. */
+function splitUnit(raw: string) {
+  const tokens = (raw || "").trim().split(/\s+/).filter(Boolean);
+  const unit: string[] = [];
+  let i = 0;
+  for (; i < tokens.length; i++) {
+    const t = tokens[i];
+    if (/^[<>]?\d/.test(t) || /^\d+(\.\d+)?-/.test(t)) break;
+    unit.push(t);
+    if (unit.length >= 4) { i++; break; }
+  }
+  return { unit: unit.join(" ").trim() || null, tail: tokens.slice(i).join(" ") };
+}
+
 
 function parseRef(text: string): { refLow: number | null; refHigh: number | null } {
   const t = text.replace(/\s+/g, " ");
