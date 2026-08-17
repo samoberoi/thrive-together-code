@@ -694,8 +694,13 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const action = body?.action as string;
 
-    // Internal/cron caller (service role header) — no end-user session needed.
-    const internal = req.headers.get("x-bbdo-internal") === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    // Internal/cron caller (service role or sweep key) — no end-user session needed.
+    const internalHeader = req.headers.get("x-bbdo-internal");
+    const sweepKey = Deno.env.get("THYROCARE_SWEEP_KEY");
+    const internal =
+      (!!internalHeader && internalHeader === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) ||
+      (!!sweepKey && internalHeader === sweepKey);
+
     if (internal && action === "sweep") return await sweep();
 
     // Public action: sync_catalog can be called by admins only
