@@ -19,6 +19,7 @@ interface Props {
 
 interface Status {
   meeting: string | null;
+  meetingDone: boolean;
   tests: string | null;
   testItems: string[];
   supps: string | null;
@@ -26,10 +27,19 @@ interface Status {
   fasting: string | null;
 }
 
-const EMPTY: Status = { meeting: null, tests: null, testItems: [], supps: null, suppItems: [], fasting: null };
+const EMPTY: Status = { meeting: null, meetingDone: false, tests: null, testItems: [], supps: null, suppItems: [], fasting: null };
 
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleString(undefined, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+
+const meetingLabel = (type?: string | null) =>
+  ({
+    onboarding: "Onboarding",
+    weekly_checkpoint: "Weekly check-in",
+    quarterly_review: "Quarterly review",
+    consultation: "Consultation",
+    followup: "Follow-up",
+  }[(type ?? "") as string] ?? "Meeting");
 
 /**
  * Coach action tiles for a patient. Each tile reflects whether the item is
@@ -42,7 +52,7 @@ export default function PatientActionGrid({ coachId, patientId, patientName }: P
 
   const load = useCallback(async () => {
     const nowIso = new Date().toISOString();
-    const [meetRes, testRes, planRes, protoRes] = await Promise.all([
+    const [meetRes, doneRes, testRes, planRes, suppRecRes, protoRes] = await Promise.all([
       supabase
         .from("coach_meetings" as any)
         .select("scheduled_at, status, meeting_type")
@@ -52,10 +62,19 @@ export default function PatientActionGrid({ coachId, patientId, patientName }: P
         .order("scheduled_at", { ascending: true })
         .limit(1),
       supabase
-        .from("coach_test_recommendations" as any)
+        .from("coach_meetings" as any)
+        .select("scheduled_at, meeting_type")
+        .eq("user_id", patientId)
+        .eq("status", "completed")
+        .order("scheduled_at", { ascending: false })
+        .limit(1),
+      // Tests are assigned through thyrocare_recommendations (same table the
+      // assign dialog writes to) — reading anything else showed "Not assigned".
+      supabase
+        .from("thyrocare_recommendations" as any)
         .select("status, product_codes, created_at")
         .eq("user_id", patientId)
-        .in("status", ["recommended", "accepted", "ordered"])
+        .in("status", ["pending", "viewed", "booked"])
         .order("created_at", { ascending: false })
         .limit(1),
       supabase
@@ -63,6 +82,13 @@ export default function PatientActionGrid({ coachId, patientId, patientName }: P
         .select("id")
         .eq("user_id", patientId)
         .eq("status", "active"),
+      supabase
+        .from("coach_supplement_recommendations" as any)
+        .select("items, status, created_at")
+        .eq("user_id", patientId)
+        .in("status", ["recommended", "accepted"])
+        .order("created_at", { ascending: false })
+        .limit(1),
       supabase
         .from("user_protocols" as any)
         .select("start_date, protocol_id, fasting_protocols(protocol_name)")
@@ -75,7 +101,14 @@ export default function PatientActionGrid({ coachId, patientId, patientName }: P
     const next: Status = { ...EMPTY };
 
     const m = (meetRes.data as any[])?.[0];
-    if (m) next.meeting = fmtDate(m.scheduled_at);
+    const done = (doneRes.data as any[])?.[0];
+    if (m) {
+      next.meeting = `${meetingLabel(m.meeting_type)} • ${fmtDate(m.scheduled_at)}`;
+      next.meetingDone = true;
+    } else if (done) {
+      next.meeting = `${meetingLabel(done.meeting_type)} complete`;
+      next.meetingDone = true;
+    }
 
     const t = (testRes.data as any[])?.[0];
     if (t) {
@@ -84,12 +117,12 @@ export default function PatientActionGrid({ coachId, patientId, patientName }: P
       if (codes.length) {
         const { data } = await supabase
           .from("thyrocare_tests" as any)
-          .select("product_code, test_name")
+          .select("product_code, product_name")
           .in("product_code", codes);
-        names = ((data as any[]) ?? []).map((x) => x.test_name as string);
+        names = ((data as any[]) ?? []).map((x) => x.product_name as string).filter(Boolean);
       }
       next.testItems = names;
-      next.tests = names[0] ?? `${codes.length} test${codes.length === 1 ? "" : "s"} assigned`;
+      next.tests = names[0] ?? `${codes.length || 1} test${codes.length === 1 || !codes.length ? "" : "s"} assigned`;
     }
 
     const planIds = ((planRes.data as any[]) ?? []).map((p) => p.id);
@@ -102,6 +135,17 @@ export default function PatientActionGrid({ coachId, patientId, patientName }: P
       const names = ((items as any[]) ?? []).map((i) => i.supplement_master?.name).filter(Boolean) as string[];
       next.suppItems = names;
       if (names.length) next.supps = `${names.length} active`;
+    }
+    if (!next.supps) {
+      const rec = (suppRecRes.data as any[])?.[0];
+      const recItems = Array.isArray(rec?.items) ? rec.items : [];
+      const names = recItems
+        .map((i: any) => i?.name ?? i?.supplement_name ?? null)
+        .filter(Boolean) as string[];
+      if (recItems.length) {
+        next.suppItems = names;
+        next.supps = `${recItems.length} recommended`;
+      }
     }
 
     const p = (protoRes.data as any[])?.[0];
@@ -116,6 +160,7 @@ export default function PatientActionGrid({ coachId, patientId, patientName }: P
     setS(EMPTY);
     load();
   }, [load]);
+
 
   const closeDlg = (open: boolean) => {
     if (!open) {
@@ -160,8 +205,9 @@ export default function PatientActionGrid({ coachId, patientId, patientName }: P
               {value ?? "Not assigned"}
             </span>
             <span className={`text-[10px] font-bold ${done ? "text-success" : "text-primary"}`}>
-              {done ? "Manage" : "Assign"}
+              {id === "meeting" ? (done ? "Schedule another" : "Schedule") : done ? "Manage" : "Assign"}
             </span>
+
           </>
         )}
       </button>
