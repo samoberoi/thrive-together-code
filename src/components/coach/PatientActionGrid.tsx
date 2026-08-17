@@ -205,8 +205,9 @@ export default function PatientActionGrid({ coachId, patientId, patientName }: P
               {value ?? "Not assigned"}
             </span>
             <span className={`text-[10px] font-bold ${done ? "text-success" : "text-primary"}`}>
-              {done ? "Manage" : "Assign"}
+              {id === "meeting" ? (done ? "Schedule another" : "Schedule") : done ? "Manage" : "Assign"}
             </span>
+
           </>
         )}
       </button>
