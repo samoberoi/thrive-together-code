@@ -61,7 +61,7 @@ const GROUP_TO_ORGAN: Record<string, OrganSlug> = {
 /** Specific parameter codes that override the group mapping. */
 const CODE_TO_ORGAN: Record<string, OrganSlug> = {
   // Diabetes markers → pancreas
-  HBA: "pancreas", HBA1C: "pancreas",
+  HBA: "pancreas", HBA1C: "pancreas", ABG: "pancreas",
   FBS: "pancreas", INSF: "pancreas", INSFA: "pancreas", HOMA: "pancreas", HOMIR: "pancreas",
   // Bone markers → bones
   CALC: "bones", VITD: "bones", VITD3: "bones", VITDC: "bones", "25OHD": "bones",
@@ -72,9 +72,13 @@ const CODE_TO_ORGAN: Record<string, OrganSlug> = {
   HSCRP: "heart", CRP: "heart",
   // Kidneys extras
   UREA: "kidneys", BUN: "kidneys", SCRE: "kidneys", URIC: "kidneys",
+  UCRE: "kidneys", UALB: "kidneys", UACR: "kidneys", EGFR: "kidneys",
+  // Liver ratio
+  OTPT: "liver",
   // Ferritin lives with blood
   FERR: "blood",
 };
+
 
 export function organForParameter(p: Pick<LabParameter, "code" | "group_name">): OrganSlug {
   const code = (p.code || "").toUpperCase();
