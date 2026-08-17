@@ -248,6 +248,8 @@ Return JSON in this exact shape:
 Rules:
 - value must be a number (e.g. 5.6, 110, 12). No strings, no ranges.
 - If the PDF shows ranges like "<10" or "Negative", omit that row.
+- Never mix sample types: a URINE/URINARY analyte (e.g. "CREATININE - URINE") must NEVER be returned for a serum/blood code, and vice versa.
+- Never return derived/ratio/average rows (e.g. "SGOT / SGPT RATIO", "AVERAGE BLOOD GLUCOSE", "eGFR") as the direct analyte value.
 - Do not invent values. Only include parameters you actually see in the PDF.`;
 
     if (!extracted.length) {
