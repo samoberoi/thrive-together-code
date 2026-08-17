@@ -354,10 +354,13 @@ Deno.serve(async (req) => {
     if (!params?.length) return json({ error: "no catalog parameters" }, 400);
 
     const pdf = await fetchPdf(report.report_url);
+    let pdfText = "";
     let extracted: Array<{ code: string; value: number; unit?: string | null }> = [];
     try {
-      extracted = extractFromText(await extractPdfText(pdf.bytes), params);
+      pdfText = await extractPdfText(pdf.bytes);
+      extracted = extractFromText(pdfText, params);
     } catch (e) {
+
       console.error("pdf text extraction failed", String((e as Error).message || e));
     }
 
