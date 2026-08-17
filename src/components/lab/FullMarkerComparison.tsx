@@ -109,14 +109,14 @@ export default function FullMarkerComparison({ userId, patientName, onClose }: P
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3">
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-black tracking-[0.18em] uppercase text-[var(--bbdo-blue)]">
+            <p className="text-[10px] font-black tracking-[0.18em] uppercase text-[var(--bbdo-blue)] mb-0.5">
               Full Marker Comparison
             </p>
-            <h2 className="text-lg sm:text-xl font-black text-foreground leading-tight truncate">
+            <h2 className="text-base sm:text-lg font-black text-foreground leading-snug truncate">
               {patientName ? `${patientName} · ` : ""}Previous vs new report
             </h2>
             {previous && newest && (
-              <p className="text-[11px] text-muted-foreground mt-0.5">
+              <p className="text-[11px] text-muted-foreground mt-1">
                 {fmtDate(previous.date)} → {fmtDate(newest.date)}
                 {count > 2 && ` · showing the latest 2 of ${count} reports`}
               </p>
