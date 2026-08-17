@@ -445,11 +445,16 @@ export default function Profile({ onClose, isDark = true, onToggleTheme }: Profi
     { icon: Star, label: "Rate the app", sublabel: "Enjoying BBDO? Leave a review", action: () => {
         const ua = navigator.userAgent || "";
         const isIOS = /iPad|iPhone|iPod/.test(ua);
-        const url = isIOS
-          ? "https://apps.apple.com/app/id0000000000?action=write-review"
-          : "https://play.google.com/store/apps/details?id=com.byebyediabetes.app";
-        window.open(url, "_blank", "noopener,noreferrer");
+        if (isIOS) {
+          // No App Store listing yet — don't open a dead placeholder page.
+          toast.info("Rating on the App Store is coming soon. Thank you for the love!");
+          return;
+        }
+        const url = "https://play.google.com/store/apps/details?id=com.hyperrevamp.bbdo";
+        const opened = window.open(url, "_system") || window.open(url, "_blank", "noopener,noreferrer");
+        if (!opened) window.location.href = url;
       } },
+
   ];
 
 
