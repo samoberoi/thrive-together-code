@@ -612,6 +612,11 @@ async function fetchReport(payload: any, userId: string) {
   const reports: any[] = directReportUrl
     ? [{ url: directReportUrl, type: "Lab Report", raw: data }]
     : data?.data?.reports || data?.reports || data?.data?.patients?.[0]?.reports || data?.data?.reportDetails || data?.reportDetails || [];
+  const usableReports = reports.filter((r: any) => r.url || r.reportUrl || r.pdfUrl || r.downloadUrl);
+  if (!usableReports.length && hasGoodExisting) {
+    // Vendor responded OK but without a file — keep what the patient already has.
+    return json({ ok: true, count: 0, kept_existing: true });
+  }
   await sbAdmin.from("thyrocare_reports").delete().eq("order_id", order.id);
   let hasReportUrl = false;
   for (const r of reports) {
@@ -628,6 +633,7 @@ async function fetchReport(payload: any, userId: string) {
   }
   if (hasReportUrl) await syncReportToProfile(order.id);
   return json({ ok: true, count: reports.length, reports });
+
 }
 
 // ---- Router ----
