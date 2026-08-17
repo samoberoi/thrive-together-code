@@ -139,12 +139,38 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (!report?.report_url) return json({ error: "no report url yet" }, 400);
 
-    // Parameter catalog for this order's packages
-    const { data: params, error: pErr } = await sbAdmin
+    // Parameter catalog for this order's packages. Some vendor catalog refreshes
+    // change the package id without updating lab_parameters.product_codes, so
+    // fall back to the concrete test ids returned on the booked order.
+    const { data: mappedParams, error: pErr } = await sbAdmin
       .from("lab_parameters")
       .select("code, name, unit, ref_low, ref_high, group_name")
       .overlaps("product_codes", order.product_codes || []);
     if (pErr) return json({ error: pErr.message }, 500);
+    let params = mappedParams || [];
+    if (!params.length) {
+      const { data: fullOrder } = await sbAdmin
+        .from("thyrocare_orders")
+        .select("raw_response")
+        .eq("id", order.id)
+        .maybeSingle();
+      const raw = fullOrder?.raw_response?.data || fullOrder?.raw_response || {};
+      const testCodes = Array.from(new Set(
+        (raw?.patients || []).flatMap((patient: any) =>
+          (patient?.items || []).flatMap((item: any) =>
+            (item?.tests || []).map((test: any) => String(test?.testId || test?.id || "").trim())
+          )
+        ).filter(Boolean),
+      ));
+      if (testCodes.length) {
+        const { data: codeParams, error: codeErr } = await sbAdmin
+          .from("lab_parameters")
+          .select("code, name, unit, ref_low, ref_high, group_name")
+          .in("code", testCodes);
+        if (codeErr) return json({ error: codeErr.message }, 500);
+        params = codeParams || [];
+      }
+    }
     if (!params?.length) return json({ error: "no catalog parameters" }, 400);
 
     const pdf = await fetchPdf(report.report_url);
