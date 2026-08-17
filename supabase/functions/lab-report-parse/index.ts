@@ -262,6 +262,17 @@ function slugCode(label: string) {
   return label.replace(/[^A-Z0-9]+/g, "_").replace(/^_|_$/g, "").slice(0, 28) || "UNKNOWN";
 }
 
+/** Preferred short code for a printed label when we already know the analyte. */
+function preferredCode(label: string) {
+  for (const [code, aliases] of Object.entries(aliasMap)) {
+    const hit = aliases.map((a) => normLabel(a)).find((a) =>
+      (label === a || label.startsWith(`${a} `)) && contextMatches(label, a)
+    );
+    if (hit) return code;
+  }
+  return null;
+}
+
 /**
  * Make sure every marker printed on a report exists in lab_parameters, so the
  * catalog grows automatically as labs add new analytes.
@@ -273,11 +284,10 @@ async function ensureCatalog(rows: DiscoveredRow[], catalog: any[]) {
   for (const row of rows) {
     const known = matchCatalog(row.label, catalog);
     if (known) { resolved.set(row.label, known); continue; }
-    const code = slugCode(row.label);
-    if (catalog.some((p: any) => String(p.code) === code)) {
-      resolved.set(row.label, catalog.find((p: any) => String(p.code) === code));
-      continue;
-    }
+    const code = preferredCode(row.label) || slugCode(row.label);
+    const existing = catalog.find((p: any) => String(p.code) === code);
+    if (existing) { resolved.set(row.label, existing); continue; }
+
     const created = {
       code,
       name: row.display,
