@@ -328,11 +328,15 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
   const otherTests = foundationTests.filter((t) => t !== basicTest);
 
   const doneStatuses = new Set(["done", "completed", "report_ready", "reports_ready", "partially_ready", "ready", "in_lab", "processing", "sample_collected", "sample_received"]);
+  // Any live order for the Basic panel — booked/pending as well as completed.
   const basicOrder = basicTest
-    ? orders.find((o) => (o.product_codes || []).includes(basicTest.product_code) && doneStatuses.has((o.status || "").toLowerCase()))
+    ? orders.find((o) => (o.product_codes || []).includes(basicTest.product_code))
     : undefined;
+  const basicOrderDone = !!basicOrder && doneStatuses.has((basicOrder.status || "").toLowerCase());
   const basicReports = basicOrder ? reports.filter((r: any) => r.order_id === basicOrder.id) : [];
   const basicReportReady = basicReports.some((r: any) => !!r.report_url);
+  const basicItems = basicTest ? [basicTest] : [];
+
 
   const renderPriceRow = (t: Test) => {
     const price = patientPriceFor(t.offer_rate ?? t.rate, t.markup_pct, markupPct) ?? 0;
