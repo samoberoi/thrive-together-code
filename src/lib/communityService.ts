@@ -281,15 +281,10 @@ export async function fetchComments(postId: string): Promise<CommunityComment[]>
 
   if (error || !comments) return [];
 
-  const userIds = [...new Set(comments.map((c: any) => c.user_id))];
+  const userIds = [...new Set(comments.map((c: any) => c.user_id))] as string[];
   if (userIds.length === 0) return [];
 
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("user_id, name, avatar_url")
-    .in("user_id", userIds);
-
-  const profileMap = new Map((profiles || []).map((p) => [p.user_id, p]));
+  const profileMap = await fetchAuthorProfiles(userIds);
 
   return comments.map((c: any) => {
     const profile = profileMap.get(c.user_id);
