@@ -514,9 +514,17 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
     </div>
   ) : null;
 
-  const orphanOrders = foundationMode
-    ? orphanOrdersAll.filter((o) => !(basicTest && (o.product_codes || []).includes(basicTest.product_code)))
-    : orphanOrdersAll;
+  // In foundationMode the Basic order is rendered inside the hero (with full details),
+  // so only that exact order is skipped here — every other booking keeps its own card.
+  // While the foundation catalog is still loading we hold the order cards back for one
+  // tick so a card can't render and then vanish.
+  const foundationCatalogPending = foundationMode && foundationTests.length === 0;
+  const orphanOrders = foundationCatalogPending
+    ? []
+    : foundationMode
+      ? orphanOrdersAll.filter((o) => o.id !== basicOrder?.id)
+      : orphanOrdersAll;
+
 
   if (recs.length === 0 && reports.length === 0 && orphanOrders.length === 0 && !foundationMode) {
 
