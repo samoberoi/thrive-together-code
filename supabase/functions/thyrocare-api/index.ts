@@ -573,19 +573,29 @@ async function fetchReport(payload: any, userId: string) {
   }
   if (!order) return json({ ok: true, data, warning: "no local order" });
 
+  // Never destroy an already-delivered report because a later vendor call failed.
+  const { data: existing } = await sbAdmin
+    .from("thyrocare_reports")
+    .select("id, report_url")
+    .eq("order_id", order.id);
+  const hasGoodExisting = (existing || []).some((r: any) => !!r.report_url);
+
   if (!okUrl) {
     console.error("fetch_report failed", { orderId, leadId, status: lastStatus, detail: lastText.slice(0, 500) });
-    await sbAdmin.from("thyrocare_reports").delete().eq("order_id", order.id);
-    await sbAdmin.from("thyrocare_reports").insert({
-      order_id: order.id,
-      user_id: order.user_id,
-      report_url: null,
-      report_type: "Report ready — vendor file fetch failed",
-      parameters: { status: lastStatus, detail: lastText.slice(0, 800), orderId, leadId },
-      raw_data: data,
-    });
+    if (!hasGoodExisting) {
+      await sbAdmin.from("thyrocare_reports").delete().eq("order_id", order.id);
+      await sbAdmin.from("thyrocare_reports").insert({
+        order_id: order.id,
+        user_id: order.user_id,
+        report_url: null,
+        report_type: "Report ready — vendor file fetch failed",
+        parameters: { status: lastStatus, detail: lastText.slice(0, 800), orderId, leadId },
+        raw_data: data,
+      });
+    }
     return json({ ok: false, status: lastStatus, data, detail: lastText.slice(0, 800) }, 200);
   }
+
 
   const directReportUrl =
     (typeof lastText === "string" && /^https?:\/\//i.test(lastText.trim()) ? lastText.trim() : null) ||
@@ -602,6 +612,11 @@ async function fetchReport(payload: any, userId: string) {
   const reports: any[] = directReportUrl
     ? [{ url: directReportUrl, type: "Lab Report", raw: data }]
     : data?.data?.reports || data?.reports || data?.data?.patients?.[0]?.reports || data?.data?.reportDetails || data?.reportDetails || [];
+  const usableReports = reports.filter((r: any) => r.url || r.reportUrl || r.pdfUrl || r.downloadUrl);
+  if (!usableReports.length && hasGoodExisting) {
+    // Vendor responded OK but without a file — keep what the patient already has.
+    return json({ ok: true, count: 0, kept_existing: true });
+  }
   await sbAdmin.from("thyrocare_reports").delete().eq("order_id", order.id);
   let hasReportUrl = false;
   for (const r of reports) {
@@ -618,6 +633,56 @@ async function fetchReport(payload: any, userId: string) {
   }
   if (hasReportUrl) await syncReportToProfile(order.id);
   return json({ ok: true, count: reports.length, reports });
+
+}
+
+// Refresh every live order and pull any report that is ready.
+// Runs unattended (cron / internal call) so patients never have to open the app.
+async function sweep() {
+  const { data: orders } = await sbAdmin
+    .from("thyrocare_orders")
+    .select("id, thyrocare_order_id, thyrocare_lead_id, status, raw_response")
+    .not("thyrocare_order_id", "is", null)
+    .not("status", "in", "(failed,cancelled)")
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  let refreshed = 0;
+  let fetched = 0;
+  for (const o of (orders || []) as any[]) {
+    try {
+      await orderStatus({ thyrocare_order_id: o.thyrocare_order_id });
+      refreshed++;
+    } catch (_) { /* keep sweeping */ }
+
+    const { data: fresh } = await sbAdmin
+      .from("thyrocare_orders")
+      .select("id, status, raw_response, thyrocare_lead_id")
+      .eq("id", o.id)
+      .maybeSingle();
+    const raw: any = fresh?.raw_response || {};
+    const rawData = raw?.data || raw;
+    const ready =
+      rawData?.orderOptions?.isReportReady === true ||
+      rawData?.patients?.some?.((p: any) => p?.isReportAvailable === true) ||
+      ["done", "completed", "report_ready", "reports_ready"].includes(String(fresh?.status || "").toLowerCase());
+    if (!ready) continue;
+
+    const { data: existing } = await sbAdmin
+      .from("thyrocare_reports")
+      .select("id, report_url")
+      .eq("order_id", o.id);
+    if ((existing || []).some((r: any) => !!r.report_url)) continue;
+
+    try {
+      await fetchReport({
+        thyrocare_order_id: o.thyrocare_order_id,
+        thyrocare_lead_id: fresh?.thyrocare_lead_id || o.thyrocare_lead_id,
+      }, "");
+      fetched++;
+    } catch (_) { /* keep sweeping */ }
+  }
+  return json({ ok: true, refreshed, fetched });
 }
 
 // ---- Router ----
@@ -629,9 +694,19 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const action = body?.action as string;
 
+    // Internal/cron caller (service role or sweep key) — no end-user session needed.
+    const internalHeader = req.headers.get("x-bbdo-internal");
+    const sweepKey = Deno.env.get("THYROCARE_SWEEP_KEY");
+    const internal =
+      (!!internalHeader && internalHeader === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) ||
+      (!!sweepKey && internalHeader === sweepKey);
+
+    if (internal && action === "sweep") return await sweep();
+
     // Public action: sync_catalog can be called by admins only
     const user = await getUser(req);
     if (!user) return json({ error: "unauthenticated" }, 401);
+
 
     switch (action) {
       case "get_token": {
