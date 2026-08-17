@@ -46,6 +46,33 @@ export interface CommunityComment {
   user_avatar?: string;
 }
 
+/**
+ * Look up display names/avatars for a set of authors.
+ * Uses a security-definer RPC so every member sees real names in the feed
+ * (profiles RLS only exposes your own row), with a direct-table fallback.
+ */
+async function fetchAuthorProfiles(
+  userIds: string[],
+): Promise<Map<string, { name: string | null; avatar_url: string | null }>> {
+  const map = new Map<string, { name: string | null; avatar_url: string | null }>();
+  if (userIds.length === 0) return map;
+
+  const { data: rpcData } = await (supabase as any).rpc("community_author_profiles", {
+    _user_ids: userIds,
+  });
+  if (Array.isArray(rpcData) && rpcData.length > 0) {
+    for (const p of rpcData) map.set(p.user_id, { name: p.name, avatar_url: p.avatar_url });
+    return map;
+  }
+
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("user_id, name, avatar_url")
+    .in("user_id", userIds);
+  for (const p of profiles || []) map.set(p.user_id, { name: p.name, avatar_url: p.avatar_url });
+  return map;
+}
+
 /** Fetch feed posts with user profile info */
 export async function fetchPosts(limit = 50, categorySlug: string | null = null): Promise<CommunityPost[]> {
   let q: any = (supabase as any)
@@ -57,13 +84,8 @@ export async function fetchPosts(limit = 50, categorySlug: string | null = null)
   const { data: posts, error } = await q;
   if (error || !posts) return [];
 
-  const userIds = [...new Set(posts.map((p: any) => p.user_id))];
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("user_id, name, avatar_url")
-    .in("user_id", userIds as string[]);
-
-  const profileMap = new Map((profiles || []).map((p) => [p.user_id, p]));
+  const userIds = [...new Set(posts.map((p: any) => p.user_id))] as string[];
+  const profileMap = await fetchAuthorProfiles(userIds);
 
   return posts.map((p: any) => {
     const profile = profileMap.get(p.user_id);
@@ -259,15 +281,10 @@ export async function fetchComments(postId: string): Promise<CommunityComment[]>
 
   if (error || !comments) return [];
 
-  const userIds = [...new Set(comments.map((c: any) => c.user_id))];
+  const userIds = [...new Set(comments.map((c: any) => c.user_id))] as string[];
   if (userIds.length === 0) return [];
 
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("user_id, name, avatar_url")
-    .in("user_id", userIds);
-
-  const profileMap = new Map((profiles || []).map((p) => [p.user_id, p]));
+  const profileMap = await fetchAuthorProfiles(userIds);
 
   return comments.map((c: any) => {
     const profile = profileMap.get(c.user_id);
