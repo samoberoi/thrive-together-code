@@ -636,6 +636,55 @@ async function fetchReport(payload: any, userId: string) {
 
 }
 
+// Refresh every live order and pull any report that is ready.
+// Runs unattended (cron / internal call) so patients never have to open the app.
+async function sweep() {
+  const { data: orders } = await sbAdmin
+    .from("thyrocare_orders")
+    .select("id, thyrocare_order_id, thyrocare_lead_id, status, raw_response")
+    .not("thyrocare_order_id", "is", null)
+    .not("status", "in", "(failed,cancelled)")
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  let refreshed = 0;
+  let fetched = 0;
+  for (const o of (orders || []) as any[]) {
+    try {
+      await orderStatus({ thyrocare_order_id: o.thyrocare_order_id });
+      refreshed++;
+    } catch (_) { /* keep sweeping */ }
+
+    const { data: fresh } = await sbAdmin
+      .from("thyrocare_orders")
+      .select("id, status, raw_response, thyrocare_lead_id")
+      .eq("id", o.id)
+      .maybeSingle();
+    const raw: any = fresh?.raw_response || {};
+    const rawData = raw?.data || raw;
+    const ready =
+      rawData?.orderOptions?.isReportReady === true ||
+      rawData?.patients?.some?.((p: any) => p?.isReportAvailable === true) ||
+      ["done", "completed", "report_ready", "reports_ready"].includes(String(fresh?.status || "").toLowerCase());
+    if (!ready) continue;
+
+    const { data: existing } = await sbAdmin
+      .from("thyrocare_reports")
+      .select("id, report_url")
+      .eq("order_id", o.id);
+    if ((existing || []).some((r: any) => !!r.report_url)) continue;
+
+    try {
+      await fetchReport({
+        thyrocare_order_id: o.thyrocare_order_id,
+        thyrocare_lead_id: fresh?.thyrocare_lead_id || o.thyrocare_lead_id,
+      }, "");
+      fetched++;
+    } catch (_) { /* keep sweeping */ }
+  }
+  return json({ ok: true, refreshed, fetched });
+}
+
 // ---- Router ----
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -645,9 +694,14 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const action = body?.action as string;
 
+    // Internal/cron caller (service role header) — no end-user session needed.
+    const internal = req.headers.get("x-bbdo-internal") === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (internal && action === "sweep") return await sweep();
+
     // Public action: sync_catalog can be called by admins only
     const user = await getUser(req);
     if (!user) return json({ error: "unauthenticated" }, 401);
+
 
     switch (action) {
       case "get_token": {
