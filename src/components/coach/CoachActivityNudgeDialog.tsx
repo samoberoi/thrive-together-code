@@ -97,7 +97,8 @@ export default function CoachActivityNudgeDialog({
         onClick={onClose}
       >
         <motion.div
-          className="w-full sm:max-w-lg bg-card border border-border rounded-t-3xl sm:rounded-3xl max-h-[92vh] flex flex-col overflow-hidden"
+          className="w-full sm:max-w-lg bg-card border border-border rounded-t-3xl sm:rounded-3xl max-h-[88vh] sm:max-h-[92vh] flex flex-col overflow-hidden"
+          style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
           initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 40, opacity: 0 }}
           transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
           onClick={(e) => e.stopPropagation()}
