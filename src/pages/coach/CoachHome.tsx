@@ -23,6 +23,7 @@ import CoachActivityNudgeDialog, {
 import CoachReviewsDialog from "@/components/coach/CoachReviewsDialog";
 import CoachActivityRings from "@/components/coach/CoachActivityRings";
 import CoachSelfCheckins from "@/components/coach/CoachSelfCheckins";
+import { buildActivityProgress, type ActivityCounters } from "@/lib/adherenceService";
 
 
 
@@ -343,9 +344,9 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
         .in("user_id", patientIds)
         .gte("logged_at", todayIso),
       supabase.from("fasting_tracking" as any)
-        .select("user_id, compliance_status, fasting_hours_completed")
+        .select("user_id, compliance_status, fasting_hours_completed, fmod_actual_time, lmod_actual_time")
         .in("user_id", patientIds)
-        .eq("tracking_date", todayDate),
+        .eq("date", todayDate),
       supabase.from("user_supplement_tracking" as any)
         .select("user_id, taken")
         .in("user_id", patientIds)
@@ -361,7 +362,7 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
       supabase.from("user_exercise_logs" as any)
         .select("user_id").in("user_id", patientIds).gte("created_at", todayIso),
       supabase.from("video_progress" as any)
-        .select("user_id").in("user_id", patientIds).gte("watched_at", todayIso),
+        .select("user_id, progress_sec, duration_sec, completed").in("user_id", patientIds).gte("watched_at", todayIso),
       supabase.from("meal_photos" as any)
         .select("user_id").in("user_id", patientIds).gte("logged_at", todayIso),
       supabase.from("health_logs" as any)
@@ -399,6 +400,34 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
     const exSet = new Set(((exRows as any[]) ?? []).map((r) => r.user_id));
     const yogaSet = new Set(((vidRows as any[]) ?? []).map((r) => r.user_id));
     const dietSet = new Set(((mealRows as any[]) ?? []).map((r) => r.user_id));
+
+    // Per-activity detail counters so nudges show exactly what is pending
+    const countBy = (rows: any[] | null | undefined) => {
+      const m = new Map<string, number>();
+      (rows ?? []).forEach((r) => m.set(r.user_id, (m.get(r.user_id) ?? 0) + 1));
+      return m;
+    };
+    const exCountByUser = countBy(exRows as any[]);
+    const mealCountByUser = countBy(mealRows as any[]);
+    const yogaSecByUser = new Map<string, number>();
+    ((vidRows as any[]) ?? []).forEach((r) => {
+      const secs = Number(r.progress_sec ?? 0) || (r.completed ? Number(r.duration_sec ?? 0) : 0);
+      yogaSecByUser.set(r.user_id, (yogaSecByUser.get(r.user_id) ?? 0) + secs);
+    });
+    const glucoseCountByUser = new Map<string, number>();
+    ((hLogsToday as any[]) ?? []).forEach((l) => {
+      if (l.log_type !== "diabetes") return;
+      const n = (l.glucose_morning != null ? 1 : 0) + (l.glucose_evening != null ? 1 : 0);
+      if (n) glucoseCountByUser.set(l.user_id, (glucoseCountByUser.get(l.user_id) ?? 0) + n);
+    });
+    const fastingRowByUser = new Map<string, any>();
+    ((fastTodayRows as any[]) ?? []).forEach((r) => fastingRowByUser.set(r.user_id, r));
+    const suppTakenByUser = new Map<string, number>();
+    const suppTotalByUser = new Map<string, number>();
+    ((suppTodayRows as any[]) ?? []).forEach((r) => {
+      suppTotalByUser.set(r.user_id, (suppTotalByUser.get(r.user_id) ?? 0) + 1);
+      if (r.taken) suppTakenByUser.set(r.user_id, (suppTakenByUser.get(r.user_id) ?? 0) + 1);
+    });
 
     // Per-patient today flags
     const glucoseSet = new Set<string>();
@@ -494,11 +523,25 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
         soleus: soleusRounds >= SOLEUS_GOAL,
         breath: breathRounds >= BREATH_GOAL,
       };
-      const progress: Partial<Record<ActivityKey, { text: string; ratio: number }>> = {
-        water: { text: `${waterGlasses}/${WATER_GLASS_GOAL} glasses`, ratio: Math.min(1, waterGlasses / WATER_GLASS_GOAL) },
-        soleus: { text: `${soleusRounds}/${SOLEUS_GOAL} rounds`, ratio: Math.min(1, soleusRounds / SOLEUS_GOAL) },
-        breath: { text: `${breathRounds}/${BREATH_GOAL} rounds`, ratio: Math.min(1, breathRounds / BREATH_GOAL) },
+      const fastRow = fastingRowByUser.get(a.user_id);
+      const counters: ActivityCounters = {
+        glucoseReadings: glucoseCountByUser.get(a.user_id) ?? 0,
+        bpLogged: bpSet.has(a.user_id),
+        weightLogged: weightSet.has(a.user_id),
+        fastingHours: fastRow?.fasting_hours_completed ?? null,
+        fastingStatus: fastRow?.compliance_status ?? null,
+        fmod: fastRow?.fmod_actual_time ?? null,
+        lmod: fastRow?.lmod_actual_time ?? null,
+        suppTaken: suppTakenByUser.get(a.user_id) ?? 0,
+        suppTotal: suppTotalByUser.get(a.user_id) ?? 0,
+        exerciseLogs: exCountByUser.get(a.user_id) ?? 0,
+        yogaMinutes: Math.round((yogaSecByUser.get(a.user_id) ?? 0) / 60),
+        mealsLogged: mealCountByUser.get(a.user_id) ?? 0,
+        waterGlasses,
+        soleusRounds,
+        breathRounds,
       };
+      const progress: Partial<Record<ActivityKey, { text: string; ratio: number }>> = buildActivityProgress(counters);
 
 
       let applicableCount = 0;
