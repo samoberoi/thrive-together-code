@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { normalizePlanKey as aliasPlanKey } from "@/lib/subscriptionService";
-import { Search, ChevronDown, ChevronUp, Package as PackageIcon, UserCheck } from "lucide-react";
+import { Search, ChevronDown, ChevronUp, Package as PackageIcon, UserCheck, Users, UserX } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -13,6 +13,7 @@ import AdminUserProfileSheet from "@/components/admin/AdminUserProfileSheet";
 import AdherencePill from "@/components/admin/AdherencePill";
 import AdherenceNudgeDialog from "@/components/admin/AdherenceNudgeDialog";
 import { useAdherence } from "@/hooks/useAdherence";
+
 
 
 
@@ -106,6 +107,14 @@ export default function AdminUsers() {
     setLoading(false);
   };
 
+  const userCategory = (userId: string): "none" | "foundation" | "active" | "intensive" => {
+    const sub = subsByUser[userId];
+    if (!sub) return "none";
+    const key = aliasPlanKey(sub.plan_id);
+    if (key === "foundation" || key === "active" || key === "intensive") return key;
+    return "none";
+  };
+
   const packageLabel = (userId: string): string => {
     const sub = subsByUser[userId];
     if (!sub) return "No package";
@@ -116,31 +125,43 @@ export default function AdminUsers() {
   const adherenceIds = useMemo(() => users.map((u) => u.user_id), [users]);
   const { map: adherence, loading: adherenceLoading } = useAdherence(adherenceIds);
 
-  const packageOptions = useMemo(() => {
-    const set = new Set<string>();
-    for (const u of users) set.add(packageLabel(u.user_id));
-    const list = Array.from(set).filter((l) => l !== "No package").sort((a, b) => a.localeCompare(b));
-    if (set.has("No package")) list.push("No package");
-    return list;
-  }, [users, subsByUser, pkgNames]);
+  const stats = useMemo(() => {
+    const counts = { none: 0, foundation: 0, active: 0, intensive: 0 };
+    for (const u of users) {
+      counts[userCategory(u.user_id)]++;
+    }
+    return { total: users.length, ...counts };
+  }, [users, subsByUser]);
+
+  const packageOptions = useMemo(
+    () => [
+      { value: "all", label: "All packages" },
+      { value: "none", label: "No package" },
+      { value: "foundation", label: pkgNames["foundation"] || "Foundation" },
+      { value: "active", label: pkgNames["active"] || "Active" },
+      { value: "intensive", label: pkgNames["intensive"] || "Intensive" },
+    ],
+    [pkgNames]
+  );
 
   const filtered = useMemo(
     () =>
       users.filter((u) => {
-        const label = packageLabel(u.user_id);
-        if (packageFilter !== "all" && label !== packageFilter) return false;
+        const category = userCategory(u.user_id);
+        if (packageFilter !== "all" && category !== packageFilter) return false;
         const q = search.toLowerCase().trim();
         if (!q) return true;
         return (
           u.name?.toLowerCase().includes(q) ||
           u.phone?.includes(q) ||
           u.city?.toLowerCase().includes(q) ||
-          label.toLowerCase().includes(q) ||
+          packageLabel(u.user_id).toLowerCase().includes(q) ||
           u.coach_name?.toLowerCase().includes(q)
         );
       }),
     [users, search, packageFilter, subsByUser, pkgNames]
   );
+
 
 
   if (loading) {
@@ -180,10 +201,9 @@ export default function AdminUsers() {
               </div>
             </SelectTrigger>
             <SelectContent className="bg-popover z-50">
-              <SelectItem value="all">All packages</SelectItem>
-              {packageOptions.map((p) => (
-                <SelectItem key={p} value={p}>
-                  {p}
+              {packageOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -195,8 +215,38 @@ export default function AdminUsers() {
 
       </div>
 
+      {/* Stats dashboard */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <StatCard label="Total users" value={stats.total} icon={<Users className="w-5 h-5" />} tone="primary" />
+        <StatCard label="No package" value={stats.none} icon={<UserX className="w-5 h-5" />} tone="amber" />
+        <StatCard
+          label={packageOptions[2]?.label || "Foundation"}
+          value={stats.foundation}
+          icon={<PackageIcon className="w-5 h-5" />}
+          tone="blue"
+          isActive={packageFilter === "foundation"}
+          onClick={() => setPackageFilter(packageFilter === "foundation" ? "all" : "foundation")}
+        />
+        <StatCard
+          label={packageOptions[3]?.label || "Active"}
+          value={stats.active}
+          icon={<PackageIcon className="w-5 h-5" />}
+          tone="emerald"
+          isActive={packageFilter === "active"}
+          onClick={() => setPackageFilter(packageFilter === "active" ? "all" : "active")}
+        />
+        <StatCard
+          label={packageOptions[4]?.label || "Intensive"}
+          value={stats.intensive}
+          icon={<PackageIcon className="w-5 h-5" />}
+          tone="purple"
+          isActive={packageFilter === "intensive"}
+          onClick={() => setPackageFilter(packageFilter === "intensive" ? "all" : "intensive")}
+        />
+      </div>
 
       {/* Table */}
+
       <div className="liquid-glass rounded-xl sm:rounded-2xl overflow-hidden">
         {/* Header */}
         <div className="hidden md:grid grid-cols-[minmax(0,2fr)_minmax(0,1.4fr)_minmax(0,1.6fr)_minmax(0,1.4fr)_110px_24px] gap-4 items-center px-4 py-3 bg-muted/40 border-b border-border text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
@@ -426,3 +476,46 @@ function Pill({
     </span>
   );
 }
+
+function StatCard({
+  label,
+  value,
+  icon,
+  tone,
+  isActive,
+  onClick,
+}: {
+  label: string;
+  value: number;
+  icon: React.ReactNode;
+  tone: "primary" | "amber" | "blue" | "emerald" | "purple";
+  isActive?: boolean;
+  onClick?: () => void;
+}) {
+  const toneClasses = {
+    primary: "bg-primary/10 text-primary ring-primary/30",
+    amber: "bg-amber-500/10 text-amber-600 ring-amber-500/30",
+    blue: "bg-blue-500/10 text-blue-600 ring-blue-500/30",
+    emerald: "bg-emerald-500/10 text-emerald-600 ring-emerald-500/30",
+    purple: "bg-purple-500/10 text-purple-600 ring-purple-500/30",
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`liquid-glass text-left p-3 sm:p-4 rounded-xl transition-all ${
+        onClick ? "cursor-pointer hover:brightness-105 active:scale-[0.98]" : "cursor-default"
+      } ${isActive ? `ring-2 ${toneClasses[tone].split(" ").pop()}` : ""}`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-muted-foreground text-xs font-medium">{label}</p>
+          <p className="text-2xl sm:text-3xl font-black text-foreground mt-1">{value}</p>
+        </div>
+        <div className={`rounded-lg p-2 ${toneClasses[tone].split(" ").slice(0, 2).join(" ")}`}>{icon}</div>
+      </div>
+    </button>
+  );
+}
+
