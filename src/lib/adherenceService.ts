@@ -161,8 +161,9 @@ const clamp = (n: number) => Math.max(0, Math.min(1, n));
 
 const fmtMin = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
 
-export const EXERCISE_GOAL_MINUTES = EXERCISE_MINUTE_GOAL;
-export const YOGA_GOAL_MINUTES = YOGA_MINUTE_GOAL;
+/** @deprecated fallback only — real goals come from fetchActivityGoals(). */
+export const EXERCISE_GOAL_MINUTES = DEFAULT_EXERCISE_MINUTE_GOAL;
+export const YOGA_GOAL_MINUTES = DEFAULT_YOGA_MINUTE_GOAL;
 
 /** Video IDs that count as "yoga & stress" (Pranayama, Yoga Asana, Bandha). */
 const YOGA_VIDEO_IDS = new Set(
