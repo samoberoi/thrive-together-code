@@ -540,7 +540,7 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
         soleusRounds,
         breathRounds,
       };
-      const progress: Partial<Record<ActivityKey, { text: string; ratio: number }>> = buildActivityProgress(counters);
+      const progress: Partial<Record<ActivityKey, { text: string; ratio: number }>> = buildActivityProgress(counters, goalsFor(a.user_id));
 
 
       let applicableCount = 0;
