@@ -294,9 +294,11 @@ export async function fetchDailyAdherence(userIds: string[]): Promise<Map<string
   const db = supabase as any;
 
   const [
+    goalsByUser,
     hLogsToday, fastTodayRows, suppTodayRows, activePlans, activeProtocols,
     exRows, vidRows, mealRows, soleusRows, breathRows,
   ] = await Promise.all([
+    fetchActivityGoals(ids),
     db.from("health_logs").select("user_id, log_type, glucose_morning, glucose_evening, bp_systolic, weight_kg").in("user_id", ids).gte("logged_at", todayIso),
     db.from("fasting_tracking").select("user_id, compliance_status, fasting_hours_completed, fmod_actual_time, lmod_actual_time").in("user_id", ids).eq("date", today),
     db.from("user_supplement_tracking").select("user_id, taken").in("user_id", ids).eq("date", today),
