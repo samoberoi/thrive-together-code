@@ -208,7 +208,12 @@ export function splitVideoMinutes(rows: any[] | null | undefined) {
 }
 
 /** Detailed progress text + ratio for every activity, so nudges are informed. */
-export function buildActivityProgress(c: ActivityCounters): AdherenceSummary["progress"] {
+export function buildActivityProgress(
+  c: ActivityCounters,
+  goals: ActivityGoals = DEFAULT_ACTIVITY_GOALS,
+): AdherenceSummary["progress"] {
+  const exerciseGoal = goals.exercise > 0 ? goals.exercise : DEFAULT_EXERCISE_MINUTE_GOAL;
+  const yogaGoal = goals.yoga > 0 ? goals.yoga : DEFAULT_YOGA_MINUTE_GOAL;
   const fmod = formatClock(c.fmod);
   const lmod = formatClock(c.lmod);
   const fastingBits: string[] = [];
