@@ -14,6 +14,7 @@ import BreathProtocolDrawer from "@/components/BreathProtocolDrawer";
 import { useSoleusSessionsToday } from "@/hooks/useSoleusSessionsToday";
 import SoleusProtocolDrawer from "@/components/SoleusProtocolDrawer";
 import { useTodayExerciseProgress } from "@/hooks/useTodayExerciseProgress";
+import { useRbac } from "@/hooks/useRbac";
 
 type LogType = "diabetes" | "bp" | "weight" | "water" | null;
 type TimeOfDay = "morning" | "afternoon" | "evening";
@@ -44,13 +45,15 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
   const { user } = useAuth();
   const navigate = useNavigate();
   const storedUser = useUserStore();
+  const { isAdmin, isCoach } = useRbac();
+  const isStaff = isAdmin || isCoach;
   const hasDiabetesFlag = !!(storedUser.clinical?.hasDiabetes || (storedUser.deepProfiling as any)?.hba1cInput != null || (storedUser.deepProfiling as any)?.fastingGlucose != null);
   const hasHypertensionFlag = !!(storedUser.clinical?.hasHypertension || (storedUser.clinical as any)?.bpMedication);
   const { minutes: exerciseMinutesToday, goal: EXERCISE_GOAL, done: exerciseDone } = useTodayExerciseProgress(5);
   const exerciseBadgeValue = `${Math.min(exerciseMinutesToday, EXERCISE_GOAL).toLocaleString("en-IN", { maximumFractionDigits: 1 })}/${EXERCISE_GOAL}`;
   const visibleActions = actions.filter((a) => {
     // Coaches/admins have no patient clinical profile — never hide their own log tiles.
-    if (a.id === "diabetes") return props.showAllLogs || hasDiabetesFlag;
+    if (a.id === "diabetes") return props.showAllLogs || isStaff || hasDiabetesFlag;
     // Blood pressure is always shown per clinical guidance — everyone should be able to log BP.
     return true;
   });
