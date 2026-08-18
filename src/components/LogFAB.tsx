@@ -39,7 +39,7 @@ function formatCurrentDateTime(): string {
   });
 }
 
-export default function LogFAB(props: { packageKey?: string | null; exercisePath?: string }) {
+export default function LogFAB(props: { packageKey?: string | null; exercisePath?: string; showAllLogs?: boolean }) {
   const exercisePath = props.exercisePath ?? "/dashboard?tab=exercise";
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -49,7 +49,8 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
   const { minutes: exerciseMinutesToday, goal: EXERCISE_GOAL, done: exerciseDone } = useTodayExerciseProgress(5);
   const exerciseBadgeValue = `${Math.min(exerciseMinutesToday, EXERCISE_GOAL).toLocaleString("en-IN", { maximumFractionDigits: 1 })}/${EXERCISE_GOAL}`;
   const visibleActions = actions.filter((a) => {
-    if (a.id === "diabetes") return hasDiabetesFlag;
+    // Coaches/admins have no patient clinical profile — never hide their own log tiles.
+    if (a.id === "diabetes") return props.showAllLogs || hasDiabetesFlag;
     // Blood pressure is always shown per clinical guidance — everyone should be able to log BP.
     return true;
   });
