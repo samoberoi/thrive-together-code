@@ -302,7 +302,7 @@ export default function CoachDashboard() {
         >
           <Activity className="w-6 h-6" strokeWidth={2} />
         </button>
-        <LogFAB exercisePath="/coach-dashboard?tab=train" />
+        <LogFAB exercisePath="/coach-dashboard?tab=train" showAllLogs />
       </div>
     </div>
   );
