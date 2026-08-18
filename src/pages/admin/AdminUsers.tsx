@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { normalizePlanKey as aliasPlanKey } from "@/lib/subscriptionService";
-import { Search, ChevronDown, ChevronUp, Package as PackageIcon, UserCheck } from "lucide-react";
+import { Search, ChevronDown, ChevronUp, Package as PackageIcon, UserCheck, Users, UserX } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -13,6 +13,7 @@ import AdminUserProfileSheet from "@/components/admin/AdminUserProfileSheet";
 import AdherencePill from "@/components/admin/AdherencePill";
 import AdherenceNudgeDialog from "@/components/admin/AdherenceNudgeDialog";
 import { useAdherence } from "@/hooks/useAdherence";
+
 
 
 
