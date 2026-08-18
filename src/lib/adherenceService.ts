@@ -12,7 +12,7 @@ const SOLEUS_GOAL = 3;
 const BREATH_GOAL = 4;
 const GLUCOSE_READING_GOAL = 2;   // morning + evening
 const MEAL_GOAL = 3;              // meals photographed per day
-const EXERCISE_LOG_GOAL = 1;      // at least one workout logged
+const EXERCISE_MINUTE_GOAL = 30;  // minutes of exercise per day
 const YOGA_MINUTE_GOAL = 10;      // minutes of yoga / stress video
 const FASTING_HOUR_GOAL = 16;
 
