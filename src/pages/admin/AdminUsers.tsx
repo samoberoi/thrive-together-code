@@ -201,10 +201,9 @@ export default function AdminUsers() {
               </div>
             </SelectTrigger>
             <SelectContent className="bg-popover z-50">
-              <SelectItem value="all">All packages</SelectItem>
-              {packageOptions.map((p) => (
-                <SelectItem key={p} value={p}>
-                  {p}
+              {packageOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -216,8 +215,38 @@ export default function AdminUsers() {
 
       </div>
 
+      {/* Stats dashboard */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <StatCard label="Total users" value={stats.total} icon={<Users className="w-5 h-5" />} tone="primary" />
+        <StatCard label="No package" value={stats.none} icon={<UserX className="w-5 h-5" />} tone="amber" />
+        <StatCard
+          label={packageOptions[2]?.label || "Foundation"}
+          value={stats.foundation}
+          icon={<PackageIcon className="w-5 h-5" />}
+          tone="blue"
+          isActive={packageFilter === "foundation"}
+          onClick={() => setPackageFilter(packageFilter === "foundation" ? "all" : "foundation")}
+        />
+        <StatCard
+          label={packageOptions[3]?.label || "Active"}
+          value={stats.active}
+          icon={<PackageIcon className="w-5 h-5" />}
+          tone="emerald"
+          isActive={packageFilter === "active"}
+          onClick={() => setPackageFilter(packageFilter === "active" ? "all" : "active")}
+        />
+        <StatCard
+          label={packageOptions[4]?.label || "Intensive"}
+          value={stats.intensive}
+          icon={<PackageIcon className="w-5 h-5" />}
+          tone="purple"
+          isActive={packageFilter === "intensive"}
+          onClick={() => setPackageFilter(packageFilter === "intensive" ? "all" : "intensive")}
+        />
+      </div>
 
       {/* Table */}
+
       <div className="liquid-glass rounded-xl sm:rounded-2xl overflow-hidden">
         {/* Header */}
         <div className="hidden md:grid grid-cols-[minmax(0,2fr)_minmax(0,1.4fr)_minmax(0,1.6fr)_minmax(0,1.4fr)_110px_24px] gap-4 items-center px-4 py-3 bg-muted/40 border-b border-border text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
