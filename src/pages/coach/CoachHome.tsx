@@ -23,7 +23,7 @@ import CoachActivityNudgeDialog, {
 import CoachReviewsDialog from "@/components/coach/CoachReviewsDialog";
 import CoachActivityRings from "@/components/coach/CoachActivityRings";
 import CoachSelfCheckins from "@/components/coach/CoachSelfCheckins";
-import { buildActivityProgress, type ActivityCounters } from "@/lib/adherenceService";
+import { buildActivityProgress, splitVideoMinutes, EXERCISE_GOAL_MINUTES, YOGA_GOAL_MINUTES, type ActivityCounters } from "@/lib/adherenceService";
 
 
 
@@ -362,7 +362,7 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
       supabase.from("user_exercise_logs" as any)
         .select("user_id").in("user_id", patientIds).gte("created_at", todayIso),
       supabase.from("video_progress" as any)
-        .select("user_id, progress_sec, duration_sec, completed").in("user_id", patientIds).gte("watched_at", todayIso),
+        .select("user_id, video_id, progress_sec, duration_sec, completed").in("user_id", patientIds).gte("watched_at", todayIso),
       supabase.from("meal_photos" as any)
         .select("user_id").in("user_id", patientIds).gte("logged_at", todayIso),
       supabase.from("health_logs" as any)
@@ -397,8 +397,9 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
 
     const suppPlanSet = new Set(((activePlans as any[]) ?? []).map((r) => r.user_id));
     const fastProtoSet = new Set(((activeProtocols as any[]) ?? []).map((r) => r.user_id));
-    const exSet = new Set(((exRows as any[]) ?? []).map((r) => r.user_id));
-    const yogaSet = new Set(((vidRows as any[]) ?? []).map((r) => r.user_id));
+    const { exerciseMin: exMinByUser, yogaMin: yogaMinByUser } = splitVideoMinutes((vidRows as any[]) ?? []);
+    const exSet = new Set([...exMinByUser].filter(([, m]) => m >= EXERCISE_GOAL_MINUTES).map(([id]) => id));
+    const yogaSet = new Set([...yogaMinByUser].filter(([, m]) => m >= YOGA_GOAL_MINUTES).map(([id]) => id));
     const dietSet = new Set(((mealRows as any[]) ?? []).map((r) => r.user_id));
 
     // Per-activity detail counters so nudges show exactly what is pending
@@ -409,11 +410,6 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
     };
     const exCountByUser = countBy(exRows as any[]);
     const mealCountByUser = countBy(mealRows as any[]);
-    const yogaSecByUser = new Map<string, number>();
-    ((vidRows as any[]) ?? []).forEach((r) => {
-      const secs = Number(r.progress_sec ?? 0) || (r.completed ? Number(r.duration_sec ?? 0) : 0);
-      yogaSecByUser.set(r.user_id, (yogaSecByUser.get(r.user_id) ?? 0) + secs);
-    });
     const glucoseCountByUser = new Map<string, number>();
     ((hLogsToday as any[]) ?? []).forEach((l) => {
       if (l.log_type !== "diabetes") return;
@@ -535,7 +531,8 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
         suppTaken: suppTakenByUser.get(a.user_id) ?? 0,
         suppTotal: suppTotalByUser.get(a.user_id) ?? 0,
         exerciseLogs: exCountByUser.get(a.user_id) ?? 0,
-        yogaMinutes: Math.round((yogaSecByUser.get(a.user_id) ?? 0) / 60),
+        exerciseMinutes: exMinByUser.get(a.user_id) ?? 0,
+        yogaMinutes: yogaMinByUser.get(a.user_id) ?? 0,
         mealsLogged: mealCountByUser.get(a.user_id) ?? 0,
         waterGlasses,
         soleusRounds,
