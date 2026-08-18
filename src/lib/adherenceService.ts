@@ -39,6 +39,7 @@ export interface ActivityCounters {
   suppTaken: number;
   suppTotal: number;
   exerciseLogs: number;
+  exerciseMinutes: number;
   yogaMinutes: number;
   mealsLogged: number;
   waterGlasses: number;
