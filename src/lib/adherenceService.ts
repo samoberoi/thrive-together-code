@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { ActivityKey } from "@/components/coach/CoachActivityNudgeDialog";
+import { videos as exerciseLibrary } from "@/lib/exerciseData";
 
 export const ALL_ACTIVITIES: ActivityKey[] = [
   "glucose", "bp", "weight", "fasting", "supplements", "exercise", "yoga", "diet",
