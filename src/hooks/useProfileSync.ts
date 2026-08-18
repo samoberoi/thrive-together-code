@@ -23,6 +23,10 @@ export function useProfileSync() {
     if (fetchedUserId.current === user.id) return;
     fetchedUserId.current = user.id;
 
+    // Drop any cache left behind by another account on this device before we
+    // read or push anything (prevents old test-patient names resurfacing).
+    ensureCacheOwner(user.id);
+
     fetchProfile(user.id).then((profile) => {
       if (profile) {
         loadProfileToLocal(profile);
