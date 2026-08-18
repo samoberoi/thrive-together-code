@@ -23,7 +23,7 @@ import CoachActivityNudgeDialog, {
 import CoachReviewsDialog from "@/components/coach/CoachReviewsDialog";
 import CoachActivityRings from "@/components/coach/CoachActivityRings";
 import CoachSelfCheckins from "@/components/coach/CoachSelfCheckins";
-import { buildActivityProgress, splitVideoMinutes, EXERCISE_GOAL_MINUTES, YOGA_GOAL_MINUTES, type ActivityCounters } from "@/lib/adherenceService";
+import { buildActivityProgress, splitVideoMinutes, fetchActivityGoals, DEFAULT_ACTIVITY_GOALS, type ActivityCounters } from "@/lib/adherenceService";
 
 
 
