@@ -476,3 +476,46 @@ function Pill({
     </span>
   );
 }
+
+function StatCard({
+  label,
+  value,
+  icon,
+  tone,
+  isActive,
+  onClick,
+}: {
+  label: string;
+  value: number;
+  icon: React.ReactNode;
+  tone: "primary" | "amber" | "blue" | "emerald" | "purple";
+  isActive?: boolean;
+  onClick?: () => void;
+}) {
+  const toneClasses = {
+    primary: "bg-primary/10 text-primary ring-primary/30",
+    amber: "bg-amber-500/10 text-amber-600 ring-amber-500/30",
+    blue: "bg-blue-500/10 text-blue-600 ring-blue-500/30",
+    emerald: "bg-emerald-500/10 text-emerald-600 ring-emerald-500/30",
+    purple: "bg-purple-500/10 text-purple-600 ring-purple-500/30",
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`liquid-glass text-left p-3 sm:p-4 rounded-xl transition-all ${
+        onClick ? "cursor-pointer hover:brightness-105 active:scale-[0.98]" : "cursor-default"
+      } ${isActive ? `ring-2 ${toneClasses[tone].split(" ").pop()}` : ""}`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-muted-foreground text-xs font-medium">{label}</p>
+          <p className="text-2xl sm:text-3xl font-black text-foreground mt-1">{value}</p>
+        </div>
+        <div className={`rounded-lg p-2 ${toneClasses[tone].split(" ").slice(0, 2).join(" ")}`}>{icon}</div>
+      </div>
+    </button>
+  );
+}
+
