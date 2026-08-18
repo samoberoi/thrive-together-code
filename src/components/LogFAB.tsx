@@ -14,6 +14,7 @@ import BreathProtocolDrawer from "@/components/BreathProtocolDrawer";
 import { useSoleusSessionsToday } from "@/hooks/useSoleusSessionsToday";
 import SoleusProtocolDrawer from "@/components/SoleusProtocolDrawer";
 import { useTodayExerciseProgress } from "@/hooks/useTodayExerciseProgress";
+import { useRbac } from "@/hooks/useRbac";
 
 type LogType = "diabetes" | "bp" | "weight" | "water" | null;
 type TimeOfDay = "morning" | "afternoon" | "evening";
