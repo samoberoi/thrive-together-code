@@ -107,6 +107,14 @@ export default function AdminUsers() {
     setLoading(false);
   };
 
+  const userCategory = (userId: string): "none" | "foundation" | "active" | "intensive" => {
+    const sub = subsByUser[userId];
+    if (!sub) return "none";
+    const key = aliasPlanKey(sub.plan_id);
+    if (key === "foundation" || key === "active" || key === "intensive") return key;
+    return "none";
+  };
+
   const packageLabel = (userId: string): string => {
     const sub = subsByUser[userId];
     if (!sub) return "No package";
@@ -117,31 +125,43 @@ export default function AdminUsers() {
   const adherenceIds = useMemo(() => users.map((u) => u.user_id), [users]);
   const { map: adherence, loading: adherenceLoading } = useAdherence(adherenceIds);
 
-  const packageOptions = useMemo(() => {
-    const set = new Set<string>();
-    for (const u of users) set.add(packageLabel(u.user_id));
-    const list = Array.from(set).filter((l) => l !== "No package").sort((a, b) => a.localeCompare(b));
-    if (set.has("No package")) list.push("No package");
-    return list;
-  }, [users, subsByUser, pkgNames]);
+  const stats = useMemo(() => {
+    const counts = { none: 0, foundation: 0, active: 0, intensive: 0 };
+    for (const u of users) {
+      counts[userCategory(u.user_id)]++;
+    }
+    return { total: users.length, ...counts };
+  }, [users, subsByUser]);
+
+  const packageOptions = useMemo(
+    () => [
+      { value: "all", label: "All packages" },
+      { value: "none", label: "No package" },
+      { value: "foundation", label: pkgNames["foundation"] || "Foundation" },
+      { value: "active", label: pkgNames["active"] || "Active" },
+      { value: "intensive", label: pkgNames["intensive"] || "Intensive" },
+    ],
+    [pkgNames]
+  );
 
   const filtered = useMemo(
     () =>
       users.filter((u) => {
-        const label = packageLabel(u.user_id);
-        if (packageFilter !== "all" && label !== packageFilter) return false;
+        const category = userCategory(u.user_id);
+        if (packageFilter !== "all" && category !== packageFilter) return false;
         const q = search.toLowerCase().trim();
         if (!q) return true;
         return (
           u.name?.toLowerCase().includes(q) ||
           u.phone?.includes(q) ||
           u.city?.toLowerCase().includes(q) ||
-          label.toLowerCase().includes(q) ||
+          packageLabel(u.user_id).toLowerCase().includes(q) ||
           u.coach_name?.toLowerCase().includes(q)
         );
       }),
     [users, search, packageFilter, subsByUser, pkgNames]
   );
+
 
 
   if (loading) {
