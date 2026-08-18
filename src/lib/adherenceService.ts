@@ -393,20 +393,21 @@ export async function fetchDailyAdherence(userIds: string[]): Promise<Map<string
       exercise: true, yoga: true, diet: true,
       water: true, soleus: true, breath: true,
     };
+    const goals = goalsByUser.get(id) ?? DEFAULT_ACTIVITY_GOALS;
     const activities: Record<ActivityKey, boolean> = {
       glucose: (glucoseByUser.get(id) ?? 0) > 0,
       bp: bpSet.has(id),
       weight: weightSet.has(id),
       fasting: fastingSet.has(id),
       supplements: suppSet.has(id),
-      exercise: (exMinByUser.get(id) ?? 0) >= EXERCISE_MINUTE_GOAL,
-      yoga: (yogaMinByUser.get(id) ?? 0) >= YOGA_MINUTE_GOAL,
+      exercise: (exMinByUser.get(id) ?? 0) >= goals.exercise,
+      yoga: (yogaMinByUser.get(id) ?? 0) >= goals.yoga,
       diet: (dietByUser.get(id) ?? 0) > 0,
       water: waterGlasses >= WATER_GLASS_GOAL,
       soleus: soleusRounds >= SOLEUS_GOAL,
       breath: breathRounds >= BREATH_GOAL,
     };
-    const progress = buildActivityProgress(counters);
+    const progress = buildActivityProgress(counters, goals);
 
     let applicableCount = 0;
     let doneCount = 0;
