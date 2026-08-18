@@ -409,14 +409,26 @@ export default function DashboardTour({
                   >
                     <ArrowLeft className="w-4 h-4" /> Back
                   </button>
-                  <button
-                    type="button"
-                    onClick={next}
-                    className="no-pill inline-flex min-h-10 items-center gap-1.5 rounded-full px-5 text-[13.5px] font-bold text-white active:scale-[0.98]"
-                    style={{ background: "var(--bbdo-red)" }}
-                  >
-                    {isLast ? "Start my day" : "Next"} <ArrowRight className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    {!isLast && (
+                      <button
+                        type="button"
+                        onClick={onClose}
+                        className="no-pill inline-flex min-h-10 items-center rounded-full px-3 text-[13px] font-semibold text-muted-foreground hover:text-foreground active:scale-[0.98]"
+                      >
+                        Skip
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={next}
+                      className="no-pill inline-flex min-h-10 items-center gap-1.5 rounded-full px-5 text-[13.5px] font-bold text-white active:scale-[0.98]"
+                      style={{ background: "var(--bbdo-red)" }}
+                    >
+                      {isLast ? "Start my day" : "Next"} <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+
               </div>
             </div>
           </motion.div>
