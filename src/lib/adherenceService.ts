@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { ActivityKey } from "@/components/coach/CoachActivityNudgeDialog";
 import { videos as exerciseLibrary } from "@/lib/exerciseData";
+import { getCurrentWeek, type FastingBucket } from "@/lib/fastingService";
 
 export const ALL_ACTIVITIES: ActivityKey[] = [
   "glucose", "bp", "weight", "fasting", "supplements", "exercise", "yoga", "diet",
@@ -12,9 +13,94 @@ const SOLEUS_GOAL = 3;
 const BREATH_GOAL = 4;
 const GLUCOSE_READING_GOAL = 2;   // morning + evening
 const MEAL_GOAL = 3;              // meals photographed per day
-const EXERCISE_MINUTE_GOAL = 30;  // minutes of exercise per day
-const YOGA_MINUTE_GOAL = 10;      // minutes of yoga / stress video
+const DEFAULT_EXERCISE_MINUTE_GOAL = 30;
+const DEFAULT_YOGA_MINUTE_GOAL = 20;
 const FASTING_HOUR_GOAL = 16;
+
+/** Per-user daily minute goals, driven by the user's protocol/package config. */
+export interface ActivityGoals { exercise: number; yoga: number }
+
+export const DEFAULT_ACTIVITY_GOALS: ActivityGoals = {
+  exercise: DEFAULT_EXERCISE_MINUTE_GOAL,
+  yoga: DEFAULT_YOGA_MINUTE_GOAL,
+};
+
+const bucketOf = (pattern: string | null | undefined): FastingBucket | null => {
+  const hours = parseInt(String(pattern ?? "").split(":")[0], 10);
+  if (!Number.isFinite(hours)) return null;
+  if (hours >= 16) return "16";
+  if (hours >= 14) return "14";
+  if (hours >= 12) return "12";
+  return null;
+};
+
+const numOr = (raw: any, fallback: number) => {
+  const n = typeof raw === "number" ? raw : parseInt(String(raw ?? ""), 10);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+};
+
+/**
+ * Resolve exercise + yoga daily minute goals per user. Goals come from
+ * app_settings and vary by the user's active fasting protocol bucket
+ * (exercise_daily_minutes_12/14/16, yoga_stress_daily_minutes_12/14/16),
+ * falling back to the base keys, then to the app defaults.
+ */
+export async function fetchActivityGoals(userIds: string[]): Promise<Map<string, ActivityGoals>> {
+  const out = new Map<string, ActivityGoals>();
+  const ids = Array.from(new Set(userIds.filter(Boolean)));
+  if (!ids.length) return out;
+  const db = supabase as any;
+
+  const [settingsRes, protoRes] = await Promise.all([
+    db.from("app_settings").select("key, value"),
+    db.from("user_protocols").select("user_id, protocol_id, start_date, created_at").in("user_id", ids).eq("status", "active"),
+  ]);
+
+  const settings = new Map<string, any>();
+  ((settingsRes?.data as any[]) ?? []).forEach((r) => settings.set(r.key, r.value));
+  const baseGoals: ActivityGoals = {
+    exercise: numOr(settings.get("exercise_daily_minutes"), DEFAULT_EXERCISE_MINUTE_GOAL),
+    yoga: numOr(settings.get("yoga_stress_daily_minutes"), DEFAULT_YOGA_MINUTE_GOAL),
+  };
+
+  const protoByUser = new Map<string, any>();
+  ((protoRes?.data as any[]) ?? []).forEach((r) => {
+    const prev = protoByUser.get(r.user_id);
+    if (!prev || String(r.created_at ?? "") > String(prev.created_at ?? "")) protoByUser.set(r.user_id, r);
+  });
+
+  const protocolIds = Array.from(new Set([...protoByUser.values()].map((p) => p.protocol_id).filter(Boolean)));
+  const plansByProtocol = new Map<string, any[]>();
+  if (protocolIds.length) {
+    const { data: plans } = await db
+      .from("fasting_weekly_plans")
+      .select("protocol_id, week_number, fasting_pattern")
+      .in("protocol_id", protocolIds);
+    ((plans as any[]) ?? []).forEach((p) => {
+      const arr = plansByProtocol.get(p.protocol_id) ?? [];
+      arr.push(p);
+      plansByProtocol.set(p.protocol_id, arr);
+    });
+  }
+
+  for (const id of ids) {
+    const proto = protoByUser.get(id);
+    let bucket: FastingBucket | null = null;
+    if (proto?.protocol_id && proto?.start_date) {
+      const week = getCurrentWeek(proto.start_date);
+      const plans = (plansByProtocol.get(proto.protocol_id) ?? []).sort((a, b) => a.week_number - b.week_number);
+      const plan = plans.find((p) => p.week_number === week) ?? plans[0];
+      bucket = bucketOf(plan?.fasting_pattern);
+    }
+    out.set(id, {
+      exercise: bucket ? numOr(settings.get(`exercise_daily_minutes_${bucket}`), baseGoals.exercise) : baseGoals.exercise,
+      yoga: bucket ? numOr(settings.get(`yoga_stress_daily_minutes_${bucket}`), baseGoals.yoga) : baseGoals.yoga,
+    });
+  }
+
+  return out;
+}
+
 
 export interface AdherenceSummary {
   user_id: string;
@@ -75,8 +161,9 @@ const clamp = (n: number) => Math.max(0, Math.min(1, n));
 
 const fmtMin = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
 
-export const EXERCISE_GOAL_MINUTES = EXERCISE_MINUTE_GOAL;
-export const YOGA_GOAL_MINUTES = YOGA_MINUTE_GOAL;
+/** @deprecated fallback only — real goals come from fetchActivityGoals(). */
+export const EXERCISE_GOAL_MINUTES = DEFAULT_EXERCISE_MINUTE_GOAL;
+export const YOGA_GOAL_MINUTES = DEFAULT_YOGA_MINUTE_GOAL;
 
 /** Video IDs that count as "yoga & stress" (Pranayama, Yoga Asana, Bandha). */
 const YOGA_VIDEO_IDS = new Set(
@@ -121,7 +208,12 @@ export function splitVideoMinutes(rows: any[] | null | undefined) {
 }
 
 /** Detailed progress text + ratio for every activity, so nudges are informed. */
-export function buildActivityProgress(c: ActivityCounters): AdherenceSummary["progress"] {
+export function buildActivityProgress(
+  c: ActivityCounters,
+  goals: ActivityGoals = DEFAULT_ACTIVITY_GOALS,
+): AdherenceSummary["progress"] {
+  const exerciseGoal = goals.exercise > 0 ? goals.exercise : DEFAULT_EXERCISE_MINUTE_GOAL;
+  const yogaGoal = goals.yoga > 0 ? goals.yoga : DEFAULT_YOGA_MINUTE_GOAL;
   const fmod = formatClock(c.fmod);
   const lmod = formatClock(c.lmod);
   const fastingBits: string[] = [];
@@ -153,12 +245,12 @@ export function buildActivityProgress(c: ActivityCounters): AdherenceSummary["pr
       ratio: c.suppTotal > 0 ? clamp(c.suppTaken / c.suppTotal) : (c.suppTaken > 0 ? 1 : 0),
     },
     exercise: {
-      text: `${fmtMin(c.exerciseMinutes)}/${EXERCISE_MINUTE_GOAL} min of exercise${c.exerciseLogs > 0 ? ` · ${c.exerciseLogs} workout${c.exerciseLogs > 1 ? "s" : ""} logged` : ""}`,
-      ratio: clamp(c.exerciseMinutes / EXERCISE_MINUTE_GOAL),
+      text: `${fmtMin(c.exerciseMinutes)}/${exerciseGoal} min of exercise${c.exerciseLogs > 0 ? ` · ${c.exerciseLogs} workout${c.exerciseLogs > 1 ? "s" : ""} logged` : ""}`,
+      ratio: clamp(c.exerciseMinutes / exerciseGoal),
     },
     yoga: {
-      text: `${fmtMin(c.yogaMinutes)}/${YOGA_MINUTE_GOAL} min of yoga & stress`,
-      ratio: clamp(c.yogaMinutes / YOGA_MINUTE_GOAL),
+      text: `${fmtMin(c.yogaMinutes)}/${yogaGoal} min of yoga & stress`,
+      ratio: clamp(c.yogaMinutes / yogaGoal),
     },
     diet: {
       text: `${c.mealsLogged}/${MEAL_GOAL} meals logged`,
@@ -202,9 +294,11 @@ export async function fetchDailyAdherence(userIds: string[]): Promise<Map<string
   const db = supabase as any;
 
   const [
+    goalsByUser,
     hLogsToday, fastTodayRows, suppTodayRows, activePlans, activeProtocols,
     exRows, vidRows, mealRows, soleusRows, breathRows,
   ] = await Promise.all([
+    fetchActivityGoals(ids),
     db.from("health_logs").select("user_id, log_type, glucose_morning, glucose_evening, bp_systolic, weight_kg").in("user_id", ids).gte("logged_at", todayIso),
     db.from("fasting_tracking").select("user_id, compliance_status, fasting_hours_completed, fmod_actual_time, lmod_actual_time").in("user_id", ids).eq("date", today),
     db.from("user_supplement_tracking").select("user_id, taken").in("user_id", ids).eq("date", today),
@@ -301,20 +395,21 @@ export async function fetchDailyAdherence(userIds: string[]): Promise<Map<string
       exercise: true, yoga: true, diet: true,
       water: true, soleus: true, breath: true,
     };
+    const goals = goalsByUser.get(id) ?? DEFAULT_ACTIVITY_GOALS;
     const activities: Record<ActivityKey, boolean> = {
       glucose: (glucoseByUser.get(id) ?? 0) > 0,
       bp: bpSet.has(id),
       weight: weightSet.has(id),
       fasting: fastingSet.has(id),
       supplements: suppSet.has(id),
-      exercise: (exMinByUser.get(id) ?? 0) >= EXERCISE_MINUTE_GOAL,
-      yoga: (yogaMinByUser.get(id) ?? 0) >= YOGA_MINUTE_GOAL,
+      exercise: (exMinByUser.get(id) ?? 0) >= goals.exercise,
+      yoga: (yogaMinByUser.get(id) ?? 0) >= goals.yoga,
       diet: (dietByUser.get(id) ?? 0) > 0,
       water: waterGlasses >= WATER_GLASS_GOAL,
       soleus: soleusRounds >= SOLEUS_GOAL,
       breath: breathRounds >= BREATH_GOAL,
     };
-    const progress = buildActivityProgress(counters);
+    const progress = buildActivityProgress(counters, goals);
 
     let applicableCount = 0;
     let doneCount = 0;

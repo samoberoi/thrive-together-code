@@ -23,7 +23,7 @@ import CoachActivityNudgeDialog, {
 import CoachReviewsDialog from "@/components/coach/CoachReviewsDialog";
 import CoachActivityRings from "@/components/coach/CoachActivityRings";
 import CoachSelfCheckins from "@/components/coach/CoachSelfCheckins";
-import { buildActivityProgress, splitVideoMinutes, EXERCISE_GOAL_MINUTES, YOGA_GOAL_MINUTES, type ActivityCounters } from "@/lib/adherenceService";
+import { buildActivityProgress, splitVideoMinutes, fetchActivityGoals, DEFAULT_ACTIVITY_GOALS, type ActivityCounters } from "@/lib/adherenceService";
 
 
 
@@ -398,8 +398,10 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
     const suppPlanSet = new Set(((activePlans as any[]) ?? []).map((r) => r.user_id));
     const fastProtoSet = new Set(((activeProtocols as any[]) ?? []).map((r) => r.user_id));
     const { exerciseMin: exMinByUser, yogaMin: yogaMinByUser } = splitVideoMinutes((vidRows as any[]) ?? []);
-    const exSet = new Set([...exMinByUser].filter(([, m]) => m >= EXERCISE_GOAL_MINUTES).map(([id]) => id));
-    const yogaSet = new Set([...yogaMinByUser].filter(([, m]) => m >= YOGA_GOAL_MINUTES).map(([id]) => id));
+    const goalsByUser = await fetchActivityGoals(patientIds);
+    const goalsFor = (uid: string) => goalsByUser.get(uid) ?? DEFAULT_ACTIVITY_GOALS;
+    const exSet = new Set([...exMinByUser].filter(([id, m]) => m >= goalsFor(id).exercise).map(([id]) => id));
+    const yogaSet = new Set([...yogaMinByUser].filter(([id, m]) => m >= goalsFor(id).yoga).map(([id]) => id));
     const dietSet = new Set(((mealRows as any[]) ?? []).map((r) => r.user_id));
 
     // Per-activity detail counters so nudges show exactly what is pending
@@ -538,7 +540,7 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
         soleusRounds,
         breathRounds,
       };
-      const progress: Partial<Record<ActivityKey, { text: string; ratio: number }>> = buildActivityProgress(counters);
+      const progress: Partial<Record<ActivityKey, { text: string; ratio: number }>> = buildActivityProgress(counters, goalsFor(a.user_id));
 
 
       let applicableCount = 0;
