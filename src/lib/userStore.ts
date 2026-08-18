@@ -12,6 +12,8 @@ import type {
 const KEY = "bb_user";
 
 export interface StoredUser {
+  /** Auth user id this cache belongs to — guards against stale cross-account data. */
+  ownerId?: string | null;
   profile: Partial<UserProfile>;
   bodyMetrics: Partial<BodyMetrics>;
   clinical: Partial<ClinicalData>;
