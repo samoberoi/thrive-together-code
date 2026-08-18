@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchProfile, loadProfileToLocal, syncLocalToBackend } from "@/lib/profileService";
-import { getUser } from "@/lib/userStore";
+import { ensureCacheOwner } from "@/lib/userStore";
 import { backfillFromProfile } from "@/lib/healthLogsService";
 
 /**
@@ -22,6 +22,10 @@ export function useProfileSync() {
     }
     if (fetchedUserId.current === user.id) return;
     fetchedUserId.current = user.id;
+
+    // Drop any cache left behind by another account on this device before we
+    // read or push anything (prevents old test-patient names resurfacing).
+    ensureCacheOwner(user.id);
 
     fetchProfile(user.id).then((profile) => {
       if (profile) {

@@ -12,6 +12,8 @@ import type {
 const KEY = "bb_user";
 
 export interface StoredUser {
+  /** Auth user id this cache belongs to — guards against stale cross-account data. */
+  ownerId?: string | null;
   profile: Partial<UserProfile>;
   bodyMetrics: Partial<BodyMetrics>;
   clinical: Partial<ClinicalData>;
@@ -74,4 +76,19 @@ export function getHealthScore(): number {
 
 export function clearUser(): void {
   localStorage.removeItem(KEY);
+}
+
+/**
+ * Bind the local cache to a specific auth user. If the cache belongs to a
+ * different (or unknown legacy) account, drop it so leftover test-profile data
+ * — e.g. an old patient name — can never be shown or pushed back to the server.
+ * Returns true when the cache was cleared.
+ */
+export function ensureCacheOwner(userId: string): boolean {
+  const current = getUser();
+  if (current.ownerId === userId) return false;
+  localStorage.removeItem(KEY);
+  localStorage.setItem(KEY, JSON.stringify({ ...defaults, ownerId: userId }));
+  window.dispatchEvent(new CustomEvent("bb_user_updated"));
+  return true;
 }
