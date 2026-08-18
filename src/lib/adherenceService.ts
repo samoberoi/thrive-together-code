@@ -245,12 +245,12 @@ export function buildActivityProgress(
       ratio: c.suppTotal > 0 ? clamp(c.suppTaken / c.suppTotal) : (c.suppTaken > 0 ? 1 : 0),
     },
     exercise: {
-      text: `${fmtMin(c.exerciseMinutes)}/${EXERCISE_MINUTE_GOAL} min of exercise${c.exerciseLogs > 0 ? ` · ${c.exerciseLogs} workout${c.exerciseLogs > 1 ? "s" : ""} logged` : ""}`,
-      ratio: clamp(c.exerciseMinutes / EXERCISE_MINUTE_GOAL),
+      text: `${fmtMin(c.exerciseMinutes)}/${exerciseGoal} min of exercise${c.exerciseLogs > 0 ? ` · ${c.exerciseLogs} workout${c.exerciseLogs > 1 ? "s" : ""} logged` : ""}`,
+      ratio: clamp(c.exerciseMinutes / exerciseGoal),
     },
     yoga: {
-      text: `${fmtMin(c.yogaMinutes)}/${YOGA_MINUTE_GOAL} min of yoga & stress`,
-      ratio: clamp(c.yogaMinutes / YOGA_MINUTE_GOAL),
+      text: `${fmtMin(c.yogaMinutes)}/${yogaGoal} min of yoga & stress`,
+      ratio: clamp(c.yogaMinutes / yogaGoal),
     },
     diet: {
       text: `${c.mealsLogged}/${MEAL_GOAL} meals logged`,
