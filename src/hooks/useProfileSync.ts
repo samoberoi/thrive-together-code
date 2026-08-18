@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchProfile, loadProfileToLocal, syncLocalToBackend } from "@/lib/profileService";
-import { getUser } from "@/lib/userStore";
+import { ensureCacheOwner } from "@/lib/userStore";
 import { backfillFromProfile } from "@/lib/healthLogsService";
 
 /**
