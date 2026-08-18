@@ -50,7 +50,7 @@ export interface ActivityCounters {
 export const emptyCounters = (): ActivityCounters => ({
   glucoseReadings: 0, bpLogged: false, weightLogged: false,
   fastingHours: null, fastingStatus: null, fmod: null, lmod: null,
-  suppTaken: 0, suppTotal: 0, exerciseLogs: 0, yogaMinutes: 0, mealsLogged: 0,
+  suppTaken: 0, suppTotal: 0, exerciseLogs: 0, exerciseMinutes: 0, yogaMinutes: 0, mealsLogged: 0,
   waterGlasses: 0, soleusRounds: 0, breathRounds: 0,
 });
 
@@ -72,6 +72,53 @@ export function formatClock(value: string | null): string | null {
 }
 
 const clamp = (n: number) => Math.max(0, Math.min(1, n));
+
+const fmtMin = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
+
+export const EXERCISE_GOAL_MINUTES = EXERCISE_MINUTE_GOAL;
+export const YOGA_GOAL_MINUTES = YOGA_MINUTE_GOAL;
+
+/** Video IDs that count as "yoga & stress" (Pranayama, Yoga Asana, Bandha). */
+const YOGA_VIDEO_IDS = new Set(
+  exerciseLibrary
+    .filter((v) => v.group === "Pranayama" || v.group === "Yoga Asana" || v.group === "Bandha")
+    .map((v) => v.id),
+);
+
+/**
+ * Split today's video_progress rows into exercise vs yoga watch minutes per user.
+ * Mirrors yogaProgressService so coach nudges match what the patient sees.
+ */
+export function splitVideoMinutes(rows: any[] | null | undefined) {
+  const exerciseMin = new Map<string, number>();
+  const yogaMin = new Map<string, number>();
+  const exSecByUserVideo = new Map<string, number>();
+  const yogaSecByUserVideo = new Map<string, number>();
+
+  (rows ?? []).forEach((r) => {
+    const videoId = String(r.video_id ?? "");
+    const secs = Math.max(0, Number(r.progress_sec ?? 0) || (r.completed ? Number(r.duration_sec ?? 0) : 0));
+    if (!secs) return;
+    const key = `${r.user_id}|${videoId}`;
+    if (videoId.startsWith("exercise:")) {
+      exSecByUserVideo.set(key, Math.max(exSecByUserVideo.get(key) ?? 0, secs));
+    } else if (YOGA_VIDEO_IDS.has(videoId)) {
+      yogaSecByUserVideo.set(key, (yogaSecByUserVideo.get(key) ?? 0) + secs);
+    }
+  });
+
+  const accumulate = (src: Map<string, number>, dest: Map<string, number>) => {
+    src.forEach((secs, key) => {
+      const uid = key.split("|")[0];
+      dest.set(uid, (dest.get(uid) ?? 0) + secs);
+    });
+    dest.forEach((secs, uid) => dest.set(uid, Math.round((secs / 60) * 10) / 10));
+  };
+  accumulate(exSecByUserVideo, exerciseMin);
+  accumulate(yogaSecByUserVideo, yogaMin);
+
+  return { exerciseMin, yogaMin };
+}
 
 /** Detailed progress text + ratio for every activity, so nudges are informed. */
 export function buildActivityProgress(c: ActivityCounters): AdherenceSummary["progress"] {
@@ -106,15 +153,11 @@ export function buildActivityProgress(c: ActivityCounters): AdherenceSummary["pr
       ratio: c.suppTotal > 0 ? clamp(c.suppTaken / c.suppTotal) : (c.suppTaken > 0 ? 1 : 0),
     },
     exercise: {
-      text: c.exerciseLogs > 0
-        ? `${c.exerciseLogs} workout${c.exerciseLogs > 1 ? "s" : ""} logged`
-        : "No workout logged today",
-      ratio: clamp(c.exerciseLogs / EXERCISE_LOG_GOAL),
+      text: `${fmtMin(c.exerciseMinutes)}/${EXERCISE_MINUTE_GOAL} min of exercise${c.exerciseLogs > 0 ? ` · ${c.exerciseLogs} workout${c.exerciseLogs > 1 ? "s" : ""} logged` : ""}`,
+      ratio: clamp(c.exerciseMinutes / EXERCISE_MINUTE_GOAL),
     },
     yoga: {
-      text: c.yogaMinutes > 0
-        ? `${c.yogaMinutes} min practised (goal ${YOGA_MINUTE_GOAL} min)`
-        : "No yoga / stress session today",
+      text: `${fmtMin(c.yogaMinutes)}/${YOGA_MINUTE_GOAL} min of yoga & stress`,
       ratio: clamp(c.yogaMinutes / YOGA_MINUTE_GOAL),
     },
     diet: {
@@ -168,7 +211,7 @@ export async function fetchDailyAdherence(userIds: string[]): Promise<Map<string
     db.from("user_supplement_plans").select("user_id").in("user_id", ids).eq("status", "active"),
     db.from("user_protocols").select("user_id").in("user_id", ids).eq("status", "active"),
     db.from("user_exercise_logs").select("user_id").in("user_id", ids).gte("created_at", todayIso),
-    db.from("video_progress").select("user_id, progress_sec, duration_sec, completed").in("user_id", ids).gte("watched_at", todayIso),
+    db.from("video_progress").select("user_id, video_id, progress_sec, duration_sec, completed").in("user_id", ids).gte("watched_at", todayIso),
     db.from("meal_photos").select("user_id").in("user_id", ids).gte("logged_at", todayIso),
     db.from("user_soleus_sessions").select("user_id").in("user_id", ids).gte("session_at", todayIso),
     db.from("user_breath_sessions").select("user_id").in("user_id", ids).gte("session_at", todayIso),
@@ -188,11 +231,7 @@ export async function fetchDailyAdherence(userIds: string[]): Promise<Map<string
   const soleusByUser = countOf(soleusRows);
   const breathByUser = countOf(breathRows);
 
-  const yogaMinByUser = new Map<string, number>();
-  ((vidRows?.data as any[]) ?? []).forEach((r) => {
-    const secs = Number(r.progress_sec ?? 0) || (r.completed ? Number(r.duration_sec ?? 0) : 0);
-    yogaMinByUser.set(r.user_id, (yogaMinByUser.get(r.user_id) ?? 0) + secs);
-  });
+  const { exerciseMin: exMinByUser, yogaMin: yogaMinByUser } = splitVideoMinutes((vidRows?.data as any[]) ?? []);
 
   const glucoseByUser = new Map<string, number>();
   const bpSet = new Set<string>();
@@ -247,7 +286,8 @@ export async function fetchDailyAdherence(userIds: string[]): Promise<Map<string
       suppTaken: suppTakenByUser.get(id) ?? 0,
       suppTotal: suppTotalByUser.get(id) ?? 0,
       exerciseLogs: exByUser.get(id) ?? 0,
-      yogaMinutes: Math.round((yogaMinByUser.get(id) ?? 0) / 60),
+      exerciseMinutes: exMinByUser.get(id) ?? 0,
+      yogaMinutes: yogaMinByUser.get(id) ?? 0,
       mealsLogged: dietByUser.get(id) ?? 0,
       waterGlasses,
       soleusRounds,
@@ -267,8 +307,8 @@ export async function fetchDailyAdherence(userIds: string[]): Promise<Map<string
       weight: weightSet.has(id),
       fasting: fastingSet.has(id),
       supplements: suppSet.has(id),
-      exercise: (exByUser.get(id) ?? 0) > 0,
-      yoga: (yogaMinByUser.get(id) ?? 0) > 0,
+      exercise: (exMinByUser.get(id) ?? 0) >= EXERCISE_MINUTE_GOAL,
+      yoga: (yogaMinByUser.get(id) ?? 0) >= YOGA_MINUTE_GOAL,
       diet: (dietByUser.get(id) ?? 0) > 0,
       water: waterGlasses >= WATER_GLASS_GOAL,
       soleus: soleusRounds >= SOLEUS_GOAL,
