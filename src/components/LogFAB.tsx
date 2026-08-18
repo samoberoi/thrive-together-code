@@ -45,6 +45,8 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
   const { user } = useAuth();
   const navigate = useNavigate();
   const storedUser = useUserStore();
+  const { isAdmin, isCoach } = useRbac();
+  const isStaff = isAdmin || isCoach;
   const hasDiabetesFlag = !!(storedUser.clinical?.hasDiabetes || (storedUser.deepProfiling as any)?.hba1cInput != null || (storedUser.deepProfiling as any)?.fastingGlucose != null);
   const hasHypertensionFlag = !!(storedUser.clinical?.hasHypertension || (storedUser.clinical as any)?.bpMedication);
   const { minutes: exerciseMinutesToday, goal: EXERCISE_GOAL, done: exerciseDone } = useTodayExerciseProgress(5);
