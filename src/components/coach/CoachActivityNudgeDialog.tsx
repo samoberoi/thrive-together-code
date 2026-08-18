@@ -141,7 +141,7 @@ export default function CoachActivityNudgeDialog({
             </div>
           )}
 
-          <div className="flex-1 overflow-y-auto p-5">
+          <div className="flex-1 overflow-y-auto p-5 pb-[calc(2rem+env(safe-area-inset-bottom,0px))] overscroll-contain">
             {pending.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 text-center gap-2">
                 <div className="w-14 h-14 rounded-2xl bg-success/15 flex items-center justify-center">
