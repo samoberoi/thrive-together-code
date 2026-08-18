@@ -53,7 +53,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
   const exerciseBadgeValue = `${Math.min(exerciseMinutesToday, EXERCISE_GOAL).toLocaleString("en-IN", { maximumFractionDigits: 1 })}/${EXERCISE_GOAL}`;
   const visibleActions = actions.filter((a) => {
     // Coaches/admins have no patient clinical profile — never hide their own log tiles.
-    if (a.id === "diabetes") return props.showAllLogs || hasDiabetesFlag;
+    if (a.id === "diabetes") return props.showAllLogs || isStaff || hasDiabetesFlag;
     // Blood pressure is always shown per clinical guidance — everyone should be able to log BP.
     return true;
   });
