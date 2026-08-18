@@ -398,8 +398,10 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
     const suppPlanSet = new Set(((activePlans as any[]) ?? []).map((r) => r.user_id));
     const fastProtoSet = new Set(((activeProtocols as any[]) ?? []).map((r) => r.user_id));
     const { exerciseMin: exMinByUser, yogaMin: yogaMinByUser } = splitVideoMinutes((vidRows as any[]) ?? []);
-    const exSet = new Set([...exMinByUser].filter(([, m]) => m >= EXERCISE_GOAL_MINUTES).map(([id]) => id));
-    const yogaSet = new Set([...yogaMinByUser].filter(([, m]) => m >= YOGA_GOAL_MINUTES).map(([id]) => id));
+    const goalsByUser = await fetchActivityGoals(patientIds);
+    const goalsFor = (uid: string) => goalsByUser.get(uid) ?? DEFAULT_ACTIVITY_GOALS;
+    const exSet = new Set([...exMinByUser].filter(([id, m]) => m >= goalsFor(id).exercise).map(([id]) => id));
+    const yogaSet = new Set([...yogaMinByUser].filter(([id, m]) => m >= goalsFor(id).yoga).map(([id]) => id));
     const dietSet = new Set(((mealRows as any[]) ?? []).map((r) => r.user_id));
 
     // Per-activity detail counters so nudges show exactly what is pending
