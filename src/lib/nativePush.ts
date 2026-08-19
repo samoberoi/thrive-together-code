@@ -10,6 +10,7 @@
  */
 import { Capacitor, registerPlugin } from "@capacitor/core";
 import { PushNotifications } from "@capacitor/push-notifications";
+import { claimNotification, notificationKey } from "@/lib/notificationDedupe";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
