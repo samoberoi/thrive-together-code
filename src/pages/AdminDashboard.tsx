@@ -723,6 +723,7 @@ export default function AdminDashboard() {
         <RoleTopBar
           roleLabel="Super Admin"
           avatarInitial={adminInitial}
+          avatarUrl={adminAvatar}
           profileActive={activeTab === "profile"}
           onProfileClick={() => selectTab("profile")}
           notificationCount={attentionCounts.notifications}
