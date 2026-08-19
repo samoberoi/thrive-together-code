@@ -347,11 +347,12 @@ function PostCard({
 }
 
 function CreatePostSheet({
-  onClose, onPost, initialContent, categories, initialCategorySlug, userId,
+  onClose, onPost, initialContent, categories, initialCategorySlug, userId, initialImageUrl,
 }: {
   onClose: () => void;
   onPost: (content: string, categorySlug: string | null, imageUrl: string | null) => Promise<void>;
   initialContent?: string;
+  initialImageUrl?: string | null;
   categories: PostCategory[];
   initialCategorySlug?: string | null;
   userId: string;
@@ -359,8 +360,8 @@ function CreatePostSheet({
   const [content, setContent] = useState(initialContent || "");
   const [posting, setPosting] = useState(false);
   const [slug, setSlug] = useState<string | null>(initialCategorySlug ?? null);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(initialImageUrl ?? null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(initialImageUrl ?? null);
   const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
 
@@ -500,6 +501,7 @@ export default function Community() {
   const [showCreate, setShowCreate] = useState(false);
   const [prefillContent, setPrefillContent] = useState("");
   const [prefillSlug, setPrefillSlug] = useState<string | null>(null);
+  const [prefillImage, setPrefillImage] = useState<string | null>(null);
   const [memberCount, setMemberCount] = useState(0);
   const [categories, setCategories] = useState<PostCategory[]>([]);
   const [activeSlug, setActiveSlug] = useState<string | null>(null);
@@ -535,11 +537,13 @@ export default function Community() {
         (m ? { msg: `🏆 Health win: ${m}!`, slug: "wins" } : messages.generic);
       setPrefillContent(preset.msg);
       setPrefillSlug(preset.slug);
+      setPrefillImage(searchParams.get("img"));
       setShowCreate(true);
       const next = new URLSearchParams(searchParams);
       next.set("tab", "community");
       next.delete("share");
       next.delete("metric");
+      next.delete("img");
       setSearchParams(next, { replace: true });
     }
   }, [searchParams, setSearchParams]);
@@ -733,10 +737,11 @@ export default function Community() {
       <AnimatePresence>
         {showCreate && user && (
           <CreatePostSheet
-            onClose={() => { setShowCreate(false); setPrefillContent(""); setPrefillSlug(null); }}
+            onClose={() => { setShowCreate(false); setPrefillContent(""); setPrefillSlug(null); setPrefillImage(null); }}
             onPost={handlePost}
             initialContent={prefillContent}
             initialCategorySlug={prefillSlug ?? activeSlug}
+            initialImageUrl={prefillImage}
             categories={categories}
             userId={user.id}
           />
