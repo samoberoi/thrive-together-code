@@ -31,7 +31,7 @@ function loadLogo(): Promise<HTMLImageElement | null> {
     img.crossOrigin = "anonymous";
     img.onload = () => resolve(img);
     img.onerror = () => resolve(null);
-    img.src = (bbdoLogoAsset as any).url;
+    img.src = bbdoLogo;
   });
 }
 
@@ -82,11 +82,11 @@ export async function renderStepsCardPng(opts: {
   ctx.stroke();
 
   ctx.textAlign = "center";
-  ctx.fillStyle = "#E00101";
+  ctx.fillStyle = "#EA6A5E";
   ctx.font = "900 74px system-ui, -apple-system, sans-serif";
   ctx.fillText("Steps", cx, cy - 40);
 
-  ctx.fillStyle = "#0F1A3D";
+  ctx.fillStyle = "#248CCB";
   ctx.font = "900 120px system-ui, -apple-system, sans-serif";
   ctx.fillText(Math.round(opts.steps).toLocaleString("en-IN"), cx, cy + 70);
 
