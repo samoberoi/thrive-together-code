@@ -9,6 +9,7 @@ import { useDailyYogaMinutes } from "@/hooks/useAppSettings";
 import { getTodayYogaMinutes } from "@/lib/yogaProgressService";
 import { fetchMovementOverview, COACH_MIN_DAILY_STEPS } from "@/lib/movementUserService";
 import { fetchProfile } from "@/lib/profileService";
+import StepsShareCard from "@/components/StepsShareCard";
 import { fetchUserProtocol, fetchTrackingForUser } from "@/lib/fastingService";
 
 const todayKey = () => {
@@ -28,7 +29,8 @@ export default function CoachActivityRings() {
   const yogaGoal = useDailyYogaMinutes();
 
   const [yogaMin, setYogaMin] = useState(0);
-  const [movement, setMovement] = useState({ ratio: 0, hint: "" });
+  const [movement, setMovement] = useState({ ratio: 0, hint: "", steps: 0 });
+  const [body, setBody] = useState<{ heightCm: number | null; weightKg: number | null }>({ heightCm: null, weightKg: null });
   const [water, setWater] = useState(0);
   const [hasDiabetes, setHasDiabetes] = useState(false);
   const [diabetesLoggedToday, setDiabetesLoggedToday] = useState(false);
@@ -56,7 +58,9 @@ export default function CoachActivityRings() {
       setMovement({
         ratio: ov.targetSteps > 0 ? Math.min(1, ov.todaySteps / ov.targetSteps) : 0,
         hint: `${(ov.todaySteps || 0).toLocaleString("en-IN")} / ${(ov.targetSteps || 0).toLocaleString("en-IN")} steps`,
+        steps: ov.todaySteps || 0,
       });
+      setBody({ heightCm: (p as any)?.height ?? null, weightKg: (p as any)?.weight ?? null });
       const clin = (p as any)?.clinical ?? {};
       setHasDiabetes(!!(clin.hasDiabetes || clin.has_diabetes || (p as any)?.has_diabetes));
     } catch { /* ignore */ }
@@ -172,7 +176,11 @@ export default function CoachActivityRings() {
       disabled: supps.total === 0,
       hint: supps.total > 0 ? `${supps.taken} / ${supps.total} taken` : undefined,
     },
-    { key: "movement", label: "Movement", ratio: movement.ratio, color: "#10B981", hint: movement.hint || undefined },
+    {
+      key: "movement", label: "Movement", ratio: movement.ratio, color: "#10B981",
+      hint: movement.hint || undefined,
+      expanded: <StepsShareCard steps={movement.steps} heightCm={body.heightCm} weightKg={body.weightKg} />,
+    },
     {
       key: "exercise", label: "Exercise",
       ratio: exerciseGoal > 0 ? Math.min(1, exerciseMin / exerciseGoal) : 0,
