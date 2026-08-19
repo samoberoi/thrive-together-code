@@ -506,11 +506,20 @@ export default function AdminDashboard() {
       if (upErr) throw upErr;
       const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
       const url = `${publicUrl}?v=${Date.now()}`;
-      const { error: profErr } = await supabase
+      const { data: updated, error: profErr } = await supabase
         .from("profiles")
         .update({ avatar_url: url } as any)
-        .eq("user_id", user.id);
+        .eq("user_id", user.id)
+        .select("user_id");
       if (profErr) throw profErr;
+      if (!updated || updated.length === 0) {
+        // No profile row yet (rare for staff accounts) — create one so the
+        // community feed has a photo to show.
+        const { error: insErr } = await supabase
+          .from("profiles")
+          .insert({ user_id: user.id, avatar_url: url } as any);
+        if (insErr) throw insErr;
+      }
       setAdminAvatar(url);
       toast.success("Profile photo updated");
     } catch (e: any) {
