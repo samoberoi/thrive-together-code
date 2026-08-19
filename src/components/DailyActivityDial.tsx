@@ -23,6 +23,8 @@ export interface DialRingItem {
   hint?: string;
   /** Pillar not unlocked for this user's plan — shown greyed out, not counted. */
   disabled?: boolean;
+  /** Optional panel revealed under this legend row when its arrow is tapped. */
+  expanded?: ReactNode;
 }
 
 
