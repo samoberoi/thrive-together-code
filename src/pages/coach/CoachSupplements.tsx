@@ -98,7 +98,7 @@ export default function CoachSupplements() {
 
       // Parallel per-patient fetches instead of sequential waterfall
       await Promise.all(userIds.map(async (uid) => {
-        const plan = await fetchUserPlan(uid);
+        const plan = await fetchUserPlan(uid, { includePaused: true });
         planMap[uid] = plan;
         if (plan) {
           const [items, tracking] = await Promise.all([
@@ -118,7 +118,7 @@ export default function CoachSupplements() {
 
   /** Refresh only one patient's plan data — instant compared to a full reload. */
   const refreshPatient = async (uid: string) => {
-    const plan = await fetchUserPlan(uid);
+    const plan = await fetchUserPlan(uid, { includePaused: true });
     const items = plan ? await fetchPlanItems(plan.id) : [];
     setPatientPlans((prev) => ({ ...prev, [uid]: plan }));
     setPatientItems((prev) => ({ ...prev, [uid]: items }));

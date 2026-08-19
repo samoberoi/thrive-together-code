@@ -133,12 +133,27 @@ export async function deleteConditionRule(id: string) {
 }
 
 // ─── User Plans ─────────────────────────
-export async function fetchUserPlan(userId: string): Promise<UserSupplementPlan | null> {
+/**
+ * Latest plan for a user.
+ *
+ * Coach-facing screens MUST pass `includePaused` — a paused plan is still the
+ * patient's plan and has to stay visible so the coach can resume or edit it.
+ * Filtering on status='active' alone made a paused plan vanish behind
+ * "No plan / nothing assigned" with no way back (pause was a one-way trap).
+ * Patient-facing screens keep the active-only behaviour.
+ */
+export async function fetchUserPlan(
+  userId: string,
+  opts?: { includePaused?: boolean }
+): Promise<UserSupplementPlan | null> {
+  const statuses = opts?.includePaused ? ["active", "paused"] : ["active"];
   const { data, error } = await supabase
     .from("user_supplement_plans" as any)
     .select("*")
     .eq("user_id", userId)
-    .eq("status", "active")
+    .in("status", statuses)
+    // active wins over paused when both exist, then newest first
+    .order("status", { ascending: true })
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();

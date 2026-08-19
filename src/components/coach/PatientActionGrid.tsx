@@ -79,9 +79,11 @@ export default function PatientActionGrid({ coachId, patientId, patientName }: P
         .limit(1),
       supabase
         .from("user_supplement_plans" as any)
+        // paused plans still belong to the patient — keep them visible here so
+        // the tile and the Supplements page never disagree
         .select("id")
         .eq("user_id", patientId)
-        .eq("status", "active"),
+        .in("status", ["active", "paused"]),
       supabase
         .from("coach_supplement_recommendations" as any)
         .select("items, status, created_at")
