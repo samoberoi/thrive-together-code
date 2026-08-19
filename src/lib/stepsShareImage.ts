@@ -59,7 +59,7 @@ export async function renderStepsCardPng(opts: {
   ctx.fillRect(0, 0, W, H);
 
   // Card border
-  ctx.strokeStyle = "#10B981";
+  ctx.strokeStyle = "#E3F1FB";
   ctx.lineWidth = 6;
   ctx.strokeRect(24, 24, W - 48, H - 48);
 
@@ -74,11 +74,16 @@ export async function renderStepsCardPng(opts: {
   const cx = W / 2;
   const cy = H / 2 - 20;
   const r = 250;
-  ctx.strokeStyle = "#0F1A3D";
   ctx.lineWidth = 34;
   ctx.lineCap = "round";
+  ctx.strokeStyle = "#E3F1FB";
   ctx.beginPath();
   ctx.arc(cx, cy, r, Math.PI * 0.82, Math.PI * 0.18, false);
+  ctx.stroke();
+  const sweep = (Math.PI * 1.36) * Math.max(0.04, Math.min(1, opts.steps / 10000));
+  ctx.strokeStyle = "#248CCB";
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, Math.PI * 0.82, Math.PI * 0.82 + sweep, false);
   ctx.stroke();
 
   ctx.textAlign = "center";
@@ -93,23 +98,23 @@ export async function renderStepsCardPng(opts: {
   // Calories / distance
   const y = cy + r + 90;
   ctx.font = "800 46px system-ui, -apple-system, sans-serif";
-  ctx.fillStyle = "#E00101";
+  ctx.fillStyle = "#EA6A5E";
   ctx.textAlign = "right";
   ctx.fillText("Calories", cx - 150, y);
-  ctx.fillStyle = "#0F1A3D";
+  ctx.fillStyle = "#248CCB";
   ctx.textAlign = "left";
   ctx.fillText(` ${opts.calories.toLocaleString("en-IN")}`, cx - 145, y);
 
-  ctx.fillStyle = "#E00101";
+  ctx.fillStyle = "#EA6A5E";
   ctx.textAlign = "right";
   ctx.fillText("Distance", cx + 250, y);
-  ctx.fillStyle = "#0F1A3D";
+  ctx.fillStyle = "#248CCB";
   ctx.textAlign = "left";
   ctx.fillText(` ${opts.km.toFixed(1)} km`, cx + 255, y);
 
   // Date footer
   ctx.textAlign = "left";
-  ctx.fillStyle = "#0F1A3D";
+  ctx.fillStyle = "#64748B";
   ctx.font = "700 40px system-ui, -apple-system, sans-serif";
   ctx.fillText(formatShareDate(opts.date), 80, H - 90);
 
