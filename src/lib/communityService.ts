@@ -141,7 +141,7 @@ function formatStamp(d: Date): string {
 }
 
 // Preload BBDO logo once for watermarking
-import bbdoLogoAsset from "@/assets/bbdo-logo.png.asset.json";
+import bbdoLogo from "@/assets/logo.png";
 let _bbdoLogoImg: HTMLImageElement | null = null;
 let _bbdoLogoPromise: Promise<HTMLImageElement | null> | null = null;
 function loadBbdoLogo(): Promise<HTMLImageElement | null> {
@@ -152,7 +152,7 @@ function loadBbdoLogo(): Promise<HTMLImageElement | null> {
     img.crossOrigin = "anonymous";
     img.onload = () => { _bbdoLogoImg = img; resolve(img); };
     img.onerror = () => resolve(null);
-    img.src = (bbdoLogoAsset as any).url;
+    img.src = bbdoLogo;
   });
   return _bbdoLogoPromise;
 }

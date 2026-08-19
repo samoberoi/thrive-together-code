@@ -348,8 +348,20 @@ export default function DailyActivityDial({
                     >
                       {it.label}
                     </span>
+                    {!disabled && it.expanded && (
+                      <button
+                        type="button"
+                        onClick={() => setOpenKey(open ? null : it.key)}
+                        aria-expanded={open}
+                        aria-label={`${open ? "Hide" : "Show"} ${it.label} details`}
+                        className="ml-auto shrink-0 inline-flex h-6 w-6 items-center justify-center rounded-full text-white transition-transform"
+                        style={{ backgroundColor: it.color, transform: open ? "rotate(90deg)" : undefined }}
+                      >
+                        <ChevronRight className="w-3.5 h-3.5" strokeWidth={3} />
+                      </button>
+                    )}
                     <span
-                      className="text-[10px] font-black tabular-nums shrink-0"
+                      className="text-[10px] font-black tabular-nums shrink-0 inline-flex justify-end min-w-[34px]"
                       style={{
                         color: complete ? it.color : "hsl(var(--muted-foreground))",
                       }}
@@ -370,18 +382,6 @@ export default function DailyActivityDial({
                   )}
                 </div>
 
-                {!disabled && it.expanded && (
-                  <button
-                    type="button"
-                    onClick={() => setOpenKey(open ? null : it.key)}
-                    aria-expanded={open}
-                    aria-label={`${open ? "Hide" : "Show"} ${it.label} details`}
-                    className="shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-full text-white transition-transform"
-                    style={{ backgroundColor: it.color, transform: open ? "rotate(90deg)" : undefined }}
-                  >
-                    <ChevronRight className="w-4 h-4" strokeWidth={3} />
-                  </button>
-                )}
               </div>
               {open && it.expanded}
               </div>

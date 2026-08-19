@@ -13,6 +13,7 @@ import {
   YAxis,
 } from "recharts";
 import { fetchJoinDate, fetchTrendSeries, todayKey, type TrendMetric, type TrendPoint } from "@/lib/trendsService";
+import StepsShareCard from "@/components/StepsShareCard";
 
 interface MetricDef {
   key: TrendMetric;
@@ -59,10 +60,19 @@ function prettyDate(d: string) {
  * Health-app style trends: one row per metric, tap to slide open an inline
  * chart with Week / Fortnight / Month / Quarter toggles. No dialogs.
  */
-export default function MetricTrendsSection({ userId }: { userId?: string }) {
+export default function MetricTrendsSection({
+  userId,
+  heightCm,
+  weightKg,
+}: {
+  userId?: string;
+  heightCm?: number | null;
+  weightKg?: number | null;
+}) {
   const today = todayKey();
   const [open, setOpen] = useState<TrendMetric | null>(null);
   const [range, setRange] = useState<RangeKey>("W");
+  const [stepsDay, setStepsDay] = useState<string | null>(null);
   const [full, setFull] = useState<Record<TrendMetric, TrendPoint[]>>({
     health: [], weight: [], glucose: [], steps: [],
   });
@@ -188,7 +198,17 @@ export default function MetricTrendsSection({ userId }: { userId?: string }) {
                     <div className="h-48 w-full">
                       {windowed.length > 0 ? (
                         <ResponsiveContainer width="100%" height="100%">
-                          <ComposedChart data={windowed} margin={{ top: 8, right: 6, bottom: 0, left: -12 }} barCategoryGap="22%">
+                          <ComposedChart
+                            data={windowed}
+                            margin={{ top: 8, right: 6, bottom: 0, left: -12 }}
+                            barCategoryGap="22%"
+                            onClick={(state: any) => {
+                              if (m.key !== "steps") return;
+                              const d = state?.activeLabel ? String(state.activeLabel) : null;
+                              if (d) setStepsDay((prev) => (prev === d ? null : d));
+                            }}
+                            style={m.key === "steps" ? { cursor: "pointer" } : undefined}
+                          >
                             <defs>
                               <linearGradient id={`fill-${m.key}`} x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="0%" stopColor={m.color} stopOpacity={0.95} />
@@ -244,6 +264,21 @@ export default function MetricTrendsSection({ userId }: { userId?: string }) {
                         </div>
                       )}
                     </div>
+
+                    {m.key === "steps" && windowed.length > 0 && (
+                      <p className="mt-2 text-[10px] font-semibold text-muted-foreground">
+                        Tap any day to open its steps card and share it.
+                      </p>
+                    )}
+
+                    {m.key === "steps" && stepsDay && (
+                      <StepsShareCard
+                        steps={windowed.find((p) => p.date === stepsDay)?.value ?? 0}
+                        heightCm={heightCm}
+                        weightKg={weightKg}
+                        date={new Date(`${stepsDay}T00:00:00`)}
+                      />
+                    )}
 
                     {windowed.length > 0 && (
                       <div className="grid grid-cols-3 gap-2 mt-3">
