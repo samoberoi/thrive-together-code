@@ -289,6 +289,10 @@ function GlobalRealtimeAlerts() {
       if (next != null) void setAppBadgeCount(next);
       else void syncBadge({ force: true });
 
+      // One action must produce exactly one banner/sound, no matter how many
+      // paths (FCM push, foreground mirror, realtime insert) deliver it.
+      if (!claimNotification(notificationKey(notification))) return;
+
       // Android does not show FCM notification banners while the WebView is in
       // the foreground, so mirror the live database notification into a local
       // native banner. iOS foreground presentation is already handled by APNs.
@@ -306,6 +310,7 @@ function GlobalRealtimeAlerts() {
           playNotificationSound(settings.variant);
         }
       });
+
     });
 
     // Also resync when the user marks notifications read/cleared elsewhere.
