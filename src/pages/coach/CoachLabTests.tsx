@@ -506,7 +506,17 @@ export default function CoachLabTests() {
                       </div>
                     )}
 
+                    <div className="mt-4">
+                      <PastReportsCard
+                        userId={patient.user_id}
+                        uploadedBy={user?.id ?? null}
+                        compact
+                        onChanged={() => { setMarkerRevision((v) => v + 1); void loadData(); }}
+                      />
+                    </div>
+
                     {(patientReports.length > 0 || patientExternal.length > 0) && (
+
                       <div className="mt-4">
                         <button
                           onClick={() => setOpenInvestigation((s) => ({ ...s, [patient.user_id]: !s[patient.user_id] }))}
