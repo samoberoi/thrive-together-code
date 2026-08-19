@@ -467,6 +467,8 @@ export default function AdminDashboard() {
   const { counts: attentionCounts } = useAttentionCounts();
   const adminInitial = (user?.email?.[0] ?? "A").toUpperCase();
   const [adminAllowed, setAdminAllowed] = useState<boolean | null>(null);
+  const [adminAvatar, setAdminAvatar] = useState<string | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -474,6 +476,50 @@ export default function AdminDashboard() {
     isAdminUser(user.id).then((ok) => { if (!cancelled) setAdminAllowed(ok); });
     return () => { cancelled = true; };
   }, [user]);
+
+  // Load the admin's own profile photo (same `profiles.avatar_url` the community feed reads)
+  useEffect(() => {
+    let cancelled = false;
+    if (!user) { setAdminAvatar(null); return; }
+    supabase
+      .from("profiles")
+      .select("avatar_url")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled) setAdminAvatar((data as any)?.avatar_url ?? null);
+      });
+    return () => { cancelled = true; };
+  }, [user]);
+
+  const handleAvatarUpload = useCallback(async (file: File) => {
+    if (!user) return;
+    if (!file.type.startsWith("image/")) { toast.error("Please choose an image file"); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error("Image must be under 5 MB"); return; }
+    setAvatarUploading(true);
+    try {
+      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const path = `${user.id}/avatar.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (upErr) throw upErr;
+      const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
+      const url = `${publicUrl}?v=${Date.now()}`;
+      const { error: profErr } = await supabase
+        .from("profiles")
+        .update({ avatar_url: url } as any)
+        .eq("user_id", user.id);
+      if (profErr) throw profErr;
+      setAdminAvatar(url);
+      toast.success("Profile photo updated");
+    } catch (e: any) {
+      toast.error(e?.message || "Upload failed");
+    } finally {
+      setAvatarUploading(false);
+    }
+  }, [user]);
+
 
 
   useEffect(() => {
