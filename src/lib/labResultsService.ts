@@ -19,6 +19,7 @@ export type LabResult = {
   user_id: string;
   report_id: string | null;
   order_id: string | null;
+  external_report_id?: string | null;
   parameter_code: string;
   parameter_name: string;
   value_numeric: number | null;
