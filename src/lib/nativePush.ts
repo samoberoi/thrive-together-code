@@ -233,6 +233,21 @@ async function attachPushListenersOnce() {
         // path to claim it may show a banner.
         if (!claimNotification(notificationKey({ id, title, body }))) return;
         void LocalNotifications.schedule({
+          notifications: [{
+            id: Math.floor(Date.now() % 2_147_000_000),
+            title,
+            body,
+            sound: "bbdo_chime.wav",
+            channelId: BBDO_PUSH_CHANNEL_ID,
+            schedule: { at: new Date(Date.now() + 250) },
+            autoCancel: true,
+            extra: n.data ?? {},
+          }],
+        }).catch((err) => console.warn("[push] foreground notification failed", err));
+      },
+    );
+
+
 
 
     await PushNotifications.addListener(
