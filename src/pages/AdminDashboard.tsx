@@ -750,6 +750,9 @@ export default function AdminDashboard() {
                     <AdminProfileView
                       email={user?.email}
                       initial={adminInitial}
+                      avatarUrl={adminAvatar}
+                      uploading={avatarUploading}
+                      onPickPhoto={handleAvatarUpload}
                       onSignOut={handleSignOut}
                       onOpenAdmins={() => selectTab("admins")}
                       onOpenRBAC={() => selectTab("rbac")}
