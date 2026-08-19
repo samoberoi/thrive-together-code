@@ -316,9 +316,10 @@ export default function DailyActivityDial({
             const pct = Math.round(Math.max(0, Math.min(1, it.ratio)) * 100);
             const Icon = ICONS[it.key] ?? Heart;
             const accent = complete ? it.color : inProgress ? `${it.color}CC` : undefined;
+            const open = openKey === it.key;
             return (
+              <div key={`leg-${it.key}`} className="min-w-0">
               <div
-                key={`leg-${it.key}`}
                 className={`flex items-center gap-2 min-w-0 ${disabled ? "opacity-55" : ""}`}
               >
                 <span
