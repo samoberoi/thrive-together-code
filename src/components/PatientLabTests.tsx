@@ -732,13 +732,20 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
       })}
 
 
+      {user && (
+        <PastReportsCard
+          userId={user.id}
+          onChanged={async () => { await reloadExternal(); setMarkerRevision((v) => v + 1); }}
+        />
+      )}
+
       {user && (() => {
         const markerCodes = Array.from(new Set([
           ...recs.flatMap((r) => r.product_codes || []),
           ...orders.flatMap((o) => o.product_codes || []),
           ...extReports.flatMap((x) => x.product_codes || []),
         ]));
-        if (!markerCodes.length && reports.length === 0) return null;
+        if (!markerCodes.length && reports.length === 0 && extReports.length === 0) return null;
         return (
           <div className="space-y-3 pt-2">
             <div className="flex items-center gap-2 px-1">
@@ -749,6 +756,7 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
           </div>
         );
       })()}
+
 
       <LabBookingDialog
         open={!!bookingRec}
