@@ -1,4 +1,4 @@
-import { useEffect, useState, lazy, Suspense } from "react";
+import { useEffect, useState, useRef, useCallback, lazy, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
@@ -39,7 +39,12 @@ import {
   Ticket,
   Monitor,
   UtensilsCrossed,
+  Camera,
+  Loader2,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
 
 import NotificationCenter from "@/components/NotificationCenter";
 import SoundToggle from "@/components/SoundToggle";
@@ -323,6 +328,9 @@ const dietTabs = new Set<AdminTab>(["diet", "food_config", "food_condition_rules
 function AdminProfileView({
   email,
   initial,
+  avatarUrl,
+  uploading,
+  onPickPhoto,
   onSignOut,
   onOpenAdmins,
   onOpenRBAC,
@@ -330,11 +338,15 @@ function AdminProfileView({
 }: {
   email: string | null | undefined;
   initial: string;
+  avatarUrl: string | null;
+  uploading: boolean;
+  onPickPhoto: (file: File) => void;
   onSignOut: () => void;
   onOpenAdmins: () => void;
   onOpenRBAC: () => void;
   onOpenNotifications: () => void;
 }) {
+  const fileRef = useRef<HTMLInputElement>(null);
   // Phone-auth uses shadow emails like `{phone}@bbd.app`; show the phone if we can extract it.
   const shadowMatch = email?.match(/^(\d{7,15})@bbd\.app$/i);
   const phone = shadowMatch ? shadowMatch[1] : null;
@@ -346,11 +358,41 @@ function AdminProfileView({
         className="rounded-3xl p-6 flex items-center gap-4"
         style={{ background: "var(--bbdo-blue-soft)", border: "1px solid var(--bbdo-line)" }}
       >
-        <div
-          className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0"
-          style={{ background: "var(--bbdo-blue)", color: "#fff" }}
-        >
-          <span className="font-black text-2xl">{initial}</span>
+        <div className="relative shrink-0">
+          <div
+            className="w-16 h-16 rounded-2xl flex items-center justify-center overflow-hidden"
+            style={{ background: "var(--bbdo-blue)", color: "#fff" }}
+          >
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+              <span className="font-black text-2xl">{initial}</span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading}
+            aria-label="Change profile photo"
+            className="absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-full bg-card border border-border flex items-center justify-center shadow-sm"
+          >
+            {uploading ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+            ) : (
+              <Camera className="w-3.5 h-3.5 text-primary" />
+            )}
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) onPickPhoto(f);
+              e.target.value = "";
+            }}
+          />
         </div>
         <div className="min-w-0">
           <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
@@ -425,6 +467,8 @@ export default function AdminDashboard() {
   const { counts: attentionCounts } = useAttentionCounts();
   const adminInitial = (user?.email?.[0] ?? "A").toUpperCase();
   const [adminAllowed, setAdminAllowed] = useState<boolean | null>(null);
+  const [adminAvatar, setAdminAvatar] = useState<string | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -432,6 +476,59 @@ export default function AdminDashboard() {
     isAdminUser(user.id).then((ok) => { if (!cancelled) setAdminAllowed(ok); });
     return () => { cancelled = true; };
   }, [user]);
+
+  // Load the admin's own profile photo (same `profiles.avatar_url` the community feed reads)
+  useEffect(() => {
+    let cancelled = false;
+    if (!user) { setAdminAvatar(null); return; }
+    supabase
+      .from("profiles")
+      .select("avatar_url")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled) setAdminAvatar((data as any)?.avatar_url ?? null);
+      });
+    return () => { cancelled = true; };
+  }, [user]);
+
+  const handleAvatarUpload = useCallback(async (file: File) => {
+    if (!user) return;
+    if (!file.type.startsWith("image/")) { toast.error("Please choose an image file"); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error("Image must be under 5 MB"); return; }
+    setAvatarUploading(true);
+    try {
+      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const path = `${user.id}/avatar.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (upErr) throw upErr;
+      const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
+      const url = `${publicUrl}?v=${Date.now()}`;
+      const { data: updated, error: profErr } = await supabase
+        .from("profiles")
+        .update({ avatar_url: url } as any)
+        .eq("user_id", user.id)
+        .select("user_id");
+      if (profErr) throw profErr;
+      if (!updated || updated.length === 0) {
+        // No profile row yet (rare for staff accounts) — create one so the
+        // community feed has a photo to show.
+        const { error: insErr } = await supabase
+          .from("profiles")
+          .insert({ user_id: user.id, avatar_url: url } as any);
+        if (insErr) throw insErr;
+      }
+      setAdminAvatar(url);
+      toast.success("Profile photo updated");
+    } catch (e: any) {
+      toast.error(e?.message || "Upload failed");
+    } finally {
+      setAvatarUploading(false);
+    }
+  }, [user]);
+
 
 
   useEffect(() => {
@@ -635,6 +732,7 @@ export default function AdminDashboard() {
         <RoleTopBar
           roleLabel="Super Admin"
           avatarInitial={adminInitial}
+          avatarUrl={adminAvatar}
           profileActive={activeTab === "profile"}
           onProfileClick={() => selectTab("profile")}
           notificationCount={attentionCounts.notifications}
@@ -661,6 +759,9 @@ export default function AdminDashboard() {
                     <AdminProfileView
                       email={user?.email}
                       initial={adminInitial}
+                      avatarUrl={adminAvatar}
+                      uploading={avatarUploading}
+                      onPickPhoto={handleAvatarUpload}
                       onSignOut={handleSignOut}
                       onOpenAdmins={() => selectTab("admins")}
                       onOpenRBAC={() => selectTab("rbac")}
