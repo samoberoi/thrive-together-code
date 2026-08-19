@@ -265,6 +265,21 @@ export default function MetricTrendsSection({
                       )}
                     </div>
 
+                    {m.key === "steps" && windowed.length > 0 && (
+                      <p className="mt-2 text-[10px] font-semibold text-muted-foreground">
+                        Tap any day to open its steps card and share it.
+                      </p>
+                    )}
+
+                    {m.key === "steps" && stepsDay && (
+                      <StepsShareCard
+                        steps={windowed.find((p) => p.date === stepsDay)?.value ?? 0}
+                        heightCm={heightCm}
+                        weightKg={weightKg}
+                        date={new Date(`${stepsDay}T00:00:00`)}
+                      />
+                    )}
+
                     {windowed.length > 0 && (
                       <div className="grid grid-cols-3 gap-2 mt-3">
                         {[
