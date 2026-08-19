@@ -196,7 +196,7 @@ async function getFcmAccessToken(): Promise<{ token: string; projectId: string }
   return { token: cachedFcm.token, projectId: cachedFcm.projectId };
 }
 
-async function sendFcm(deviceToken: string, title: string, body: string, actionUrl: string): Promise<{ ok: boolean; status: number; response: unknown }> {
+async function sendFcm(deviceToken: string, title: string, body: string, actionUrl: string, notificationId?: string | null): Promise<{ ok: boolean; status: number; response: unknown }> {
   const creds = await getFcmAccessToken();
   if (!creds) return { ok: false, status: 0, response: { error: "FCM not configured" } };
   const res = await fetch(`https://fcm.googleapis.com/v1/projects/${creds.projectId}/messages:send`, {
@@ -209,7 +209,11 @@ async function sendFcm(deviceToken: string, title: string, body: string, actionU
       message: {
         token: deviceToken,
         notification: { title, body },
-        data: { action_url: actionUrl, type: "app_notification" },
+        data: {
+          action_url: actionUrl,
+          type: "app_notification",
+          ...(notificationId ? { notificationId } : {}),
+        },
         android: {
           priority: "HIGH",
           notification: {
@@ -218,7 +222,10 @@ async function sendFcm(deviceToken: string, title: string, body: string, actionU
             default_vibrate_timings: true,
             default_light_settings: true,
             notification_priority: "PRIORITY_MAX",
+            // Same notification always replaces itself instead of stacking.
+            ...(notificationId ? { tag: notificationId } : {}),
           },
+          ...(notificationId ? { collapse_key: notificationId } : {}),
         },
       },
     }),
@@ -250,6 +257,7 @@ Deno.serve(async (req) => {
     let title: string;
     let body: string;
     let actionUrl = "/home?tab=profile";
+    let dispatchNotificationId: string | null = null;
     const delaySeconds = validDelaySeconds(raw?.delaySeconds);
 
     if (raw?.backendDispatch === true) {
@@ -287,6 +295,7 @@ Deno.serve(async (req) => {
         return json(410, { ok: false, error: "Notification dispatch window expired" });
       }
 
+      dispatchNotificationId = notificationId;
       targetUserId = (notification as any).user_id;
       title = validText((notification as any).title, 120) ?? "BBDO notification";
       body = validText((notification as any).body, 500) ?? "You have a new app notification.";
@@ -385,7 +394,7 @@ Deno.serve(async (req) => {
     }));
 
     const androidResults = await Promise.all(androidTokens.map(async (row) => {
-      const result = await sendFcm(row.token, title, body, actionUrl);
+      const result = await sendFcm(row.token, title, body, actionUrl, dispatchNotificationId);
       const resp = result.response as any;
       const errStatus = resp?.error?.status ?? resp?.error?.details?.[0]?.errorCode ?? "";
       if (!result.ok && (result.status === 404 || errStatus === "UNREGISTERED" || errStatus === "INVALID_ARGUMENT" || errStatus === "NOT_FOUND")) {
