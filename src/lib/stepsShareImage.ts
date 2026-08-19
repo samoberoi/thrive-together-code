@@ -4,7 +4,7 @@
  * count, the user's height (stride length) and weight (energy cost of walking).
  */
 
-import bbdoLogoAsset from "@/assets/bbdo-logo.png.asset.json";
+import bbdoLogo from "@/assets/logo.png";
 
 /** Stride length in metres. Standard anthropometric estimate: 0.415 × height. */
 export function strideMetres(heightCm?: number | null): number {
