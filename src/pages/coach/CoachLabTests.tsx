@@ -16,6 +16,8 @@ import { useCoachPatientFocus } from "@/lib/coachNav";
 import { createNotification } from "@/lib/notificationService";
 import LabOrderDetails from "@/components/lab/LabOrderDetails";
 import LabHistorySection from "@/components/lab/LabHistorySection";
+import PastReportsCard from "@/components/lab/PastReportsCard";
+
 import { Activity, ChevronDown, ChevronUp, Home, FileText, ExternalLink, Upload, ClipboardEdit } from "lucide-react";
 import LabResultsEntry from "@/components/lab/LabResultsEntry";
 import ExternalTestDialog from "@/components/lab/ExternalTestDialog";
@@ -504,7 +506,17 @@ export default function CoachLabTests() {
                       </div>
                     )}
 
+                    <div className="mt-4">
+                      <PastReportsCard
+                        userId={patient.user_id}
+                        uploadedBy={user?.id ?? null}
+                        compact
+                        onChanged={() => { setMarkerRevision((v) => v + 1); void loadData(); }}
+                      />
+                    </div>
+
                     {(patientReports.length > 0 || patientExternal.length > 0) && (
+
                       <div className="mt-4">
                         <button
                           onClick={() => setOpenInvestigation((s) => ({ ...s, [patient.user_id]: !s[patient.user_id] }))}

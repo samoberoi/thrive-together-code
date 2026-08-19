@@ -19,7 +19,7 @@ interface Props {
 function pickTwoLatestReports(results: LabResult[]) {
   const byReport = new Map<string, LabResult[]>();
   for (const r of results) {
-    const k = r.report_id || r.observed_at.slice(0, 10);
+    const k = r.external_report_id || r.report_id || r.observed_at.slice(0, 10);
     if (!byReport.has(k)) byReport.set(k, []);
     byReport.get(k)!.push(r);
   }

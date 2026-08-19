@@ -48,8 +48,9 @@ export default function ExternalTestDialog({
     if (!open) return;
     setStep(startAtUpload ? "upload" : "intent");
     fetchExternalReportsForUser(userId).then((rows) =>
-      setMine(rows.filter((r) => !recommendationId || r.recommendation_id === recommendationId)),
+      setMine(rows.filter((r) => (recommendationId ? r.recommendation_id === recommendationId : !r.recommendation_id))),
     );
+
   }, [open, startAtUpload, userId, recommendationId]);
 
   async function confirmIntent() {
