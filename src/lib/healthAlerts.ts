@@ -165,10 +165,8 @@ export async function sendLocalHealthAlert(title: string, body: string): Promise
 }
 
 export function fireRealtimeHealthNotificationAlert(notification: RealtimeHealthNotification) {
-  const key = notification.id ?? `${notification.title}:${notification.body}`;
-  if (playedRealtimeAlertIds.has(key)) return;
-  playedRealtimeAlertIds.add(key);
-  window.setTimeout(() => playedRealtimeAlertIds.delete(key), 30_000);
+  if (!claimNotification(notificationKey(notification))) return;
+
 
   if (Capacitor.isNativePlatform()) {
     // The scheduled native notification owns audio on mobile. Playing WebAudio
