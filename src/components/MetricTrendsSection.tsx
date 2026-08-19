@@ -198,7 +198,17 @@ export default function MetricTrendsSection({
                     <div className="h-48 w-full">
                       {windowed.length > 0 ? (
                         <ResponsiveContainer width="100%" height="100%">
-                          <ComposedChart data={windowed} margin={{ top: 8, right: 6, bottom: 0, left: -12 }} barCategoryGap="22%">
+                          <ComposedChart
+                            data={windowed}
+                            margin={{ top: 8, right: 6, bottom: 0, left: -12 }}
+                            barCategoryGap="22%"
+                            onClick={(state: any) => {
+                              if (m.key !== "steps") return;
+                              const d = state?.activeLabel ? String(state.activeLabel) : null;
+                              if (d) setStepsDay((prev) => (prev === d ? null : d));
+                            }}
+                            style={m.key === "steps" ? { cursor: "pointer" } : undefined}
+                          >
                             <defs>
                               <linearGradient id={`fill-${m.key}`} x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="0%" stopColor={m.color} stopOpacity={0.95} />
