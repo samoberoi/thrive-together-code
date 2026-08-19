@@ -16,6 +16,8 @@ import LabBookingDialog from "@/components/lab/LabBookingDialog";
 import { LabTestParametersDialog } from "@/components/lab/LabTestParametersDialog";
 import ExternalTestDialog from "@/components/lab/ExternalTestDialog";
 import LabHistorySection from "@/components/lab/LabHistorySection";
+import PastReportsCard from "@/components/lab/PastReportsCard";
+
 import {
   fetchExternalReportsForUser,
   externalReportUrl,
