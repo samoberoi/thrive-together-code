@@ -1,3 +1,4 @@
+import { useState, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import {
   Timer,
@@ -10,6 +11,7 @@ import {
   Heart,
   Wind,
   ChevronsUp,
+  ChevronRight,
   Sparkles,
   CheckCircle2,
   type LucideIcon,
@@ -23,6 +25,8 @@ export interface DialRingItem {
   hint?: string;
   /** Pillar not unlocked for this user's plan — shown greyed out, not counted. */
   disabled?: boolean;
+  /** Optional panel revealed under this legend row when its arrow is tapped. */
+  expanded?: ReactNode;
 }
 
 
@@ -85,6 +89,7 @@ export default function DailyActivityDial({
   title = "Daily activity",
   size = "md",
 }: Props) {
+  const [openKey, setOpenKey] = useState<string | null>(null);
   const safe = items.filter((i) => Number.isFinite(i.ratio));
   const active = safe.filter((i) => !i.disabled);
   const n = active.length;
@@ -313,9 +318,10 @@ export default function DailyActivityDial({
             const pct = Math.round(Math.max(0, Math.min(1, it.ratio)) * 100);
             const Icon = ICONS[it.key] ?? Heart;
             const accent = complete ? it.color : inProgress ? `${it.color}CC` : undefined;
+            const open = openKey === it.key;
             return (
+              <div key={`leg-${it.key}`} className="min-w-0">
               <div
-                key={`leg-${it.key}`}
                 className={`flex items-center gap-2 min-w-0 ${disabled ? "opacity-55" : ""}`}
               >
                 <span
@@ -364,6 +370,20 @@ export default function DailyActivityDial({
                   )}
                 </div>
 
+                {!disabled && it.expanded && (
+                  <button
+                    type="button"
+                    onClick={() => setOpenKey(open ? null : it.key)}
+                    aria-expanded={open}
+                    aria-label={`${open ? "Hide" : "Show"} ${it.label} details`}
+                    className="shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-full text-white transition-transform"
+                    style={{ backgroundColor: it.color, transform: open ? "rotate(90deg)" : undefined }}
+                  >
+                    <ChevronRight className="w-4 h-4" strokeWidth={3} />
+                  </button>
+                )}
+              </div>
+              {open && it.expanded}
               </div>
             );
           })}

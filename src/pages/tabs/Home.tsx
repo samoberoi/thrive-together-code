@@ -33,6 +33,7 @@ import {
 } from "@/lib/supplementService";
 import { calculateSupplementStreak, checkAndAwardSupplementBadges } from "@/lib/supplementBadgeService";
 import TodayStepsCard from "@/components/TodayStepsCard";
+import StepsShareCard from "@/components/StepsShareCard";
 import AppleHealthSnapshotCard from "@/components/AppleHealthSnapshotCard";
 import AppleHealthEcgCard from "@/components/AppleHealthEcgCard";
 import SleepBreakdownCard from "@/components/SleepBreakdownCard";
@@ -411,6 +412,7 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
    const [movementDone, setMovementDone] = useState(false);
    const [movementRatio, setMovementRatio] = useState(0);
    const [movementHint, setMovementHint] = useState<string>("");
+  const [movementSteps, setMovementSteps] = useState(0);
    const [weightData, setWeightData] = useState<{ v: number }[]>([]);
    const [bpData, setBpData] = useState<{ v: number }[]>([]);
   const [progressSummaries, setProgressSummaries] = useState<ProgressSummary[]>([]);
@@ -639,6 +641,7 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
           setMovementDone(ov.targetSteps > 0 && ov.todaySteps >= ov.targetSteps);
           const ratio = ov.targetSteps > 0 ? Math.min(1, ov.todaySteps / ov.targetSteps) : 0;
           setMovementRatio(ratio);
+          setMovementSteps(ov.todaySteps || 0);
           setMovementHint(`${(ov.todaySteps || 0).toLocaleString("en-IN")} / ${(ov.targetSteps || 0).toLocaleString("en-IN")} steps`);
         } catch {}
       };
@@ -1574,6 +1577,13 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
             ratio: movementRatio,
             color: "#10B981",
             hint: movementHint || undefined,
+            expanded: (
+              <StepsShareCard
+                steps={movementSteps}
+                heightCm={user.bodyMetrics?.height ?? userHeightCm ?? null}
+                weightKg={typeof latestWeight === "number" ? latestWeight : (user.bodyMetrics?.weight ?? null)}
+              />
+            ),
           },
           {
             key: "exercise",
