@@ -5,6 +5,7 @@ import { fetchUnreadCount, subscribeToNotifications, adjustUnreadCount } from "@
 import { playNotificationSound } from "@/lib/soundEngine";
 import { getNotificationSoundSettings } from "@/lib/notificationSoundService";
 import { fireRealtimeHealthNotificationAlert } from "@/lib/healthAlerts";
+import { claimNotification, notificationKey } from "@/lib/notificationDedupe";
 import { isNativePushSupported } from "@/lib/nativePush";
 import AttentionBadge from "@/components/attention/AttentionBadge";
 
@@ -36,7 +37,7 @@ export default function NotificationCenter({ unreadCount: controlledCount }: { u
         if (!s.enabled) return;
         if (notification.type === "health_alert") {
           fireRealtimeHealthNotificationAlert(notification);
-        } else {
+        } else if (claimNotification(notificationKey(notification))) {
           playNotificationSound(s.variant);
         }
       });

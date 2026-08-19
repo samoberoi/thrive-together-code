@@ -14,6 +14,7 @@ import {
 import { getNotificationSoundSettings } from "@/lib/notificationSoundService";
 import { playNotificationSound, setMasterVolume } from "@/lib/soundEngine";
 import { fireRealtimeHealthNotificationAlert } from "@/lib/healthAlerts";
+import { claimNotification, notificationKey } from "@/lib/notificationDedupe";
 import { isNativePushSupported } from "@/lib/nativePush";
 
 const TYPE_CONFIG: Record<string, { icon: React.ElementType; color: string; bg: string }> = {
@@ -83,7 +84,7 @@ export default function NotificationsPanel({ onClose, embedded = false }: Notifi
         if (!s.enabled) return;
         if (n.type === "health_alert") {
           fireRealtimeHealthNotificationAlert(n);
-        } else {
+        } else if (claimNotification(notificationKey(n))) {
           setMasterVolume(s.volume);
           playNotificationSound(s.variant);
         }
