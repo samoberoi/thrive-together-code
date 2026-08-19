@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { createNotification } from "@/lib/notificationService";
 import { getNotificationSoundSettings } from "@/lib/notificationSoundService";
 import { BBDO_PUSH_CHANNEL_ID } from "@/lib/nativePush";
+import { claimNotification, notificationKey } from "@/lib/notificationDedupe";
 import {
   playNotificationSound,
   playSuccess,
@@ -44,7 +45,6 @@ export type RemoteHealthPushResult = {
 };
 
 let localChannelReady = false;
-const playedRealtimeAlertIds = new Set<string>();
 
 export function evaluateHealthAlert(log: Partial<HealthAlertLog>, prevWeight?: number | null): HealthAlertResult | null {
   if (log.log_type === "weight" && log.weight_kg != null) {
@@ -164,8 +164,12 @@ export async function sendLocalHealthAlert(title: string, body: string): Promise
   }
 }
 
-export function fireRealtimeHealthNotificationAlert(notification: RealtimeHealthNotification) {
-  if (!claimNotification(notificationKey(notification))) return;
+export function fireRealtimeHealthNotificationAlert(
+  notification: RealtimeHealthNotification,
+  opts: { alreadyClaimed?: boolean } = {},
+) {
+  // One backend notification = one alert on this device, whichever path wins.
+  if (!opts.alreadyClaimed && !claimNotification(notificationKey(notification))) return;
 
 
   if (Capacitor.isNativePlatform()) {

@@ -306,7 +306,7 @@ function GlobalRealtimeAlerts() {
       void getNotificationSoundSettings().then((settings) => {
         if (!settings.enabled) return;
         if (notification.type === "health_alert") {
-          fireRealtimeHealthNotificationAlert(notification);
+          fireRealtimeHealthNotificationAlert(notification, { alreadyClaimed: true });
         } else {
           playNotificationSound(settings.variant);
         }
