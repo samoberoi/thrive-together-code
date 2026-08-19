@@ -1,3 +1,4 @@
+import { useState, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import {
   Timer,
