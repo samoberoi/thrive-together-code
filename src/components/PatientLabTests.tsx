@@ -532,14 +532,32 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
 
     if (!alwaysShow) return null;
     return (
-      <div className="liquid-glass rounded-2xl p-6 text-center space-y-2">
-        <FlaskConical className="w-8 h-8 text-primary mx-auto" />
-        <h3 className="text-base font-black">Awaiting your coach</h3>
-        <p className="text-sm text-muted-foreground">
-          Your coach will review your health assessment and recommend the right lab panels for your plan. You'll see them here as soon as they're assigned.
-        </p>
+      <div className="space-y-4">
+        <div className="liquid-glass rounded-2xl p-6 text-center space-y-2">
+          <FlaskConical className="w-8 h-8 text-primary mx-auto" />
+          <h3 className="text-base font-black">Awaiting your coach</h3>
+          <p className="text-sm text-muted-foreground">
+            Your coach will review your health assessment and recommend the right lab panels for your plan. You'll see them here as soon as they're assigned.
+          </p>
+        </div>
+        {user && (
+          <PastReportsCard
+            userId={user.id}
+            onChanged={async () => { await reloadExternal(); setMarkerRevision((v) => v + 1); }}
+          />
+        )}
+        {user && extReports.length > 0 && (
+          <div className="space-y-3 pt-1">
+            <div className="flex items-center gap-2 px-1">
+              <FlaskConical className="w-4 h-4 text-primary" />
+              <h3 className="text-sm font-black uppercase tracking-wide">Your markers</h3>
+            </div>
+            <LabHistorySection key={`${user.id}-${markerRevision}`} userId={user.id} expectedProductCodes={[]} />
+          </div>
+        )}
       </div>
     );
+
   }
 
   return (
