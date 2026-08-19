@@ -11,6 +11,7 @@ import {
   Heart,
   Wind,
   ChevronsUp,
+  ChevronRight,
   Sparkles,
   CheckCircle2,
   type LucideIcon,
@@ -88,6 +89,7 @@ export default function DailyActivityDial({
   title = "Daily activity",
   size = "md",
 }: Props) {
+  const [openKey, setOpenKey] = useState<string | null>(null);
   const safe = items.filter((i) => Number.isFinite(i.ratio));
   const active = safe.filter((i) => !i.disabled);
   const n = active.length;
