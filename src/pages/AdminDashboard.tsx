@@ -328,6 +328,9 @@ const dietTabs = new Set<AdminTab>(["diet", "food_config", "food_condition_rules
 function AdminProfileView({
   email,
   initial,
+  avatarUrl,
+  uploading,
+  onPickPhoto,
   onSignOut,
   onOpenAdmins,
   onOpenRBAC,
@@ -335,11 +338,15 @@ function AdminProfileView({
 }: {
   email: string | null | undefined;
   initial: string;
+  avatarUrl: string | null;
+  uploading: boolean;
+  onPickPhoto: (file: File) => void;
   onSignOut: () => void;
   onOpenAdmins: () => void;
   onOpenRBAC: () => void;
   onOpenNotifications: () => void;
 }) {
+  const fileRef = useRef<HTMLInputElement>(null);
   // Phone-auth uses shadow emails like `{phone}@bbd.app`; show the phone if we can extract it.
   const shadowMatch = email?.match(/^(\d{7,15})@bbd\.app$/i);
   const phone = shadowMatch ? shadowMatch[1] : null;
@@ -351,11 +358,41 @@ function AdminProfileView({
         className="rounded-3xl p-6 flex items-center gap-4"
         style={{ background: "var(--bbdo-blue-soft)", border: "1px solid var(--bbdo-line)" }}
       >
-        <div
-          className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0"
-          style={{ background: "var(--bbdo-blue)", color: "#fff" }}
-        >
-          <span className="font-black text-2xl">{initial}</span>
+        <div className="relative shrink-0">
+          <div
+            className="w-16 h-16 rounded-2xl flex items-center justify-center overflow-hidden"
+            style={{ background: "var(--bbdo-blue)", color: "#fff" }}
+          >
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+              <span className="font-black text-2xl">{initial}</span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading}
+            aria-label="Change profile photo"
+            className="absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-full bg-card border border-border flex items-center justify-center shadow-sm"
+          >
+            {uploading ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+            ) : (
+              <Camera className="w-3.5 h-3.5 text-primary" />
+            )}
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) onPickPhoto(f);
+              e.target.value = "";
+            }}
+          />
         </div>
         <div className="min-w-0">
           <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
