@@ -10,6 +10,7 @@
  */
 import { Capacitor, registerPlugin } from "@capacitor/core";
 import { PushNotifications } from "@capacitor/push-notifications";
+import { claimNotification, notificationKey } from "@/lib/notificationDedupe";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -227,6 +228,11 @@ async function attachPushListenersOnce() {
         const body = typeof n.body === "string" && n.body.trim()
           ? n.body.trim()
           : "You have a new notification.";
+        const data = (n.data ?? {}) as Record<string, unknown>;
+        const id = typeof data.notificationId === "string" ? data.notificationId : undefined;
+        // The realtime insert delivers the same notification — only the first
+        // path to claim it may show a banner.
+        if (!claimNotification(notificationKey({ id, title, body }))) return;
         void LocalNotifications.schedule({
           notifications: [{
             id: Math.floor(Date.now() % 2_147_000_000),
@@ -241,6 +247,9 @@ async function attachPushListenersOnce() {
         }).catch((err) => console.warn("[push] foreground notification failed", err));
       },
     );
+
+
+
 
     await PushNotifications.addListener(
       "pushNotificationActionPerformed",

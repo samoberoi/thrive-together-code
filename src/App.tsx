@@ -24,6 +24,7 @@ import { PushNotifications } from "@capacitor/push-notifications";
 import { getNotificationSoundSettings } from "@/lib/notificationSoundService";
 import { playNotificationSound } from "@/lib/soundEngine";
 import { fireRealtimeHealthNotificationAlert, sendLocalHealthAlert } from "@/lib/healthAlerts";
+import { claimNotification, notificationKey } from "@/lib/notificationDedupe";
 import { ensureNativeHealthPermission, scheduleHealthPermissionAutoPrompt } from "@/lib/healthPermissionBootstrap";
 
 import { currentPlatform, isNativePushSupported, registerNativePush } from "@/lib/nativePush";
@@ -289,6 +290,10 @@ function GlobalRealtimeAlerts() {
       if (next != null) void setAppBadgeCount(next);
       else void syncBadge({ force: true });
 
+      // One action must produce exactly one banner/sound, no matter how many
+      // paths (FCM push, foreground mirror, realtime insert) deliver it.
+      if (!claimNotification(notificationKey(notification))) return;
+
       // Android does not show FCM notification banners while the WebView is in
       // the foreground, so mirror the live database notification into a local
       // native banner. iOS foreground presentation is already handled by APNs.
@@ -301,11 +306,12 @@ function GlobalRealtimeAlerts() {
       void getNotificationSoundSettings().then((settings) => {
         if (!settings.enabled) return;
         if (notification.type === "health_alert") {
-          fireRealtimeHealthNotificationAlert(notification);
+          fireRealtimeHealthNotificationAlert(notification, { alreadyClaimed: true });
         } else {
           playNotificationSound(settings.variant);
         }
       });
+
     });
 
     // Also resync when the user marks notifications read/cleared elsewhere.
