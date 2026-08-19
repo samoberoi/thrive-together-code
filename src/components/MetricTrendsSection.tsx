@@ -60,10 +60,19 @@ function prettyDate(d: string) {
  * Health-app style trends: one row per metric, tap to slide open an inline
  * chart with Week / Fortnight / Month / Quarter toggles. No dialogs.
  */
-export default function MetricTrendsSection({ userId }: { userId?: string }) {
+export default function MetricTrendsSection({
+  userId,
+  heightCm,
+  weightKg,
+}: {
+  userId?: string;
+  heightCm?: number | null;
+  weightKg?: number | null;
+}) {
   const today = todayKey();
   const [open, setOpen] = useState<TrendMetric | null>(null);
   const [range, setRange] = useState<RangeKey>("W");
+  const [stepsDay, setStepsDay] = useState<string | null>(null);
   const [full, setFull] = useState<Record<TrendMetric, TrendPoint[]>>({
     health: [], weight: [], glucose: [], steps: [],
   });

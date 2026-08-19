@@ -1688,7 +1688,11 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
 
       {/* ─── Long-run trends since joining (tap to open full graph + date filter) ─── */}
       <div data-tour="trends">
-        <MetricTrendsSection userId={authUser?.id} />
+        <MetricTrendsSection
+          userId={authUser?.id}
+          heightCm={user.bodyMetrics?.height ?? userHeightCm ?? null}
+          weightKg={typeof latestWeight === "number" ? latestWeight : (user.bodyMetrics?.weight ?? null)}
+        />
       </div>
 
 
