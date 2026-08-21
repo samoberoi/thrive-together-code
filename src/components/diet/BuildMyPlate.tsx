@@ -15,6 +15,7 @@ import { renderPlate } from "@/lib/plateRenderer";
 import {
   type FoodFilter, type FoodItem, type DietType,
   giLabel, giClass, avgOf, sugarSpikeRisk, portionFactor, portionLabel, scaleCalories, scaleMacro,
+  normalizeDietPref, dietAllowsItem,
 } from "./dietTypes";
 import { useUserDietProfile, isFoodBlockedByDietProfile } from "@/hooks/useUserDietProfile";
 
