@@ -16,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const APP_VERSION = (globalThis as any).__APP_VERSION__ ?? "1.0.0";
-export const BBDO_PUSH_CHANNEL_ID = "bbdo-alerts-v14";
+export const BBDO_PUSH_CHANNEL_ID = "bbdo-alerts-v15";
 // Force one authoritative FCM token rotation after the backend-project move.
 // This prevents a token accepted by the old sender from remaining attached to
 // the same installation after native dispatch is rebound to the new backend.
@@ -238,7 +238,7 @@ async function attachPushListenersOnce() {
             id: Math.floor(Date.now() % 2_147_000_000),
             title,
             body,
-            sound: "bbdo_chime.wav",
+            sound: "bbdo_chime",
             channelId: BBDO_PUSH_CHANNEL_ID,
             schedule: { at: new Date(Date.now() + 250) },
             autoCancel: true,
@@ -341,7 +341,7 @@ export async function registerNativePush(
           visibility: 1,
           vibration: true,
           lights: true,
-          sound: "bbdo_chime.wav",
+          sound: "bbdo_chime",
         } as const;
         await PushNotifications.createChannel(channel);
         await LocalNotifications.createChannel(channel);
