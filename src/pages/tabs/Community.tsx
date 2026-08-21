@@ -5,7 +5,7 @@ import {
   Heart, MessageCircle, Users, Send, Plus,
   Loader2, Trash2, Trophy, Flame, TrendingDown, TrendingUp, X, Sparkles,
   Footprints, Utensils, Award, Activity, Wind, Scale, HeartPulse, Star,
-  ImagePlus,
+  ImagePlus, Check,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { LoadingState, EmptyState } from "@/components/shared";
