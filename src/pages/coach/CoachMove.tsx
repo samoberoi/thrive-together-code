@@ -211,7 +211,7 @@ export default function CoachMove() {
 
       <div className="flex gap-2 overflow-x-auto -mx-4 px-4 sm:-mx-6 sm:px-6 pb-1 no-scrollbar">
         {([
-          { id: "clients" as const, label: `Clients (${clients.length})`, Icon: Activity },
+          { id: "clients" as const, label: `Clients (${patients.length})`, Icon: Activity },
           { id: "mine" as const, label: "My Movement", Icon: Footprints },
         ]).map(({ id, label, Icon }) => (
           <button
@@ -236,7 +236,7 @@ export default function CoachMove() {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
-          placeholder={`Search ${clients.length} client${clients.length === 1 ? "" : "s"}…`}
+          placeholder={`Search ${patients.length} client${patients.length === 1 ? "" : "s"}…`}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="pl-9 h-11 rounded-2xl"

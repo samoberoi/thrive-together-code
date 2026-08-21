@@ -291,7 +291,7 @@ export default function CoachLabTests() {
     if (selectedTests.size === 0) return;
     const existing = openRecFor(patient.user_id);
     if (existing) {
-      toast.error(`${client.name} already has an active lab test. Withdraw it before assigning another.`);
+      toast.error(`${patient.name} already has an active lab test. Withdraw it before assigning another.`);
       return;
     }
     setSubmitting(true);
@@ -307,7 +307,7 @@ export default function CoachLabTests() {
         notes: notes.trim() || null,
       });
       if (error) {
-        if ((error as any).code === "23505") throw new Error(`${client.name} already has an active lab test. Withdraw it before assigning another.`);
+        if ((error as any).code === "23505") throw new Error(`${patient.name} already has an active lab test. Withdraw it before assigning another.`);
         throw error;
       }
 
@@ -320,7 +320,7 @@ export default function CoachLabTests() {
         action_url: "/dashboard?tab=profile&section=lab-tests",
       });
 
-      toast.success(`Sent to ${client.name}`);
+      toast.success(`Sent to ${patient.name}`);
       setSelectedTests(new Set()); setNotes(""); setPickerOpen(false); setPatientSearch(""); setAssigningPatient(null); setAssignSearch("");
       await loadData();
     } catch (e: any) {
@@ -365,7 +365,7 @@ export default function CoachLabTests() {
       </div>
 
       <div className="flex gap-2 overflow-x-auto -mx-4 px-4 md:-mx-6 md:px-6 pb-1 no-scrollbar">
-        {([{ id: "clients" as const, label: `👥 Clients (${clients.length})` }, { id: "mine" as const, label: "🩺 My Tests" }, { id: "tests" as const, label: `🧪 Catalog (${tests.length})` }]).map((item) => (
+        {([{ id: "clients" as const, label: `👥 Clients (${patients.length})` }, { id: "mine" as const, label: "🩺 My Tests" }, { id: "tests" as const, label: `🧪 Catalog (${tests.length})` }]).map((item) => (
           <button key={item.id} onClick={() => setView(item.id)} className={`shrink-0 px-3.5 py-2 rounded-2xl text-[13px] font-semibold whitespace-nowrap transition-colors ${view === item.id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>{item.label}</button>
         ))}
       </div>
@@ -386,7 +386,7 @@ export default function CoachLabTests() {
         <div className="space-y-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input placeholder={`Search ${clients.length} client${clients.length === 1 ? "" : "s"}…`} value={patientSearch} onChange={(e) => setPatientSearch(e.target.value)} className="pl-9 h-11 rounded-2xl" />
+            <Input placeholder={`Search ${patients.length} client${patients.length === 1 ? "" : "s"}…`} value={patientSearch} onChange={(e) => setPatientSearch(e.target.value)} className="pl-9 h-11 rounded-2xl" />
           </div>
           {patients.length === 0 ? <div className="liquid-glass rounded-3xl p-10 text-center text-muted-foreground">No clients assigned.</div> : filteredPatients.length === 0 ? <div className="liquid-glass rounded-3xl p-8 text-center text-sm text-muted-foreground">No patients match "{patientSearch}".</div> : filteredPatients.map((patient) => {
             const recs = recommendations[patient.user_id] ?? [];
@@ -537,7 +537,7 @@ export default function CoachLabTests() {
                         </button>
                         {openInvestigation[patient.user_id] && (
                           <div className="mt-3">
-                            <LabHistorySection key={`${client.user_id}-${markerRevision}`} userId={patient.user_id} patientName={patient.name} expectedProductCodes={Array.from(new Set([...recs.flatMap((rc: any) => rc.product_codes || []), ...patientExternal.flatMap((report) => report.product_codes || [])]))} />
+                            <LabHistorySection key={`${patient.user_id}-${markerRevision}`} userId={patient.user_id} patientName={patient.name} expectedProductCodes={Array.from(new Set([...recs.flatMap((rc: any) => rc.product_codes || []), ...patientExternal.flatMap((report) => report.product_codes || [])]))} />
                           </div>
                         )}
                       </div>
@@ -595,7 +595,7 @@ export default function CoachLabTests() {
       <Sheet open={pickerOpen} onOpenChange={(o) => { setPickerOpen(o); if (!o) setPatientSearch(""); }}>
         <SheetContent side="bottom" className="rounded-t-3xl p-0 max-h-[85vh] flex flex-col">
           <SheetHeader className="px-4 pt-4 pb-2 text-left"><SheetTitle>Recommend to client</SheetTitle><p className="text-xs text-muted-foreground">{chosenTests.length} test{chosenTests.length > 1 ? "s" : ""} · ₹{totalPrice.toLocaleString("en-IN")}</p></SheetHeader>
-          <div className="px-4 pb-2"><div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><Input placeholder={`Search ${clients.length} client${clients.length === 1 ? "" : "s"}…`} value={patientSearch} onChange={(e) => setPatientSearch(e.target.value)} className="pl-9 h-11 rounded-xl" /></div></div>
+          <div className="px-4 pb-2"><div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><Input placeholder={`Search ${patients.length} client${patients.length === 1 ? "" : "s"}…`} value={patientSearch} onChange={(e) => setPatientSearch(e.target.value)} className="pl-9 h-11 rounded-xl" /></div></div>
           <div className="px-4 pb-2"><Textarea placeholder="Notes for the client (optional)…" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="resize-none rounded-xl" /></div>
           <div className="flex-1 overflow-y-auto px-2 pb-4">{patients.length === 0 ? <div className="text-center text-sm text-muted-foreground py-10">No assigned clients yet.</div> : filteredPatients.length === 0 ? <div className="text-center text-sm text-muted-foreground py-10">No patients match "{patientSearch}".</div> : <ul className="divide-y divide-border">{filteredPatients.map((p) => { const blocked = !!openRecFor(p.user_id); return (<li key={p.user_id}><button disabled={submitting || blocked} onClick={() => sendTo(p)} className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-accent disabled:opacity-50 transition-colors text-left"><div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm shrink-0">{initials(p.name) || <UserIcon className="w-4 h-4" />}</div><div className="flex-1 min-w-0"><div className="font-medium text-sm truncate">{p.name}</div>{blocked && <div className="text-[10px] text-muted-foreground truncate">Already has an active test</div>}</div>{blocked ? <span className="text-[10px] font-semibold text-muted-foreground shrink-0">Blocked</span> : <Send className="w-4 h-4 text-muted-foreground shrink-0" />}</button></li>); })}</ul>}</div>
         </SheetContent>

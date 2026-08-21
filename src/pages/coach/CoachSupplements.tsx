@@ -452,7 +452,7 @@ export default function CoachSupplements() {
                 ? `Protocols (${Object.keys(conditionGroups).length})`
                 : v === "mine"
                   ? "My Supplements"
-                  : `Clients (${clients.length})`}
+                  : `Clients (${patients.length})`}
             </span>
           </button>
         ))}

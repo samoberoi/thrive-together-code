@@ -176,7 +176,7 @@ export default function CoachFasting() {
           >
             <span className="inline-flex items-center gap-1.5">
               {v === "clients" ? <Users className="w-4 h-4" /> : v === "mine" ? <Timer className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
-              {v === "clients" ? `Clients (${clients.length})` : v === "mine" ? "My Fasting" : "Protocols"}
+              {v === "clients" ? `Clients (${patients.length})` : v === "mine" ? "My Fasting" : "Protocols"}
             </span>
           </button>
         ))}
@@ -288,7 +288,7 @@ export default function CoachFasting() {
           })()}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input placeholder={`Search ${clients.length} client${clients.length === 1 ? "" : "s"}…`} value={patientSearch} onChange={(e) => setPatientSearch(e.target.value)} className="pl-9 h-11 rounded-2xl" />
+            <Input placeholder={`Search ${patients.length} client${patients.length === 1 ? "" : "s"}…`} value={patientSearch} onChange={(e) => setPatientSearch(e.target.value)} className="pl-9 h-11 rounded-2xl" />
           </div>
           {(() => {
             const q = patientSearch.trim().toLowerCase();
