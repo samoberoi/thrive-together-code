@@ -750,7 +750,7 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
         .maybeSingle();
       const coachRow: any = (assignment as any)?.coaches ?? null;
       const coachUserId: string | null = coachRow?.user_id ?? null;
-      const patientFirstName = (name || currentProfile?.name || "Your patient").split(" ")[0];
+      const patientFirstName = (name || currentProfile?.name || "Your client").split(" ")[0];
 
       const scoreDelta = previousScore !== null ? newScore - previousScore : 0;
 
@@ -821,7 +821,7 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
     setSaving(false);
     if (ok) {
       if (coachMode) {
-        toast.success("Patient profile updated");
+        toast.success("Client profile updated");
       } else {
         const delta = newScore - initialScore;
         const deltaStr = delta > 0 ? `+${delta}` : `${delta}`;
@@ -850,7 +850,7 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
           <ArrowLeft className="w-4 h-4 text-foreground" strokeWidth={1.8} />
         </button>
         <h2 className="min-w-0 text-lg font-black text-foreground leading-tight break-words">
-          {coachMode ? `Edit — ${targetName || "Patient"}` : "Edit Profile"}
+          {coachMode ? `Edit — ${targetName || "Client"}` : "Edit Profile"}
         </h2>
 
       </div>
@@ -1395,7 +1395,7 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
             List of Symptoms
           </h3>
           <p className="text-[11px] text-muted-foreground leading-relaxed">
-            Tick anything currently experienced. {coachMode ? "Visible to the patient too." : "Your coach can see and update this."}
+            Tick anything currently experienced. {coachMode ? "Visible to the client too." : "Your coach can see and update this."}
           </p>
           <SymptomsChecklist
             selectedKeys={symptomKeys}
@@ -1431,7 +1431,7 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
           <div className="w-full max-w-sm bg-background rounded-2xl p-5 shadow-2xl ring-1 ring-border/60" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-foreground font-black text-base">Save changes?</h3>
             <p className="text-muted-foreground text-sm mt-1">
-              You're overriding {targetName || "the patient"}'s profile. Continue?
+              You're overriding {targetName || "the client"}'s profile. Continue?
             </p>
             <div className="mt-4 flex gap-2">
               <button

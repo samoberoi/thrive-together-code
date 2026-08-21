@@ -129,7 +129,7 @@ export default function CoachVideoAssignPage({ module }: Props) {
       } catch (e: any) {
         if (!cancelled) {
           console.warn("[CoachVideoAssignPage] load error", e);
-          toast.error(e?.message || "Failed to load patients");
+          toast.error(e?.message || "Failed to load clients");
           setPatients([]);
           setLoading(false);
         }
@@ -195,8 +195,8 @@ export default function CoachVideoAssignPage({ module }: Props) {
   const title = module === "yoga" ? "Yoga" : "Train";
   const description =
     module === "yoga"
-      ? "Assign yoga videos to your patients. Anyone without an assignment sees an awaiting state."
-      : "Assign exercises to your patients. Anyone without an assignment sees an awaiting state.";
+      ? "Assign yoga videos to your clients. Anyone without an assignment sees an awaiting state."
+      : "Assign exercises to your clients. Anyone without an assignment sees an awaiting state.";
 
   if (loading) {
     return (
@@ -219,11 +219,11 @@ export default function CoachVideoAssignPage({ module }: Props) {
       </div>
 
       {patients.length === 0 ? (
-        <EmptyState icon={Users} title="No patients yet" description="Patients assigned to you will appear here." />
+        <EmptyState icon={Users} title="No clients yet" description="Clients assigned to you will appear here." />
       ) : (
         <>
           <Input
-            placeholder="Search patient by name or phone…"
+            placeholder="Search client by name or phone…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />

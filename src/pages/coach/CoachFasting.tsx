@@ -23,11 +23,11 @@ import UserFasting from "@/components/UserFasting";
 import { useCoachPatientFocus } from "@/lib/coachNav";
 
 
-type View = "protocols" | "patients" | "mine";
+type View = "protocols" | "clients" | "mine";
 
 export default function CoachFasting() {
   const { user } = useAuth();
-  const [view, setView] = useState<View>("patients");
+  const [view, setView] = useState<View>("clients");
   const [patients, setPatients] = useState<any[]>([]);
   const [subscriptions, setSubscriptions] = useState<Record<string, { plan_id: string | null; started_at: string | null; expires_at: string | null }>>({});
   const [protocols, setProtocols] = useState<FastingProtocol[]>([]);
@@ -44,7 +44,7 @@ export default function CoachFasting() {
 
   // "Manage" from a patient profile lands directly on that patient's detail.
   useCoachPatientFocus("fasting", (patientId) => {
-    setView("patients");
+    setView("clients");
     setPatientSearch("");
     setExpandedPatient(patientId);
   });
@@ -166,7 +166,7 @@ export default function CoachFasting() {
 
       {/* Tab switcher */}
       <div className="flex gap-2 overflow-x-auto -mx-4 px-4 pb-1 no-scrollbar">
-        {(["patients", "mine", "protocols"] as View[]).map((v) => (
+        {(["clients", "mine", "protocols"] as View[]).map((v) => (
           <button
             key={v}
             onClick={() => setView(v)}
@@ -175,8 +175,8 @@ export default function CoachFasting() {
             }`}
           >
             <span className="inline-flex items-center gap-1.5">
-              {v === "patients" ? <Users className="w-4 h-4" /> : v === "mine" ? <Timer className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
-              {v === "patients" ? `Patients (${patients.length})` : v === "mine" ? "My Fasting" : "Protocols"}
+              {v === "clients" ? <Users className="w-4 h-4" /> : v === "mine" ? <Timer className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
+              {v === "clients" ? `Clients (${clients.length})` : v === "mine" ? "My Fasting" : "Protocols"}
             </span>
           </button>
         ))}
@@ -253,7 +253,7 @@ export default function CoachFasting() {
       )}
 
       {/* Patients View — compact rows with search; expand for detail */}
-      {view === "patients" && (
+      {view === "clients" && (
         <div className="space-y-3">
           {(() => {
             const assignedCount = patients.filter((p: any) => !!patientProtocols[p.user_id]).length;
@@ -263,7 +263,7 @@ export default function CoachFasting() {
                 <div className="flex items-baseline justify-between mb-2 gap-3">
                   <div className="flex items-baseline gap-2 min-w-0">
                     <span className="text-2xl font-black text-foreground leading-none">{patients.length}</span>
-                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold no-break">Total patients</span>
+                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold no-break">Total clients</span>
                   </div>
                   <div className="flex items-center gap-3 text-[11px] font-bold shrink-0">
                     <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 no-break">
@@ -288,12 +288,12 @@ export default function CoachFasting() {
           })()}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input placeholder={`Search ${patients.length} patient${patients.length === 1 ? "" : "s"}…`} value={patientSearch} onChange={(e) => setPatientSearch(e.target.value)} className="pl-9 h-11 rounded-2xl" />
+            <Input placeholder={`Search ${clients.length} client${clients.length === 1 ? "" : "s"}…`} value={patientSearch} onChange={(e) => setPatientSearch(e.target.value)} className="pl-9 h-11 rounded-2xl" />
           </div>
           {(() => {
             const q = patientSearch.trim().toLowerCase();
             const filtered = q ? patients.filter((p: any) => (p.name || "").toLowerCase().includes(q) || (p.phone || "").toLowerCase().includes(q)) : patients;
-            if (patients.length === 0) return <div className="liquid-glass rounded-3xl p-10 text-center text-muted-foreground">No patients assigned.</div>;
+            if (patients.length === 0) return <div className="liquid-glass rounded-3xl p-10 text-center text-muted-foreground">No clients assigned.</div>;
             if (filtered.length === 0) return <div className="liquid-glass rounded-3xl p-8 text-center text-sm text-muted-foreground">No patients match "{patientSearch}".</div>;
             return filtered.map((patient: any) => {
               const up = patientProtocols[patient.user_id];

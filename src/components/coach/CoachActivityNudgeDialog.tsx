@@ -60,7 +60,7 @@ export default function CoachActivityNudgeDialog({
         type: "coach_nudge",
         icon: "👋",
       });
-      toast.success(`Nudge sent to ${p.name ?? "patient"}`);
+      toast.success(`Nudge sent to ${p.name ?? "client"}`);
     } catch {
       toast.error("Could not send nudge");
     } finally {
@@ -81,7 +81,7 @@ export default function CoachActivityNudgeDialog({
           icon: "👋",
         })
       ));
-      toast.success(`Nudge sent to ${pending.length} patient${pending.length > 1 ? "s" : ""}`);
+      toast.success(`Nudge sent to ${pending.length} client${pending.length > 1 ? "s" : ""}`);
     } catch {
       toast.error("Some nudges could not be sent");
     } finally {
@@ -163,7 +163,7 @@ export default function CoachActivityNudgeDialog({
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-foreground font-semibold text-sm truncate">
-                        {p.name ?? "Patient"}
+                        {p.name ?? "Client"}
                       </p>
                       {p.progress && (
                         <div className="mt-1 flex items-center gap-1.5">

@@ -25,7 +25,7 @@ import { fetchExternalReportsForUsers, externalReportUrl, parseExternalReport, t
 
 import PatientLabTests from "@/components/PatientLabTests";
 
-type View = "patients" | "tests" | "mine";
+type View = "clients" | "tests" | "mine";
 
 type Test = {
   id: string;
@@ -111,7 +111,7 @@ function statusClass(label: string) {
 
 export default function CoachLabTests() {
   const { user } = useAuth();
-  const [view, setView] = useState<View>("patients");
+  const [view, setView] = useState<View>("clients");
   const [tests, setTests] = useState<Test[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [recommendations, setRecommendations] = useState<Record<string, Recommendation[]>>({});
@@ -133,7 +133,7 @@ export default function CoachLabTests() {
 
   // "Manage" from a patient profile lands directly on that patient's detail.
   useCoachPatientFocus("labtests", (patientId) => {
-    setView("patients");
+    setView("clients");
     setPatientSearch("");
     setExpandedPatient(patientId);
   });
@@ -222,7 +222,7 @@ export default function CoachLabTests() {
       for (const s of ((subRows as any[]) || [])) subMap.set(s.user_id, s);
       setPatients(((profs as any[]) || []).map((p) => {
         const s = subMap.get(p.user_id);
-        return { user_id: p.user_id, name: p.name || "Patient", phone: p.phone || null, avatar_url: p.avatar_url || null, plan_id: s?.plan_id ?? null, started_at: s?.started_at ?? null, expires_at: s?.expires_at ?? null };
+        return { user_id: p.user_id, name: p.name || "Client", phone: p.phone || null, avatar_url: p.avatar_url || null, plan_id: s?.plan_id ?? null, started_at: s?.started_at ?? null, expires_at: s?.expires_at ?? null };
       }).sort((a, b) => a.name.localeCompare(b.name)));
 
       const recMap: Record<string, Recommendation[]> = {};
@@ -291,7 +291,7 @@ export default function CoachLabTests() {
     if (selectedTests.size === 0) return;
     const existing = openRecFor(patient.user_id);
     if (existing) {
-      toast.error(`${patient.name} already has an active lab test. Withdraw it before assigning another.`);
+      toast.error(`${client.name} already has an active lab test. Withdraw it before assigning another.`);
       return;
     }
     setSubmitting(true);
@@ -307,7 +307,7 @@ export default function CoachLabTests() {
         notes: notes.trim() || null,
       });
       if (error) {
-        if ((error as any).code === "23505") throw new Error(`${patient.name} already has an active lab test. Withdraw it before assigning another.`);
+        if ((error as any).code === "23505") throw new Error(`${client.name} already has an active lab test. Withdraw it before assigning another.`);
         throw error;
       }
 
@@ -320,7 +320,7 @@ export default function CoachLabTests() {
         action_url: "/dashboard?tab=profile&section=lab-tests",
       });
 
-      toast.success(`Sent to ${patient.name}`);
+      toast.success(`Sent to ${client.name}`);
       setSelectedTests(new Set()); setNotes(""); setPickerOpen(false); setPatientSearch(""); setAssigningPatient(null); setAssignSearch("");
       await loadData();
     } catch (e: any) {
@@ -351,7 +351,7 @@ export default function CoachLabTests() {
           );
         })}
       </div>
-      <Textarea placeholder="Notes for the patient (optional)…" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="resize-none rounded-xl" />
+      <Textarea placeholder="Notes for the client (optional)…" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="resize-none rounded-xl" />
     </div>
   );
 
@@ -361,11 +361,11 @@ export default function CoachLabTests() {
     <div className="p-4 md:p-6 space-y-6 pb-40">
       <div>
         <h1 className="text-2xl md:text-3xl font-black tracking-tight flex items-center gap-2"><FlaskConical className="w-7 h-7 text-primary" /> Lab Tests</h1>
-        <p className="text-muted-foreground text-sm mt-1">Assign tests by patient and track booking, collection and result status.</p>
+        <p className="text-muted-foreground text-sm mt-1">Assign tests by client and track booking, collection and result status.</p>
       </div>
 
       <div className="flex gap-2 overflow-x-auto -mx-4 px-4 md:-mx-6 md:px-6 pb-1 no-scrollbar">
-        {([{ id: "patients" as const, label: `👥 Patients (${patients.length})` }, { id: "mine" as const, label: "🩺 My Tests" }, { id: "tests" as const, label: `🧪 Catalog (${tests.length})` }]).map((item) => (
+        {([{ id: "clients" as const, label: `👥 Clients (${clients.length})` }, { id: "mine" as const, label: "🩺 My Tests" }, { id: "tests" as const, label: `🧪 Catalog (${tests.length})` }]).map((item) => (
           <button key={item.id} onClick={() => setView(item.id)} className={`shrink-0 px-3.5 py-2 rounded-2xl text-[13px] font-semibold whitespace-nowrap transition-colors ${view === item.id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>{item.label}</button>
         ))}
       </div>
@@ -382,13 +382,13 @@ export default function CoachLabTests() {
         </div>
       )}
 
-      {view === "patients" && (
+      {view === "clients" && (
         <div className="space-y-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input placeholder={`Search ${patients.length} patient${patients.length === 1 ? "" : "s"}…`} value={patientSearch} onChange={(e) => setPatientSearch(e.target.value)} className="pl-9 h-11 rounded-2xl" />
+            <Input placeholder={`Search ${clients.length} client${clients.length === 1 ? "" : "s"}…`} value={patientSearch} onChange={(e) => setPatientSearch(e.target.value)} className="pl-9 h-11 rounded-2xl" />
           </div>
-          {patients.length === 0 ? <div className="liquid-glass rounded-3xl p-10 text-center text-muted-foreground">No patients assigned.</div> : filteredPatients.length === 0 ? <div className="liquid-glass rounded-3xl p-8 text-center text-sm text-muted-foreground">No patients match "{patientSearch}".</div> : filteredPatients.map((patient) => {
+          {patients.length === 0 ? <div className="liquid-glass rounded-3xl p-10 text-center text-muted-foreground">No clients assigned.</div> : filteredPatients.length === 0 ? <div className="liquid-glass rounded-3xl p-8 text-center text-sm text-muted-foreground">No patients match "{patientSearch}".</div> : filteredPatients.map((patient) => {
             const recs = recommendations[patient.user_id] ?? [];
             const patientOrders = orders[patient.user_id] ?? [];
             const patientReports = reports[patient.user_id] ?? [];
@@ -473,11 +473,11 @@ export default function CoachLabTests() {
                                     <div className="rounded-xl bg-background/70 ring-1 ring-primary/20 p-2.5 space-y-2">
                                       <div className="flex items-center gap-1.5">
                                         <Home className="w-3.5 h-3.5 text-primary shrink-0" />
-                                        <span className="text-[11px] font-black">Patient is getting this done outside</span>
+                                        <span className="text-[11px] font-black">Client is getting this done outside</span>
                                       </div>
                                       {rec.external_note && <p className="text-[11px] text-muted-foreground italic">{rec.external_note}</p>}
                                       {recExt.length === 0 ? (
-                                        <p className="text-[11px] text-muted-foreground">No report uploaded yet. Nudge the patient, or upload it yourself.</p>
+                                        <p className="text-[11px] text-muted-foreground">No report uploaded yet. Nudge the client, or upload it yourself.</p>
                                       ) : recExt.map((x) => (
                                         <div key={x.id} className="flex items-center gap-2 rounded-lg bg-muted/50 p-2">
                                           <FileText className="w-3.5 h-3.5 text-primary shrink-0" />
@@ -537,7 +537,7 @@ export default function CoachLabTests() {
                         </button>
                         {openInvestigation[patient.user_id] && (
                           <div className="mt-3">
-                            <LabHistorySection key={`${patient.user_id}-${markerRevision}`} userId={patient.user_id} patientName={patient.name} expectedProductCodes={Array.from(new Set([...recs.flatMap((rc: any) => rc.product_codes || []), ...patientExternal.flatMap((report) => report.product_codes || [])]))} />
+                            <LabHistorySection key={`${client.user_id}-${markerRevision}`} userId={patient.user_id} patientName={patient.name} expectedProductCodes={Array.from(new Set([...recs.flatMap((rc: any) => rc.product_codes || []), ...patientExternal.flatMap((report) => report.product_codes || [])]))} />
                           </div>
                         )}
                       </div>
@@ -589,15 +589,15 @@ export default function CoachLabTests() {
       )}
 
       {view === "tests" && selectedTests.size > 0 && (
-        <motion.div initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="fixed left-0 right-0 bottom-0 md:left-64 z-40 px-4 pb-4 pointer-events-none"><div className="liquid-glass rounded-2xl p-4 shadow-2xl border border-border pointer-events-auto max-w-2xl mx-auto"><div className="flex items-center justify-between mb-3"><div><div className="text-sm font-semibold">{selectedTests.size} test{selectedTests.size > 1 ? "s" : ""} selected</div><div className="text-xs text-muted-foreground">Total ₹{totalPrice.toLocaleString("en-IN")}</div></div><button onClick={() => setSelectedTests(new Set())} className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1"><X className="w-3.5 h-3.5" /> Clear</button></div><Button onClick={() => setPickerOpen(true)} disabled={submitting} className="w-full h-12 rounded-xl" size="lg"><Send className="w-4 h-4 mr-2" /> Recommend to patient</Button></div></motion.div>
+        <motion.div initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="fixed left-0 right-0 bottom-0 md:left-64 z-40 px-4 pb-4 pointer-events-none"><div className="liquid-glass rounded-2xl p-4 shadow-2xl border border-border pointer-events-auto max-w-2xl mx-auto"><div className="flex items-center justify-between mb-3"><div><div className="text-sm font-semibold">{selectedTests.size} test{selectedTests.size > 1 ? "s" : ""} selected</div><div className="text-xs text-muted-foreground">Total ₹{totalPrice.toLocaleString("en-IN")}</div></div><button onClick={() => setSelectedTests(new Set())} className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1"><X className="w-3.5 h-3.5" /> Clear</button></div><Button onClick={() => setPickerOpen(true)} disabled={submitting} className="w-full h-12 rounded-xl" size="lg"><Send className="w-4 h-4 mr-2" /> Recommend to client</Button></div></motion.div>
       )}
 
       <Sheet open={pickerOpen} onOpenChange={(o) => { setPickerOpen(o); if (!o) setPatientSearch(""); }}>
         <SheetContent side="bottom" className="rounded-t-3xl p-0 max-h-[85vh] flex flex-col">
-          <SheetHeader className="px-4 pt-4 pb-2 text-left"><SheetTitle>Recommend to patient</SheetTitle><p className="text-xs text-muted-foreground">{chosenTests.length} test{chosenTests.length > 1 ? "s" : ""} · ₹{totalPrice.toLocaleString("en-IN")}</p></SheetHeader>
-          <div className="px-4 pb-2"><div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><Input placeholder={`Search ${patients.length} patient${patients.length === 1 ? "" : "s"}…`} value={patientSearch} onChange={(e) => setPatientSearch(e.target.value)} className="pl-9 h-11 rounded-xl" /></div></div>
-          <div className="px-4 pb-2"><Textarea placeholder="Notes for the patient (optional)…" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="resize-none rounded-xl" /></div>
-          <div className="flex-1 overflow-y-auto px-2 pb-4">{patients.length === 0 ? <div className="text-center text-sm text-muted-foreground py-10">No assigned patients yet.</div> : filteredPatients.length === 0 ? <div className="text-center text-sm text-muted-foreground py-10">No patients match "{patientSearch}".</div> : <ul className="divide-y divide-border">{filteredPatients.map((p) => { const blocked = !!openRecFor(p.user_id); return (<li key={p.user_id}><button disabled={submitting || blocked} onClick={() => sendTo(p)} className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-accent disabled:opacity-50 transition-colors text-left"><div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm shrink-0">{initials(p.name) || <UserIcon className="w-4 h-4" />}</div><div className="flex-1 min-w-0"><div className="font-medium text-sm truncate">{p.name}</div>{blocked && <div className="text-[10px] text-muted-foreground truncate">Already has an active test</div>}</div>{blocked ? <span className="text-[10px] font-semibold text-muted-foreground shrink-0">Blocked</span> : <Send className="w-4 h-4 text-muted-foreground shrink-0" />}</button></li>); })}</ul>}</div>
+          <SheetHeader className="px-4 pt-4 pb-2 text-left"><SheetTitle>Recommend to client</SheetTitle><p className="text-xs text-muted-foreground">{chosenTests.length} test{chosenTests.length > 1 ? "s" : ""} · ₹{totalPrice.toLocaleString("en-IN")}</p></SheetHeader>
+          <div className="px-4 pb-2"><div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><Input placeholder={`Search ${clients.length} client${clients.length === 1 ? "" : "s"}…`} value={patientSearch} onChange={(e) => setPatientSearch(e.target.value)} className="pl-9 h-11 rounded-xl" /></div></div>
+          <div className="px-4 pb-2"><Textarea placeholder="Notes for the client (optional)…" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="resize-none rounded-xl" /></div>
+          <div className="flex-1 overflow-y-auto px-2 pb-4">{patients.length === 0 ? <div className="text-center text-sm text-muted-foreground py-10">No assigned clients yet.</div> : filteredPatients.length === 0 ? <div className="text-center text-sm text-muted-foreground py-10">No patients match "{patientSearch}".</div> : <ul className="divide-y divide-border">{filteredPatients.map((p) => { const blocked = !!openRecFor(p.user_id); return (<li key={p.user_id}><button disabled={submitting || blocked} onClick={() => sendTo(p)} className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-accent disabled:opacity-50 transition-colors text-left"><div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm shrink-0">{initials(p.name) || <UserIcon className="w-4 h-4" />}</div><div className="flex-1 min-w-0"><div className="font-medium text-sm truncate">{p.name}</div>{blocked && <div className="text-[10px] text-muted-foreground truncate">Already has an active test</div>}</div>{blocked ? <span className="text-[10px] font-semibold text-muted-foreground shrink-0">Blocked</span> : <Send className="w-4 h-4 text-muted-foreground shrink-0" />}</button></li>); })}</ul>}</div>
         </SheetContent>
       </Sheet>
 

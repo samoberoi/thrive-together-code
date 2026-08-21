@@ -120,7 +120,7 @@ export default function CoachMeetings() {
                   <div key={m.id} className="liquid-glass rounded-2xl p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <p className="text-foreground font-bold text-sm">{p?.name ?? "Patient"}</p>
+                        <p className="text-foreground font-bold text-sm">{p?.name ?? "Client"}</p>
                         <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
                           <Calendar className="w-3 h-3" /> {d.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
                           <Clock className="w-3 h-3 ml-1" /> {d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
@@ -175,7 +175,7 @@ export default function CoachMeetings() {
                 const d = new Date(m.scheduled_at);
                 return (
                   <div key={m.id} className="rounded-xl bg-muted/40 p-3 flex items-center justify-between text-xs">
-                    <span className="text-foreground font-medium">{p?.name ?? "Patient"} • {meetingTypeLabel(m.meeting_type)}</span>
+                    <span className="text-foreground font-medium">{p?.name ?? "Client"} • {meetingTypeLabel(m.meeting_type)}</span>
                     <span className="text-muted-foreground">{d.toLocaleDateString()} • <span className="capitalize">{m.status.replace("_", " ")}</span></span>
                   </div>
                 );

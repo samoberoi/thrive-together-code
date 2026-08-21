@@ -91,7 +91,7 @@ export default function PastReportsCard({ userId, uploadedBy, onChanged, compact
         <History className="w-4 h-4 text-primary shrink-0 mt-0.5" />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-black leading-tight">
-            {isStaff ? "Upload a past report for this patient" : "Have an older lab report?"}
+            {isStaff ? "Upload a past report for this client" : "Have an older lab report?"}
           </p>
           <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
             No booking needed. Upload any earlier report — we read the values, keep the report date, and add it to

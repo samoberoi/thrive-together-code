@@ -22,7 +22,7 @@ import {
 
 import UserSupplements from "@/components/UserSupplements";
 
-type View = "protocols" | "patients" | "mine";
+type View = "protocols" | "clients" | "mine";
 
 function ConditionFlatIcon({ className = "w-4 h-4" }: { className?: string }) {
   return <HeartPulse className={className} strokeWidth={1.75} />;
@@ -30,7 +30,7 @@ function ConditionFlatIcon({ className = "w-4 h-4" }: { className?: string }) {
 
 export default function CoachSupplements() {
   const { user } = useAuth();
-  const [view, setView] = useState<View>("patients");
+  const [view, setView] = useState<View>("clients");
   const [supplements, setSupplements] = useState<Supplement[]>([]);
   const [rules, setRules] = useState<ConditionRule[]>([]);
   const [patients, setPatients] = useState<any[]>([]);
@@ -63,7 +63,7 @@ export default function CoachSupplements() {
 
   // "Manage" from a patient profile lands directly on that patient's detail.
   useCoachPatientFocus("supplements", (patientId) => {
-    setView("patients");
+    setView("clients");
     setPatientSearch("");
     setExpandedPatient(patientId);
   });
@@ -438,7 +438,7 @@ export default function CoachSupplements() {
 
       {/* Tab switcher */}
       <div className="flex gap-2 overflow-x-auto -mx-4 px-4 pb-1 no-scrollbar">
-        {(["patients", "mine", "protocols"] as View[]).map((v) => (
+        {(["clients", "mine", "protocols"] as View[]).map((v) => (
           <button
             key={v}
             onClick={() => setView(v)}
@@ -447,12 +447,12 @@ export default function CoachSupplements() {
             }`}
           >
             <span className="inline-flex items-center gap-1.5">
-              {v === "patients" ? <Users className="w-4 h-4" /> : <Pill className="w-4 h-4" />}
+              {v === "clients" ? <Users className="w-4 h-4" /> : <Pill className="w-4 h-4" />}
               {v === "protocols"
                 ? `Protocols (${Object.keys(conditionGroups).length})`
                 : v === "mine"
                   ? "My Supplements"
-                  : `Patients (${patients.length})`}
+                  : `Clients (${clients.length})`}
             </span>
           </button>
         ))}
@@ -528,7 +528,7 @@ export default function CoachSupplements() {
       )}
 
       {/* ─── Patients View ─── */}
-      {view === "patients" && (
+      {view === "clients" && (
         <div className="space-y-3">
           {/* Search bar */}
           <div className="relative">
@@ -536,7 +536,7 @@ export default function CoachSupplements() {
               type="text"
               value={patientSearch}
               onChange={(e) => setPatientSearch(e.target.value)}
-              placeholder="Search patient by name or phone…"
+              placeholder="Search client by name or phone…"
               className="w-full rounded-2xl border border-input bg-background pl-10 pr-9 py-2.5 text-sm"
             />
             <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
@@ -548,7 +548,7 @@ export default function CoachSupplements() {
           </div>
 
           {patients.length === 0 ? (
-            <div className="liquid-glass rounded-3xl p-10 text-center text-muted-foreground">No patients assigned.</div>
+            <div className="liquid-glass rounded-3xl p-10 text-center text-muted-foreground">No clients assigned.</div>
           ) : (() => {
             const q = patientSearch.trim().toLowerCase();
             const filtered = q
@@ -865,7 +865,7 @@ export default function CoachSupplements() {
                   {isAdd ? "Add More Supplements" : "Assign Supplement Plan"}
                 </SheetTitle>
                 <SheetDescription className="text-xs">
-                  {activePatient?.name ? <span className="font-semibold text-foreground">{activePatient.name}</span> : "Patient"}
+                  {activePatient?.name ? <span className="font-semibold text-foreground">{activePatient.name}</span> : "Client"}
                   {" · "}Pick condition protocols and adjust duration per item.
                 </SheetDescription>
               </SheetHeader>

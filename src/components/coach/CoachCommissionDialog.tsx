@@ -139,7 +139,7 @@ export default function CoachCommissionDialog({
               <div className="liquid-glass rounded-2xl p-3 text-center">
                 <Users className="w-4 h-4 text-primary mx-auto mb-1" />
                 <p className="stat-number text-xl text-foreground">{totalUsers}</p>
-                <p className="text-[10px] text-muted-foreground font-medium">Paying patients</p>
+                <p className="text-[10px] text-muted-foreground font-medium">Paying clients</p>
               </div>
               <div className="liquid-glass rounded-2xl p-3 text-center">
                 <IndianRupee className="w-4 h-4 text-primary mx-auto mb-1" />

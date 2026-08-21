@@ -155,7 +155,7 @@ export default function RecommendSupplementsDialog({ open, onOpenChange, coachId
       <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2"><Pill className="w-4 h-4 text-primary" /> Recommend supplements</DialogTitle>
-          <DialogDescription>Search or filter by category / condition for {patientName ?? "the patient"}.</DialogDescription>
+          <DialogDescription>Search or filter by category / condition for {patientName ?? "the client"}.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-2">
@@ -241,7 +241,7 @@ export default function RecommendSupplementsDialog({ open, onOpenChange, coachId
             })
           )}
         </div>
-        <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note for patient (optional)" />
+        <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note for client (optional)" />
         <Button onClick={submit} disabled={saving} className="w-full">
           {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
           Recommend {items.length || ""} supplement{items.length === 1 ? "" : "s"}

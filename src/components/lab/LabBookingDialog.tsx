@@ -104,7 +104,7 @@ export default function LabBookingDialog({ open, onClose, productCodes, recommen
       const { data } = await supabase.functions.invoke("thyrocare-api", {
         body: {
           action: "available_slots", pincode, date,
-          name: form.name || "Patient",
+          name: form.name || "Client",
           age: Number(form.age) || 30,
           gender: form.gender || "Male",
           productCodes,
@@ -201,7 +201,7 @@ export default function LabBookingDialog({ open, onClose, productCodes, recommen
         </DialogHeader>
         <div className="flex-1 w-full min-w-0 space-y-4 overflow-y-auto overflow-x-hidden overscroll-contain px-4 py-4 [touch-action:pan-y]">
           <div>
-            <Label>Patient Name</Label>
+            <Label>Client Name</Label>
             <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           </div>
           <div className="grid grid-cols-2 gap-2">

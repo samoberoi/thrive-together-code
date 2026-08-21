@@ -106,7 +106,7 @@ export default function CoachInbox({ coachId, openPatientId }: CoachInboxProps) 
               if (prev.some((m) => m.id === newMsg.id)) return prev;
               return [...prev, newMsg];
             });
-            if (newMsg.sender_role === "patient") {
+            if (newMsg.sender_role === "client") {
               markConversationRead(active.id, "coach");
             }
           }
@@ -121,7 +121,7 @@ export default function CoachInbox({ coachId, openPatientId }: CoachInboxProps) 
                     coach_unread_count:
                       active?.id === c.id
                         ? c.coach_unread_count
-                        : newMsg.sender_role === "patient"
+                        : newMsg.sender_role === "client"
                         ? c.coach_unread_count + 1
                         : c.coach_unread_count,
                   }
@@ -230,12 +230,12 @@ export default function CoachInbox({ coachId, openPatientId }: CoachInboxProps) 
           </button>
           <img loading="lazy" decoding="async"
             src={activeConvo.patient_avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(activeConvo.patient_name || "P")}&background=random`}
-            alt={activeConvo.patient_name || "Patient"}
+            alt={activeConvo.patient_name || "Client"}
             className="w-10 h-10 rounded-full object-cover"
           />
           <div className="flex-1 min-w-0">
             <h3 className="text-foreground font-bold text-sm truncate">{activeConvo.patient_name}</h3>
-            <p className="text-muted-foreground text-xs">Patient</p>
+            <p className="text-muted-foreground text-xs">Client</p>
           </div>
         </div>
 
@@ -330,7 +330,7 @@ export default function CoachInbox({ coachId, openPatientId }: CoachInboxProps) 
             </span>
           )}
         </div>
-        <p className="text-muted-foreground text-sm">Chat with your patients</p>
+        <p className="text-muted-foreground text-sm">Chat with your clients</p>
       </div>
 
       {/* Search */}
@@ -340,7 +340,7 @@ export default function CoachInbox({ coachId, openPatientId }: CoachInboxProps) 
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search patients…"
+          placeholder="Search clients…"
           className="w-full bg-muted rounded-xl pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
         />
       </div>
@@ -368,7 +368,7 @@ export default function CoachInbox({ coachId, openPatientId }: CoachInboxProps) 
               <div className="relative">
                 <img loading="lazy" decoding="async"
                   src={convo.patient_avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(convo.patient_name || "P")}&background=random`}
-                  alt={convo.patient_name || "Patient"}
+                  alt={convo.patient_name || "Client"}
                   className="w-12 h-12 rounded-full object-cover"
                 />
                 {convo.coach_unread_count > 0 && (

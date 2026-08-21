@@ -251,7 +251,7 @@ export default function AdminUsersInsights() {
                 Total Users <span className="text-primary">·</span>{" "}
                 <CountUp value={totalUsers} />
               </h1>
-              <p className="text-muted-foreground text-sm mt-2 max-w-xl">Patients by package, coach and recent health status.</p>
+              <p className="text-muted-foreground text-sm mt-2 max-w-xl">Clients by package, coach and recent health status.</p>
             </div>
 
             <div className="grid grid-cols-1 min-[390px]:grid-cols-3 gap-2 sm:gap-3 w-full sm:w-auto">

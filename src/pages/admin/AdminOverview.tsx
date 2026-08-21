@@ -435,7 +435,7 @@ export default function AdminOverview() {
                             </li>
                           ))}
                           {c.patients.length === 0 && (
-                            <li className="px-3 py-4 text-xs text-muted-foreground text-center">No patients assigned</li>
+                            <li className="px-3 py-4 text-xs text-muted-foreground text-center">No clients assigned</li>
                           )}
                         </ul>
                       </motion.div>

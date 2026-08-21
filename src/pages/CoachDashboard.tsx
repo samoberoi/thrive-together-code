@@ -34,11 +34,11 @@ import AttentionBadge from "@/components/attention/AttentionBadge";
 
 import { RoleBottomNav, RoleTopBar, type RoleNavItem } from "@/components/shared";
 
-export type CoachTab = "home" | "patients" | "meetings" | "requests" | "messages" | "community" | "fasting" | "food" | "supplements" | "move" | "train" | "yoga" | "labtests" | "profile";
+export type CoachTab = "home" | "clients" | "meetings" | "requests" | "messages" | "community" | "fasting" | "food" | "supplements" | "move" | "train" | "yoga" | "labtests" | "profile";
 
 const navItems: { id: CoachTab; icon: React.ElementType; label: string }[] = [
   { id: "home", icon: Home, label: "Home" },
-  { id: "patients", icon: Users, label: "Patients" },
+  { id: "clients", icon: Users, label: "Clients" },
   { id: "meetings", icon: Calendar, label: "Meetings" },
   { id: "messages", icon: MessageCircle, label: "Messages" },
   { id: "community", icon: Heart, label: "Community" },
@@ -151,7 +151,7 @@ export default function CoachDashboard() {
   }
 
   const tabContent: Record<CoachTab, React.ReactNode> = {
-    home: <CoachHome onViewPatient={() => selectTab("patients")} onViewFasting={() => selectTab("fasting")} onViewMessages={() => selectTab("messages")} onViewLabTests={() => selectTab("labtests")} />,
+    home: <CoachHome onViewPatient={() => selectTab("clients")} onViewFasting={() => selectTab("fasting")} onViewMessages={() => selectTab("messages")} onViewLabTests={() => selectTab("labtests")} />,
     patients: <CoachPatients onChatWithPatient={handleChatWithPatient} />,
     meetings: <CoachMeetings />,
     requests: <CoachConsultationRequests />,

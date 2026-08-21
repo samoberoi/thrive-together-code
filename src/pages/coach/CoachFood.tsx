@@ -16,7 +16,7 @@ import QuickFoodReference from "@/components/diet/QuickFoodReference";
 import Diet from "@/pages/tabs/Diet";
 import { UtensilsCrossed } from "lucide-react";
 
-type View = "patients" | "reference" | "mine";
+type View = "clients" | "reference" | "mine";
 
 
 interface PatientRow {
@@ -62,7 +62,7 @@ function fmtTime(t: string | null) {
 
 export default function CoachFood() {
   const { user } = useAuth();
-  const [view, setView] = useState<View>("patients");
+  const [view, setView] = useState<View>("clients");
   const [date, setDate] = useState<string>(todayKey());
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -154,7 +154,7 @@ export default function CoachFood() {
       }
       setPlates(plateMap);
     } catch (e: any) {
-      toast.error(e.message ?? "Failed to load patient food data");
+      toast.error(e.message ?? "Failed to load client food data");
     }
     setLoading(false);
   };
@@ -210,14 +210,14 @@ export default function CoachFood() {
     setSending(false);
     setNudgeTarget(null);
     if (ok === 0) toast.error("Could not send the nudge");
-    else toast.success(ok === 1 ? "Nudge sent" : `Nudge sent to ${ok} patients`);
+    else toast.success(ok === 1 ? "Nudge sent" : `Nudge sent to ${ok} clients`);
   };
 
 
   return (
     <div className="theme-diet px-4 pt-2 pb-28 max-w-3xl mx-auto">
       <div className="flex items-center gap-2 mb-4 overflow-x-auto -mx-4 px-4 no-scrollbar">
-        <TabBtn active={view === "patients"} onClick={() => setView("patients")} icon={Users} label="Patient check-ins" />
+        <TabBtn active={view === "clients"} onClick={() => setView("clients")} icon={Users} label="Client check-ins" />
         <TabBtn active={view === "reference"} onClick={() => setView("reference")} icon={Apple} label="Food library" />
         <TabBtn active={view === "mine"} onClick={() => setView("mine")} icon={UtensilsCrossed} label="My Plates" />
       </div>
@@ -234,7 +234,7 @@ export default function CoachFood() {
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search patients"
+                placeholder="Search clients"
                 className="pl-9"
               />
             </div>
@@ -266,7 +266,7 @@ export default function CoachFood() {
           {loading ? (
             <p className="text-sm text-muted-foreground px-1 py-8">Loading…</p>
           ) : filtered.length === 0 ? (
-            <p className="text-sm text-muted-foreground px-1 py-8">No patients assigned yet.</p>
+            <p className="text-sm text-muted-foreground px-1 py-8">No clients assigned yet.</p>
           ) : (
             filtered.map((p, i) => {
               const fm = hasFmod(p.user_id);
@@ -378,13 +378,13 @@ export default function CoachFood() {
           <DialogHeader>
             <DialogTitle>
               {nudgeTarget === "all"
-                ? `Nudge ${pending.length} patients`
-                : `Nudge ${(nudgeTarget as PatientRow | null)?.name ?? "patient"}`}
+                ? `Nudge ${pending.length} clients`
+                : `Nudge ${(nudgeTarget as PatientRow | null)?.name ?? "client"}`}
             </DialogTitle>
             <DialogDescription>
               {nudgeTarget === "all"
-                ? "Each patient gets a personalised message in their chat about the meals they haven't logged."
-                : "This goes straight into your chat with the patient."}
+                ? "Each client gets a personalised message in their chat about the meals they haven't logged."
+                : "This goes straight into your chat with the client."}
             </DialogDescription>
           </DialogHeader>
 

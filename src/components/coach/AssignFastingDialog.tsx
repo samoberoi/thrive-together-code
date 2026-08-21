@@ -64,7 +64,7 @@ export default function AssignFastingDialog({ open, onOpenChange, coachId, patie
       // The patient notification (in-app + native push) is raised server-side by
       // the user_protocols trigger, so no client-side notification is needed here.
       await assignProtocolToUser(patientId, selectedId, coachId, startDate);
-      toast({ title: "Fasting protocol assigned", description: `${patientName ?? "Patient"} can start now.` });
+      toast({ title: "Fasting protocol assigned", description: `${patientName ?? "Client"} can start now.` });
       onCreated?.();
       onOpenChange(false);
     } catch (e: any) {
@@ -80,7 +80,7 @@ export default function AssignFastingDialog({ open, onOpenChange, coachId, patie
       <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2"><Timer className="w-4 h-4 text-primary" /> Assign fasting</DialogTitle>
-          <DialogDescription>Pick the fasting protocol {patientName ?? "your patient"} should follow.</DialogDescription>
+          <DialogDescription>Pick the fasting protocol {patientName ?? "your client"} should follow.</DialogDescription>
         </DialogHeader>
 
         {current && (

@@ -48,7 +48,7 @@ const SLIDES = [
       "Structured 5-pillar framework: Diet · Fasting · Movement · Supplements · Stress Management.",
       "Cohesive application of the lifestyle framework is binding.",
       "Ensures consistency, brand integrity, and predictable outcomes.",
-      "The framework is your north-star — every patient interaction maps to PUNCH.",
+      "The framework is your north-star — every client interaction maps to PUNCH.",
     ],
   },
   {
