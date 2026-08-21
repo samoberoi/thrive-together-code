@@ -436,6 +436,20 @@ export default function CoachLabTests() {
                   </div>
                 </button>
 
+                {!isExpanded && (
+                  <div className="px-4 sm:px-5 pb-4 -mt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-9 w-full text-[11px] font-bold rounded-full"
+                      onClick={() => setUploadTarget({ userId: patient.user_id, recommendationId: null, productCodes: [] })}
+                    >
+                      <Upload className="w-3.5 h-3.5 mr-1.5" /> Upload report for this client
+                    </Button>
+                  </div>
+                )}
+
+
                 {isExpanded && (
                   <div className="px-4 sm:px-5 pb-5 -mt-1">
                     {recs.length > 0 && (
