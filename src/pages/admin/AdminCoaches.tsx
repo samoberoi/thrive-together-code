@@ -377,6 +377,10 @@ export default function AdminCoaches() {
                               <UsersIcon className="w-4 h-4 mr-1" />
                               View Assigned Users ({assignedCounts[coach.id] ?? 0})
                             </Button>
+                            <Button variant="secondary" size="sm" onClick={() => setReviewsCoach(coach)}>
+                              <Star className="w-4 h-4 mr-1 text-amber-500" />
+                              View Reviews ({coach.total_ratings ?? 0})
+                            </Button>
                           </div>
 
                           {showAssignedFor === coach.id && (
