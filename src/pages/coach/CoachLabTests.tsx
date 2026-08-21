@@ -494,7 +494,7 @@ export default function CoachLabTests() {
                                         </div>
                                       ))}
                                       <Button variant="outline" size="sm" className="h-8 w-full text-[11px]" onClick={() => setUploadTarget({ userId: patient.user_id, recommendationId: rec.id, productCodes: rec.product_codes || [] })}>
-                                        <Upload className="w-3.5 h-3.5 mr-1.5" /> Upload report for patient
+                                        <Upload className="w-3.5 h-3.5 mr-1.5" /> Upload report for client
                                       </Button>
                                     </div>
                                   );

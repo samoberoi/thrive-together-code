@@ -148,7 +148,7 @@ export default function CoachActivityNudgeDialog({
                   <CheckCircle2 className="w-7 h-7 text-success" />
                 </div>
                 <p className="text-foreground font-bold text-sm">All caught up</p>
-                <p className="text-muted-foreground text-xs">Every applicable patient logged {meta.label.toLowerCase()} today.</p>
+                <p className="text-muted-foreground text-xs">Every applicable client logged {meta.label.toLowerCase()} today.</p>
               </div>
             ) : (
               <div className="space-y-2">

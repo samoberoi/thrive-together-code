@@ -231,7 +231,7 @@ export default function CoachGuidedTour({ coachId, coachName, onComplete, onClos
                 </div>
 
                 <div className="bg-muted/50 rounded-2xl p-4 mb-5 text-sm text-muted-foreground leading-relaxed">
-                  I, <span className="text-foreground font-bold">{coachName}</span>, confirm that I have reviewed and understand the 5 Core Objectives of the BBDO coaching philosophy. I commit to upholding these principles in all patient interactions.
+                  I, <span className="text-foreground font-bold">{coachName}</span>, confirm that I have reviewed and understand the 5 Core Objectives of the BBDO coaching philosophy. I commit to upholding these principles in all client interactions.
                 </div>
 
                 <div className="flex items-center justify-between mb-2">

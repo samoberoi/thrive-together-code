@@ -179,7 +179,7 @@ export default function CoachCommissionDialog({
             </div>
 
             <p className="text-[10px] text-muted-foreground text-center leading-snug">
-              Revenue is derived from each patient's active subscription, normalized to a monthly amount.
+              Revenue is derived from each client's active subscription, normalized to a monthly amount.
               Actual payout may vary based on eligibility thresholds and refunds.
             </p>
           </div>
