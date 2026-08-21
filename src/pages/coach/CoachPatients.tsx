@@ -465,6 +465,8 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
 
         <PatientDietSymptomsSummary userId={selectedPatient.user_id} refreshKey={summaryRefresh} />
 
+        <PatientPlatesLog userId={selectedPatient.user_id} />
+
 
 
         {/* Coach actions */}
