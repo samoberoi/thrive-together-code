@@ -244,19 +244,19 @@ function PostCard({
         <div className="flex-1 min-w-0">
           <p className="text-foreground font-bold text-sm truncate">{post.user_name}</p>
           <p className="text-muted-foreground text-[11px]">{timeAgo}</p>
+          {category && (() => {
+            const CatIcon = iconFor(category.slug);
+            return (
+              <span
+                className="mt-1.5 inline-flex max-w-full items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider"
+                style={{ background: `${category.accent_color}15`, color: category.accent_color }}
+              >
+                <CatIcon className="w-3 h-3 shrink-0" strokeWidth={2} />
+                <span className="truncate">{category.label}</span>
+              </span>
+            );
+          })()}
         </div>
-        {category && (() => {
-          const CatIcon = iconFor(category.slug);
-          return (
-            <span
-              className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full"
-              style={{ background: `${category.accent_color}15`, color: category.accent_color }}
-            >
-              <CatIcon className="w-3 h-3" strokeWidth={2} />
-              {category.label}
-            </span>
-          );
-        })()}
         {canDelete && (
           <button onClick={() => onDelete(post.id)} className="text-muted-foreground hover:text-destructive transition-colors">
             <Trash2 className="w-4 h-4" strokeWidth={1.5} />
