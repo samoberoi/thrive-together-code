@@ -12,6 +12,7 @@ import { logAudit } from "@/lib/auditLog";
 import ExportCsvButton from "@/components/admin/ExportCsvButton";
 import ImportCsvButton from "@/components/admin/ImportCsvButton";
 import AvatarUploader from "@/components/admin/AvatarUploader";
+import CoachReviewsDialog from "@/components/coach/CoachReviewsDialog";
 
 type Coach = Tables<"coaches">;
 
