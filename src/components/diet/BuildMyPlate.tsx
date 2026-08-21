@@ -312,41 +312,26 @@ export default function BuildMyPlate({ onClose, onSaved }: { onClose: () => void
     // of this full-screen portal previously locked the screen.
     setSaving(true);
 
-    // Render snapshot. Never let image loading block the actual save — cap it.
-    let snapshotPath: string | null = null;
-    try {
-      const blob = await Promise.race([
-        renderPlate(selectedFoodItems.map(({ item }) => ({
-          name: item.name,
-          imageUrl: imageUrls[item.id] || null,
-        }))),
-        new Promise<null>((resolve) => setTimeout(() => resolve(null), 8000)),
-      ]);
-      if (blob) {
-        const path = `${user.id}/${crypto.randomUUID()}.jpg`;
-        const up = await supabase.storage.from("plate-snapshots").upload(path, blob, { contentType: "image/jpeg", upsert: true });
-        if (!up.error) snapshotPath = path;
-      }
-    } catch (e) {
-      console.error("plate render failed", e);
-    }
-
     const giBand = totals.avgGi == null ? null
       : totals.avgGi < 55 ? "low"
       : totals.avgGi < 65 ? "medium"
       : totals.avgGi < 75 ? "med_high" : "high";
 
-    const { error } = await supabase.from("user_plates").insert({
+    const plateItems = selectedFoodItems.map(({ sel, item }) => ({
+      id: item.id, name: item.name, alt_name: item.alt_name, diet_type: item.diet_type,
+      filter_id: item.filter_id, servings: sel.servings,
+      serving_label: item.serving_label, household_measure: item.household_measure,
+      carbs_min: item.carbs_min, carbs_max: item.carbs_max, protein_g: item.protein_g,
+      fat_g: item.fat_g, fiber_g: item.fiber_g, calories_kcal: item.calories_kcal,
+      gi_band: item.gi_band, image_url: imageUrls[item.id] || null,
+    }));
+
+    // Save the record first — the plate snapshot is cosmetic and is rendered +
+    // uploaded in the background afterwards, so the user never waits for it.
+    const { data: inserted, error } = await supabase.from("user_plates").insert({
       user_id: user.id,
       name: `Plate · ${new Date().toLocaleDateString(undefined, { month: "short", day: "numeric" })}`,
-      items: selectedFoodItems.map(({ sel, item }) => ({
-        id: item.id, name: item.name, alt_name: item.alt_name, diet_type: item.diet_type,
-        filter_id: item.filter_id, servings: sel.servings,
-        serving_label: item.serving_label, household_measure: item.household_measure,
-        carbs_min: item.carbs_min, carbs_max: item.carbs_max, protein_g: item.protein_g,
-        fat_g: item.fat_g, fiber_g: item.fiber_g, calories_kcal: item.calories_kcal,
-        gi_band: item.gi_band, image_url: imageUrls[item.id] || null,
-      })),
+      items: plateItems,
       total_carbs_g: totals.carbs,
       total_protein_g: totals.protein,
       total_fat_g: totals.fat,
@@ -355,8 +340,29 @@ export default function BuildMyPlate({ onClose, onSaved }: { onClose: () => void
       avg_gi: totals.avgGi,
       gi_band: giBand,
       sugar_spike_risk: totals.risk,
-      snapshot_url: snapshotPath,
-    } as any);
+      snapshot_url: null,
+    } as any).select("id").maybeSingle();
+
+    if (!error && inserted) {
+      const plateId = (inserted as any).id as string;
+      const snapItems = selectedFoodItems.map(({ item }) => ({ name: item.name, imageUrl: imageUrls[item.id] || null }));
+      void (async () => {
+        try {
+          const blob = await Promise.race([
+            renderPlate(snapItems, 720),
+            new Promise<null>((resolve) => setTimeout(() => resolve(null), 6000)),
+          ]);
+          if (!blob) return;
+          const path = `${user.id}/${crypto.randomUUID()}.jpg`;
+          const up = await supabase.storage.from("plate-snapshots").upload(path, blob, { contentType: "image/jpeg", upsert: true });
+          if (up.error) return;
+          await supabase.from("user_plates").update({ snapshot_url: path } as any).eq("id", plateId);
+        } catch (e) {
+          console.error("plate snapshot failed", e);
+        }
+      })();
+    }
+
     setSaving(false);
     if (error) {
       console.error("[plate] save failed", error);
