@@ -5,7 +5,7 @@ import {
   Heart, MessageCircle, Users, Send, Plus,
   Loader2, Trash2, Trophy, Flame, TrendingDown, TrendingUp, X, Sparkles,
   Footprints, Utensils, Award, Activity, Wind, Scale, HeartPulse, Star,
-  ImagePlus,
+  ImagePlus, Check,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { LoadingState, EmptyState } from "@/components/shared";
@@ -233,7 +233,7 @@ function PostCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.22, ease: EASE }}
     >
-      <div className="flex items-center gap-3 mb-3">
+      <div className="flex items-start gap-3 mb-3">
         <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden ring-2 ring-[var(--bbdo-blue)]/15">
           {post.user_avatar ? (
             <img loading="lazy" decoding="async" src={post.user_avatar} alt="" className="w-full h-full object-cover" />
@@ -244,19 +244,19 @@ function PostCard({
         <div className="flex-1 min-w-0">
           <p className="text-foreground font-bold text-sm truncate">{post.user_name}</p>
           <p className="text-muted-foreground text-[11px]">{timeAgo}</p>
+          {category && (() => {
+            const CatIcon = iconFor(category.slug);
+            return (
+              <span
+                className="mt-1.5 inline-flex max-w-full items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider"
+                style={{ background: `${category.accent_color}15`, color: category.accent_color }}
+              >
+                <CatIcon className="w-3 h-3 shrink-0" strokeWidth={2} />
+                <span className="truncate">{category.label}</span>
+              </span>
+            );
+          })()}
         </div>
-        {category && (() => {
-          const CatIcon = iconFor(category.slug);
-          return (
-            <span
-              className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full"
-              style={{ background: `${category.accent_color}15`, color: category.accent_color }}
-            >
-              <CatIcon className="w-3 h-3" strokeWidth={2} />
-              {category.label}
-            </span>
-          );
-        })()}
         {canDelete && (
           <button onClick={() => onDelete(post.id)} className="text-muted-foreground hover:text-destructive transition-colors">
             <Trash2 className="w-4 h-4" strokeWidth={1.5} />
@@ -451,24 +451,40 @@ function CreatePostSheet({
         )}
 
         {categories.length > 0 && (
-          <div className="mt-3">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Category</p>
-            <div className="flex flex-wrap gap-2">
+          <div className="mt-4">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Category</p>
+              {slug && (
+                <button type="button" onClick={() => setSlug(null)} className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground underline">
+                  Clear
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-2">
               {categories.map((c) => {
                 const active = slug === c.slug;
                 const CatIcon = iconFor(c.slug);
                 return (
                   <button
                     key={c.id}
+                    type="button"
+                    aria-pressed={active}
                     onClick={() => setSlug(active ? null : c.slug)}
-                    className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full transition-opacity"
+                    className="flex items-center gap-2 rounded-2xl border px-3 py-2.5 text-left text-xs font-bold transition-all"
                     style={{
-                      background: active ? c.accent_color : `${c.accent_color}15`,
+                      background: active ? c.accent_color : `${c.accent_color}0F`,
                       color: active ? "#fff" : c.accent_color,
+                      borderColor: active ? c.accent_color : `${c.accent_color}33`,
+                      boxShadow: active ? `0 6px 16px -8px ${c.accent_color}` : "none",
                     }}
                   >
-                    <CatIcon className="w-3.5 h-3.5" strokeWidth={2} />
-                    {c.label}
+                    <span
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
+                      style={{ background: active ? "rgba(255,255,255,0.22)" : `${c.accent_color}1F` }}
+                    >
+                      {active ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : <CatIcon className="h-3.5 w-3.5" strokeWidth={2} />}
+                    </span>
+                    <span className="min-w-0 flex-1 leading-tight">{c.label}</span>
                   </button>
                 );
               })}

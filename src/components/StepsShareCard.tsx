@@ -1,17 +1,24 @@
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Footprints, Share2, Loader2 } from "lucide-react";
+import { Share2, Loader2, Download, Flame, MapPin, Footprints } from "lucide-react";
 import { toast } from "sonner";
 import bbdoLogo from "@/assets/logo.png";
 import { useAuth } from "@/contexts/AuthContext";
 import { uploadCommunityImage } from "@/lib/communityService";
-import { formatShareDate, renderStepsCardPng, stepsToCalories, stepsToKm } from "@/lib/stepsShareImage";
+import {
+  formatShareDate,
+  renderStepsCardPng,
+  stepsHeadline,
+  stepsToCalories,
+  stepsToKm,
+} from "@/lib/stepsShareImage";
+import { isNative } from "@/lib/platform";
 
 /**
  * Expanded "steps" panel — big step count, estimated distance & calories,
- * BBDO logo, the date and a share button that pushes the card straight into
- * the community composer. Used both under the Movement ring (today) and under
- * the weekly steps chart (any selected day).
+ * BBDO logo, the date, a download button (save to gallery / files for
+ * WhatsApp) and a share button that pushes the card straight into the
+ * community composer.
  */
 export default function StepsShareCard({
   steps,
@@ -29,11 +36,54 @@ export default function StepsShareCard({
   const navigate = useNavigate();
   const location = useLocation();
   const [sharing, setSharing] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   const km = useMemo(() => stepsToKm(steps, heightCm), [steps, heightCm]);
   const calories = useMemo(() => stepsToCalories(steps, heightCm, weightKg), [steps, heightCm, weightKg]);
   const day = date ?? new Date();
   const label = formatShareDate(day);
+  const headline = stepsHeadline(steps);
+  const pct = Math.max(0.03, Math.min(1, steps / 10000));
+
+  const handleDownload = async () => {
+    setDownloading(true);
+    try {
+      const blob = await renderStepsCardPng({ steps, km, calories, date: day });
+      if (!blob) throw new Error("Could not build the image");
+      const fileName = `bbdo-steps-${day.toISOString().slice(0, 10)}.png`;
+
+      if (isNative()) {
+        const b64 = await new Promise<string>((resolve, reject) => {
+          const fr = new FileReader();
+          fr.onload = () => resolve(String(fr.result).split(",")[1] ?? "");
+          fr.onerror = () => reject(new Error("read failed"));
+          fr.readAsDataURL(blob);
+        });
+        const { Filesystem, Directory } = await import("@capacitor/filesystem");
+        const { Share } = await import("@capacitor/share");
+        const res = await Filesystem.writeFile({
+          path: fileName,
+          data: b64,
+          directory: Directory.Cache,
+        });
+        await Share.share({ title: "My steps today", files: [res.uri] });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+        toast.success("Saved to your downloads");
+      }
+    } catch (e: any) {
+      toast.error(e?.message || "Couldn't save your steps card");
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   const handleShare = async () => {
     if (!user) return;
@@ -56,74 +106,134 @@ export default function StepsShareCard({
     }
   };
 
-  return (
-    <div className="mt-2 mb-1 rounded-2xl border border-border bg-card p-4 shadow-sm">
-      <div className="flex items-start justify-between">
-        <img src={bbdoLogo} alt="Bye Bye Diabetes" className="h-9 w-auto object-contain" />
-        <button
-          type="button"
-          onClick={handleShare}
-          disabled={sharing || !user}
-          aria-label="Share my steps to the community"
-          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border text-white disabled:opacity-60"
-          style={{ backgroundColor: "var(--bbdo-blue)", borderColor: "transparent" }}
-        >
-          {sharing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />}
-        </button>
-      </div>
+  const R = 78;
+  const CIRC = 2 * Math.PI * R;
+  const ARC = CIRC * 0.72; // 260° gauge
 
-      <div className="relative mx-auto mt-1 h-[152px] w-[196px]">
-        <svg viewBox="0 0 196 152" className="h-full w-full">
-          <path
-            d="M20 130 A 80 80 0 1 1 176 130"
-            fill="none"
-            stroke="var(--bbdo-blue-soft)"
-            strokeWidth="13"
-            strokeLinecap="round"
-          />
-          <path
-            d="M20 130 A 80 80 0 1 1 176 130"
-            fill="none"
-            stroke="var(--bbdo-blue)"
-            strokeWidth="13"
-            strokeLinecap="round"
-            strokeDasharray="1000"
-            strokeDashoffset={1000 - 385 * Math.max(0.04, Math.min(1, steps / 10000))}
-          />
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center pt-4">
-          <p
-            className="text-[13px] font-black uppercase tracking-[0.18em]"
-            style={{ color: "var(--bbdo-red)" }}
+  return (
+    <div className="relative mt-2 mb-1 overflow-hidden rounded-3xl border border-[var(--bbdo-blue)]/12 bg-gradient-to-br from-white via-[#F6F9FE] to-[#E9F1FD] p-4 shadow-[0_16px_40px_-24px_rgba(22,104,214,0.55)]">
+      {/* dotted texture */}
+      <div
+        className="pointer-events-none absolute right-0 top-0 h-32 w-32 opacity-[0.18]"
+        style={{
+          backgroundImage: "radial-gradient(circle, var(--bbdo-blue) 1.4px, transparent 1.4px)",
+          backgroundSize: "12px 12px",
+          maskImage: "radial-gradient(circle at 100% 0%, black, transparent 72%)",
+          WebkitMaskImage: "radial-gradient(circle at 100% 0%, black, transparent 72%)",
+        }}
+      />
+
+      <div className="relative flex items-start justify-between">
+        <div className="flex items-center gap-2">
+          <img src={bbdoLogo} alt="Bye Bye Diabetes" className="h-10 w-auto object-contain" />
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleDownload}
+            disabled={downloading}
+            aria-label="Download my steps card"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--bbdo-blue)]/25 bg-white text-[var(--bbdo-blue)] shadow-sm disabled:opacity-60"
           >
-            Steps
-          </p>
-          <p
-            className="text-[34px] font-black leading-tight tabular-nums"
-            style={{ color: "var(--bbdo-blue)" }}
+            {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" strokeWidth={2.4} />}
+          </button>
+          <button
+            type="button"
+            onClick={handleShare}
+            disabled={sharing || !user}
+            aria-label="Share my steps to the community"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full text-white shadow-md disabled:opacity-60"
+            style={{ backgroundColor: "var(--bbdo-blue)" }}
           >
-            {Math.round(steps).toLocaleString("en-IN")}
-          </p>
-          <Footprints className="mt-0.5 h-5 w-5" style={{ color: "var(--bbdo-blue)" }} strokeWidth={2.4} />
+            {sharing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" strokeWidth={2.4} />}
+          </button>
         </div>
       </div>
 
-      <div className="flex items-center justify-center gap-6 text-[13px] font-black">
-        <span style={{ color: "var(--bbdo-red)" }}>
-          Calories{" "}
-          <span className="tabular-nums" style={{ color: "var(--bbdo-blue)" }}>
-            {calories.toLocaleString("en-IN")}
-          </span>
-        </span>
-        <span style={{ color: "var(--bbdo-red)" }}>
-          Distance{" "}
-          <span className="tabular-nums" style={{ color: "var(--bbdo-blue)" }}>
-            {km.toFixed(1)} km
-          </span>
-        </span>
+      {/* Gauge */}
+      <div className="relative mx-auto mt-1 h-[196px] w-[210px]">
+        <svg viewBox="0 0 210 196" className="h-full w-full">
+          <defs>
+            <linearGradient id="bbdoStepsArc" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="var(--bbdo-blue)" />
+              <stop offset="100%" stopColor="#6FB1F7" />
+            </linearGradient>
+          </defs>
+          <g transform="translate(105,100) rotate(140)">
+            <circle
+              r={R}
+              fill="none"
+              stroke="var(--bbdo-blue-soft, #E7F0FD)"
+              strokeWidth="14"
+              strokeLinecap="round"
+              strokeDasharray={`${ARC} ${CIRC}`}
+            />
+            <circle
+              r={R}
+              fill="none"
+              stroke="url(#bbdoStepsArc)"
+              strokeWidth="14"
+              strokeLinecap="round"
+              strokeDasharray={`${ARC * pct} ${CIRC}`}
+            />
+          </g>
+        </svg>
+
+        <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
+          <Footprints className="h-5 w-5" style={{ color: "var(--bbdo-blue)" }} strokeWidth={2.4} />
+          <p className="mt-0.5 text-[13px] font-black uppercase tracking-[0.2em]" style={{ color: "var(--bbdo-red)" }}>
+            Steps
+          </p>
+          <p className="text-[36px] font-black leading-none tabular-nums" style={{ color: "var(--bbdo-blue)" }}>
+            {Math.round(steps).toLocaleString("en-IN")}
+          </p>
+          <p className="mt-1.5 text-[11px] font-bold text-foreground/70">{headline.top}</p>
+          <p className="text-[11px] font-black" style={{ color: "var(--bbdo-blue)" }}>
+            {headline.bottom}
+          </p>
+        </div>
       </div>
 
-      <p className="mt-3 border-t border-border pt-2 text-[12px] font-bold text-muted-foreground">{label}</p>
+      {/* Stat tiles */}
+      <div className="mt-1 grid grid-cols-2 gap-3">
+        <div className="flex items-center gap-3 rounded-2xl bg-[var(--bbdo-red)]/8 px-3 py-2.5">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white shadow-sm">
+            <Flame className="h-4 w-4" style={{ color: "var(--bbdo-red)" }} strokeWidth={2.4} />
+          </span>
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold text-foreground/70">Calories</p>
+            <p className="text-[20px] font-black leading-tight tabular-nums" style={{ color: "var(--bbdo-red)" }}>
+              {calories.toLocaleString("en-IN")}
+              <span className="ml-1 text-[10px] font-bold text-foreground/50">kcal</span>
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 rounded-2xl bg-[var(--bbdo-blue)]/8 px-3 py-2.5">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white shadow-sm">
+            <MapPin className="h-4 w-4" style={{ color: "var(--bbdo-blue)" }} strokeWidth={2.4} />
+          </span>
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold text-foreground/70">Distance</p>
+            <p className="text-[20px] font-black leading-tight tabular-nums" style={{ color: "var(--bbdo-blue)" }}>
+              {km.toFixed(1)}
+              <span className="ml-1 text-[10px] font-bold text-foreground/50">km</span>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Quote */}
+      <p className="mt-3 text-center text-[12px] font-semibold leading-snug text-foreground/70">
+        “ Every step is a step toward{" "}
+        <span className="font-black" style={{ color: "var(--bbdo-blue)" }}>
+          better metabolic health.
+        </span>
+      </p>
+
+      <div className="mt-3 flex items-center justify-center gap-2 border-t border-border/60 pt-2">
+        <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: "var(--bbdo-red)" }} />
+        <p className="text-[12px] font-bold" style={{ color: "var(--bbdo-blue)" }}>{label}</p>
+      </div>
     </div>
   );
 }
