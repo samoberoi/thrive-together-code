@@ -179,14 +179,7 @@ export default function BuildMyPlate({ onClose, onSaved }: { onClose: () => void
       const list = items
         .filter((it) => it.filter_id === f.id)
         .filter((it) => !isFoodBlockedByDietProfile(it as any, subPreferences, allergenFoodIds))
-        .filter((it) => {
-          if (prefs.length === 0) return true; // skip → show everything
-          if (prefs.includes("vegan") && it.diet_type === "vegan") return true;
-          if (prefs.includes("veg") && it.diet_type !== "non_veg") return true;
-          if (prefs.includes("jain") && it.is_jain_friendly) return true;
-          if (prefs.includes("non_veg")) return true;
-          return false;
-        });
+        .filter((it) => dietAllowsItem(prefs, it as any));
       return {
         filterId: f.id,
         filterSlug: f.slug,
