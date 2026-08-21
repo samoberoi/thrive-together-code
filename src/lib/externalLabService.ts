@@ -29,7 +29,7 @@ export async function parseExternalReport(externalReportId: string): Promise<num
   return Number(data.count || 0);
 }
 
-/** Mark a coach recommendation as "patient will get this done outside". */
+/** Mark a coach recommendation as "client will get this done outside". */
 export async function markExternalIntent(recommendationId: string, note?: string | null) {
   const { error } = await (supabase as any)
     .from("thyrocare_recommendations")

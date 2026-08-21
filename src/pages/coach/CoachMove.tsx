@@ -43,7 +43,7 @@ type PatientRow = {
 export default function CoachMove() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<"patients" | "mine">("patients");
+  const [view, setView] = useState<"clients" | "mine">("clients");
   const [patients, setPatients] = useState<PatientRow[]>([]);
   const [search, setSearch] = useState("");
   const [cfg, setCfg] = useState<MovementConfig | null>(null);
@@ -206,12 +206,12 @@ export default function CoachMove() {
         <h2 className="text-2xl font-black text-foreground flex items-center gap-2">
           <Activity className="w-6 h-6 text-primary" /> Move
         </h2>
-        <p className="text-sm text-muted-foreground mt-1">Review and adjust each patient's daily step goal.</p>
+        <p className="text-sm text-muted-foreground mt-1">Review and adjust each client's daily step goal.</p>
       </div>
 
       <div className="flex gap-2 overflow-x-auto -mx-4 px-4 sm:-mx-6 sm:px-6 pb-1 no-scrollbar">
         {([
-          { id: "patients" as const, label: `Patients (${patients.length})`, Icon: Activity },
+          { id: "clients" as const, label: `Clients (${patients.length})`, Icon: Activity },
           { id: "mine" as const, label: "My Movement", Icon: Footprints },
         ]).map(({ id, label, Icon }) => (
           <button
@@ -236,7 +236,7 @@ export default function CoachMove() {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
-          placeholder={`Search ${patients.length} patient${patients.length === 1 ? "" : "s"}…`}
+          placeholder={`Search ${patients.length} client${patients.length === 1 ? "" : "s"}…`}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="pl-9 h-11 rounded-2xl"
@@ -245,7 +245,7 @@ export default function CoachMove() {
 
 
       {patients.length === 0 ? (
-        <div className="liquid-glass rounded-3xl p-10 text-center text-muted-foreground">No patients assigned yet.</div>
+        <div className="liquid-glass rounded-3xl p-10 text-center text-muted-foreground">No clients assigned yet.</div>
       ) : filtered.length === 0 ? (
         <div className="liquid-glass rounded-3xl p-8 text-center text-sm text-muted-foreground">No patients match "{search}".</div>
       ) : (

@@ -85,7 +85,7 @@ export default function ExternalTestDialog({
       setMine((prev) => [row, ...prev]);
       setFile(null);
       if (inputRef.current) inputRef.current.value = "";
-      toast.success(`Report processed — ${isCoach ? "patient markers" : "your markers"} are now visible`);
+      toast.success(`Report processed — ${isCoach ? "client markers" : "your markers"} are now visible`);
       onDone?.();
     } catch (e: any) {
       toast.error(e.message || "Upload failed");
@@ -123,7 +123,7 @@ export default function ExternalTestDialog({
             {step === "intent"
               ? "No problem. Tell your coach you'll use your own lab — then upload the report here and we'll turn it into your charts and trends, exactly like an in-app test."
               : isCoach
-                ? "Upload the report your patient got done outside. Its values will be read automatically into their markers and charts."
+                ? "Upload the report your client got done outside. Its values will be read automatically into their markers and charts."
                 : "Upload the PDF or a clear photo of your report. Its values will be read automatically into your markers and graphs."}
           </DialogDescription>
         </DialogHeader>

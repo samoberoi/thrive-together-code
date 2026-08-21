@@ -285,7 +285,7 @@ export default function AdminCommissions() {
                   onChange={(e) => setForm({ ...form, payout_day: parseInt(e.target.value) || 1 })} />
               </div>
               <div>
-                <Label>Min patients</Label>
+                <Label>Min clients</Label>
                 <Input type="number" min={0}
                   value={form.min_active_patients}
                   onChange={(e) => setForm({ ...form, min_active_patients: parseInt(e.target.value) || 0 })} />
@@ -326,7 +326,7 @@ export default function AdminCommissions() {
               <Textarea rows={3}
                 value={form.rules ?? ""}
                 onChange={(e) => setForm({ ...form, rules: e.target.value })}
-                placeholder="e.g. Requires ≥30 active patients, 4.5+ avg rating, 6+ months tenure." />
+                placeholder="e.g. Requires ≥30 active clients, 4.5+ avg rating, 6+ months tenure." />
             </div>
 
             <div className="flex items-center justify-between rounded-xl border border-[var(--bbdo-line)] p-3">

@@ -29,7 +29,7 @@ export default function CoachConsultationRequests() {
     if (ids.length) {
       const { data: profs } = await supabase.from("profiles").select("user_id, name").in("user_id", ids);
       const m: Record<string, string> = {};
-      (profs ?? []).forEach((p: any) => (m[p.user_id] = p.name ?? "Patient"));
+      (profs ?? []).forEach((p: any) => (m[p.user_id] = p.name ?? "Client"));
       setNames(m);
     }
     setLoading(false);
@@ -47,7 +47,7 @@ export default function CoachConsultationRequests() {
     <div className="px-5 pt-14 pb-8 flex flex-col gap-4">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-2xl font-black text-foreground flex items-center gap-2"><MessageSquareWarning className="w-5 h-5 text-primary" /> Consultation Requests</h1>
-        <p className="text-muted-foreground text-sm">From your Intensive Reversal Care patients</p>
+        <p className="text-muted-foreground text-sm">From your Intensive Reversal Care clients</p>
       </motion.div>
 
       {loading ? <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto mt-8" /> :
@@ -57,7 +57,7 @@ export default function CoachConsultationRequests() {
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-foreground font-bold text-sm">{names[r.user_id] ?? "Patient"}</p>
+                    <p className="text-foreground font-bold text-sm">{names[r.user_id] ?? "Client"}</p>
                     {r.urgency === "urgent" && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-destructive/15 text-destructive uppercase">Urgent</span>}
                     <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground uppercase">{r.status}</span>
                   </div>

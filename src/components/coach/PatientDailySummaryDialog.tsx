@@ -225,7 +225,7 @@ export default function PatientDailySummaryDialog({ open, onClose, patient, coac
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-foreground font-black text-base truncate">{patient.name ?? "Patient"}</h3>
+              <h3 className="text-foreground font-black text-base truncate">{patient.name ?? "Client"}</h3>
               <p className="text-muted-foreground text-xs">
                 Joined {new Date(patient.assigned_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
               </p>

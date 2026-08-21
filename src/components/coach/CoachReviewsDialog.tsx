@@ -72,7 +72,7 @@ export default function CoachReviewsDialog({ open, onOpenChange, coachId, avgRat
               · {totalRatings} rating{totalRatings === 1 ? "" : "s"}
             </span>
           </DialogTitle>
-          <DialogDescription>What your patients have said about you.</DialogDescription>
+          <DialogDescription>What your clients have said about you.</DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
           {loading ? (
@@ -95,7 +95,7 @@ export default function CoachReviewsDialog({ open, onOpenChange, coachId, avgRat
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold text-foreground truncate">{r.name ?? "Patient"}</p>
+                    <p className="text-sm font-semibold text-foreground truncate">{r.name ?? "Client"}</p>
                     <span className="ml-auto flex items-center gap-0.5 shrink-0">
                       {Array.from({ length: 5 }).map((_, i) => (
                         <Star

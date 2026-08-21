@@ -378,8 +378,8 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
             <ArrowLeft className="w-5 h-5 text-foreground" strokeWidth={1.8} />
           </button>
           <div className="flex-1">
-            <h1 className="text-xl font-black text-foreground">{selectedPatient.name ?? "Patient"}</h1>
-            <p className="text-muted-foreground text-xs">Patient Details</p>
+            <h1 className="text-xl font-black text-foreground">{selectedPatient.name ?? "Client"}</h1>
+            <p className="text-muted-foreground text-xs">Client Details</p>
           </div>
           {/* Health status badge */}
           <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${sc.bg}`}>
@@ -389,7 +389,7 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
           <button
             onClick={() => setEditProfileOpen(true)}
             className="liquid-glass rounded-xl p-2"
-            aria-label="Edit patient profile"
+            aria-label="Edit client profile"
             title="Edit profile"
           >
             <Pencil className="w-4 h-4 text-foreground" strokeWidth={1.8} />
@@ -400,7 +400,7 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
           open={editProfileOpen}
           onClose={() => setEditProfileOpen(false)}
           patientUserId={selectedPatient.user_id}
-          patientName={selectedPatient.name ?? "Patient"}
+          patientName={selectedPatient.name ?? "Client"}
           onSaved={() => { loadPatients(); openPatient(selectedPatient); setSummaryRefresh((n) => n + 1); }}
         />
 
@@ -800,7 +800,7 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
   return (
     <div className="flex flex-col gap-4 px-5 pt-3 pb-4">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl font-black text-foreground leading-tight">My Patients</h1>
+        <h1 className="text-2xl font-black text-foreground leading-tight">My Clients</h1>
       </motion.div>
 
       {/* KPI: Patients / On Track / Off Track — one row, clickable */}
@@ -810,7 +810,7 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
             onClick={() => setStatusFilter("all")}
             className={`liquid-glass rounded-2xl p-3 text-left transition ${statusFilter === "all" ? "ring-2 ring-primary" : ""}`}
           >
-            <p className="text-muted-foreground text-[9px] font-semibold uppercase tracking-wide">Patients</p>
+            <p className="text-muted-foreground text-[9px] font-semibold uppercase tracking-wide">Clients</p>
             <p className="stat-number text-2xl text-foreground mt-1 leading-none">{patients.length}</p>
             <p className="text-muted-foreground text-[10px] mt-1">Active</p>
           </button>
@@ -836,7 +836,7 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
       {/* Patients by package — clickable to filter */}
       {packageEntries.length > 0 && (
         <motion.div className="liquid-glass rounded-2xl p-4" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.04 }}>
-          <p className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wide mb-2">Patients by package</p>
+          <p className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wide mb-2">Clients by package</p>
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setPackageFilter(null)}
@@ -915,12 +915,12 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
       {patients.length === 0 ? (
         <motion.div className="liquid-glass rounded-3xl p-8 text-center" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}>
           <Users className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
-          <p className="text-foreground font-bold">No patients yet</p>
-          <p className="text-muted-foreground text-sm mt-1">Patients will appear here once assigned</p>
+          <p className="text-foreground font-bold">No clients yet</p>
+          <p className="text-muted-foreground text-sm mt-1">Clients will appear here once assigned</p>
         </motion.div>
       ) : filteredPatients.length === 0 ? (
         <motion.div className="liquid-glass rounded-3xl p-8 text-center" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}>
-          <p className="text-muted-foreground text-sm">No patients in this category</p>
+          <p className="text-muted-foreground text-sm">No clients in this category</p>
         </motion.div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
@@ -976,7 +976,7 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
                     <button
                       onClick={(e) => { e.stopPropagation(); onChatWithPatient(p.user_id); }}
                       className="p-2 rounded-xl bg-primary/10 hover:bg-primary/20 transition-colors shrink-0"
-                      title="Chat with patient"
+                      title="Chat with client"
                     >
                       <MessageCircle className="w-4 h-4 text-primary" strokeWidth={2} />
                     </button>

@@ -48,7 +48,7 @@ const SLIDES = [
       "Structured 5-pillar framework: Diet · Fasting · Movement · Supplements · Stress Management.",
       "Cohesive application of the lifestyle framework is binding.",
       "Ensures consistency, brand integrity, and predictable outcomes.",
-      "The framework is your north-star — every patient interaction maps to PUNCH.",
+      "The framework is your north-star — every client interaction maps to PUNCH.",
     ],
   },
   {
@@ -231,7 +231,7 @@ export default function CoachGuidedTour({ coachId, coachName, onComplete, onClos
                 </div>
 
                 <div className="bg-muted/50 rounded-2xl p-4 mb-5 text-sm text-muted-foreground leading-relaxed">
-                  I, <span className="text-foreground font-bold">{coachName}</span>, confirm that I have reviewed and understand the 5 Core Objectives of the BBDO coaching philosophy. I commit to upholding these principles in all patient interactions.
+                  I, <span className="text-foreground font-bold">{coachName}</span>, confirm that I have reviewed and understand the 5 Core Objectives of the BBDO coaching philosophy. I commit to upholding these principles in all client interactions.
                 </div>
 
                 <div className="flex items-center justify-between mb-2">

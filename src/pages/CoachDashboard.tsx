@@ -38,7 +38,7 @@ export type CoachTab = "home" | "patients" | "meetings" | "requests" | "messages
 
 const navItems: { id: CoachTab; icon: React.ElementType; label: string }[] = [
   { id: "home", icon: Home, label: "Home" },
-  { id: "patients", icon: Users, label: "Patients" },
+  { id: "patients", icon: Users, label: "Clients" },
   { id: "meetings", icon: Calendar, label: "Meetings" },
   { id: "messages", icon: MessageCircle, label: "Messages" },
   { id: "community", icon: Heart, label: "Community" },

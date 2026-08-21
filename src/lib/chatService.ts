@@ -14,7 +14,7 @@ export interface ChatMessage {
   id: string;
   conversation_id: string;
   sender_id: string;
-  sender_role: "patient" | "coach";
+  sender_role: "client" | "coach";
   message: string;
   is_predefined: boolean;
   read_at: string | null;
@@ -78,7 +78,7 @@ export async function fetchMessages(conversationId: string, limit = 100): Promis
 export async function sendMessage(
   conversationId: string,
   senderId: string,
-  senderRole: "patient" | "coach",
+  senderRole: "client" | "coach",
   message: string,
   isPredefined = false
 ): Promise<ChatMessage | null> {
@@ -102,14 +102,14 @@ export async function sendMessage(
 }
 
 /** Mark messages as read and reset unread count */
-export async function markConversationRead(conversationId: string, role: "patient" | "coach") {
-  const updateField = role === "patient" ? "patient_unread_count" : "coach_unread_count";
+export async function markConversationRead(conversationId: string, role: "client" | "coach") {
+  const updateField = role === "client" ? "patient_unread_count" : "coach_unread_count";
   await supabase
     .from("chat_conversations")
     .update({ [updateField]: 0 } as any)
     .eq("id", conversationId);
 
-  const otherRole = role === "patient" ? "coach" : "patient";
+  const otherRole = role === "client" ? "coach" : "client";
   await supabase
     .from("chat_messages" as any)
     .update({ read_at: new Date().toISOString() } as any)
@@ -141,7 +141,7 @@ export async function fetchCoachConversations(coachId: string): Promise<(ChatCon
     const profile = profileMap.get(c.patient_id);
     return {
       ...c,
-      patient_name: profile?.name || "Unknown Patient",
+      patient_name: profile?.name || "Unknown Client",
       patient_avatar: profile?.avatar_url || null,
     };
   });

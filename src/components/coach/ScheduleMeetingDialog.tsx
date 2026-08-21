@@ -46,7 +46,7 @@ export default function ScheduleMeetingDialog({
   const showPicker = !patientId && Array.isArray(patients);
 
   const handleSubmit = async () => {
-    if (!selectedPatient) return toast({ title: "Select a patient", variant: "destructive" });
+    if (!selectedPatient) return toast({ title: "Select a client", variant: "destructive" });
     if (!date) return toast({ title: "Pick a date", variant: "destructive" });
     try {
       setSaving(true);
@@ -60,7 +60,7 @@ export default function ScheduleMeetingDialog({
         meeting_type: type,
         agenda: agenda || null,
       });
-      const targetName = patientName ?? patients?.find((p) => p.user_id === selectedPatient)?.name ?? "Patient";
+      const targetName = patientName ?? patients?.find((p) => p.user_id === selectedPatient)?.name ?? "Client";
       toast({ title: "Meeting scheduled", description: `${targetName} will get a WhatsApp video Call Now button at the start time.` });
       onScheduled?.();
       onOpenChange(false);
@@ -90,9 +90,9 @@ export default function ScheduleMeetingDialog({
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
           {showPicker && (
             <div>
-              <Label className={labelClass}><User className="w-3.5 h-3.5" /> Patient</Label>
+              <Label className={labelClass}><User className="w-3.5 h-3.5" /> Client</Label>
               <Select value={selectedPatient} onValueChange={setSelectedPatient}>
-                <SelectTrigger className="h-11"><SelectValue placeholder="Select a patient…" /></SelectTrigger>
+                <SelectTrigger className="h-11"><SelectValue placeholder="Select a client…" /></SelectTrigger>
                 <SelectContent>
                   {(patients ?? []).map((p) => (
                     <SelectItem key={p.user_id} value={p.user_id}>
@@ -100,7 +100,7 @@ export default function ScheduleMeetingDialog({
                     </SelectItem>
                   ))}
                   {(patients ?? []).length === 0 && (
-                    <div className="px-3 py-2 text-xs text-muted-foreground">No assigned patients</div>
+                    <div className="px-3 py-2 text-xs text-muted-foreground">No assigned clients</div>
                   )}
                 </SelectContent>
               </Select>
@@ -137,7 +137,7 @@ export default function ScheduleMeetingDialog({
           </div>
           <div className="rounded-xl bg-primary/5 border border-primary/10 px-3 py-2 text-xs text-muted-foreground flex items-start gap-2">
             <Phone className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
-            <span>WhatsApp video call — no link needed. The patient's app will show a Call Now button 5 min before the scheduled time.</span>
+            <span>WhatsApp video call — no link needed. The client's app will show a Call Now button 5 min before the scheduled time.</span>
           </div>
           <div>
             <Label className={labelClass}><FileText className="w-3.5 h-3.5" /> Agenda (optional)</Label>

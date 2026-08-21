@@ -44,7 +44,7 @@ function copyFor(slug: string | undefined): HopeCopy {
     titleLine2: "reversible.",
     sub: "With the right system, your body can heal.",
     quote: (
-      <>"Up to <span className="text-primary font-bold">86%</span> of patients achieve normal glucose through sustained lifestyle changes."</>
+      <>"Up to <span className="text-primary font-bold">86%</span> of clients achieve normal glucose through sustained lifestyle changes."</>
     ),
     source: "— The Lancet, 2024",
     secondary: {

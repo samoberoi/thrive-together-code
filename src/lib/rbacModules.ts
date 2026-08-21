@@ -183,7 +183,7 @@ export const COACH_SUBJECT: RbacSubject = {
   packageKey: null,
   label: "Coach",
   description:
-    "Health coach assigned to patients. Reviews logs, sends chat, manages assigned protocols.",
+    "Health coach assigned to clients. Reviews logs, sends chat, manages assigned protocols.",
   icon: UserCheck,
 };
 

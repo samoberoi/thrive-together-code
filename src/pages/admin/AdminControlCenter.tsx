@@ -39,7 +39,7 @@ export default function AdminControlCenter({ initialTab = "rbac" }: { initialTab
       <div>
         <h1 className="text-xl sm:text-2xl font-black text-foreground">Control Center</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Governance and platform-level controls — roles, billing, and patient-coach assignments.
+          Governance and platform-level controls — roles, billing, and client-coach assignments.
         </p>
       </div>
 

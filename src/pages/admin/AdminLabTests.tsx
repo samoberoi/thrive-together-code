@@ -427,7 +427,7 @@ export default function AdminLabTests() {
 
       <div className="liquid-glass rounded-2xl p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="text-sm font-bold text-foreground">Default patient-facing markup</div>
+          <div className="text-sm font-bold text-foreground">Default client-facing markup</div>
           <p className="text-xs text-muted-foreground mt-0.5">
             Applied on top of Thyrocare's rate when a test has no per-test override.
           </p>
@@ -534,7 +534,7 @@ export default function AdminLabTests() {
                   <th className="px-4 py-3 font-semibold">Test</th>
                   <th className="px-3 py-3 font-semibold">Code</th>
                   <th className="px-3 py-3 font-semibold">Type</th>
-                  <th className="px-3 py-3 font-semibold text-right">Patient price &amp; markup</th>
+                  <th className="px-3 py-3 font-semibold text-right">Client price &amp; markup</th>
                   <th className="px-3 py-3 font-semibold">Fasting</th>
                   <th className="px-3 py-3 font-semibold text-center">Active</th>
                   <th className="px-3 py-3 font-semibold text-center">Coach can assign</th>

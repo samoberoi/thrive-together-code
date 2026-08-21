@@ -117,7 +117,7 @@ function parseCoachHealthNotification(row: CoachHealthNotification): Alert | nul
 
   return {
     user_id: row.id,
-    patient_name: patientName || "Patient",
+    patient_name: patientName || "Client",
     type: rawTitle.includes("🚨") || /critical/i.test(rawTitle) ? "danger" : "warning",
     message: message || rawBody || "Health data updated",
     metric: metric || "Health",
@@ -602,10 +602,10 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
         .is("reviewed_at", null)
         .order("created_at", { ascending: false })
         .limit(10);
-      const nameById = new Map(enriched.map((p) => [p.user_id, p.name || "Patient"]));
+      const nameById = new Map(enriched.map((p) => [p.user_id, p.name || "Client"]));
       setNewLabReports(((extRows as any[]) ?? []).map((r) => ({
         id: r.id,
-        name: nameById.get(r.user_id) || "Patient",
+        name: nameById.get(r.user_id) || "Client",
         fileName: r.file_name ?? null,
         createdAt: r.created_at,
       })));
@@ -638,7 +638,7 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
     );
 
     // Upcoming (not yet lapsed) meetings, so newly booked patients stay visible on Home.
-    const nameById2 = new Map(enriched.map((p) => [p.user_id, p.name || "Patient"]));
+    const nameById2 = new Map(enriched.map((p) => [p.user_id, p.name || "Client"]));
     setUpcomingMeetings(
       rows
         .filter((m) => m.status === "scheduled" && (m.scheduled_at ?? "") >= graceIso)
@@ -646,7 +646,7 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
         .slice(0, 6)
         .map((m) => ({
           user_id: m.user_id,
-          name: nameById2.get(m.user_id) || "Patient",
+          name: nameById2.get(m.user_id) || "Client",
           scheduledAt: m.scheduled_at,
           type: m.meeting_type ?? "consultation",
         })),
@@ -787,7 +787,7 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
           icon: "👋",
         })
       ));
-      toast.success(`Nudge sent to ${offTrackPatients.length} patient${offTrackPatients.length > 1 ? "s" : ""}`);
+      toast.success(`Nudge sent to ${offTrackPatients.length} client${offTrackPatients.length > 1 ? "s" : ""}`);
     } catch {
       toast.error("Some nudges could not be sent");
     } finally {
@@ -841,7 +841,7 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
           <Users className="w-5 h-5 text-primary shrink-0" strokeWidth={1.8} />
           <div className="min-w-0">
             <p className="stat-number text-lg text-foreground leading-none">{patients.length}</p>
-            <p className="text-muted-foreground text-[10px] font-medium mt-1 truncate">Patients</p>
+            <p className="text-muted-foreground text-[10px] font-medium mt-1 truncate">Clients</p>
           </div>
         </button>
         <button
@@ -895,7 +895,7 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
               ? "bg-destructive/10 ring-1 ring-destructive/25 hover:bg-destructive/15"
               : "liquid-glass hover:bg-accent/40"
           }`}
-          title="Patients awaiting a scheduled meeting"
+          title="Clients awaiting a scheduled meeting"
         >
           <CalendarClock
             className={`w-5 h-5 shrink-0 ${needsScheduling.length > 0 ? "text-destructive" : "text-muted-foreground"}`}
@@ -952,7 +952,7 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
                   </div>
                   <div className="flex-1 min-w-0 space-y-1.5">
                     <p className="text-foreground font-semibold text-sm leading-snug truncate">
-                      {p.name ?? "Patient"}
+                      {p.name ?? "Client"}
                     </p>
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span
@@ -1020,7 +1020,7 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
         <motion.div className="liquid-glass rounded-3xl p-4" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}>
           <div className="flex items-center gap-2 mb-2.5">
             <UserCheck className="w-4 h-4 text-primary" strokeWidth={1.8} />
-            <span className="text-foreground font-bold text-sm">Patient Tracking</span>
+            <span className="text-foreground font-bold text-sm">Client Tracking</span>
             <span className="ml-auto text-[10px] text-muted-foreground font-medium">Today</span>
           </div>
           <div className="flex items-stretch rounded-xl overflow-hidden border border-border/50 divide-x divide-border/50">
@@ -1208,7 +1208,7 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
             <Heart className="w-5 h-5 text-success" strokeWidth={1.8} />
           </div>
           <div>
-            <p className="text-foreground font-bold text-sm">All patients healthy</p>
+            <p className="text-foreground font-bold text-sm">All clients healthy</p>
             <p className="text-muted-foreground text-xs">No concerns flagged right now</p>
           </div>
         </motion.div>
@@ -1221,7 +1221,7 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
           onOpenChange={(b) => { if (!b) setScheduleFor(null); }}
           coachId={coach.id}
           patientId={scheduleFor.user_id}
-          patientName={scheduleFor.name ?? "Patient"}
+          patientName={scheduleFor.name ?? "Client"}
           defaultType="onboarding"
           onScheduled={() => { setScheduleFor(null); loadData(); }}
         />

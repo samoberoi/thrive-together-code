@@ -146,7 +146,7 @@ export default function PatientDietSymptomsSummary({ userId, refreshKey }: Props
   // Live updates when the patient (or coach) edits the profile
   useEffect(() => {
     const channel = supabase
-      .channel(`patient-summary-${userId}`)
+      .channel(`client-summary-${userId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "user_diet_profiles", filter: `user_id=eq.${userId}` }, () => load())
       .on("postgres_changes", { event: "*", schema: "public", table: "user_symptoms", filter: `user_id=eq.${userId}` }, () => load())
       .on("postgres_changes", { event: "*", schema: "public", table: "profiles", filter: `user_id=eq.${userId}` }, () => load())

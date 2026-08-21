@@ -80,7 +80,7 @@ export default function RecommendTestsDialog({ open, onOpenChange, coachId, pati
         .in("status", ["pending", "viewed", "booked"])
         .maybeSingle();
       if (openRec) {
-        toast({ title: "Test already assigned", description: `${patientName ?? "This patient"} already has an active lab test. Withdraw it before assigning another.`, variant: "destructive" });
+        toast({ title: "Test already assigned", description: `${patientName ?? "This client"} already has an active lab test. Withdraw it before assigning another.`, variant: "destructive" });
         setSaving(false);
         return;
       }
@@ -92,7 +92,7 @@ export default function RecommendTestsDialog({ open, onOpenChange, coachId, pati
         notes: note.trim() || null,
       });
       if (error) {
-        if ((error as any).code === "23505") throw new Error(`${patientName ?? "This patient"} already has an active lab test. Withdraw it before assigning another.`);
+        if ((error as any).code === "23505") throw new Error(`${patientName ?? "This client"} already has an active lab test. Withdraw it before assigning another.`);
         throw error;
       }
 
@@ -105,7 +105,7 @@ export default function RecommendTestsDialog({ open, onOpenChange, coachId, pati
         icon: "🧪",
         action_url: "/dashboard?tab=profile&section=lab-tests",
       });
-      toast({ title: "Tests recommended", description: `${patientName ?? "Patient"} can now order them.` });
+      toast({ title: "Tests recommended", description: `${patientName ?? "Client"} can now order them.` });
       onCreated?.();
       onOpenChange(false);
       setSelected({}); setNote("");
@@ -119,7 +119,7 @@ export default function RecommendTestsDialog({ open, onOpenChange, coachId, pati
       <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2"><FlaskConical className="w-4 h-4 text-primary" /> Recommend tests</DialogTitle>
-          <DialogDescription>Pick one lab test {patientName ?? "your patient"} should book.</DialogDescription>
+          <DialogDescription>Pick one lab test {patientName ?? "your client"} should book.</DialogDescription>
         </DialogHeader>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -142,7 +142,7 @@ export default function RecommendTestsDialog({ open, onOpenChange, coachId, pati
             ))}
           {!loading && filtered.length === 0 && <p className="text-center text-sm text-muted-foreground py-8">No tests found</p>}
         </div>
-        <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optional note for patient…" />
+        <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optional note for client…" />
         <Button onClick={submit} disabled={saving} className="w-full">
           {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
           Send {selectedCodes.length > 0 ? "test" : "recommendation"}

@@ -54,7 +54,7 @@ export default function PatientChat({ coach, onBack }: PatientChatProps) {
         setConversation(convo);
         const msgs = await fetchMessages(convo.id);
         setMessages(msgs);
-        await markConversationRead(convo.id, "patient");
+        await markConversationRead(convo.id, "client");
       }
       setLoading(false);
     })();
@@ -70,7 +70,7 @@ export default function PatientChat({ coach, onBack }: PatientChatProps) {
         (payload) => {
           const newMsg = payload.new as unknown as ChatMessage;
           setMessages((prev) => (prev.some((m) => m.id === newMsg.id) ? prev : [...prev, newMsg]));
-          if (newMsg.sender_role === "coach") markConversationRead(conversation.id, "patient");
+          if (newMsg.sender_role === "coach") markConversationRead(conversation.id, "client");
         },
       )
       .subscribe();
@@ -94,7 +94,7 @@ export default function PatientChat({ coach, onBack }: PatientChatProps) {
     if (!text) setInput("");
     setSending(true);
     setShowQuickQuestions(false);
-    const sent = await sendMessage(conversation.id, user.id, "patient", msg, isPredefined);
+    const sent = await sendMessage(conversation.id, user.id, "client", msg, isPredefined);
     if (sent) {
       // Optimistic append so the message shows instantly even if realtime lags.
       setMessages((prev) => (prev.some((m) => m.id === sent.id) ? prev : [...prev, sent]));
@@ -210,7 +210,7 @@ export default function PatientChat({ coach, onBack }: PatientChatProps) {
                     </span>
                   </div>
                   {bucket.items.map((msg, idx) => {
-                    const isMe = msg.sender_role === "patient";
+                    const isMe = msg.sender_role === "client";
                     const prev = bucket.items[idx - 1];
                     const next = bucket.items[idx + 1];
                     const groupedWithPrev = prev && prev.sender_role === msg.sender_role &&
