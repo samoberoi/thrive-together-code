@@ -283,13 +283,16 @@ export default function BuildMyPlate({ onClose, onSaved }: { onClose: () => void
     // of this full-screen portal previously locked the screen.
     setSaving(true);
 
-    // Render snapshot
+    // Render snapshot. Never let image loading block the actual save — cap it.
     let snapshotPath: string | null = null;
     try {
-      const blob = await renderPlate(selectedFoodItems.map(({ item }) => ({
-        name: item.name,
-        imageUrl: imageUrls[item.id] || null,
-      })));
+      const blob = await Promise.race([
+        renderPlate(selectedFoodItems.map(({ item }) => ({
+          name: item.name,
+          imageUrl: imageUrls[item.id] || null,
+        }))),
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 8000)),
+      ]);
       if (blob) {
         const path = `${user.id}/${crypto.randomUUID()}.jpg`;
         const up = await supabase.storage.from("plate-snapshots").upload(path, blob, { contentType: "image/jpeg", upsert: true });
