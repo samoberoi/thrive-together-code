@@ -22,7 +22,7 @@ import { useUserDietProfile, isFoodBlockedByDietProfile } from "@/hooks/useUserD
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
-type DietPref = "veg" | "vegan" | "jain" | "non_veg";
+type DietPref = string;
 
 interface SectionDef {
   id: string;
