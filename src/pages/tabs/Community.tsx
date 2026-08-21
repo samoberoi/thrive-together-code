@@ -233,7 +233,7 @@ function PostCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.22, ease: EASE }}
     >
-      <div className="flex items-center gap-3 mb-3">
+      <div className="flex items-start gap-3 mb-3">
         <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden ring-2 ring-[var(--bbdo-blue)]/15">
           {post.user_avatar ? (
             <img loading="lazy" decoding="async" src={post.user_avatar} alt="" className="w-full h-full object-cover" />
