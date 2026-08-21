@@ -451,24 +451,40 @@ function CreatePostSheet({
         )}
 
         {categories.length > 0 && (
-          <div className="mt-3">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Category</p>
-            <div className="flex flex-wrap gap-2">
+          <div className="mt-4">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Category</p>
+              {slug && (
+                <button type="button" onClick={() => setSlug(null)} className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground underline">
+                  Clear
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-2">
               {categories.map((c) => {
                 const active = slug === c.slug;
                 const CatIcon = iconFor(c.slug);
                 return (
                   <button
                     key={c.id}
+                    type="button"
+                    aria-pressed={active}
                     onClick={() => setSlug(active ? null : c.slug)}
-                    className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full transition-opacity"
+                    className="flex items-center gap-2 rounded-2xl border px-3 py-2.5 text-left text-xs font-bold transition-all"
                     style={{
-                      background: active ? c.accent_color : `${c.accent_color}15`,
+                      background: active ? c.accent_color : `${c.accent_color}0F`,
                       color: active ? "#fff" : c.accent_color,
+                      borderColor: active ? c.accent_color : `${c.accent_color}33`,
+                      boxShadow: active ? `0 6px 16px -8px ${c.accent_color}` : "none",
                     }}
                   >
-                    <CatIcon className="w-3.5 h-3.5" strokeWidth={2} />
-                    {c.label}
+                    <span
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
+                      style={{ background: active ? "rgba(255,255,255,0.22)" : `${c.accent_color}1F` }}
+                    >
+                      {active ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : <CatIcon className="h-3.5 w-3.5" strokeWidth={2} />}
+                    </span>
+                    <span className="min-w-0 flex-1 leading-tight">{c.label}</span>
                   </button>
                 );
               })}
