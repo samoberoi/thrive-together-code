@@ -276,10 +276,11 @@ export default function BuildMyPlate({ onClose, onSaved }: { onClose: () => void
   };
 
   const handleSave = async () => {
+    if (saving) return;
     if (!user) { toast.error("Please sign in to save"); return; }
     if (selectedFoodItems.length === 0) { toast.error("Add at least one food to your plate"); return; }
-    const ok = await confirm({ title: "Save this plate?", description: "We'll add it to your saved plates so you can reuse it anytime." });
-    if (!ok) return;
+    // No confirmation dialog here: saving is non-destructive, and a modal on top
+    // of this full-screen portal previously locked the screen.
     setSaving(true);
 
     // Render snapshot
