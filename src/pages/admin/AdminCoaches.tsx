@@ -424,6 +424,16 @@ export default function AdminCoaches() {
           <div className="text-center py-12 text-muted-foreground"><p>No coaches found</p></div>
         )}
       </div>
+
+      {reviewsCoach && (
+        <CoachReviewsDialog
+          open={!!reviewsCoach}
+          onOpenChange={(o) => !o && setReviewsCoach(null)}
+          coachId={reviewsCoach.id}
+          avgRating={Number(reviewsCoach.avg_rating ?? 0)}
+          totalRatings={Number(reviewsCoach.total_ratings ?? 0)}
+        />
+      )}
     </div>
   );
 }
