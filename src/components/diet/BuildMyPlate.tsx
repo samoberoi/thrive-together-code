@@ -329,7 +329,11 @@ export default function BuildMyPlate({ onClose, onSaved }: { onClose: () => void
       snapshot_url: snapshotPath,
     } as any);
     setSaving(false);
-    if (error) { toast.error("Couldn't save plate"); return; }
+    if (error) {
+      console.error("[plate] save failed", error);
+      toast.error(error.message || "Couldn't save plate");
+      return;
+    }
     toast.success("Plate saved! 🍽️");
     try { await onSaved?.(); } catch (e) { console.error(e); }
     onClose();
