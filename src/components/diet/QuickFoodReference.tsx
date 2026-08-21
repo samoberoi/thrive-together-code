@@ -11,6 +11,7 @@ import FoodItemDetail from "./FoodItemDetail";
 import {
   type FoodCategory, type FoodFilter, type FoodItem, type DietType, type Recommendation,
   giLabel, giClass, recLabel, recClass, range, avgOf, portionLabel, scaleCalories, scaleMacro, scaleRange,
+  dietAllowsItem,
 } from "./dietTypes";
 import {
   type ActiveCondition, type FoodRuleHit, type ConditionRuleRow, type ConditionKey,
