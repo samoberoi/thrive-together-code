@@ -88,6 +88,16 @@ function servingText(servings: number) {
   return servings % 1 === 0 ? String(servings) : servings.toFixed(1);
 }
 
+// Only the columns the plate builder actually renders — `select("*")` pulled
+// long text/array blobs that made the first paint take seconds.
+const FOOD_ITEM_COLUMNS =
+  "id,filter_id,name,alt_name,diet_type,serving_basis,serving_size_qty,serving_size_unit,serving_label,household_measure,household_grams,carbs_min,carbs_max,gi_min,gi_max,gi_band,protein_g,fat_g,fiber_g,calories_kcal,recommendation,is_jain_friendly,is_dairy_free,is_active,display_order,image_url,updated_at";
+
+// Session-level catalogue cache — re-opening the builder is instant.
+let catalogueCache: { filters: any[]; items: any[] } | null = null;
+
+
+
 export default function BuildMyPlate({ onClose, onSaved }: { onClose: () => void; onSaved?: () => void | Promise<void> }) {
   const { user } = useAuth();
   const { subPreferences, allergenFoodIds } = useUserDietProfile(user?.id);
