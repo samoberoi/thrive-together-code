@@ -107,28 +107,47 @@ export default function BuildMyPlate({ onClose, onSaved }: { onClose: () => void
   const plateCanvasRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    let cancelled = false;
+    // Warm start: reuse the catalogue fetched earlier in this session so
+    // re-opening Build My Plate is instant instead of a 5s cold fetch.
+    if (catalogueCache) {
+      setFilters(catalogueCache.filters);
+      setItems(catalogueCache.items);
+      setLoading(false);
+      primeFoodImages(catalogueCache.items as any);
+    }
     (async () => {
-      const [f, i] = await Promise.all([
+      const [f, i, p] = await Promise.all([
         supabase.from("food_filters").select("*").eq("is_active", true),
-        supabase.from("food_items").select("*").eq("is_active", true).order("display_order"),
+        supabase
+          .from("food_items")
+          .select(FOOD_ITEM_COLUMNS)
+          .eq("is_active", true)
+          .order("display_order"),
+        user
+          ? supabase.from("user_diet_profiles").select("diet_preference, diet_preferences").eq("user_id", user.id).maybeSingle()
+          : Promise.resolve({ data: null } as any),
       ]);
-      setFilters((f.data as any) || []);
+      if (cancelled) return;
+      const filtersData = (f.data as any) || [];
       const itemsData = (i.data as any) || [];
+      setFilters(filtersData);
       setItems(itemsData);
+      catalogueCache = { filters: filtersData, items: itemsData };
       primeFoodImages(itemsData);
-      if (user) {
-        const { data } = await supabase.from("user_diet_profiles").select("diet_preference, diet_preferences").eq("user_id", user.id).maybeSingle() as any;
-        if (data) {
-          const arr = (data.diet_preferences as string[] | null) || [];
-          const mapped = arr.map(normalizePref).filter(Boolean) as DietPref[];
-          const single = normalizePref(data.diet_preference);
-          const finalPrefs = single && mapped.length > 0 && !mapped.includes(single) ? [single] : (mapped.length ? mapped : single ? [single] : []);
-          setPrefs(finalPrefs);
-        }
+      const data = (p as any)?.data;
+      if (data) {
+        const arr = (data.diet_preferences as string[] | null) || [];
+        const mapped = arr.map(normalizePref).filter(Boolean) as DietPref[];
+        const single = normalizePref(data.diet_preference);
+        const finalPrefs = single && mapped.length > 0 && !mapped.includes(single) ? [single] : (mapped.length ? mapped : single ? [single] : []);
+        setPrefs(finalPrefs);
       }
       setLoading(false);
     })();
+    return () => { cancelled = true; };
   }, [user]);
+
 
   // Adapt sections based on prefs (multi-select).
   const sections = useMemo(() => buildSections(prefs), [prefs]);
