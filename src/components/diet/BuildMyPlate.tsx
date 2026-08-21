@@ -88,6 +88,16 @@ function servingText(servings: number) {
   return servings % 1 === 0 ? String(servings) : servings.toFixed(1);
 }
 
+// Only the columns the plate builder actually renders — `select("*")` pulled
+// long text/array blobs that made the first paint take seconds.
+const FOOD_ITEM_COLUMNS =
+  "id,filter_id,name,alt_name,diet_type,serving_basis,serving_size_qty,serving_size_unit,serving_label,household_measure,household_grams,carbs_min,carbs_max,gi_min,gi_max,gi_band,protein_g,fat_g,fiber_g,calories_kcal,recommendation,is_jain_friendly,is_dairy_free,is_active,display_order,health_benefits,notes,image_url,updated_at";
+
+// Session-level catalogue cache — re-opening the builder is instant.
+let catalogueCache: { filters: any[]; items: any[] } | null = null;
+
+
+
 export default function BuildMyPlate({ onClose, onSaved }: { onClose: () => void; onSaved?: () => void | Promise<void> }) {
   const { user } = useAuth();
   const { subPreferences, allergenFoodIds } = useUserDietProfile(user?.id);
@@ -107,28 +117,47 @@ export default function BuildMyPlate({ onClose, onSaved }: { onClose: () => void
   const plateCanvasRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    let cancelled = false;
+    // Warm start: reuse the catalogue fetched earlier in this session so
+    // re-opening Build My Plate is instant instead of a 5s cold fetch.
+    if (catalogueCache) {
+      setFilters(catalogueCache.filters);
+      setItems(catalogueCache.items);
+      setLoading(false);
+      primeFoodImages(catalogueCache.items as any);
+    }
     (async () => {
-      const [f, i] = await Promise.all([
+      const [f, i, p] = await Promise.all([
         supabase.from("food_filters").select("*").eq("is_active", true),
-        supabase.from("food_items").select("*").eq("is_active", true).order("display_order"),
+        supabase
+          .from("food_items")
+          .select(FOOD_ITEM_COLUMNS)
+          .eq("is_active", true)
+          .order("display_order"),
+        user
+          ? supabase.from("user_diet_profiles").select("diet_preference, diet_preferences").eq("user_id", user.id).maybeSingle()
+          : Promise.resolve({ data: null } as any),
       ]);
-      setFilters((f.data as any) || []);
+      if (cancelled) return;
+      const filtersData = (f.data as any) || [];
       const itemsData = (i.data as any) || [];
+      setFilters(filtersData);
       setItems(itemsData);
+      catalogueCache = { filters: filtersData, items: itemsData };
       primeFoodImages(itemsData);
-      if (user) {
-        const { data } = await supabase.from("user_diet_profiles").select("diet_preference, diet_preferences").eq("user_id", user.id).maybeSingle() as any;
-        if (data) {
-          const arr = (data.diet_preferences as string[] | null) || [];
-          const mapped = arr.map(normalizePref).filter(Boolean) as DietPref[];
-          const single = normalizePref(data.diet_preference);
-          const finalPrefs = single && mapped.length > 0 && !mapped.includes(single) ? [single] : (mapped.length ? mapped : single ? [single] : []);
-          setPrefs(finalPrefs);
-        }
+      const data = (p as any)?.data;
+      if (data) {
+        const arr = (data.diet_preferences as string[] | null) || [];
+        const mapped = arr.map(normalizePref).filter(Boolean) as DietPref[];
+        const single = normalizePref(data.diet_preference);
+        const finalPrefs = single && mapped.length > 0 && !mapped.includes(single) ? [single] : (mapped.length ? mapped : single ? [single] : []);
+        setPrefs(finalPrefs);
       }
       setLoading(false);
     })();
+    return () => { cancelled = true; };
   }, [user]);
+
 
   // Adapt sections based on prefs (multi-select).
   const sections = useMemo(() => buildSections(prefs), [prefs]);
@@ -283,41 +312,26 @@ export default function BuildMyPlate({ onClose, onSaved }: { onClose: () => void
     // of this full-screen portal previously locked the screen.
     setSaving(true);
 
-    // Render snapshot. Never let image loading block the actual save — cap it.
-    let snapshotPath: string | null = null;
-    try {
-      const blob = await Promise.race([
-        renderPlate(selectedFoodItems.map(({ item }) => ({
-          name: item.name,
-          imageUrl: imageUrls[item.id] || null,
-        }))),
-        new Promise<null>((resolve) => setTimeout(() => resolve(null), 8000)),
-      ]);
-      if (blob) {
-        const path = `${user.id}/${crypto.randomUUID()}.jpg`;
-        const up = await supabase.storage.from("plate-snapshots").upload(path, blob, { contentType: "image/jpeg", upsert: true });
-        if (!up.error) snapshotPath = path;
-      }
-    } catch (e) {
-      console.error("plate render failed", e);
-    }
-
     const giBand = totals.avgGi == null ? null
       : totals.avgGi < 55 ? "low"
       : totals.avgGi < 65 ? "medium"
       : totals.avgGi < 75 ? "med_high" : "high";
 
-    const { error } = await supabase.from("user_plates").insert({
+    const plateItems = selectedFoodItems.map(({ sel, item }) => ({
+      id: item.id, name: item.name, alt_name: item.alt_name, diet_type: item.diet_type,
+      filter_id: item.filter_id, servings: sel.servings,
+      serving_label: item.serving_label, household_measure: item.household_measure,
+      carbs_min: item.carbs_min, carbs_max: item.carbs_max, protein_g: item.protein_g,
+      fat_g: item.fat_g, fiber_g: item.fiber_g, calories_kcal: item.calories_kcal,
+      gi_band: item.gi_band, image_url: imageUrls[item.id] || null,
+    }));
+
+    // Save the record first — the plate snapshot is cosmetic and is rendered +
+    // uploaded in the background afterwards, so the user never waits for it.
+    const { data: inserted, error } = await supabase.from("user_plates").insert({
       user_id: user.id,
       name: `Plate · ${new Date().toLocaleDateString(undefined, { month: "short", day: "numeric" })}`,
-      items: selectedFoodItems.map(({ sel, item }) => ({
-        id: item.id, name: item.name, alt_name: item.alt_name, diet_type: item.diet_type,
-        filter_id: item.filter_id, servings: sel.servings,
-        serving_label: item.serving_label, household_measure: item.household_measure,
-        carbs_min: item.carbs_min, carbs_max: item.carbs_max, protein_g: item.protein_g,
-        fat_g: item.fat_g, fiber_g: item.fiber_g, calories_kcal: item.calories_kcal,
-        gi_band: item.gi_band, image_url: imageUrls[item.id] || null,
-      })),
+      items: plateItems,
       total_carbs_g: totals.carbs,
       total_protein_g: totals.protein,
       total_fat_g: totals.fat,
@@ -326,8 +340,29 @@ export default function BuildMyPlate({ onClose, onSaved }: { onClose: () => void
       avg_gi: totals.avgGi,
       gi_band: giBand,
       sugar_spike_risk: totals.risk,
-      snapshot_url: snapshotPath,
-    } as any);
+      snapshot_url: null,
+    } as any).select("id").maybeSingle();
+
+    if (!error && inserted) {
+      const plateId = (inserted as any).id as string;
+      const snapItems = selectedFoodItems.map(({ item }) => ({ name: item.name, imageUrl: imageUrls[item.id] || null }));
+      void (async () => {
+        try {
+          const blob = await Promise.race([
+            renderPlate(snapItems, 720),
+            new Promise<null>((resolve) => setTimeout(() => resolve(null), 6000)),
+          ]);
+          if (!blob) return;
+          const path = `${user.id}/${crypto.randomUUID()}.jpg`;
+          const up = await supabase.storage.from("plate-snapshots").upload(path, blob, { contentType: "image/jpeg", upsert: true });
+          if (up.error) return;
+          await supabase.from("user_plates").update({ snapshot_url: path } as any).eq("id", plateId);
+        } catch (e) {
+          console.error("plate snapshot failed", e);
+        }
+      })();
+    }
+
     setSaving(false);
     if (error) {
       console.error("[plate] save failed", error);
