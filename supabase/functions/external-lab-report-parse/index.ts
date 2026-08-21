@@ -108,11 +108,11 @@ Rules:
     const lovableKey = Deno.env.get("LOVABLE_API_KEY");
     if (!lovableKey) throw new Error("Report extraction service is unavailable");
     const mime = report.mime_type || (String(report.file_name || "").toLowerCase().endsWith(".pdf") ? "application/pdf" : "image/jpeg");
-    const gateway = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const callGateway = (model: string) => fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Lovable-API-Key": lovableKey },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model,
         messages: [{
           role: "user",
           content: [
@@ -123,8 +123,23 @@ Rules:
         response_format: { type: "json_object" },
       }),
     });
+
+    // Transient gateway problems (rate limits, key refresh, upstream blips) must
+    // not turn a good report into a permanent "could not read" for the client.
+    const models = ["google/gemini-2.5-flash", "google/gemini-2.5-flash", "google/gemini-2.5-pro"];
+    let gateway: Response | null = null;
+    let lastStatus = 0;
+    for (let i = 0; i < models.length; i++) {
+      gateway = await callGateway(models[i]);
+      if (gateway.ok) break;
+      lastStatus = gateway.status;
+      console.error("external-lab-report-parse gateway", models[i], gateway.status, (await gateway.text()).slice(0, 300));
+      gateway = null;
+      if (i < models.length - 1) await new Promise((r) => setTimeout(r, 1500 * (i + 1)));
+    }
+    if (!gateway) throw new Error(`Extraction failed (${lastStatus})`);
     const gatewayText = await gateway.text();
-    if (!gateway.ok) throw new Error(`Extraction failed (${gateway.status})`);
+
 
     let outer: any = {};
     try { outer = JSON.parse(gatewayText); } catch { throw new Error("Invalid extraction response"); }
