@@ -117,3 +117,37 @@ export function sugarSpikeRisk(avgGi: number | null, totalCarbs: number): "low" 
   if (load < 20) return "moderate";
   return "high";
 }
+
+// ─── Diet preference matching (shared by Build My Plate + food library) ──────
+export function normalizeDietPref(p: string | null | undefined): string | null {
+  const v = (p || "").toLowerCase().trim().replace(/[-\s]/g, "_");
+  if (!v) return null;
+  if (v === "vegetarian" || v === "mixed") return "veg";
+  if (v === "nonveg" || v === "non_vegetarian" || v === "nonvegetarian") return "non_veg";
+  if (v === "eggetarian" || v === "eggeterian") return "eggitarian";
+  return v;
+}
+
+/**
+ * Does a food item fit ANY of the user's diet preferences?
+ * veg → veg+vegan · vegan → vegan · jain → jain-friendly veg/vegan
+ * eggitarian → veg+vegan+eggitarian · non_veg → everything
+ * unknown/custom slug → exact diet_type match
+ */
+export function dietAllowsItem(
+  prefs: string[],
+  item: { diet_type?: string | null; is_jain_friendly?: boolean | null },
+): boolean {
+  if (!prefs.length) return true;
+  const dt = (item.diet_type || "").toLowerCase();
+  return prefs.some((raw) => {
+    const p = normalizeDietPref(raw);
+    if (!p) return false;
+    if (p === "non_veg") return true;
+    if (p === "vegan") return dt === "vegan";
+    if (p === "veg") return dt === "veg" || dt === "vegan";
+    if (p === "jain") return (dt === "veg" || dt === "vegan") && item.is_jain_friendly !== false;
+    if (p === "eggitarian") return dt === "veg" || dt === "vegan" || dt === "eggitarian";
+    return dt === p;
+  });
+}

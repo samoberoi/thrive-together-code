@@ -11,6 +11,7 @@ import FoodItemDetail from "./FoodItemDetail";
 import {
   type FoodCategory, type FoodFilter, type FoodItem, type DietType, type Recommendation,
   giLabel, giClass, recLabel, recClass, range, avgOf, portionLabel, scaleCalories, scaleMacro, scaleRange,
+  dietAllowsItem,
 } from "./dietTypes";
 import {
   type ActiveCondition, type FoodRuleHit, type ConditionRuleRow, type ConditionKey,
@@ -165,7 +166,7 @@ export default function QuickFoodReference({ onClose, embedded = false }: { onCl
 
     const syncFromProfile = async () => {
       const [dietRes, profRes, catalog] = await Promise.all([
-        supabase.from("user_diet_profiles").select("diet_preference").eq("user_id", user.id).maybeSingle(),
+        supabase.from("user_diet_profiles").select("diet_preference, diet_preferences").eq("user_id", user.id).maybeSingle(),
         supabase.from("profiles").select("deep_profiling, lifestyle, clinical").eq("user_id", user.id).maybeSingle(),
         fetchFoodConditions(),
       ]);
@@ -174,7 +175,17 @@ export default function QuickFoodReference({ onClose, embedded = false }: { onCl
       const metaMap = Object.fromEntries(catalog.map((c) => [c.key, { label: c.label, emoji: c.emoji, icon_url: c.icon_url }]));
       const profRow: any = profRes.data;
       const lifestyleDiet = profRow?.lifestyle?.diet as string | undefined;
+      // Multi-select preferences: default the chip to the most permissive one the
+      // user actually eats, so an eggitarian/non-veg member is never shown veg-only.
+      const RANK = ["non_veg", "eggitarian", "veg", "vegan", "jain"];
+      const arr = ((dietRes.data as any)?.diet_preferences as string[] | null) || [];
+      const normalized = arr.map(normalizePref).filter(Boolean) as DietKey[];
+      normalized.sort((a, b) => {
+        const ra = RANK.indexOf(a); const rb = RANK.indexOf(b);
+        return (ra < 0 ? 99 : ra) - (rb < 0 ? 99 : rb);
+      });
       const pref =
+        normalized[0] ??
         normalizePref(dietRes.data?.diet_preference as string) ??
         normalizePref(lifestyleDiet);
       if (pref) { setProfilePref(pref); setDiet(pref); }
@@ -335,15 +346,8 @@ export default function QuickFoodReference({ onClose, embedded = false }: { onCl
   // - veg       → veg + vegan
   // - vegan     → vegan only
   // - jain      → jain-friendly only
-  const dietMatches = (it: FoodItem): boolean => {
-    if (!diet || diet === "non_veg") return true;
-    if (diet === "vegan") return it.diet_type === "vegan";
-    if (diet === "jain")  return it.is_jain_friendly;
-    if (diet === "veg")   return it.diet_type === "veg" || it.diet_type === "vegan";
-    if (diet === "eggitarian") return it.diet_type === "veg" || it.diet_type === "vegan" || it.diet_type === "eggitarian";
-    // Custom diet slug added by admin → match exactly on the food's diet_type.
-    return it.diet_type === diet;
-  };
+  const dietMatches = (it: FoodItem): boolean =>
+    dietAllowsItem(diet ? [diet] : [], it as any);
 
   // A preset takes over the whole surface (cross-category), same effect as global sort.
   const isGlobalSort = preset !== null || sort !== "recommended" || search.trim().length > 0;

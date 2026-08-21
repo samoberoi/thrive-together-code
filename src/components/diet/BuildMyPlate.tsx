@@ -15,6 +15,7 @@ import { renderPlate } from "@/lib/plateRenderer";
 import {
   type FoodFilter, type FoodItem, type DietType,
   giLabel, giClass, avgOf, sugarSpikeRisk, portionFactor, portionLabel, scaleCalories, scaleMacro,
+  normalizeDietPref, dietAllowsItem,
 } from "./dietTypes";
 import { useUserDietProfile, isFoodBlockedByDietProfile } from "@/hooks/useUserDietProfile";
 
@@ -22,7 +23,7 @@ import { useUserDietProfile, isFoodBlockedByDietProfile } from "@/hooks/useUserD
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
-type DietPref = "veg" | "vegan" | "jain" | "non_veg";
+type DietPref = string;
 
 interface SectionDef {
   id: string;
@@ -45,17 +46,22 @@ const BASE_AFTER_PROTEIN: SectionDef[] = [
 ];
 
 function buildSections(prefs: DietPref[]): SectionDef[] {
-  // Non-veg users (with or without other prefs) get a SINGLE merged protein step:
-  // they can pick from animal + plant lists, but the recommended total stays 1–2.
-  const proteinStep: SectionDef = prefs.includes("non_veg")
+  const norm = prefs.map(normalizeDietPref).filter(Boolean) as string[];
+  const isNonVeg = norm.includes("non_veg");
+  const isEgg = norm.includes("eggitarian");
+  // Anyone who eats animal protein (meat/fish or eggs) gets a SINGLE merged
+  // protein step: animal + plant lists together, recommended total stays 1–2.
+  const proteinStep: SectionDef = (isNonVeg || isEgg)
     ? {
         id: "protein",
         filterSlugs: ["lean_proteins", "veg_vegan_proteins"],
         header: "Protein",
-        hook: "Anchor your plate. Pick from animal or plant proteins — or mix both. Total 1–2 works best.",
+        hook: isNonVeg
+          ? "Anchor your plate. Pick from animal or plant proteins — or mix both. Total 1–2 works best."
+          : "Anchor your plate. Pick eggs or plant proteins — or mix both. Total 1–2 works best.",
         recMin: 1, recMax: 2,
         groupLabels: {
-          lean_proteins: "Lean (Non-veg)",
+          lean_proteins: isNonVeg ? "Lean (Non-veg)" : "Eggs",
           veg_vegan_proteins: "Plant-based",
         },
       }
@@ -75,14 +81,8 @@ interface PlateSelection {
   servings: number; // multiplier on base serving (e.g. 1 katori, 2 tbsp)
 }
 
-function normalizePref(p: string): DietPref | null {
-  const v = (p || "").toLowerCase();
-  if (v === "veg" || v === "vegetarian") return "veg";
-  if (v === "vegan") return "vegan";
-  if (v === "jain") return "jain";
-  if (v === "non_veg" || v === "non-veg" || v === "nonveg") return "non_veg";
-  return null;
-}
+const normalizePref = normalizeDietPref;
+
 
 function servingText(servings: number) {
   return servings % 1 === 0 ? String(servings) : servings.toFixed(1);
@@ -179,14 +179,7 @@ export default function BuildMyPlate({ onClose, onSaved }: { onClose: () => void
       const list = items
         .filter((it) => it.filter_id === f.id)
         .filter((it) => !isFoodBlockedByDietProfile(it as any, subPreferences, allergenFoodIds))
-        .filter((it) => {
-          if (prefs.length === 0) return true; // skip → show everything
-          if (prefs.includes("vegan") && it.diet_type === "vegan") return true;
-          if (prefs.includes("veg") && it.diet_type !== "non_veg") return true;
-          if (prefs.includes("jain") && it.is_jain_friendly) return true;
-          if (prefs.includes("non_veg")) return true;
-          return false;
-        });
+        .filter((it) => dietAllowsItem(prefs, it as any));
       return {
         filterId: f.id,
         filterSlug: f.slug,
