@@ -432,6 +432,7 @@ export default function AdminCoaches() {
           coachId={reviewsCoach.id}
           avgRating={Number(reviewsCoach.avg_rating ?? 0)}
           totalRatings={Number(reviewsCoach.total_ratings ?? 0)}
+          description={`Ratings and written feedback for ${reviewsCoach.name}`}
         />
       )}
     </div>
