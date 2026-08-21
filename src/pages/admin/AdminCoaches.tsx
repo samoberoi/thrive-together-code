@@ -57,6 +57,7 @@ export default function AdminCoaches() {
   const [assignedCounts, setAssignedCounts] = useState<Record<string, number>>({});
   const [assignedUsers, setAssignedUsers] = useState<Record<string, AssignedUser[]>>({});
   const [showAssignedFor, setShowAssignedFor] = useState<string | null>(null);
+  const [reviewsCoach, setReviewsCoach] = useState<Coach | null>(null);
   const [commissionModels, setCommissionModels] = useState<{ id: string; name: string; percent: number }[]>([]);
 
   useEffect(() => {
