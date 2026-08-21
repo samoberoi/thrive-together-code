@@ -1,15 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Calendar, FlaskConical, Pill, Timer, CheckCircle2, Loader2 } from "lucide-react";
+import { Calendar, FlaskConical, Pill, Timer, CheckCircle2, Loader2, FileUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import ScheduleMeetingDialog from "@/components/coach/ScheduleMeetingDialog";
 import RecommendTestsDialog from "@/components/coach/RecommendTestsDialog";
 import RecommendSupplementsDialog from "@/components/coach/RecommendSupplementsDialog";
 import AssignFastingDialog from "@/components/coach/AssignFastingDialog";
 import { openCoachPatientModule, type CoachModuleTab } from "@/lib/coachNav";
+import ExternalTestDialog from "@/components/lab/ExternalTestDialog";
+import { fetchExternalReportsForUser } from "@/lib/externalLabService";
+import { useAuth } from "@/contexts/AuthContext";
 
 
-type Dlg = "meeting" | "tests" | "supps" | "fasting" | null;
+type Dlg = "meeting" | "tests" | "supps" | "fasting" | "report" | null;
 
 interface Props {
   coachId: string;
@@ -25,9 +28,10 @@ interface Status {
   supps: string | null;
   suppItems: string[];
   fasting: string | null;
+  reports: string | null;
 }
 
-const EMPTY: Status = { meeting: null, meetingDone: false, tests: null, testItems: [], supps: null, suppItems: [], fasting: null };
+const EMPTY: Status = { meeting: null, meetingDone: false, tests: null, testItems: [], supps: null, suppItems: [], fasting: null, reports: null };
 
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleString(undefined, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
@@ -46,6 +50,7 @@ const meetingLabel = (type?: string | null) =>
  * already assigned — showing what's in place and switching the CTA to "Manage".
  */
 export default function PatientActionGrid({ coachId, patientId, patientName }: Props) {
+  const { user } = useAuth();
   const [dlg, setDlg] = useState<Dlg>(null);
   const [loading, setLoading] = useState(true);
   const [s, setS] = useState<Status>(EMPTY);
@@ -153,6 +158,11 @@ export default function PatientActionGrid({ coachId, patientId, patientName }: P
     const p = (protoRes.data as any[])?.[0];
     if (p) next.fasting = p.fasting_protocols?.protocol_name ?? "Active protocol";
 
+    // Reports the client (or a coach on their behalf) has uploaded outside the
+    // partner lab — coaches upload here when a client sends a report offline.
+    const ext = await fetchExternalReportsForUser(patientId);
+    if (ext.length) next.reports = `${ext.length} uploaded`;
+
     setS(next);
     setLoading(false);
   }, [patientId]);
@@ -183,7 +193,7 @@ export default function PatientActionGrid({ coachId, patientId, patientName }: P
     id, icon: Icon, label, value,
   }: { id: Exclude<Dlg, null>; icon: typeof Pill; label: string; value: string | null }) => {
     const done = !!value;
-    const target = MODULE_FOR[id];
+    const target = id === "report" ? undefined : MODULE_FOR[id];
     return (
       <button
         onClick={() => (done && target ? openCoachPatientModule(target, patientId) : setDlg(id))}
@@ -207,7 +217,9 @@ export default function PatientActionGrid({ coachId, patientId, patientName }: P
               {value ?? "Not assigned"}
             </span>
             <span className={`text-[10px] font-bold ${done ? "text-success" : "text-primary"}`}>
-              {id === "meeting" ? (done ? "Schedule another" : "Schedule") : done ? "Manage" : "Assign"}
+              {id === "report"
+                ? (done ? "Upload another" : "Upload report")
+                : id === "meeting" ? (done ? "Schedule another" : "Schedule") : done ? "Manage" : "Assign"}
             </span>
 
           </>
@@ -228,6 +240,7 @@ export default function PatientActionGrid({ coachId, patientId, patientName }: P
         <Tile id="tests" icon={FlaskConical} label="Tests" value={s.tests} />
         <Tile id="supps" icon={Pill} label="Supplements" value={s.supps} />
         <Tile id="fasting" icon={Timer} label="Fasting" value={s.fasting} />
+        <Tile id="report" icon={FileUp} label="Lab report" value={s.reports} />
       </motion.div>
 
       {(s.suppItems.length > 0 || s.testItems.length > 0) && !loading && (
@@ -279,6 +292,18 @@ export default function PatientActionGrid({ coachId, patientId, patientName }: P
         open={dlg === "fasting"} onOpenChange={closeDlg}
         coachId={coachId} patientId={patientId} patientName={patientName ?? undefined}
       />
+      {dlg === "report" && (
+        <ExternalTestDialog
+          open
+          onClose={() => closeDlg(false)}
+          userId={patientId}
+          recommendationId={null}
+          productCodes={[]}
+          startAtUpload
+          uploadedBy={user?.id ?? null}
+          onDone={() => load()}
+        />
+      )}
     </>
   );
 }
