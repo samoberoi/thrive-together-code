@@ -18,9 +18,10 @@ interface Props {
   coachId: string;
   avgRating: number;
   totalRatings: number;
+  description?: string;
 }
 
-export default function CoachReviewsDialog({ open, onOpenChange, coachId, avgRating, totalRatings }: Props) {
+export default function CoachReviewsDialog({ open, onOpenChange, coachId, avgRating, totalRatings, description }: Props) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -72,7 +73,7 @@ export default function CoachReviewsDialog({ open, onOpenChange, coachId, avgRat
               · {totalRatings} rating{totalRatings === 1 ? "" : "s"}
             </span>
           </DialogTitle>
-          <DialogDescription>What your clients have said about you.</DialogDescription>
+          <DialogDescription>{description ?? "What your clients have said about you."}</DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
           {loading ? (

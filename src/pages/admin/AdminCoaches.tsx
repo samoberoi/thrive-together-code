@@ -12,6 +12,7 @@ import { logAudit } from "@/lib/auditLog";
 import ExportCsvButton from "@/components/admin/ExportCsvButton";
 import ImportCsvButton from "@/components/admin/ImportCsvButton";
 import AvatarUploader from "@/components/admin/AvatarUploader";
+import CoachReviewsDialog from "@/components/coach/CoachReviewsDialog";
 
 type Coach = Tables<"coaches">;
 
@@ -56,6 +57,7 @@ export default function AdminCoaches() {
   const [assignedCounts, setAssignedCounts] = useState<Record<string, number>>({});
   const [assignedUsers, setAssignedUsers] = useState<Record<string, AssignedUser[]>>({});
   const [showAssignedFor, setShowAssignedFor] = useState<string | null>(null);
+  const [reviewsCoach, setReviewsCoach] = useState<Coach | null>(null);
   const [commissionModels, setCommissionModels] = useState<{ id: string; name: string; percent: number }[]>([]);
 
   useEffect(() => {
@@ -375,6 +377,10 @@ export default function AdminCoaches() {
                               <UsersIcon className="w-4 h-4 mr-1" />
                               View Assigned Users ({assignedCounts[coach.id] ?? 0})
                             </Button>
+                            <Button variant="secondary" size="sm" onClick={() => setReviewsCoach(coach)}>
+                              <Star className="w-4 h-4 mr-1 text-amber-500" />
+                              View Reviews ({coach.total_ratings ?? 0})
+                            </Button>
                           </div>
 
                           {showAssignedFor === coach.id && (
@@ -418,6 +424,17 @@ export default function AdminCoaches() {
           <div className="text-center py-12 text-muted-foreground"><p>No coaches found</p></div>
         )}
       </div>
+
+      {reviewsCoach && (
+        <CoachReviewsDialog
+          open={!!reviewsCoach}
+          onOpenChange={(o) => !o && setReviewsCoach(null)}
+          coachId={reviewsCoach.id}
+          avgRating={Number(reviewsCoach.avg_rating ?? 0)}
+          totalRatings={Number(reviewsCoach.total_ratings ?? 0)}
+          description={`Ratings and written feedback for ${reviewsCoach.name}`}
+        />
+      )}
     </div>
   );
 }
