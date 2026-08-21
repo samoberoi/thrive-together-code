@@ -276,19 +276,23 @@ export default function BuildMyPlate({ onClose, onSaved }: { onClose: () => void
   };
 
   const handleSave = async () => {
+    if (saving) return;
     if (!user) { toast.error("Please sign in to save"); return; }
     if (selectedFoodItems.length === 0) { toast.error("Add at least one food to your plate"); return; }
-    const ok = await confirm({ title: "Save this plate?", description: "We'll add it to your saved plates so you can reuse it anytime." });
-    if (!ok) return;
+    // No confirmation dialog here: saving is non-destructive, and a modal on top
+    // of this full-screen portal previously locked the screen.
     setSaving(true);
 
-    // Render snapshot
+    // Render snapshot. Never let image loading block the actual save — cap it.
     let snapshotPath: string | null = null;
     try {
-      const blob = await renderPlate(selectedFoodItems.map(({ item }) => ({
-        name: item.name,
-        imageUrl: imageUrls[item.id] || null,
-      })));
+      const blob = await Promise.race([
+        renderPlate(selectedFoodItems.map(({ item }) => ({
+          name: item.name,
+          imageUrl: imageUrls[item.id] || null,
+        }))),
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 8000)),
+      ]);
       if (blob) {
         const path = `${user.id}/${crypto.randomUUID()}.jpg`;
         const up = await supabase.storage.from("plate-snapshots").upload(path, blob, { contentType: "image/jpeg", upsert: true });
@@ -325,7 +329,11 @@ export default function BuildMyPlate({ onClose, onSaved }: { onClose: () => void
       snapshot_url: snapshotPath,
     } as any);
     setSaving(false);
-    if (error) { toast.error("Couldn't save plate"); return; }
+    if (error) {
+      console.error("[plate] save failed", error);
+      toast.error(error.message || "Couldn't save plate");
+      return;
+    }
     toast.success("Plate saved! 🍽️");
     try { await onSaved?.(); } catch (e) { console.error(e); }
     onClose();

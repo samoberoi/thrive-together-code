@@ -13,6 +13,7 @@ import { calculateSupplementStreak } from "@/lib/supplementBadgeService";
 import PatientVitalsCard from "@/components/coach/PatientVitalsCard";
 import PatientProfileEditor from "@/components/coach/PatientProfileEditor";
 import PatientDietSymptomsSummary from "@/components/coach/PatientDietSymptomsSummary";
+import PatientPlatesLog from "@/components/coach/PatientPlatesLog";
 import PatientActionGrid from "@/components/coach/PatientActionGrid";
 
 
@@ -464,6 +465,8 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
         </motion.div>
 
         <PatientDietSymptomsSummary userId={selectedPatient.user_id} refreshKey={summaryRefresh} />
+
+        <PatientPlatesLog userId={selectedPatient.user_id} />
 
 
 
