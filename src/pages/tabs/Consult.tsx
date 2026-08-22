@@ -142,13 +142,51 @@ export default function Consult() {
         <p className="text-muted-foreground text-sm">Your personal health team</p>
       </motion.div>
 
-      <UpcomingMeetingsCard />
-      <RecommendationsPanel />
+      {/* Primary coach contact actions */}
+      {coach && (() => {
+        const av = getCoachAvailability(coach);
+        const waMsg = `Hi ${coach.name}, I'm your client on Bye Bye Diabetes. Can we talk?`;
+        return (
+          <motion.div
+            className="flex gap-3"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <a
+              href={av.available && coach.phone ? whatsappCallUrl(coach.phone, waMsg) : undefined}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-disabled={!av.available || !coach.phone}
+              onClick={(e) => {
+                if (!av.available || !coach.phone) {
+                  e.preventDefault();
+                  toast({
+                    title: "Coach unavailable",
+                    description: `${coach.name} is available ${av.windowLabel}.`,
+                  });
+                }
+              }}
+              className={`flex-1 font-bold py-3 rounded-xl text-sm flex items-center justify-center gap-2 ${
+                av.available && coach.phone
+                  ? "gradient-blue text-primary-foreground glow-blue"
+                  : "bg-muted text-muted-foreground cursor-not-allowed opacity-70"
+              }`}
+            >
+              <Phone className="w-4 h-4" strokeWidth={1.6} />
+              WhatsApp Call
+            </a>
+            <button
+              onClick={() => setShowChat(true)}
+              className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl liquid-glass text-foreground text-sm font-medium"
+            >
+              <MessageCircle className="w-4 h-4 text-primary" strokeWidth={1.6} />
+              Chat
+            </button>
+          </motion.div>
+        );
+      })()}
 
-      {/* Consultation request removed — patients chat directly with their coach */}
-
-
-      {/* Coach Card */}
+      {/* Coach profile */}
       {coach ? (
         <motion.div className="liquid-glass rounded-3xl p-5" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
           <div className="flex items-start gap-4">
@@ -198,7 +236,6 @@ export default function Consult() {
 
           {(() => {
             const av = getCoachAvailability(coach);
-            const waMsg = `Hi ${coach.name}, I'm your client on Bye Bye Diabetes. Can we talk?`;
             return (
               <div className="mt-4">
                 <div className={`flex items-center gap-2 text-xs mb-3 px-3 py-2 rounded-xl border ${av.available ? "text-success bg-success/10 border-success/20" : "text-warning bg-warning/10 border-warning/20"}`}>
@@ -214,38 +251,6 @@ export default function Consult() {
                     Your coach is offline right now (their local time: {av.nowLabel}). Please try again during working hours.
                   </p>
                 )}
-                <div className="flex gap-3">
-                  <a
-                    href={av.available && coach.phone ? whatsappCallUrl(coach.phone, waMsg) : undefined}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-disabled={!av.available || !coach.phone}
-                    onClick={(e) => {
-                      if (!av.available || !coach.phone) {
-                        e.preventDefault();
-                        toast({
-                          title: "Coach unavailable",
-                          description: `${coach.name} is available ${av.windowLabel}.`,
-                        });
-                      }
-                    }}
-                    className={`flex-1 font-bold py-3 rounded-xl text-sm flex items-center justify-center gap-2 ${
-                      av.available && coach.phone
-                        ? "gradient-blue text-primary-foreground glow-blue"
-                        : "bg-muted text-muted-foreground cursor-not-allowed opacity-70"
-                    }`}
-                  >
-                    <Phone className="w-4 h-4" strokeWidth={1.6} />
-                    WhatsApp Call
-                  </a>
-                  <button
-                    onClick={() => setShowChat(true)}
-                    className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl liquid-glass text-foreground text-sm font-medium"
-                  >
-                    <MessageCircle className="w-4 h-4 text-primary" strokeWidth={1.6} />
-                    Chat
-                  </button>
-                </div>
               </div>
             );
           })()}
@@ -301,6 +306,9 @@ export default function Consult() {
           )}
         </motion.div>
       )}
+
+      <RecommendationsPanel />
+      <UpcomingMeetingsCard />
 
     </div>
   );
