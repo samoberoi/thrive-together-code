@@ -231,14 +231,16 @@ export default function MinutesShareCard({
                 strokeDasharray={`${ARC * pct} ${CIRC}`}
               />
             )}
-
           </g>
+          {/* A solid inner face guarantees the longer Yoga & Stress title can
+              never visually collide with the gauge arc at narrow widths. */}
+          <circle cx="105" cy="100" r="64" fill="#F8FAFF" />
         </svg>
 
         <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
           <p
-            className={`font-black uppercase ${
-              kind === "yoga" ? "max-w-[112px] text-[11px] tracking-[0.08em]" : "text-[13px] tracking-[0.2em]"
+            className={`font-black uppercase leading-none ${
+              kind === "yoga" ? "w-[104px] whitespace-nowrap text-[10px] tracking-[0.04em]" : "text-[13px] tracking-[0.2em]"
             }`}
             style={{ color: "var(--bbdo-red)" }}
           >
