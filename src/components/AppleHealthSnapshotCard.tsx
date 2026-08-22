@@ -14,6 +14,8 @@ import {
   saveHealthSnapshot, fetchLatestHealthSnapshot, type StoredHealthSnapshot,
 } from "@/lib/healthSnapshotService";
 import { healthSourceLabel, isAndroidPlatform, phoneLabel, wearableLabel } from "@/lib/platformLabels";
+import { isHealthRateLimited } from "@/lib/healthConnect";
+
 
 function Tile({
   icon: Icon, label, value, sub,
