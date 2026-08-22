@@ -73,6 +73,12 @@ export default function TodayStepsCard({ onOpenMovement, minTargetSteps }: { onO
       window.dispatchEvent(new CustomEvent("health-log-saved"));
       await load();
     } catch (error: any) {
+      // Health Connect read-quota throttling is not a user problem — stay quiet
+      // and keep showing the last synced number.
+      if (isHealthRateLimited(error)) {
+        console.warn("health steps sync throttled by Health Connect", error);
+        return;
+      }
       setHealthConnected(false);
       const message = error?.message || `Couldn't sync ${healthSourceLabel()} steps`;
       setHealthSyncError(message);
@@ -81,6 +87,7 @@ export default function TodayStepsCard({ onOpenMovement, minTargetSteps }: { onO
     } finally {
       setSyncingHealth(false);
     }
+
   }, [load, user]);
 
   useEffect(() => {
