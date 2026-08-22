@@ -14,6 +14,7 @@ import {
   type ChatConversation,
 } from "@/lib/chatService";
 import type { Coach } from "@/lib/coachService";
+import { useChatScroll } from "@/hooks/useChatScroll";
 
 interface PatientChatProps {
   coach: Coach;
@@ -77,9 +78,7 @@ export default function PatientChat({ coach, onBack }: PatientChatProps) {
     return () => { supabase.removeChannel(channel); };
   }, [conversation]);
 
-  useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages]);
+  useChatScroll(messages, scrollRef);
 
   useEffect(() => {
     const el = inputRef.current;

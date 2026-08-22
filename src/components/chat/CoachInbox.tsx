@@ -12,6 +12,7 @@ import {
   type ChatMessage,
   type ChatConversation,
 } from "@/lib/chatService";
+import { useChatScroll } from "@/hooks/useChatScroll";
 
 interface ConvoWithMeta extends ChatConversation {
   patient_name: string | null;
@@ -141,10 +142,7 @@ export default function CoachInbox({ coachId, openPatientId }: CoachInboxProps) 
   }, [user]);
 
 
-  // Auto-scroll
-  useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages]);
+  useChatScroll(messages, scrollRef);
 
   const openConversation = async (convo: ConvoWithMeta) => {
     setActiveConvo(convo);
