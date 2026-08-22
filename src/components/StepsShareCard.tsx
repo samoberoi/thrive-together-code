@@ -250,7 +250,7 @@ export default function StepsShareCard({
 
       {/* Quote */}
       <p className="mt-2.5 text-center text-[12px] font-semibold leading-snug text-foreground/70">
-        “ Every step is a step toward{" "}
+        Every step is a step toward{" "}
         <span className="font-black" style={{ color: "var(--bbdo-blue)" }}>
           better metabolic health.
         </span>
