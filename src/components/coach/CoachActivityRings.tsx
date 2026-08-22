@@ -10,6 +10,7 @@ import { getTodayYogaMinutes } from "@/lib/yogaProgressService";
 import { fetchMovementOverview, COACH_MIN_DAILY_STEPS } from "@/lib/movementUserService";
 import { fetchProfile } from "@/lib/profileService";
 import StepsShareCard from "@/components/StepsShareCard";
+import MinutesShareCard from "@/components/MinutesShareCard";
 import { fetchUserProtocol, fetchTrackingForUser } from "@/lib/fastingService";
 
 const todayKey = () => {

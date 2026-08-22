@@ -34,6 +34,7 @@ import {
 import { calculateSupplementStreak, checkAndAwardSupplementBadges } from "@/lib/supplementBadgeService";
 import TodayStepsCard from "@/components/TodayStepsCard";
 import StepsShareCard from "@/components/StepsShareCard";
+import MinutesShareCard from "@/components/MinutesShareCard";
 import AppleHealthSnapshotCard from "@/components/AppleHealthSnapshotCard";
 import AppleHealthEcgCard from "@/components/AppleHealthEcgCard";
 import SleepBreakdownCard from "@/components/SleepBreakdownCard";
