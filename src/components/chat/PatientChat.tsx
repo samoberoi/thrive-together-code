@@ -14,6 +14,7 @@ import {
   type ChatConversation,
 } from "@/lib/chatService";
 import type { Coach } from "@/lib/coachService";
+import { useChatScroll } from "@/hooks/useChatScroll";
 
 interface PatientChatProps {
   coach: Coach;
