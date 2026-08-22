@@ -178,6 +178,7 @@ export default function UserSupplements({ simpleMode = false }: { simpleMode?: b
         <FoundationPlanSummary
           items={items}
           supplements={supplements}
+          rules={foundationalKit}
           todayTracking={todayTracking}
           onToggle={handleToggle}
           onRemove={async (planItemId) => {
@@ -486,13 +487,14 @@ function TimingIcon({ timing, className = "w-3.5 h-3.5" }: { timing: string; cla
  * Full prescription detail for one supplement — exactly what the coach/admin
  * sees: dose, frequency, timing, duration and remarks, plus what it's for.
  */
-function SupplementDetails({ item, supp }: { item: PlanItem; supp?: Supplement }) {
+function SupplementDetails({ item, supp, rule }: { item: PlanItem; supp?: Supplement; rule?: FoundationRule }) {
+  const rx = resolveRx(item, supp, rule);
   const rows: { label: string; value: string; Icon: typeof Pill }[] = [
-    { label: "Dose", value: item.dosage || supp?.default_dosage || "—", Icon: Droplets },
-    { label: "How often", value: item.frequency || supp?.default_frequency || "—", Icon: Clock },
-    { label: "When", value: item.timing || supp?.default_timing || "with meal", Icon: Coffee },
+    { label: "Dose", value: rx.dosage, Icon: Droplets },
+    { label: "How often", value: rx.frequency, Icon: Clock },
+    { label: "When", value: rx.timing, Icon: Coffee },
   ];
-  if (item.duration_weeks) rows.push({ label: "Duration", value: `${item.duration_weeks} weeks`, Icon: Clock });
+  if (rx.durationWeeks) rows.push({ label: "Duration", value: `${rx.durationWeeks} weeks`, Icon: Clock });
 
   return (
     <div className="px-3 pb-3 space-y-2">
@@ -511,10 +513,10 @@ function SupplementDetails({ item, supp }: { item: PlanItem; supp?: Supplement }
           <span className="font-bold text-foreground">Why: </span>{supp.description}
         </p>
       )}
-      {item.remarks && (
+      {rx.remarks && (
         <p className="text-[11px] text-amber-600 dark:text-amber-400 leading-snug flex items-start gap-1">
           <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" strokeWidth={2} />
-          <span>{item.remarks}</span>
+          <span>{rx.remarks}</span>
         </p>
       )}
       {(supp?.veg_type ?? "both") !== "both" && (
@@ -560,6 +562,12 @@ function FoundationSupplementBrowser({
   const kitMap = useMemo(() => {
     const m = new Map<string, number>();
     foundationalKit.forEach((r) => m.set(r.supplement_id, r.duration_weeks || 8));
+    return m;
+  }, [foundationalKit]);
+
+  const ruleBySupp = useMemo(() => {
+    const m = new Map<string, FoundationRule>();
+    foundationalKit.forEach((r) => m.set(r.supplement_id, r));
     return m;
   }, [foundationalKit]);
 
@@ -613,12 +621,13 @@ function FoundationSupplementBrowser({
           status: "active",
         });
       }
+      const rx = resolveRx(null, s, ruleBySupp.get(s.id));
       await addPlanItem({
         plan_id: planId,
         supplement_id: s.id,
-        dosage: s.default_dosage || "1 serving",
-        frequency: s.default_frequency || "Daily",
-        timing: s.default_timing || "with meal",
+        dosage: rx.dosage,
+        frequency: rx.frequency,
+        timing: rx.timing,
         is_active: true,
         duration_weeks: weeks,
       });
@@ -709,6 +718,7 @@ function FoundationSupplementBrowser({
       {/* Results */}
       {(() => {
         const renderCard = (s: Supplement) => {
+          const rx = resolveRx(null, s, ruleBySupp.get(s.id));
           const added = inPlan.has(s.id);
           const isAdding = adding === s.id;
           const isRemoving = removing === s.id;
@@ -744,16 +754,15 @@ function FoundationSupplementBrowser({
                 <p className="text-xs text-muted-foreground line-clamp-3">{s.description}</p>
               )}
               <div className="flex flex-wrap gap-1.5">
-                {s.default_dosage && (
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-muted/70 text-foreground">
-                    {s.default_dosage}
-                  </span>
-                )}
-                {s.default_timing && (
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary inline-flex items-center gap-1">
-                    <TimingIcon timing={s.default_timing} className="w-3 h-3" /> {s.default_timing}
-                  </span>
-                )}
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-muted/70 text-foreground inline-flex items-center gap-1">
+                  <Droplets className="w-3 h-3" /> {rx.dosage}
+                </span>
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-muted/70 text-foreground inline-flex items-center gap-1">
+                  <Clock className="w-3 h-3" /> {rx.frequency}
+                </span>
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary inline-flex items-center gap-1">
+                  <TimingIcon timing={rx.timing} className="w-3 h-3" /> {rx.timing}
+                </span>
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-secondary/10 text-secondary inline-flex items-center gap-1">
                   <Clock className="w-3 h-3" /> {kitMap.get(s.id) ?? 8} weeks
                 </span>
@@ -829,17 +838,20 @@ function FoundationSupplementBrowser({
 function FoundationPlanSummary({
   items,
   supplements,
+  rules,
   todayTracking,
   onToggle,
   onRemove,
 }: {
   items: PlanItem[];
   supplements: Supplement[];
+  rules: FoundationRule[];
   todayTracking: SupplementTracking[];
   onToggle: (planItemId: string) => void;
   onRemove: (planItemId: string) => Promise<void>;
 }) {
   const suppMap = Object.fromEntries(supplements.map((s) => [s.id, s]));
+  const ruleMap = Object.fromEntries(rules.map((r) => [r.supplement_id, r])) as Record<string, FoundationRule>;
   const taken = todayTracking.filter((t) => t.taken).length;
 
   return (
@@ -882,7 +894,10 @@ function FoundationPlanSummary({
                     {supp?.name ?? "Supplement"}
                   </p>
                   <p className="text-[11px] text-muted-foreground">
-                    {[item.dosage, item.frequency].filter(Boolean).join(" · ")}
+                    {(() => {
+                      const rx = resolveRx(item, supp, ruleMap[item.supplement_id]);
+                      return [rx.dosage, rx.frequency, rx.timing].filter(Boolean).join(" · ");
+                    })()}
                   </p>
                 </div>
                 <button
@@ -893,7 +908,7 @@ function FoundationPlanSummary({
                   Remove
                 </button>
               </div>
-              <SupplementDetails item={item} supp={supp} />
+              <SupplementDetails item={item} supp={supp} rule={ruleMap[item.supplement_id]} />
             </div>
 
           );
