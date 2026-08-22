@@ -43,11 +43,25 @@ export default function StepsShareCard({
   const label = formatShareDate(day);
   const headline = stepsHeadline(steps);
   const pct = Math.max(0.03, Math.min(1, steps / 10000));
+  const cardRef = useRef<HTMLDivElement | null>(null);
+
+  /** Snapshot the exact on-screen card so Download & Share are pixel-identical. */
+  const captureCard = async (): Promise<Blob | null> => {
+    const node = cardRef.current;
+    if (!node) return null;
+    const { toBlob } = await import("html-to-image");
+    return await toBlob(node, {
+      pixelRatio: 3,
+      cacheBust: true,
+      backgroundColor: "#ffffff",
+      filter: (el) => !(el instanceof HTMLElement && el.dataset?.capture === "hide"),
+    });
+  };
 
   const handleDownload = async () => {
     setDownloading(true);
     try {
-      const blob = await renderStepsCardPng({ steps, km, calories, date: day });
+      const blob = await captureCard();
       if (!blob) throw new Error("Could not build the image");
       const fileName = `bbdo-steps-${day.toISOString().slice(0, 10)}.png`;
 
