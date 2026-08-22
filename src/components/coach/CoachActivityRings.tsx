@@ -71,7 +71,7 @@ export default function CoachActivityRings() {
         .from("health_logs" as any)
         .select("logged_at, log_type")
         .eq("user_id", user.id)
-        .eq("log_type", "blood_sugar")
+        .eq("log_type", "diabetes")
         .order("logged_at", { ascending: false })
         .limit(10);
       setDiabetesLoggedToday(
