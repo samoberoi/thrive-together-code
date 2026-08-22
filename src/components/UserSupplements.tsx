@@ -813,36 +813,40 @@ function FoundationPlanSummary({
           return (
             <div
               key={item.id}
-              className={`rounded-2xl p-3 flex items-center gap-3 ${
+              className={`rounded-2xl ${
                 isTaken ? "bg-primary/5 ring-1 ring-primary/20" : "bg-muted/40"
               }`}
             >
-              <button
-                onClick={() => onToggle(item.id)}
-                className={`w-9 h-9 rounded-xl shrink-0 flex items-center justify-center transition-colors ${
-                  isTaken ? "bg-primary text-primary-foreground" : `${CATEGORY_BG[supp?.category ?? ""] ?? "bg-muted"}`
-                }`}
-              >
-                {isTaken
-                  ? <Check className="w-4 h-4" />
-                  : <Pill className={`w-4 h-4 ${CATEGORY_COLORS[supp?.category ?? ""] ?? "text-muted-foreground"}`} />}
-              </button>
-              <div className="flex-1 min-w-0">
-                <p className={`text-sm font-bold ${isTaken ? "line-through text-primary/70" : "text-foreground"}`}>
-                  {supp?.name ?? "Supplement"}
-                </p>
-                <p className="text-[11px] text-muted-foreground">
-                  {item.dosage} · {item.timing || "with meal"}
-                </p>
+              <div className="p-3 flex items-center gap-3">
+                <button
+                  onClick={() => onToggle(item.id)}
+                  className={`w-9 h-9 rounded-xl shrink-0 flex items-center justify-center transition-colors ${
+                    isTaken ? "bg-primary text-primary-foreground" : `${CATEGORY_BG[supp?.category ?? ""] ?? "bg-muted"}`
+                  }`}
+                >
+                  {isTaken
+                    ? <Check className="w-4 h-4" />
+                    : <Pill className={`w-4 h-4 ${CATEGORY_COLORS[supp?.category ?? ""] ?? "text-muted-foreground"}`} />}
+                </button>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm font-bold ${isTaken ? "line-through text-primary/70" : "text-foreground"}`}>
+                    {supp?.name ?? "Supplement"}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {[item.dosage, item.frequency].filter(Boolean).join(" · ")}
+                  </p>
+                </div>
+                <button
+                  onClick={() => onRemove(item.id)}
+                  className="text-[10px] font-semibold text-muted-foreground hover:text-destructive px-2 py-1 rounded-lg"
+                  title="Remove from list"
+                >
+                  Remove
+                </button>
               </div>
-              <button
-                onClick={() => onRemove(item.id)}
-                className="text-[10px] font-semibold text-muted-foreground hover:text-destructive px-2 py-1 rounded-lg"
-                title="Remove from list"
-              >
-                Remove
-              </button>
+              <SupplementDetails item={item} supp={supp} />
             </div>
+
           );
         })}
       </div>
