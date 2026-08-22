@@ -205,11 +205,10 @@ export default function StepsShareCard({
           <p className="mt-1 text-[38px] font-black leading-none tabular-nums" style={{ color: "var(--bbdo-blue)" }}>
             {Math.round(steps).toLocaleString("en-IN")}
           </p>
-          <div className="mt-2 flex items-center gap-2">
-            <span className="h-px w-8 bg-foreground/12" />
+          <div className="mt-2 flex items-center justify-center">
             <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: "var(--bbdo-blue)" }} />
-            <span className="h-px w-8 bg-foreground/12" />
           </div>
+
           <p className="mt-1.5 text-[11px] font-bold text-foreground/70">{headline.top}</p>
           <p className="text-[11px] font-black" style={{ color: "var(--bbdo-blue)" }}>
             {headline.bottom}
