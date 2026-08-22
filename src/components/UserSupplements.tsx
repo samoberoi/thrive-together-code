@@ -290,34 +290,38 @@ export default function UserSupplements({ simpleMode = false }: { simpleMode?: b
             {groupItems.map(({ item, supp }) => {
               const taken = todayTracking.find((t) => t.plan_item_id === item.id)?.taken ?? false;
               return (
-                <motion.button
+                <div
                   key={item.id}
-                  onClick={() => handleToggle(item.id)}
-                  className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-colors text-left ${
-                    taken ? "bg-primary/10 ring-1 ring-primary/20" : "bg-muted/50 hover:bg-muted"
+                  className={`rounded-2xl transition-colors ${
+                    taken ? "bg-primary/10 ring-1 ring-primary/20" : "bg-muted/50"
                   }`}
-                  whileTap={{ scale: 0.98 }}
                 >
-                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-                    taken ? "bg-primary text-primary-foreground" : `${CATEGORY_BG[supp?.category ?? ""] ?? "bg-muted"}`
-                  }`}>
-                    {taken ? <Check className="w-4 h-4" /> : <Pill className={`w-4 h-4 ${CATEGORY_COLORS[supp?.category ?? ""] ?? "text-muted-foreground"}`} />}
+                  <div className="flex items-center gap-3 p-3">
+                    <motion.button
+                      onClick={() => handleToggle(item.id)}
+                      whileTap={{ scale: 0.94 }}
+                      className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                        taken ? "bg-primary text-primary-foreground" : `${CATEGORY_BG[supp?.category ?? ""] ?? "bg-muted"}`
+                      }`}
+                      aria-label={taken ? "Mark as not taken" : "Mark as taken"}
+                    >
+                      {taken ? <Check className="w-4 h-4" /> : <Pill className={`w-4 h-4 ${CATEGORY_COLORS[supp?.category ?? ""] ?? "text-muted-foreground"}`} />}
+                    </motion.button>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-semibold ${taken ? "text-primary line-through" : "text-foreground"}`}>
+                        {supp?.name ?? "Supplement"}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {[item.dosage, item.frequency].filter(Boolean).join(" · ")}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-semibold ${taken ? "text-primary line-through" : "text-foreground"}`}>
-                      {supp?.name ?? "Supplement"}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground">{item.dosage} · {item.frequency}</p>
-                  </div>
-                    {item.remarks && (
-                    <span className="text-[9px] text-muted-foreground bg-muted px-2 py-0.5 rounded-md shrink-0 max-w-[100px] truncate">
-                      {item.remarks}
-                    </span>
-                  )}
-                </motion.button>
+                  <SupplementDetails item={item} supp={supp} />
+                </div>
               );
             })}
           </div>
+
         </motion.div>
       ))}
 
