@@ -364,7 +364,7 @@ export default function DailyActivityDial({
                       )}
                     </span>
                     <span
-                      className="text-[10px] font-black tabular-nums shrink-0 inline-flex justify-end items-center w-[62px]"
+                      className="text-[10px] font-black tabular-nums shrink-0 inline-flex justify-end items-center w-[66px] whitespace-nowrap"
                       style={{
                         color: complete ? it.color : "hsl(var(--muted-foreground))",
                       }}
