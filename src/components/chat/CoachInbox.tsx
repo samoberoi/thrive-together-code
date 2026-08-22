@@ -142,10 +142,7 @@ export default function CoachInbox({ coachId, openPatientId }: CoachInboxProps) 
   }, [user]);
 
 
-  // Auto-scroll
-  useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages]);
+  useChatScroll(messages, scrollRef);
 
   const openConversation = async (convo: ConvoWithMeta) => {
     setActiveConvo(convo);

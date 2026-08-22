@@ -13,6 +13,7 @@ import {
   type PartnerChatMessage,
   type PartnerChatRole,
 } from "@/lib/partnerChatService";
+import { useChatScroll } from "@/hooks/useChatScroll";
 
 export interface YogaChatProps {
   role: PartnerChatRole; // "subscriber" or "partner"
@@ -116,9 +117,7 @@ export default function YogaChat({
     };
   }, [conversation, role]);
 
-  useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages]);
+  useChatScroll(messages, scrollRef);
 
   // Auto-grow textarea
   useEffect(() => {
