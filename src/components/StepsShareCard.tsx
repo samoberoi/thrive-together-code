@@ -42,7 +42,8 @@ export default function StepsShareCard({
   const day = date ?? new Date();
   const label = formatShareDate(day);
   const headline = stepsHeadline(steps);
-  const pct = Math.max(0.03, Math.min(1, steps / 10000));
+  // Zero steps must render a completely empty gauge — no teaser sliver.
+  const pct = steps <= 0 ? 0 : Math.max(0.03, Math.min(1, steps / 10000));
   const cardRef = useRef<HTMLDivElement | null>(null);
 
   /** Snapshot the exact on-screen card so Download & Share are pixel-identical. */
@@ -184,14 +185,16 @@ export default function StepsShareCard({
               strokeLinecap="round"
               strokeDasharray={`${ARC} ${CIRC}`}
             />
-            <circle
-              r={R}
-              fill="none"
-              stroke="url(#bbdoStepsArc)"
-              strokeWidth="14"
-              strokeLinecap="round"
-              strokeDasharray={`${ARC * pct} ${CIRC}`}
-            />
+            {pct > 0 && (
+              <circle
+                r={R}
+                fill="none"
+                stroke="url(#bbdoStepsArc)"
+                strokeWidth="14"
+                strokeLinecap="round"
+                strokeDasharray={`${ARC * pct} ${CIRC}`}
+              />
+            )}
           </g>
         </svg>
 
