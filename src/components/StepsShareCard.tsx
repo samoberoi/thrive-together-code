@@ -102,7 +102,7 @@ export default function StepsShareCard({
     if (!user) return;
     setSharing(true);
     try {
-      const blob = await renderStepsCardPng({ steps, km, calories, date: day });
+      const blob = await captureCard();
       if (!blob) throw new Error("Could not build the image");
       const file = new File([blob], `steps-${Date.now()}.png`, { type: "image/png" });
       const url = await uploadCommunityImage(user.id, file);
