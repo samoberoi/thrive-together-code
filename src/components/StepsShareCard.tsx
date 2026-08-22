@@ -180,18 +180,27 @@ export default function StepsShareCard({
         </svg>
 
         <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
-          <Footprints className="h-5 w-5" style={{ color: "var(--bbdo-blue)" }} strokeWidth={2.4} />
-          <p className="mt-0.5 text-[13px] font-black uppercase tracking-[0.2em]" style={{ color: "var(--bbdo-red)" }}>
-            Steps
-          </p>
-          <p className="text-[36px] font-black leading-none tabular-nums" style={{ color: "var(--bbdo-blue)" }}>
+          <div className="flex items-center gap-2">
+            <span className="h-px w-6 bg-foreground/15" />
+            <p className="text-[13px] font-black uppercase tracking-[0.2em]" style={{ color: "var(--bbdo-red)" }}>
+              Steps
+            </p>
+            <span className="h-px w-6 bg-foreground/15" />
+          </div>
+          <p className="mt-1 text-[38px] font-black leading-none tabular-nums" style={{ color: "var(--bbdo-blue)" }}>
             {Math.round(steps).toLocaleString("en-IN")}
           </p>
+          <div className="mt-2 flex items-center gap-2">
+            <span className="h-px w-8 bg-foreground/12" />
+            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: "var(--bbdo-blue)" }} />
+            <span className="h-px w-8 bg-foreground/12" />
+          </div>
           <p className="mt-1.5 text-[11px] font-bold text-foreground/70">{headline.top}</p>
           <p className="text-[11px] font-black" style={{ color: "var(--bbdo-blue)" }}>
             {headline.bottom}
           </p>
         </div>
+
       </div>
 
       {/* Stats — calories + distance on one compact row */}
