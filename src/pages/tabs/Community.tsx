@@ -267,7 +267,7 @@ function PostCard({
       <p className="text-foreground text-[15px] leading-relaxed whitespace-pre-wrap">{post.content}</p>
 
       {post.image_url && (
-        <img src={post.image_url} alt="" loading="lazy" decoding="async" className="w-full rounded-2xl object-cover max-h-80 mt-3" />
+        <img src={post.image_url} alt="" loading="lazy" decoding="async" className="w-full rounded-2xl object-contain max-h-[520px] mt-3 bg-muted/30" />
       )}
 
       {tagInfo && (
