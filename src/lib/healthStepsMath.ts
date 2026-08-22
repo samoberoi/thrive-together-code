@@ -54,22 +54,67 @@ export function clipRecordsToRange(records: any[], start: Date, end: Date): any[
 }
 
 /**
- * Health Connect returns raw Steps records from every contributing app
- * (Google Fit, Samsung Health, phone sensor, Fitbit, etc.). Summing across
- * sources double- or triple-counts steps. Group by dataOrigin and use the
- * single largest source as the authoritative count for the range.
+ * Physiological ceiling for one day. Anything above this is a provider bug
+ * (aggregate + detail records counted twice, a lifetime total written as one
+ * record, etc.) and must never reach the UI or the database.
+ */
+export const MAX_DAILY_STEPS = 60000;
+
+/**
+ * Health Connect / HealthKit return raw Steps records from every contributing
+ * app (Google Fit, Samsung Health, phone sensor, watch bridge...). Two things
+ * cause inflated counts:
+ *   1. Summing across sources (each source reports the same walk).
+ *   2. Summing overlapping records from the SAME source — Samsung/Fitbit write
+ *      a session/daily total record *and* the minute-level records inside it.
+ * So: group by origin, and inside each origin only count time that is not
+ * already covered by an earlier record. Then take the single largest origin.
  */
 export function sumStepsDeduped(records: any[] | null): number | undefined {
   if (!records || records.length === 0) return undefined;
-  const perOrigin = new Map<string, number>();
+
+  const byOrigin = new Map<string, any[]>();
   for (const r of records) {
     const key = originOf(r);
-    perOrigin.set(key, (perOrigin.get(key) ?? 0) + Number(r?.count ?? 0));
+    const list = byOrigin.get(key) ?? [];
+    list.push(r);
+    byOrigin.set(key, list);
   }
+
   let max = 0;
-  for (const v of perOrigin.values()) if (v > max) max = v;
+  for (const list of byOrigin.values()) {
+    const sorted = list
+      .map((r) => {
+        const s = ms(r?.startTime);
+        const e = ms(r?.endTime ?? r?.startTime);
+        return { s, e: Number.isFinite(e) && e > s ? e : s + 1, count: Number(r?.count ?? 0) };
+      })
+      .filter((r) => Number.isFinite(r.s) && r.count > 0)
+      // Longest (aggregate) records first at the same start so their детали
+      // (contained minute records) are skipped as already-covered.
+      .sort((a, b) => a.s - b.s || b.e - a.e);
+
+    let total = 0;
+    let coveredUntil = -Infinity;
+    for (const r of sorted) {
+      if (r.e <= coveredUntil) continue; // fully inside an already-counted record
+      const span = Math.max(1, r.e - r.s);
+      const uncovered = Math.min(span, r.e - Math.max(r.s, coveredUntil));
+      total += Math.round(r.count * (uncovered / span));
+      coveredUntil = Math.max(coveredUntil, r.e);
+    }
+    if (total > max) max = total;
+  }
   return max;
 }
+
+/** Clamp a daily step count to a believable range (0..MAX_DAILY_STEPS). */
+export function sanitizeDailySteps(steps: number | null | undefined): number {
+  const n = Number(steps ?? 0);
+  if (!Number.isFinite(n) || n <= 0) return 0;
+  return Math.min(MAX_DAILY_STEPS, Math.round(n));
+}
+
 
 export function sumField(records: any[] | null, key: string): number | undefined {
   if (!records || records.length === 0) return undefined;
