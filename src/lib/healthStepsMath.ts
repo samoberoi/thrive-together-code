@@ -90,7 +90,7 @@ export function sumStepsDeduped(records: any[] | null): number | undefined {
         return { s, e: Number.isFinite(e) && e > s ? e : s + 1, count: Number(r?.count ?? 0) };
       })
       .filter((r) => Number.isFinite(r.s) && r.count > 0)
-      // Longest (aggregate) records first at the same start so their детали
+      // Longest (aggregate) records first at the same start so their details
       // (contained minute records) are skipped as already-covered.
       .sort((a, b) => a.s - b.s || b.e - a.e);
 
