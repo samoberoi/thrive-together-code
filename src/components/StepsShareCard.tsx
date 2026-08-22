@@ -197,11 +197,10 @@ export default function StepsShareCard({
 
         <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
           <div className="flex items-center gap-2">
-            <span className="h-px w-6 bg-foreground/15" />
             <p className="text-[13px] font-black uppercase tracking-[0.2em]" style={{ color: "var(--bbdo-red)" }}>
               Steps
             </p>
-            <span className="h-px w-6 bg-foreground/15" />
+
           </div>
           <p className="mt-1 text-[38px] font-black leading-none tabular-nums" style={{ color: "var(--bbdo-blue)" }}>
             {Math.round(steps).toLocaleString("en-IN")}
