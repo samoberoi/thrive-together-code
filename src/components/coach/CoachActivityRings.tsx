@@ -10,6 +10,7 @@ import { getTodayYogaMinutes } from "@/lib/yogaProgressService";
 import { fetchMovementOverview, COACH_MIN_DAILY_STEPS } from "@/lib/movementUserService";
 import { fetchProfile } from "@/lib/profileService";
 import StepsShareCard from "@/components/StepsShareCard";
+import MinutesShareCard from "@/components/MinutesShareCard";
 import { fetchUserProtocol, fetchTrackingForUser } from "@/lib/fastingService";
 
 const todayKey = () => {
@@ -71,7 +72,7 @@ export default function CoachActivityRings() {
         .from("health_logs" as any)
         .select("logged_at, log_type")
         .eq("user_id", user.id)
-        .eq("log_type", "blood_sugar")
+        .eq("log_type", "diabetes")
         .order("logged_at", { ascending: false })
         .limit(10);
       setDiabetesLoggedToday(
@@ -187,6 +188,9 @@ export default function CoachActivityRings() {
       color: "#248CCB",
       disabled: exerciseGoal <= 0,
       hint: exerciseGoal > 0 ? `${Math.min(exerciseMin, exerciseGoal)} / ${exerciseGoal} min` : undefined,
+      expanded: (
+        <MinutesShareCard kind="exercise" minutes={exerciseMin} goalMinutes={exerciseGoal} weightKg={body.weightKg} />
+      ),
     },
     {
       key: "yoga", label: "Yoga & Stress",
@@ -194,7 +198,17 @@ export default function CoachActivityRings() {
       color: "#8B5CF6",
       disabled: yogaGoal <= 0,
       hint: yogaGoal > 0 ? `${Math.min(yogaMin, yogaGoal)} / ${yogaGoal} min` : undefined,
+      expanded: (
+        <MinutesShareCard
+          kind="yoga"
+          minutes={yogaMin}
+          goalMinutes={yogaGoal}
+          sessions={yogaMin > 0 ? Math.max(1, Math.round(yogaMin / 15)) : 0}
+          weightKg={body.weightKg}
+        />
+      ),
     },
+
     { key: "water", label: "Water", ratio: Math.min(1, water / 8), color: "#38BDF8", hint: `${water} / 8 glasses` },
     {
       key: "breath", label: "Breath Protocol",

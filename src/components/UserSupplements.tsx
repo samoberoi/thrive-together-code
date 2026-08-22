@@ -290,34 +290,38 @@ export default function UserSupplements({ simpleMode = false }: { simpleMode?: b
             {groupItems.map(({ item, supp }) => {
               const taken = todayTracking.find((t) => t.plan_item_id === item.id)?.taken ?? false;
               return (
-                <motion.button
+                <div
                   key={item.id}
-                  onClick={() => handleToggle(item.id)}
-                  className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-colors text-left ${
-                    taken ? "bg-primary/10 ring-1 ring-primary/20" : "bg-muted/50 hover:bg-muted"
+                  className={`rounded-2xl transition-colors ${
+                    taken ? "bg-primary/10 ring-1 ring-primary/20" : "bg-muted/50"
                   }`}
-                  whileTap={{ scale: 0.98 }}
                 >
-                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-                    taken ? "bg-primary text-primary-foreground" : `${CATEGORY_BG[supp?.category ?? ""] ?? "bg-muted"}`
-                  }`}>
-                    {taken ? <Check className="w-4 h-4" /> : <Pill className={`w-4 h-4 ${CATEGORY_COLORS[supp?.category ?? ""] ?? "text-muted-foreground"}`} />}
+                  <div className="flex items-center gap-3 p-3">
+                    <motion.button
+                      onClick={() => handleToggle(item.id)}
+                      whileTap={{ scale: 0.94 }}
+                      className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                        taken ? "bg-primary text-primary-foreground" : `${CATEGORY_BG[supp?.category ?? ""] ?? "bg-muted"}`
+                      }`}
+                      aria-label={taken ? "Mark as not taken" : "Mark as taken"}
+                    >
+                      {taken ? <Check className="w-4 h-4" /> : <Pill className={`w-4 h-4 ${CATEGORY_COLORS[supp?.category ?? ""] ?? "text-muted-foreground"}`} />}
+                    </motion.button>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-semibold ${taken ? "text-primary line-through" : "text-foreground"}`}>
+                        {supp?.name ?? "Supplement"}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {[item.dosage, item.frequency].filter(Boolean).join(" · ")}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-semibold ${taken ? "text-primary line-through" : "text-foreground"}`}>
-                      {supp?.name ?? "Supplement"}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground">{item.dosage} · {item.frequency}</p>
-                  </div>
-                    {item.remarks && (
-                    <span className="text-[9px] text-muted-foreground bg-muted px-2 py-0.5 rounded-md shrink-0 max-w-[100px] truncate">
-                      {item.remarks}
-                    </span>
-                  )}
-                </motion.button>
+                  <SupplementDetails item={item} supp={supp} />
+                </div>
               );
             })}
           </div>
+
         </motion.div>
       ))}
 
@@ -428,6 +432,53 @@ function TimingIcon({ timing, className = "w-3.5 h-3.5" }: { timing: string; cla
   const Icon = t.includes("morning") ? Sun : t.includes("evening") || t.includes("night") ? Moon : t.includes("meal") ? Coffee : Clock;
   return <Icon className={className} strokeWidth={1.75} />;
 }
+
+/**
+ * Full prescription detail for one supplement — exactly what the coach/admin
+ * sees: dose, frequency, timing, duration and remarks, plus what it's for.
+ */
+function SupplementDetails({ item, supp }: { item: PlanItem; supp?: Supplement }) {
+  const rows: { label: string; value: string; Icon: typeof Pill }[] = [
+    { label: "Dose", value: item.dosage || supp?.default_dosage || "—", Icon: Droplets },
+    { label: "How often", value: item.frequency || supp?.default_frequency || "—", Icon: Clock },
+    { label: "When", value: item.timing || supp?.default_timing || "with meal", Icon: Coffee },
+  ];
+  if (item.duration_weeks) rows.push({ label: "Duration", value: `${item.duration_weeks} weeks`, Icon: Clock });
+
+  return (
+    <div className="px-3 pb-3 space-y-2">
+      <div className="grid grid-cols-2 gap-1.5">
+        {rows.map((r) => (
+          <div key={r.label} className="rounded-xl bg-background/60 px-2.5 py-1.5">
+            <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground flex items-center gap-1">
+              <r.Icon className="w-3 h-3" strokeWidth={1.9} /> {r.label}
+            </p>
+            <p className="text-[11px] font-semibold text-foreground leading-snug break-words">{r.value}</p>
+          </div>
+        ))}
+      </div>
+      {supp?.description && (
+        <p className="text-[11px] text-muted-foreground leading-snug">
+          <span className="font-bold text-foreground">Why: </span>{supp.description}
+        </p>
+      )}
+      {item.remarks && (
+        <p className="text-[11px] text-amber-600 dark:text-amber-400 leading-snug flex items-start gap-1">
+          <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" strokeWidth={2} />
+          <span>{item.remarks}</span>
+        </p>
+      )}
+      {(supp?.veg_type ?? "both") !== "both" && (
+        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${
+          supp?.veg_type === "veg" ? "bg-emerald-500/10 text-emerald-600" : "bg-rose-500/10 text-rose-600"
+        }`}>
+          {supp?.veg_type === "veg" ? <><Leaf className="w-3 h-3" /> Veg</> : <><Drumstick className="w-3 h-3" /> Non-veg</>}
+        </span>
+      )}
+    </div>
+  );
+}
+
 
 function FoundationSupplementBrowser({
   supplements,
@@ -762,36 +813,40 @@ function FoundationPlanSummary({
           return (
             <div
               key={item.id}
-              className={`rounded-2xl p-3 flex items-center gap-3 ${
+              className={`rounded-2xl ${
                 isTaken ? "bg-primary/5 ring-1 ring-primary/20" : "bg-muted/40"
               }`}
             >
-              <button
-                onClick={() => onToggle(item.id)}
-                className={`w-9 h-9 rounded-xl shrink-0 flex items-center justify-center transition-colors ${
-                  isTaken ? "bg-primary text-primary-foreground" : `${CATEGORY_BG[supp?.category ?? ""] ?? "bg-muted"}`
-                }`}
-              >
-                {isTaken
-                  ? <Check className="w-4 h-4" />
-                  : <Pill className={`w-4 h-4 ${CATEGORY_COLORS[supp?.category ?? ""] ?? "text-muted-foreground"}`} />}
-              </button>
-              <div className="flex-1 min-w-0">
-                <p className={`text-sm font-bold ${isTaken ? "line-through text-primary/70" : "text-foreground"}`}>
-                  {supp?.name ?? "Supplement"}
-                </p>
-                <p className="text-[11px] text-muted-foreground">
-                  {item.dosage} · {item.timing || "with meal"}
-                </p>
+              <div className="p-3 flex items-center gap-3">
+                <button
+                  onClick={() => onToggle(item.id)}
+                  className={`w-9 h-9 rounded-xl shrink-0 flex items-center justify-center transition-colors ${
+                    isTaken ? "bg-primary text-primary-foreground" : `${CATEGORY_BG[supp?.category ?? ""] ?? "bg-muted"}`
+                  }`}
+                >
+                  {isTaken
+                    ? <Check className="w-4 h-4" />
+                    : <Pill className={`w-4 h-4 ${CATEGORY_COLORS[supp?.category ?? ""] ?? "text-muted-foreground"}`} />}
+                </button>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm font-bold ${isTaken ? "line-through text-primary/70" : "text-foreground"}`}>
+                    {supp?.name ?? "Supplement"}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {[item.dosage, item.frequency].filter(Boolean).join(" · ")}
+                  </p>
+                </div>
+                <button
+                  onClick={() => onRemove(item.id)}
+                  className="text-[10px] font-semibold text-muted-foreground hover:text-destructive px-2 py-1 rounded-lg"
+                  title="Remove from list"
+                >
+                  Remove
+                </button>
               </div>
-              <button
-                onClick={() => onRemove(item.id)}
-                className="text-[10px] font-semibold text-muted-foreground hover:text-destructive px-2 py-1 rounded-lg"
-                title="Remove from list"
-              >
-                Remove
-              </button>
+              <SupplementDetails item={item} supp={supp} />
             </div>
+
           );
         })}
       </div>
