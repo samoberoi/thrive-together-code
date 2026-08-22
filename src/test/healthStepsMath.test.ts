@@ -5,8 +5,6 @@ import {
   sumStepsDeduped,
   sanitizeDailySteps,
   MAX_DAILY_STEPS,
-  sanitizeDailySteps,
-  MAX_DAILY_STEPS,
 } from "@/lib/healthStepsMath";
 
 const rec = (startTime: string, endTime: string, count: number, origin = "com.samsung.health") => ({

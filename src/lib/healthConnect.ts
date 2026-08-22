@@ -324,9 +324,9 @@ export async function fetchHealthConnectSnapshot(): Promise<HealthSnapshot | nul
   const ok = await ensureAvailableAndAuthorized();
   if (!ok) return null;
 
-  const [steps, active, hr, restingHr, weight, glucose] =
+  const [todaySteps, active, hr, restingHr, weight, glucose] =
     await Promise.all([
-      aggregate("steps", startOfToday(), endOfToday()),
+      syncTodayStepsFromHealthConnect(),
       aggregate("calories", startOfToday(), endOfToday()),
       aggregate("heartRate", daysAgo(1), endOfToday()),
       aggregate("restingHeartRate", daysAgo(7), endOfToday()),
@@ -334,7 +334,6 @@ export async function fetchHealthConnectSnapshot(): Promise<HealthSnapshot | nul
       aggregate("bloodGlucose", daysAgo(7), endOfToday()),
     ]);
 
-  const stepsTotal = steps?.reduce((total, sample) => total + Number(sample.value || 0), 0);
   const activeKcal = active?.reduce((total, sample) => total + Number(sample.value || 0), 0);
 
   const heartRateFromSeries = (() => {
@@ -371,7 +370,7 @@ export async function fetchHealthConnectSnapshot(): Promise<HealthSnapshot | nul
   const glucoseAt = lastGlucose?.endDate;
 
   return {
-    steps: stepsTotal != null ? Math.round(stepsTotal) : undefined,
+    steps: todaySteps == null ? undefined : sanitizeDailySteps(todaySteps),
     activeCalories: activeKcal ? Math.round(activeKcal) : undefined,
     restingHeartRate,
     restingHeartRateAt: lastRestingHr?.endDate,
