@@ -419,7 +419,7 @@ function CreatePostSheet({
         {/* Image preview */}
         {previewUrl && (
           <div className="relative mt-3 rounded-2xl overflow-hidden border border-border">
-            <img loading="lazy" decoding="async" src={previewUrl} alt="" className="w-full max-h-72 object-cover" />
+            <img loading="lazy" decoding="async" src={previewUrl} alt="" className="w-full max-h-[420px] object-contain bg-muted/30" />
             {uploading && (
               <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                 <Loader2 className="w-5 h-5 text-white animate-spin" />
