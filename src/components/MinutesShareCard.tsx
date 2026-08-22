@@ -221,14 +221,17 @@ export default function MinutesShareCard({
               strokeLinecap="round"
               strokeDasharray={`${ARC} ${CIRC}`}
             />
-            <circle
-              r={R}
-              fill="none"
-              stroke={`url(#bbdoMinutesArc-${kind})`}
-              strokeWidth="14"
-              strokeLinecap="round"
-              strokeDasharray={`${ARC * pct} ${CIRC}`}
-            />
+            {pct > 0 && (
+              <circle
+                r={R}
+                fill="none"
+                stroke={`url(#bbdoMinutesArc-${kind})`}
+                strokeWidth="14"
+                strokeLinecap="round"
+                strokeDasharray={`${ARC * pct} ${CIRC}`}
+              />
+            )}
+
           </g>
         </svg>
 
