@@ -12,6 +12,7 @@ import {
   type ChatMessage,
   type ChatConversation,
 } from "@/lib/chatService";
+import { useChatScroll } from "@/hooks/useChatScroll";
 
 interface ConvoWithMeta extends ChatConversation {
   patient_name: string | null;
