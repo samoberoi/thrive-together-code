@@ -433,6 +433,53 @@ function TimingIcon({ timing, className = "w-3.5 h-3.5" }: { timing: string; cla
   return <Icon className={className} strokeWidth={1.75} />;
 }
 
+/**
+ * Full prescription detail for one supplement — exactly what the coach/admin
+ * sees: dose, frequency, timing, duration and remarks, plus what it's for.
+ */
+function SupplementDetails({ item, supp }: { item: PlanItem; supp?: Supplement }) {
+  const rows: { label: string; value: string; Icon: typeof Pill }[] = [
+    { label: "Dose", value: item.dosage || supp?.default_dosage || "—", Icon: Droplets },
+    { label: "How often", value: item.frequency || supp?.default_frequency || "—", Icon: Clock },
+    { label: "When", value: item.timing || supp?.default_timing || "with meal", Icon: Coffee },
+  ];
+  if (item.duration_weeks) rows.push({ label: "Duration", value: `${item.duration_weeks} weeks`, Icon: Clock });
+
+  return (
+    <div className="px-3 pb-3 space-y-2">
+      <div className="grid grid-cols-2 gap-1.5">
+        {rows.map((r) => (
+          <div key={r.label} className="rounded-xl bg-background/60 px-2.5 py-1.5">
+            <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground flex items-center gap-1">
+              <r.Icon className="w-3 h-3" strokeWidth={1.9} /> {r.label}
+            </p>
+            <p className="text-[11px] font-semibold text-foreground leading-snug break-words">{r.value}</p>
+          </div>
+        ))}
+      </div>
+      {supp?.description && (
+        <p className="text-[11px] text-muted-foreground leading-snug">
+          <span className="font-bold text-foreground">Why: </span>{supp.description}
+        </p>
+      )}
+      {item.remarks && (
+        <p className="text-[11px] text-amber-600 dark:text-amber-400 leading-snug flex items-start gap-1">
+          <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" strokeWidth={2} />
+          <span>{item.remarks}</span>
+        </p>
+      )}
+      {(supp?.veg_type ?? "both") !== "both" && (
+        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${
+          supp?.veg_type === "veg" ? "bg-emerald-500/10 text-emerald-600" : "bg-rose-500/10 text-rose-600"
+        }`}>
+          {supp?.veg_type === "veg" ? <><Leaf className="w-3 h-3" /> Veg</> : <><Drumstick className="w-3 h-3" /> Non-veg</>}
+        </span>
+      )}
+    </div>
+  );
+}
+
+
 function FoundationSupplementBrowser({
   supplements,
   userId,
