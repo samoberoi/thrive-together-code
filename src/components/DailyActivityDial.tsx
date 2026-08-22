@@ -341,30 +341,15 @@ export default function DailyActivityDial({
                   />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5">
+                  <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_66px_28px] items-center gap-1">
                     <span
-                      className="text-[11px] font-bold truncate flex-1 min-w-0"
+                      className="min-w-0 truncate pr-1 text-[11px] font-bold"
                       style={{ color: disabled ? "hsl(var(--muted-foreground))" : (accent ?? "hsl(var(--foreground))") }}
                     >
                       {it.label}
                     </span>
-                    {/* Fixed-width slot so every row's arrow lands on the same column */}
-                    <span className="shrink-0 w-6 h-6 inline-flex items-center justify-center">
-                      {!disabled && it.expanded && (
-                        <button
-                          type="button"
-                          onClick={() => setOpenKey(open ? null : it.key)}
-                          aria-expanded={open}
-                          aria-label={`${open ? "Hide" : "Show"} ${it.label} details`}
-                          className="inline-flex h-6 w-6 items-center justify-center rounded-full text-white transition-transform"
-                          style={{ backgroundColor: it.color, transform: open ? "rotate(90deg)" : undefined }}
-                        >
-                          <ChevronRight className="w-3.5 h-3.5" strokeWidth={3} />
-                        </button>
-                      )}
-                    </span>
                     <span
-                      className="text-[10px] font-black tabular-nums shrink-0 inline-flex justify-end items-center w-[66px] whitespace-nowrap"
+                      className="inline-flex w-[66px] shrink-0 items-center justify-end whitespace-nowrap text-[10px] font-black tabular-nums"
                       style={{
                         color: complete ? it.color : "hsl(var(--muted-foreground))",
                       }}
@@ -375,6 +360,21 @@ export default function DailyActivityDial({
                         <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={2.4} />
                       ) : (
                         `${pct}%`
+                      )}
+                    </span>
+                    {/* Keep every arrow in one right-side column, inset slightly from the edge. */}
+                    <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center">
+                      {!disabled && it.expanded && (
+                        <button
+                          type="button"
+                          onClick={() => setOpenKey(open ? null : it.key)}
+                          aria-expanded={open}
+                          aria-label={`${open ? "Hide" : "Show"} ${it.label} details`}
+                          className="inline-flex h-6 w-6 items-center justify-center rounded-full text-white transition-transform"
+                          style={{ backgroundColor: it.color, transform: open ? "rotate(90deg)" : undefined }}
+                        >
+                          <ChevronRight className="h-3.5 w-3.5" strokeWidth={3} />
+                        </button>
                       )}
                     </span>
                   </div>
