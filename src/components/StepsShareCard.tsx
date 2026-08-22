@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Share2, Loader2, Download, Flame, MapPin, Footprints } from "lucide-react";
+import { Share2, Loader2, Download, Flame, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import bbdoLogo from "@/assets/logo.png";
 import { useAuth } from "@/contexts/AuthContext";
@@ -180,41 +180,53 @@ export default function StepsShareCard({
         </svg>
 
         <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
-          <Footprints className="h-5 w-5" style={{ color: "var(--bbdo-blue)" }} strokeWidth={2.4} />
-          <p className="mt-0.5 text-[13px] font-black uppercase tracking-[0.2em]" style={{ color: "var(--bbdo-red)" }}>
-            Steps
-          </p>
-          <p className="text-[36px] font-black leading-none tabular-nums" style={{ color: "var(--bbdo-blue)" }}>
+          <div className="flex items-center gap-2">
+            <span className="h-px w-6 bg-foreground/15" />
+            <p className="text-[13px] font-black uppercase tracking-[0.2em]" style={{ color: "var(--bbdo-red)" }}>
+              Steps
+            </p>
+            <span className="h-px w-6 bg-foreground/15" />
+          </div>
+          <p className="mt-1 text-[38px] font-black leading-none tabular-nums" style={{ color: "var(--bbdo-blue)" }}>
             {Math.round(steps).toLocaleString("en-IN")}
           </p>
+          <div className="mt-2 flex items-center gap-2">
+            <span className="h-px w-8 bg-foreground/12" />
+            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: "var(--bbdo-blue)" }} />
+            <span className="h-px w-8 bg-foreground/12" />
+          </div>
           <p className="mt-1.5 text-[11px] font-bold text-foreground/70">{headline.top}</p>
           <p className="text-[11px] font-black" style={{ color: "var(--bbdo-blue)" }}>
             {headline.bottom}
           </p>
         </div>
+
       </div>
 
-      {/* Stat tiles */}
-      <div className="mt-1 grid grid-cols-2 gap-3">
-        <div className="flex items-center gap-3 rounded-2xl bg-[var(--bbdo-red)]/8 px-3 py-2.5">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white shadow-sm">
+      {/* Stats — calories + distance on one compact row */}
+      <div className="mt-1 flex items-stretch rounded-2xl border border-[var(--bbdo-blue)]/10 bg-white/70 px-3 py-2">
+        <div className="flex flex-1 items-center gap-2.5">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--bbdo-red)]/10">
             <Flame className="h-4 w-4" style={{ color: "var(--bbdo-red)" }} strokeWidth={2.4} />
           </span>
-          <div className="min-w-0">
-            <p className="text-[11px] font-bold text-foreground/70">Calories</p>
-            <p className="text-[20px] font-black leading-tight tabular-nums" style={{ color: "var(--bbdo-red)" }}>
+          <div className="min-w-0 leading-tight">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-foreground/55">Calories</p>
+            <p className="text-[17px] font-black tabular-nums" style={{ color: "var(--bbdo-red)" }}>
               {calories.toLocaleString("en-IN")}
               <span className="ml-1 text-[10px] font-bold text-foreground/50">kcal</span>
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3 rounded-2xl bg-[var(--bbdo-blue)]/8 px-3 py-2.5">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white shadow-sm">
+
+        <div className="mx-2 w-px shrink-0 self-stretch bg-border/70" />
+
+        <div className="flex flex-1 items-center gap-2.5">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--bbdo-blue)]/10">
             <MapPin className="h-4 w-4" style={{ color: "var(--bbdo-blue)" }} strokeWidth={2.4} />
           </span>
-          <div className="min-w-0">
-            <p className="text-[11px] font-bold text-foreground/70">Distance</p>
-            <p className="text-[20px] font-black leading-tight tabular-nums" style={{ color: "var(--bbdo-blue)" }}>
+          <div className="min-w-0 leading-tight">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-foreground/55">Distance</p>
+            <p className="text-[17px] font-black tabular-nums" style={{ color: "var(--bbdo-blue)" }}>
               {km.toFixed(1)}
               <span className="ml-1 text-[10px] font-bold text-foreground/50">km</span>
             </p>
@@ -223,12 +235,13 @@ export default function StepsShareCard({
       </div>
 
       {/* Quote */}
-      <p className="mt-3 text-center text-[12px] font-semibold leading-snug text-foreground/70">
+      <p className="mt-2.5 text-center text-[12px] font-semibold leading-snug text-foreground/70">
         “ Every step is a step toward{" "}
         <span className="font-black" style={{ color: "var(--bbdo-blue)" }}>
           better metabolic health.
         </span>
       </p>
+
 
       <div className="mt-3 flex items-center justify-center gap-2 border-t border-border/60 pt-2">
         <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: "var(--bbdo-red)" }} />
