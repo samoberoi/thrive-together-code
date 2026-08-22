@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchProfile } from "@/lib/profileService";
 import { canUseNativeHealth, isHealthStepsConnected, syncTodaySteps } from "@/lib/healthProvider";
-import { getLastStepsDiagnostics } from "@/lib/healthConnect";
+import { getLastStepsDiagnostics, isHealthRateLimited } from "@/lib/healthConnect";
 
 import { healthSourceLabel } from "@/lib/platformLabels";
 import {
