@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Share2, Loader2, Download, Flame, MapPin } from "lucide-react";
 import { toast } from "sonner";
@@ -7,7 +7,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { uploadCommunityImage } from "@/lib/communityService";
 import {
   formatShareDate,
-  renderStepsCardPng,
   stepsHeadline,
   stepsToCalories,
   stepsToKm,
@@ -44,11 +43,25 @@ export default function StepsShareCard({
   const label = formatShareDate(day);
   const headline = stepsHeadline(steps);
   const pct = Math.max(0.03, Math.min(1, steps / 10000));
+  const cardRef = useRef<HTMLDivElement | null>(null);
+
+  /** Snapshot the exact on-screen card so Download & Share are pixel-identical. */
+  const captureCard = async (): Promise<Blob | null> => {
+    const node = cardRef.current;
+    if (!node) return null;
+    const { toBlob } = await import("html-to-image");
+    return await toBlob(node, {
+      pixelRatio: 3,
+      cacheBust: true,
+      backgroundColor: "#ffffff",
+      filter: (el) => !(el instanceof HTMLElement && el.dataset?.capture === "hide"),
+    });
+  };
 
   const handleDownload = async () => {
     setDownloading(true);
     try {
-      const blob = await renderStepsCardPng({ steps, km, calories, date: day });
+      const blob = await captureCard();
       if (!blob) throw new Error("Could not build the image");
       const fileName = `bbdo-steps-${day.toISOString().slice(0, 10)}.png`;
 
@@ -89,7 +102,7 @@ export default function StepsShareCard({
     if (!user) return;
     setSharing(true);
     try {
-      const blob = await renderStepsCardPng({ steps, km, calories, date: day });
+      const blob = await captureCard();
       if (!blob) throw new Error("Could not build the image");
       const file = new File([blob], `steps-${Date.now()}.png`, { type: "image/png" });
       const url = await uploadCommunityImage(user.id, file);
@@ -111,7 +124,10 @@ export default function StepsShareCard({
   const ARC = CIRC * 0.72; // 260° gauge
 
   return (
-    <div className="relative mt-2 mb-1 overflow-hidden rounded-3xl border border-[var(--bbdo-blue)]/12 bg-gradient-to-br from-white via-[#F6F9FE] to-[#E9F1FD] p-4 shadow-[0_16px_40px_-24px_rgba(22,104,214,0.55)]">
+    <div
+      ref={cardRef}
+      className="relative mt-2 mb-1 overflow-hidden rounded-3xl border border-[var(--bbdo-blue)]/12 bg-gradient-to-br from-white via-[#F6F9FE] to-[#E9F1FD] p-4 shadow-[0_16px_40px_-24px_rgba(22,104,214,0.55)]"
+    >
       {/* dotted texture */}
       <div
         className="pointer-events-none absolute right-0 top-0 h-32 w-32 opacity-[0.18]"
@@ -127,7 +143,7 @@ export default function StepsShareCard({
         <div className="flex items-center gap-2">
           <img src={bbdoLogo} alt="Bye Bye Diabetes" className="h-10 w-auto object-contain" />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" data-capture="hide">
           <button
             type="button"
             onClick={handleDownload}
