@@ -124,7 +124,10 @@ export default function StepsShareCard({
   const ARC = CIRC * 0.72; // 260° gauge
 
   return (
-    <div className="relative mt-2 mb-1 overflow-hidden rounded-3xl border border-[var(--bbdo-blue)]/12 bg-gradient-to-br from-white via-[#F6F9FE] to-[#E9F1FD] p-4 shadow-[0_16px_40px_-24px_rgba(22,104,214,0.55)]">
+    <div
+      ref={cardRef}
+      className="relative mt-2 mb-1 overflow-hidden rounded-3xl border border-[var(--bbdo-blue)]/12 bg-gradient-to-br from-white via-[#F6F9FE] to-[#E9F1FD] p-4 shadow-[0_16px_40px_-24px_rgba(22,104,214,0.55)]"
+    >
       {/* dotted texture */}
       <div
         className="pointer-events-none absolute right-0 top-0 h-32 w-32 opacity-[0.18]"
@@ -140,7 +143,7 @@ export default function StepsShareCard({
         <div className="flex items-center gap-2">
           <img src={bbdoLogo} alt="Bye Bye Diabetes" className="h-10 w-auto object-contain" />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" data-capture="hide">
           <button
             type="button"
             onClick={handleDownload}
