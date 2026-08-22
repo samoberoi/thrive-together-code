@@ -236,7 +236,6 @@ export default function Consult() {
 
           {(() => {
             const av = getCoachAvailability(coach);
-            const waMsg = `Hi ${coach.name}, I'm your client on Bye Bye Diabetes. Can we talk?`;
             return (
               <div className="mt-4">
                 <div className={`flex items-center gap-2 text-xs mb-3 px-3 py-2 rounded-xl border ${av.available ? "text-success bg-success/10 border-success/20" : "text-warning bg-warning/10 border-warning/20"}`}>
