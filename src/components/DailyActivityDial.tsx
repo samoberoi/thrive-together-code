@@ -341,15 +341,15 @@ export default function DailyActivityDial({
                   />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_28px_66px] items-center gap-1">
+                  <div className="flex min-w-0 items-center">
                     <span
-                      className="min-w-0 truncate pr-1 text-[11px] font-bold"
+                      className="min-w-0 flex-1 truncate pr-2 text-[11px] font-bold"
                       style={{ color: disabled ? "hsl(var(--muted-foreground))" : (accent ?? "hsl(var(--foreground))") }}
                     >
                       {it.label}
                     </span>
-                    {/* Keep every arrow together immediately before the status value. */}
-                    <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center">
+                    {/* Fixed trailing cluster: arrow sits 3px before a right-aligned status. */}
+                    <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center mr-[3px]">
                       {!disabled && it.expanded && (
                         <button
                           type="button"
@@ -364,7 +364,7 @@ export default function DailyActivityDial({
                       )}
                     </span>
                     <span
-                      className="inline-flex w-[66px] shrink-0 items-center justify-start whitespace-nowrap text-[10px] font-black tabular-nums"
+                      className="inline-flex w-[66px] shrink-0 items-center justify-end whitespace-nowrap text-right text-[10px] font-black tabular-nums"
                       style={{
                         color: complete ? it.color : "hsl(var(--muted-foreground))",
                       }}
