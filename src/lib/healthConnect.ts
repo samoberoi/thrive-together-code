@@ -269,10 +269,52 @@ export function getLastStepsDiagnostics() {
   return lastDiagnostics;
 }
 
+/**
+ * Health Connect enforces a per-app read quota. Hammering it (mount + resume +
+ * visibility + timer + snapshot card) trips "rate limited request quota".
+ * That is never a user-facing failure: we simply reuse the last good reading.
+ */
+export function isHealthRateLimited(e: any): boolean {
+  const msg = String(e?.message ?? e ?? "");
+  return /rate limit|quota has been exceeded|rate.?limited/i.test(msg);
+}
+
+const STEPS_MIN_INTERVAL_MS = 90_000;
+let lastStepsValue: number | null = null;
+let lastStepsAt = 0;
+let rateLimitedUntil = 0;
+
 export async function syncTodayStepsFromHealthConnect(
   opts?: { allowPrompt?: boolean },
 ): Promise<number | null> {
+  const now = Date.now();
+  const fresh = lastStepsValue != null && now - lastStepsAt < STEPS_MIN_INTERVAL_MS;
+  const backingOff = now < rateLimitedUntil;
+  if (!opts?.allowPrompt && (fresh || backingOff) && lastStepsValue != null) {
+    return lastStepsValue;
+  }
+
+  try {
+    const value = await readTodayStepsFromHealthConnect(opts);
+    lastStepsValue = value;
+    lastStepsAt = Date.now();
+    rateLimitedUntil = 0;
+    return value;
+  } catch (e) {
+    if (isHealthRateLimited(e)) {
+      // Back off for 5 minutes and keep showing the last good number.
+      rateLimitedUntil = Date.now() + 5 * 60_000;
+      if (lastStepsValue != null) return lastStepsValue;
+    }
+    throw e;
+  }
+}
+
+async function readTodayStepsFromHealthConnect(
+  opts?: { allowPrompt?: boolean },
+): Promise<number | null> {
   await ensureStepsPermission(opts?.allowPrompt ?? false);
+
   const start = startOfToday();
   const end = new Date();
 
@@ -320,9 +362,18 @@ export async function syncTodayStepsFromHealthConnect(
 
 
 
+const SNAPSHOT_MIN_INTERVAL_MS = 2 * 60_000;
+let lastSnapshot: HealthSnapshot | null = null;
+let lastSnapshotAt = 0;
+
 export async function fetchHealthConnectSnapshot(): Promise<HealthSnapshot | null> {
+  if (lastSnapshot && Date.now() - lastSnapshotAt < SNAPSHOT_MIN_INTERVAL_MS) {
+    return lastSnapshot;
+  }
   const ok = await ensureAvailableAndAuthorized();
   if (!ok) return null;
+
+
 
   const [todaySteps, active, hr, restingHr, weight, glucose] =
     await Promise.all([
@@ -369,7 +420,7 @@ export async function fetchHealthConnectSnapshot(): Promise<HealthSnapshot | nul
   })();
   const glucoseAt = lastGlucose?.endDate;
 
-  return {
+  const snapshot: HealthSnapshot = {
     steps: todaySteps == null ? undefined : sanitizeDailySteps(todaySteps),
     activeCalories: activeKcal ? Math.round(activeKcal) : undefined,
     restingHeartRate,
@@ -379,7 +430,11 @@ export async function fetchHealthConnectSnapshot(): Promise<HealthSnapshot | nul
     glucoseMgDl,
     glucoseAt,
   };
+  lastSnapshot = snapshot;
+  lastSnapshotAt = Date.now();
+  return snapshot;
 }
+
 
 export async function writeWeightToHealthConnect(kg: number, at?: Date): Promise<boolean> {
   if (!canUseHealthConnect() || !kg || kg <= 0) return false;
