@@ -12,6 +12,7 @@ import {
   stepsToKm,
 } from "@/lib/stepsShareImage";
 import { isNative } from "@/lib/platform";
+import { sanitizeDailySteps } from "@/lib/healthStepsMath";
 
 /**
  * Expanded "steps" panel — big step count, estimated distance & calories,
@@ -20,7 +21,7 @@ import { isNative } from "@/lib/platform";
  * community composer.
  */
 export default function StepsShareCard({
-  steps,
+  steps: rawSteps,
   heightCm,
   weightKg,
   date,
@@ -31,6 +32,7 @@ export default function StepsShareCard({
   /** Day this card represents. Defaults to today. */
   date?: Date;
 }) {
+  const steps = sanitizeDailySteps(rawSteps);
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
