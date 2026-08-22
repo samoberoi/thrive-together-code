@@ -362,9 +362,18 @@ async function readTodayStepsFromHealthConnect(
 
 
 
+const SNAPSHOT_MIN_INTERVAL_MS = 2 * 60_000;
+let lastSnapshot: HealthSnapshot | null = null;
+let lastSnapshotAt = 0;
+
 export async function fetchHealthConnectSnapshot(): Promise<HealthSnapshot | null> {
+  if (lastSnapshot && Date.now() - lastSnapshotAt < SNAPSHOT_MIN_INTERVAL_MS) {
+    return lastSnapshot;
+  }
   const ok = await ensureAvailableAndAuthorized();
   if (!ok) return null;
+
+
 
   const [todaySteps, active, hr, restingHr, weight, glucose] =
     await Promise.all([
