@@ -236,7 +236,12 @@ export default function MinutesShareCard({
         </svg>
 
         <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
-          <p className="text-[13px] font-black uppercase tracking-[0.2em]" style={{ color: "var(--bbdo-red)" }}>
+          <p
+            className={`font-black uppercase ${
+              kind === "yoga" ? "max-w-[112px] text-[11px] tracking-[0.08em]" : "text-[13px] tracking-[0.2em]"
+            }`}
+            style={{ color: "var(--bbdo-red)" }}
+          >
             {title}
           </p>
           <p className="mt-1 text-[38px] font-black leading-none tabular-nums" style={{ color: "var(--bbdo-blue)" }}>

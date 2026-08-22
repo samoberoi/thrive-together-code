@@ -341,28 +341,14 @@ export default function DailyActivityDial({
                   />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_66px_28px] items-center gap-1">
+                  <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_28px_66px] items-center gap-1">
                     <span
                       className="min-w-0 truncate pr-1 text-[11px] font-bold"
                       style={{ color: disabled ? "hsl(var(--muted-foreground))" : (accent ?? "hsl(var(--foreground))") }}
                     >
                       {it.label}
                     </span>
-                    <span
-                      className="inline-flex w-[66px] shrink-0 items-center justify-end whitespace-nowrap text-[10px] font-black tabular-nums"
-                      style={{
-                        color: complete ? it.color : "hsl(var(--muted-foreground))",
-                      }}
-                    >
-                      {disabled ? (
-                        "Not unlocked"
-                      ) : complete ? (
-                        <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={2.4} />
-                      ) : (
-                        `${pct}%`
-                      )}
-                    </span>
-                    {/* Keep every arrow in one right-side column, inset slightly from the edge. */}
+                    {/* Keep every arrow together immediately before the status value. */}
                     <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center">
                       {!disabled && it.expanded && (
                         <button
@@ -375,6 +361,20 @@ export default function DailyActivityDial({
                         >
                           <ChevronRight className="h-3.5 w-3.5" strokeWidth={3} />
                         </button>
+                      )}
+                    </span>
+                    <span
+                      className="inline-flex w-[66px] shrink-0 items-center justify-start whitespace-nowrap text-[10px] font-black tabular-nums"
+                      style={{
+                        color: complete ? it.color : "hsl(var(--muted-foreground))",
+                      }}
+                    >
+                      {disabled ? (
+                        "Not unlocked"
+                      ) : complete ? (
+                        <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={2.4} />
+                      ) : (
+                        `${pct}%`
                       )}
                     </span>
                   </div>
