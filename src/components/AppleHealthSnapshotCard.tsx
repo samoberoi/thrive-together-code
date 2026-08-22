@@ -80,9 +80,15 @@ export default function AppleHealthSnapshotCard() {
             return;
           }
         } catch (error: any) {
-          setHealthMessage(error?.message || `Couldn't sync ${healthSourceLabel()} data.`);
-          setCanRequestHealth(true);
+          if (isHealthRateLimited(error)) {
+            // Quota throttle: keep the last stored snapshot, say nothing.
+            console.warn("health snapshot throttled by Health Connect", error);
+          } else {
+            setHealthMessage(error?.message || `Couldn't sync ${healthSourceLabel()} data.`);
+            setCanRequestHealth(true);
+          }
         }
+
       }
       // Web (or native failed): fall back to the last synced snapshot from DB.
       const stored: StoredHealthSnapshot | null = await fetchLatestHealthSnapshot(user.id);
