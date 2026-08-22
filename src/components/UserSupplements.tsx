@@ -21,6 +21,51 @@ import {
   type SupplementBadge, type UserSupplementBadge
 } from "@/lib/supplementBadgeService";
 
+
+/**
+ * A supplement's foundational prescription as configured by the admin in
+ * supplement_condition_rules. `supplement_master` rarely carries a
+ * default_dosage, so the rule is the real source of truth for dose / how
+ * often / when — the app must fall back to it everywhere instead of showing
+ * a blank dash to the client.
+ */
+export interface FoundationRule {
+  supplement_id: string;
+  duration_weeks: number;
+  dosage: string | null;
+  frequency: string | null;
+  timing: string | null;
+  remarks: string | null;
+}
+
+const clean = (v?: string | null) => {
+  const t = (v ?? "").trim();
+  return t.length ? t : null;
+};
+
+/** item value → supplement default → admin condition rule → sensible default. */
+function resolveRx(
+  item: PlanItem | null,
+  supp: Supplement | undefined,
+  rule: FoundationRule | undefined,
+) {
+  const placeholder = new Set(["1 serving", "daily", "as directed"]);
+  const itemDose = clean(item?.dosage);
+  return {
+    dosage:
+      (itemDose && !placeholder.has(itemDose.toLowerCase()) ? itemDose : null) ??
+      clean(rule?.dosage) ??
+      clean(supp?.default_dosage) ??
+      "As directed",
+    frequency:
+      clean(item?.frequency) ?? clean(rule?.frequency) ?? clean(supp?.default_frequency) ?? "once daily",
+    timing:
+      clean(item?.timing) ?? clean(rule?.timing) ?? clean(supp?.default_timing) ?? "with meal",
+    remarks: clean(item?.remarks) ?? clean(rule?.remarks),
+    durationWeeks: item?.duration_weeks || rule?.duration_weeks || 0,
+  };
+}
+
 export default function UserSupplements({ simpleMode = false }: { simpleMode?: boolean } = {}) {
   const { user } = useAuth();
   const [plan, setPlan] = useState<UserSupplementPlan | null>(null);
@@ -32,7 +77,7 @@ export default function UserSupplements({ simpleMode = false }: { simpleMode?: b
 
   // Foundation-kit filtering
   const [dietSlug, setDietSlug] = useState<string | null>(null);
-  const [foundationalKit, setFoundationalKit] = useState<{ supplement_id: string; duration_weeks: number }[]>([]);
+  const [foundationalKit, setFoundationalKit] = useState<FoundationRule[]>([]);
 
   // Badge/streak state
   const [allBadges, setAllBadges] = useState<SupplementBadge[]>([]);
@@ -51,14 +96,14 @@ export default function UserSupplements({ simpleMode = false }: { simpleMode?: b
         fetchSupplementBadgeDefinitions(),
         fetchUserSupplementBadges(user.id),
         supabase.from("user_diet_profiles" as any).select("diet_preference").eq("user_id", user.id).maybeSingle(),
-        supabase.from("supplement_condition_rules" as any).select("supplement_id, duration_weeks").eq("condition", "foundational").eq("is_active", true),
+        supabase.from("supplement_condition_rules" as any).select("supplement_id, duration_weeks, dosage, frequency, timing, remarks").eq("condition", "foundational").eq("is_active", true),
       ]);
       setPlan(p);
       setSupplements(supps);
       setAllBadges(badgeDefs);
       setEarnedBadges(userBadges);
       setDietSlug(((dietRes as any).data?.diet_preference as string | undefined) ?? null);
-      setFoundationalKit(((kitRes as any).data ?? []) as { supplement_id: string; duration_weeks: number }[]);
+      setFoundationalKit(((kitRes as any).data ?? []) as FoundationRule[]);
 
       if (p) {
         const [planItems, todayT, weekT] = await Promise.all([
@@ -160,6 +205,7 @@ export default function UserSupplements({ simpleMode = false }: { simpleMode?: b
 
 
   const suppMap = Object.fromEntries(supplements.map((s) => [s.id, s]));
+  const ruleMap = Object.fromEntries(foundationalKit.map((r) => [r.supplement_id, r])) as Record<string, FoundationRule>;
   const takenCount = todayTracking.filter((t) => t.taken).length;
   const totalItems = items.length;
   const compliance = Math.round((takenCount / totalItems) * 100);
@@ -168,7 +214,7 @@ export default function UserSupplements({ simpleMode = false }: { simpleMode?: b
   // Group items by timing
   const timingGroups: Record<string, { item: PlanItem; supp: Supplement | undefined }[]> = {};
   for (const item of items) {
-    const timing = item.timing ?? "with meal";
+    const timing = resolveRx(item, suppMap[item.supplement_id], ruleMap[item.supplement_id]).timing;
     if (!timingGroups[timing]) timingGroups[timing] = [];
     timingGroups[timing].push({ item, supp: suppMap[item.supplement_id] });
   }
@@ -312,11 +358,14 @@ export default function UserSupplements({ simpleMode = false }: { simpleMode?: b
                         {supp?.name ?? "Supplement"}
                       </p>
                       <p className="text-[11px] text-muted-foreground">
-                        {[item.dosage, item.frequency].filter(Boolean).join(" · ")}
+                        {(() => {
+                          const rx = resolveRx(item, supp, ruleMap[item.supplement_id]);
+                          return [rx.dosage, rx.frequency, rx.timing].filter(Boolean).join(" · ");
+                        })()}
                       </p>
                     </div>
                   </div>
-                  <SupplementDetails item={item} supp={supp} />
+                  <SupplementDetails item={item} supp={supp} rule={ruleMap[item.supplement_id]} />
                 </div>
               );
             })}
@@ -495,7 +544,7 @@ function FoundationSupplementBrowser({
   planItems: PlanItem[];
   plan: UserSupplementPlan | null;
   dietSlug: string | null;
-  foundationalKit: { supplement_id: string; duration_weeks: number }[];
+  foundationalKit: FoundationRule[];
 }) {
   const [query, setQuery] = useState("");
   const [adding, setAdding] = useState<string | null>(null);
