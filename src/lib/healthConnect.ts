@@ -8,6 +8,7 @@ import {
   startOfLocalDay,
   sumField as sum,
   sumStepsDeduped,
+  sanitizeDailySteps,
 } from "@/lib/healthStepsMath";
 
 /** True on native Android where Health Connect can (potentially) run. */
@@ -307,10 +308,10 @@ export async function syncTodayStepsFromHealthConnect(
 
 
   const deduped = sumStepsDeduped(scoped) ?? 0;
-  if (deduped > 0) return Math.max(0, Math.round(deduped));
+  if (deduped > 0) return sanitizeDailySteps(deduped);
   // Fallback: some providers write records without usable dataOrigin metadata.
   const total = sum(scoped, "count") ?? 0;
-  if (total > 0) return Math.max(0, Math.round(total));
+  if (total > 0) return sanitizeDailySteps(total);
 
   // Records exist, but none overlap today — genuinely 0 steps so far today.
   return 0;
