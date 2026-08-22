@@ -1,3 +1,4 @@
+import { sanitizeDailySteps } from "@/lib/healthStepsMath";
 import { supabase } from "@/integrations/supabase/client";
 import {
   getMovementConfig,
@@ -117,7 +118,9 @@ function localDayBoundsIso(dateIso = localDateString()) {
   return { startIso: start.toISOString(), endIso: end.toISOString() };
 }
 
-export async function logTodaySteps(userId: string, steps: number, dateIso?: string) {
+export async function logTodaySteps(userId: string, rawSteps: number, dateIso?: string) {
+  // Never persist an implausible daily count (provider double-counting bugs).
+  const steps = sanitizeDailySteps(rawSteps);
   const date = dateIso || localDateString();
   const { startIso, endIso } = localDayBoundsIso(date);
   // Look for an existing log today
@@ -170,7 +173,7 @@ export async function fetchStepsHistory(userId: string, days = 14): Promise<{ da
   const byDate: Record<string, number> = {};
   for (const r of ((data as any) || [])) {
     const d = localDateString(new Date(String(r.logged_at)));
-    byDate[d] = Math.max(byDate[d] || 0, Number(r.steps_count || 0));
+    byDate[d] = Math.max(byDate[d] || 0, sanitizeDailySteps(Number(r.steps_count || 0)));
   }
   const out: { date: string; steps: number }[] = [];
   for (let i = 0; i < days; i++) {
@@ -195,7 +198,7 @@ export async function fetchTodaySteps(userId: string): Promise<number> {
     .order("logged_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  return Number((data as any)?.steps_count || 0);
+  return sanitizeDailySteps(Number((data as any)?.steps_count || 0));
 }
 
 export type MovementOverview = {

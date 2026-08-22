@@ -3,6 +3,8 @@ import { logStartupEvent, reportStartupError } from "@/lib/startupDiagnostics";
 
 type HealthAvailability = { available: boolean };
 type HealthAuthorization = { granted: boolean };
+import { sanitizeDailySteps } from "@/lib/healthStepsMath";
+
 type TodaySteps = { steps: number; startDate: string; endDate: string };
 
 export type HealthSnapshot = {
@@ -72,7 +74,7 @@ export async function syncTodayStepsFromAppleHealth(): Promise<number | null> {
     await BBDOHealthKit.requestAuthorization();
     const result = await BBDOHealthKit.getTodayStepCount();
     logStartupEvent("healthkit steps result", String(result.steps || 0));
-    return Math.max(0, Math.round(Number(result.steps || 0)));
+    return sanitizeDailySteps(Number(result.steps || 0));
   } catch (error) {
     reportStartupError("healthkit sync failed", error);
     throw error;
@@ -87,7 +89,7 @@ export async function fetchAppleHealthSnapshot(): Promise<HealthSnapshot | null>
     await BBDOHealthKit.requestAuthorization();
     if (typeof BBDOHealthKit.getHealthSnapshot !== "function") {
       const steps = await BBDOHealthKit.getTodayStepCount();
-      return { steps: Math.max(0, Math.round(Number(steps.steps || 0))) };
+      return { steps: sanitizeDailySteps(Number(steps.steps || 0)) };
     }
     const snap = await BBDOHealthKit.getHealthSnapshot();
     return snap ?? null;

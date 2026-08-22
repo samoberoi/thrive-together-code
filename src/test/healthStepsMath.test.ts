@@ -3,6 +3,10 @@ import {
   clipRecordsToRange,
   startOfLocalDay,
   sumStepsDeduped,
+  sanitizeDailySteps,
+  MAX_DAILY_STEPS,
+  sanitizeDailySteps,
+  MAX_DAILY_STEPS,
 } from "@/lib/healthStepsMath";
 
 const rec = (startTime: string, endTime: string, count: number, origin = "com.samsung.health") => ({
@@ -80,5 +84,27 @@ describe("step math is timezone-agnostic", () => {
     ];
     const scoped = clipRecordsToRange(records, start, now);
     expect(sumStepsDeduped(scoped)).toBe(3100);
+  });
+});
+
+describe("inflated counts are impossible", () => {
+  it("does not double-count an aggregate record plus its detail records", () => {
+    const start = startOfLocalDay();
+    const now = new Date(start.getTime() + 8 * 3600_000);
+    const h = (n: number) => new Date(start.getTime() + n * 3600_000).toISOString();
+    const records = [
+      rec(h(1), h(4), 6000), // daily/session aggregate
+      rec(h(1), h(2), 2000), // detail records inside it
+      rec(h(2), h(3), 2000),
+      rec(h(3), h(4), 2000),
+    ];
+    const scoped = clipRecordsToRange(records, start, now);
+    expect(sumStepsDeduped(scoped)).toBe(6000);
+  });
+
+  it("clamps impossible daily totals", () => {
+    expect(sanitizeDailySteps(208663)).toBe(MAX_DAILY_STEPS);
+    expect(sanitizeDailySteps(8290)).toBe(8290);
+    expect(sanitizeDailySteps(-5)).toBe(0);
   });
 });
