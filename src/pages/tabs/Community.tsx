@@ -34,7 +34,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useSearchParams } from "react-router-dom";
 import {
-  fetchPosts, createPost, deletePost, fetchComments, addComment,
+  fetchPosts, createPost, deletePost, updatePost, fetchComments, addComment,
+  updateComment, deleteComment,
   toggleLike, fetchUserLikes, fetchPostCategories, uploadCommunityImage,
   fetchPostLikers,
   type CommunityPost, type CommunityComment, type PostCategory, type PostLiker,
