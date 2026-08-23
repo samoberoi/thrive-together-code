@@ -301,14 +301,52 @@ function PostCard({
             );
           })()}
         </div>
-        {canDelete && (
-          <button onClick={() => onDelete(post.id)} className="text-muted-foreground hover:text-destructive transition-colors">
-            <Trash2 className="w-4 h-4" strokeWidth={1.5} />
-          </button>
-        )}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {isAuthor && !editingPost && (
+            <button
+              onClick={() => { setPostDraft(postContent); setEditingPost(true); }}
+              aria-label="Edit post"
+              className="text-muted-foreground hover:text-[var(--bbdo-blue)] transition-colors"
+            >
+              <Pencil className="w-4 h-4" strokeWidth={1.5} />
+            </button>
+          )}
+          {canDelete && (
+            <button onClick={() => onDelete(post.id)} aria-label="Delete post" className="text-muted-foreground hover:text-destructive transition-colors">
+              <Trash2 className="w-4 h-4" strokeWidth={1.5} />
+            </button>
+          )}
+        </div>
       </div>
 
-      <p className="text-foreground text-[15px] leading-relaxed whitespace-pre-wrap">{post.content}</p>
+      {editingPost ? (
+        <div className="flex flex-col gap-2">
+          <textarea
+            value={postDraft}
+            onChange={(e) => setPostDraft(e.target.value)}
+            className="w-full bg-muted/50 border border-border rounded-2xl p-3 text-[15px] text-foreground resize-none outline-none focus:ring-1 focus:ring-[var(--bbdo-blue)]/30 min-h-[88px]"
+          />
+          <div className="flex items-center gap-2 justify-end">
+            <button
+              onClick={() => setEditingPost(false)}
+              className="px-3 py-1.5 rounded-full text-xs font-bold text-muted-foreground bg-muted"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSavePost}
+              disabled={savingPost || !postDraft.trim()}
+              className="px-4 py-1.5 rounded-full text-xs font-bold text-white disabled:opacity-50"
+              style={{ background: "var(--bbdo-gradient)" }}
+            >
+              {savingPost ? "Saving…" : "Save"}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <p className="text-foreground text-[15px] leading-relaxed whitespace-pre-wrap">{postContent}</p>
+      )}
+
 
       {post.image_url && (
         <img src={post.image_url} alt="" loading="lazy" decoding="async" className="w-full rounded-2xl object-contain max-h-[520px] mt-3 bg-muted/30" />
