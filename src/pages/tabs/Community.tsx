@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Heart, MessageCircle, Users, Send, Plus,
-  Loader2, Trash2, Trophy, Flame, TrendingDown, TrendingUp, X, Sparkles,
+  Loader2, Trash2, Pencil, Trophy, Flame, TrendingDown, TrendingUp, X, Sparkles,
   Footprints, Utensils, Award, Activity, Wind, Scale, HeartPulse, Star,
   ImagePlus, Check,
 } from "lucide-react";
