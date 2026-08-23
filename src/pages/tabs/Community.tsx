@@ -149,6 +149,41 @@ function PostCard({
     setSubmitting(false);
   };
 
+  const handleSavePost = async () => {
+    const next = postDraft.trim();
+    if (!next || next === postContent) { setEditingPost(false); return; }
+    setSavingPost(true);
+    const ok = await updatePost(post.id, next);
+    setSavingPost(false);
+    if (ok) {
+      setPostContent(next);
+      setEditingPost(false);
+    }
+  };
+
+  const handleSaveComment = async (commentId: string) => {
+    const next = commentDraft.trim();
+    if (!next) return;
+    setCommentBusy(true);
+    const ok = await updateComment(commentId, next);
+    if (ok) {
+      setComments((prev) => prev.map((c) => (c.id === commentId ? { ...c, content: next } : c)));
+      setEditingCommentId(null);
+    }
+    setCommentBusy(false);
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    setCommentBusy(true);
+    const ok = await deleteComment(commentId);
+    if (ok) {
+      setComments((prev) => prev.filter((c) => c.id !== commentId));
+      setLocalCommentCount((n) => Math.max(0, n - 1));
+    }
+    setCommentBusy(false);
+  };
+
+
   const tagInfo = getPostTag(post.post_type, post.achievement_data);
   const timeAgo = formatDistanceToNow(new Date(post.created_at), { addSuffix: true });
 
