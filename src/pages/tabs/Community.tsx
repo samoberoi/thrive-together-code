@@ -396,9 +396,51 @@ function PostCard({
                         <span className="text-foreground text-[10px] font-bold">{(c.user_name || "?")[0]}</span>
                       )}
                     </div>
-                    <div className="bg-muted/60 rounded-2xl px-3 py-2 flex-1">
-                      <p className="text-foreground text-xs font-bold">{c.user_name}</p>
-                      <p className="text-foreground/80 text-xs mt-0.5">{c.content}</p>
+                    <div className="bg-muted/60 rounded-2xl px-3 py-2 flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-foreground text-xs font-bold flex-1 min-w-0 truncate">{c.user_name}</p>
+                        {c.user_id === currentUserId && editingCommentId !== c.id && (
+                          <button
+                            onClick={() => { setEditingCommentId(c.id); setCommentDraft(c.content); }}
+                            aria-label="Edit reply"
+                            className="text-muted-foreground hover:text-[var(--bbdo-blue)] transition-colors"
+                          >
+                            <Pencil className="w-3.5 h-3.5" strokeWidth={1.6} />
+                          </button>
+                        )}
+                        {(c.user_id === currentUserId || isAdmin || canModerate) && (
+                          <button
+                            onClick={() => handleDeleteComment(c.id)}
+                            disabled={commentBusy}
+                            aria-label="Delete reply"
+                            className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" strokeWidth={1.6} />
+                          </button>
+                        )}
+                      </div>
+                      {editingCommentId === c.id ? (
+                        <div className="mt-1.5 flex flex-col gap-2">
+                          <textarea
+                            value={commentDraft}
+                            onChange={(e) => setCommentDraft(e.target.value)}
+                            className="w-full bg-card border border-border rounded-xl p-2 text-xs text-foreground resize-none outline-none focus:ring-1 focus:ring-[var(--bbdo-blue)]/30 min-h-[56px]"
+                          />
+                          <div className="flex items-center gap-2 justify-end">
+                            <button onClick={() => setEditingCommentId(null)} className="px-3 py-1 rounded-full text-[11px] font-bold text-muted-foreground bg-muted">Cancel</button>
+                            <button
+                              onClick={() => handleSaveComment(c.id)}
+                              disabled={commentBusy || !commentDraft.trim()}
+                              className="px-3 py-1 rounded-full text-[11px] font-bold text-white disabled:opacity-50"
+                              style={{ background: "var(--bbdo-gradient)" }}
+                            >
+                              {commentBusy ? "Saving…" : "Save"}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-foreground/80 text-xs mt-0.5 whitespace-pre-wrap">{c.content}</p>
+                      )}
                     </div>
                   </div>
                 ))
