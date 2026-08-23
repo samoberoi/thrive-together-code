@@ -271,6 +271,30 @@ export async function deletePost(postId: string): Promise<boolean> {
   return !error;
 }
 
+/** Edit a post's text (author only, enforced by RLS) */
+export async function updatePost(postId: string, content: string): Promise<boolean> {
+  const { error } = await supabase
+    .from("community_posts")
+    .update({ content })
+    .eq("id", postId);
+  return !error;
+}
+
+/** Edit a reply (author only, enforced by RLS) */
+export async function updateComment(commentId: string, content: string): Promise<boolean> {
+  const { error } = await supabase
+    .from("community_comments")
+    .update({ content })
+    .eq("id", commentId);
+  return !error;
+}
+
+/** Delete a reply (author / admin / owning coach, enforced by RLS) */
+export async function deleteComment(commentId: string): Promise<boolean> {
+  const { error } = await supabase.from("community_comments").delete().eq("id", commentId);
+  return !error;
+}
+
 /** Fetch comments for a post */
 export async function fetchComments(postId: string): Promise<CommunityComment[]> {
   const { data: comments, error } = await supabase
