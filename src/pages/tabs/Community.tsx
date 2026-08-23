@@ -866,6 +866,8 @@ export default function Community() {
                   isAdmin ||
                   coachPatientIds.has(post.user_id)
                 }
+                isAdmin={isAdmin}
+                canModerate={coachPatientIds.size > 0}
                 onToggleLike={handleToggleLike}
                 onDelete={handleDelete}
               />
