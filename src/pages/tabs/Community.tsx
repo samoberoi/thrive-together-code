@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Heart, MessageCircle, Users, Send, Plus,
-  Loader2, Trash2, Trophy, Flame, TrendingDown, TrendingUp, X, Sparkles,
+  Loader2, Trash2, Pencil, Trophy, Flame, TrendingDown, TrendingUp, X, Sparkles,
   Footprints, Utensils, Award, Activity, Wind, Scale, HeartPulse, Star,
   ImagePlus, Check,
 } from "lucide-react";
@@ -34,7 +34,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useSearchParams } from "react-router-dom";
 import {
-  fetchPosts, createPost, deletePost, fetchComments, addComment,
+  fetchPosts, createPost, deletePost, updatePost, fetchComments, addComment,
+  updateComment, deleteComment,
   toggleLike, fetchUserLikes, fetchPostCategories, uploadCommunityImage,
   fetchPostLikers,
   type CommunityPost, type CommunityComment, type PostCategory, type PostLiker,
@@ -59,13 +60,21 @@ function getPostTag(postType: string, achievementData: any) {
 }
 
 function PostCard({
-  post, category, isLiked, currentUserId, canDelete,
+  post, category, isLiked, currentUserId, canDelete, isAdmin = false, canModerate = false,
   onToggleLike, onDelete,
 }: {
   post: CommunityPost; category?: PostCategory; isLiked: boolean; currentUserId: string;
-  canDelete: boolean;
+  canDelete: boolean; isAdmin?: boolean; canModerate?: boolean;
   onToggleLike: (id: string) => void; onDelete: (id: string) => void;
 }) {
+  const isAuthor = post.user_id === currentUserId;
+  const [editingPost, setEditingPost] = useState(false);
+  const [postDraft, setPostDraft] = useState(post.content);
+  const [savingPost, setSavingPost] = useState(false);
+  const [postContent, setPostContent] = useState(post.content);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [commentDraft, setCommentDraft] = useState("");
+  const [commentBusy, setCommentBusy] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState<CommunityComment[]>([]);
   const [commentText, setCommentText] = useState("");
@@ -139,6 +148,41 @@ function PostCard({
     }
     setSubmitting(false);
   };
+
+  const handleSavePost = async () => {
+    const next = postDraft.trim();
+    if (!next || next === postContent) { setEditingPost(false); return; }
+    setSavingPost(true);
+    const ok = await updatePost(post.id, next);
+    setSavingPost(false);
+    if (ok) {
+      setPostContent(next);
+      setEditingPost(false);
+    }
+  };
+
+  const handleSaveComment = async (commentId: string) => {
+    const next = commentDraft.trim();
+    if (!next) return;
+    setCommentBusy(true);
+    const ok = await updateComment(commentId, next);
+    if (ok) {
+      setComments((prev) => prev.map((c) => (c.id === commentId ? { ...c, content: next } : c)));
+      setEditingCommentId(null);
+    }
+    setCommentBusy(false);
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    setCommentBusy(true);
+    const ok = await deleteComment(commentId);
+    if (ok) {
+      setComments((prev) => prev.filter((c) => c.id !== commentId));
+      setLocalCommentCount((n) => Math.max(0, n - 1));
+    }
+    setCommentBusy(false);
+  };
+
 
   const tagInfo = getPostTag(post.post_type, post.achievement_data);
   const timeAgo = formatDistanceToNow(new Date(post.created_at), { addSuffix: true });
@@ -257,14 +301,52 @@ function PostCard({
             );
           })()}
         </div>
-        {canDelete && (
-          <button onClick={() => onDelete(post.id)} className="text-muted-foreground hover:text-destructive transition-colors">
-            <Trash2 className="w-4 h-4" strokeWidth={1.5} />
-          </button>
-        )}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {isAuthor && !editingPost && (
+            <button
+              onClick={() => { setPostDraft(postContent); setEditingPost(true); }}
+              aria-label="Edit post"
+              className="text-muted-foreground hover:text-[var(--bbdo-blue)] transition-colors"
+            >
+              <Pencil className="w-4 h-4" strokeWidth={1.5} />
+            </button>
+          )}
+          {canDelete && (
+            <button onClick={() => onDelete(post.id)} aria-label="Delete post" className="text-muted-foreground hover:text-destructive transition-colors">
+              <Trash2 className="w-4 h-4" strokeWidth={1.5} />
+            </button>
+          )}
+        </div>
       </div>
 
-      <p className="text-foreground text-[15px] leading-relaxed whitespace-pre-wrap">{post.content}</p>
+      {editingPost ? (
+        <div className="flex flex-col gap-2">
+          <textarea
+            value={postDraft}
+            onChange={(e) => setPostDraft(e.target.value)}
+            className="w-full bg-muted/50 border border-border rounded-2xl p-3 text-[15px] text-foreground resize-none outline-none focus:ring-1 focus:ring-[var(--bbdo-blue)]/30 min-h-[88px]"
+          />
+          <div className="flex items-center gap-2 justify-end">
+            <button
+              onClick={() => setEditingPost(false)}
+              className="px-3 py-1.5 rounded-full text-xs font-bold text-muted-foreground bg-muted"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSavePost}
+              disabled={savingPost || !postDraft.trim()}
+              className="px-4 py-1.5 rounded-full text-xs font-bold text-white disabled:opacity-50"
+              style={{ background: "var(--bbdo-gradient)" }}
+            >
+              {savingPost ? "Saving…" : "Save"}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <p className="text-foreground text-[15px] leading-relaxed whitespace-pre-wrap">{postContent}</p>
+      )}
+
 
       {post.image_url && (
         <img src={post.image_url} alt="" loading="lazy" decoding="async" className="w-full rounded-2xl object-contain max-h-[520px] mt-3 bg-muted/30" />
@@ -314,9 +396,51 @@ function PostCard({
                         <span className="text-foreground text-[10px] font-bold">{(c.user_name || "?")[0]}</span>
                       )}
                     </div>
-                    <div className="bg-muted/60 rounded-2xl px-3 py-2 flex-1">
-                      <p className="text-foreground text-xs font-bold">{c.user_name}</p>
-                      <p className="text-foreground/80 text-xs mt-0.5">{c.content}</p>
+                    <div className="bg-muted/60 rounded-2xl px-3 py-2 flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-foreground text-xs font-bold flex-1 min-w-0 truncate">{c.user_name}</p>
+                        {c.user_id === currentUserId && editingCommentId !== c.id && (
+                          <button
+                            onClick={() => { setEditingCommentId(c.id); setCommentDraft(c.content); }}
+                            aria-label="Edit reply"
+                            className="text-muted-foreground hover:text-[var(--bbdo-blue)] transition-colors"
+                          >
+                            <Pencil className="w-3.5 h-3.5" strokeWidth={1.6} />
+                          </button>
+                        )}
+                        {(c.user_id === currentUserId || isAdmin || canModerate) && (
+                          <button
+                            onClick={() => handleDeleteComment(c.id)}
+                            disabled={commentBusy}
+                            aria-label="Delete reply"
+                            className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" strokeWidth={1.6} />
+                          </button>
+                        )}
+                      </div>
+                      {editingCommentId === c.id ? (
+                        <div className="mt-1.5 flex flex-col gap-2">
+                          <textarea
+                            value={commentDraft}
+                            onChange={(e) => setCommentDraft(e.target.value)}
+                            className="w-full bg-card border border-border rounded-xl p-2 text-xs text-foreground resize-none outline-none focus:ring-1 focus:ring-[var(--bbdo-blue)]/30 min-h-[56px]"
+                          />
+                          <div className="flex items-center gap-2 justify-end">
+                            <button onClick={() => setEditingCommentId(null)} className="px-3 py-1 rounded-full text-[11px] font-bold text-muted-foreground bg-muted">Cancel</button>
+                            <button
+                              onClick={() => handleSaveComment(c.id)}
+                              disabled={commentBusy || !commentDraft.trim()}
+                              className="px-3 py-1 rounded-full text-[11px] font-bold text-white disabled:opacity-50"
+                              style={{ background: "var(--bbdo-gradient)" }}
+                            >
+                              {commentBusy ? "Saving…" : "Save"}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-foreground/80 text-xs mt-0.5 whitespace-pre-wrap">{c.content}</p>
+                      )}
                     </div>
                   </div>
                 ))
@@ -742,6 +866,8 @@ export default function Community() {
                   isAdmin ||
                   coachPatientIds.has(post.user_id)
                 }
+                isAdmin={isAdmin}
+                canModerate={coachPatientIds.size > 0}
                 onToggleLike={handleToggleLike}
                 onDelete={handleDelete}
               />
