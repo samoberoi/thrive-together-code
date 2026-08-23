@@ -67,8 +67,15 @@ export const MAX_DAILY_STEPS = 60000;
  *   1. Summing across sources (each source reports the same walk).
  *   2. Summing overlapping records from the SAME source — Samsung/Fitbit write
  *      a session/daily total record *and* the minute-level records inside it.
- * So: group by origin, and inside each origin only count time that is not
- * already covered by an earlier record. Then take the single largest origin.
+ *
+ * So we do what the OS health apps do:
+ *   - within an origin, count each instant of time only once (aggregate records
+ *     swallow their detail records);
+ *   - across origins, split the day at every record boundary and, for each
+ *     slice of time, keep the single highest-contributing origin.
+ * That protects against double counting while still picking up stretches only
+ * the watch recorded and stretches only the phone recorded — which is why the
+ * old "largest single origin" rule read lower than the system widget.
  */
 export function sumStepsDeduped(records: any[] | null): number | undefined {
   if (!records || records.length === 0) return undefined;
@@ -81,7 +88,9 @@ export function sumStepsDeduped(records: any[] | null): number | undefined {
     byOrigin.set(key, list);
   }
 
-  let max = 0;
+  // Per origin: non-overlapping intervals with a steps-per-ms rate.
+  type Span = { s: number; e: number; rate: number };
+  const perOrigin: Span[][] = [];
   for (const list of byOrigin.values()) {
     const sorted = list
       .map((r) => {
@@ -94,19 +103,45 @@ export function sumStepsDeduped(records: any[] | null): number | undefined {
       // (contained minute records) are skipped as already-covered.
       .sort((a, b) => a.s - b.s || b.e - a.e);
 
-    let total = 0;
+    const spans: Span[] = [];
     let coveredUntil = -Infinity;
     for (const r of sorted) {
       if (r.e <= coveredUntil) continue; // fully inside an already-counted record
       const span = Math.max(1, r.e - r.s);
-      const uncovered = Math.min(span, r.e - Math.max(r.s, coveredUntil));
-      total += Math.round(r.count * (uncovered / span));
+      const rate = r.count / span;
+      const s = Math.max(r.s, coveredUntil === -Infinity ? r.s : coveredUntil);
+      if (r.e > s) spans.push({ s, e: r.e, rate });
       coveredUntil = Math.max(coveredUntil, r.e);
     }
-    if (total > max) max = total;
+    if (spans.length) perOrigin.push(spans);
   }
-  return max;
+
+  if (perOrigin.length === 0) return 0;
+  if (perOrigin.length === 1) {
+    return Math.round(perOrigin[0].reduce((t, sp) => t + sp.rate * (sp.e - sp.s), 0));
+  }
+
+  const boundaries = new Set<number>();
+  for (const spans of perOrigin) for (const sp of spans) { boundaries.add(sp.s); boundaries.add(sp.e); }
+  const points = [...boundaries].sort((a, b) => a - b);
+
+  let total = 0;
+  for (let i = 0; i < points.length - 1; i++) {
+    const a = points[i];
+    const b = points[i + 1];
+    const width = b - a;
+    if (width <= 0) continue;
+    let best = 0;
+    for (const spans of perOrigin) {
+      let v = 0;
+      for (const sp of spans) if (sp.s <= a && sp.e >= b) v += sp.rate * width;
+      if (v > best) best = v;
+    }
+    total += best;
+  }
+  return Math.round(total);
 }
+
 
 /** Clamp a daily step count to a believable range (0..MAX_DAILY_STEPS). */
 export function sanitizeDailySteps(steps: number | null | undefined): number {

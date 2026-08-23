@@ -15,7 +15,7 @@ import {
   type MovementOverview,
 } from "@/lib/movementUserService";
 
-const HEALTH_SYNC_INTERVAL_MS = 5 * 60_000;
+const HEALTH_SYNC_INTERVAL_MS = 2 * 60_000;
 
 export default function TodayStepsCard({ onOpenMovement, minTargetSteps }: { onOpenMovement?: () => void; minTargetSteps?: number }) {
   const { user } = useAuth();
