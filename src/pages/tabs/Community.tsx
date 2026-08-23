@@ -60,13 +60,21 @@ function getPostTag(postType: string, achievementData: any) {
 }
 
 function PostCard({
-  post, category, isLiked, currentUserId, canDelete,
+  post, category, isLiked, currentUserId, canDelete, isAdmin = false, canModerate = false,
   onToggleLike, onDelete,
 }: {
   post: CommunityPost; category?: PostCategory; isLiked: boolean; currentUserId: string;
-  canDelete: boolean;
+  canDelete: boolean; isAdmin?: boolean; canModerate?: boolean;
   onToggleLike: (id: string) => void; onDelete: (id: string) => void;
 }) {
+  const isAuthor = post.user_id === currentUserId;
+  const [editingPost, setEditingPost] = useState(false);
+  const [postDraft, setPostDraft] = useState(post.content);
+  const [savingPost, setSavingPost] = useState(false);
+  const [postContent, setPostContent] = useState(post.content);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [commentDraft, setCommentDraft] = useState("");
+  const [commentBusy, setCommentBusy] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState<CommunityComment[]>([]);
   const [commentText, setCommentText] = useState("");
