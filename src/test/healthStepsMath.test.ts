@@ -106,3 +106,30 @@ describe("inflated counts are impossible", () => {
     expect(sanitizeDailySteps(-5)).toBe(0);
   });
 });
+
+describe("cross-source merge matches the OS widget", () => {
+  it("keeps watch-only and phone-only stretches instead of picking one origin", () => {
+    const start = startOfLocalDay();
+    const h = (n: number) => new Date(start.getTime() + n * 3600_000).toISOString();
+    const records = [
+      // Watch recorded the morning only.
+      rec(h(6), h(9), 6000, "com.watch.bridge"),
+      // Phone recorded morning (lower) + the evening walk the watch missed.
+      rec(h(6), h(9), 5000, "com.android.phone.sensor"),
+      rec(h(18), h(20), 4000, "com.android.phone.sensor"),
+    ];
+    // Morning: max(6000, 5000) = 6000. Evening: 4000. Total 10000.
+    expect(sumStepsDeduped(records)).toBe(10000);
+  });
+
+  it("still refuses to sum the same walk reported by two apps", () => {
+    const start = startOfLocalDay();
+    const h = (n: number) => new Date(start.getTime() + n * 3600_000).toISOString();
+    expect(
+      sumStepsDeduped([
+        rec(h(1), h(2), 3000, "a"),
+        rec(h(1), h(2), 3100, "b"),
+      ]),
+    ).toBe(3100);
+  });
+});
