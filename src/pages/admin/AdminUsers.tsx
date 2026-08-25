@@ -188,10 +188,12 @@ export default function AdminUsers() {
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-foreground">User Management</h1>
           <p className="text-muted-foreground text-sm">
-            {filtered.length === users.length
-              ? `${users.length} ${users.length === 1 ? "user" : "users"} total`
-              : `${filtered.length} of ${users.length} users`}
+            {filtered.length === inRangeUsers.length
+              ? `${inRangeUsers.length} ${inRangeUsers.length === 1 ? "user" : "users"}`
+              : `${filtered.length} of ${inRangeUsers.length} users`}{" "}
+            · <span className="font-semibold text-foreground">{range.label}</span>
           </p>
+
         </div>
         <div className="grid grid-cols-2 sm:flex gap-2 w-full sm:w-auto">
           <div className="relative col-span-2 w-full sm:w-72">
