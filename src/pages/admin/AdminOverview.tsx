@@ -24,7 +24,7 @@ interface Subscription {
   started_at: string; expires_at: string; created_at: string;
 }
 interface Package { plan_key: string; name: string; }
-interface CoachRow { id: string; name: string | null; phone: string | null; is_active: boolean | null; }
+interface CoachRow { id: string; user_id: string | null; name: string | null; phone: string | null; is_active: boolean | null; }
 interface AssignmentRow { coach_id: string; user_id: string; }
 
 const inr = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
