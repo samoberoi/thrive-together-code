@@ -184,7 +184,7 @@ export default function AdminUsers() {
 
   return (
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="space-y-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-foreground">User Management</h1>
           <p className="text-muted-foreground text-sm">
@@ -193,10 +193,9 @@ export default function AdminUsers() {
               : `${filtered.length} of ${inRangeUsers.length} users`}{" "}
             · <span className="font-semibold text-foreground">{range.label}</span>
           </p>
-
         </div>
-        <div className="grid grid-cols-2 sm:flex gap-2 w-full sm:w-auto">
-          <div className="relative col-span-2 w-full sm:w-72">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative w-full sm:w-64 lg:w-72">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Search by name, phone, city…"
@@ -206,7 +205,7 @@ export default function AdminUsers() {
             />
           </div>
           <Select value={packageFilter} onValueChange={setPackageFilter}>
-            <SelectTrigger className="col-span-2 w-full sm:w-56">
+            <SelectTrigger className="w-[calc(50%-0.25rem)] sm:w-48">
               <div className="flex items-center gap-2 min-w-0">
                 <PackageIcon className="w-4 h-4 text-muted-foreground shrink-0" />
                 <SelectValue placeholder="All packages" />
@@ -220,14 +219,14 @@ export default function AdminUsers() {
               ))}
             </SelectContent>
           </Select>
-          <DateRangeFilter value={range} onChange={setRange} className="col-span-2 w-full justify-center sm:w-fit" />
-          <ExportCsvButton filename="users" rows={filtered as any} className="w-full justify-center sm:w-fit" />
-
-
-          <ImportCsvButton table="profiles" onImported={() => window.location.reload()} className="w-full justify-center sm:w-fit" />
+          <DateRangeFilter value={range} onChange={setRange} className="w-[calc(50%-0.25rem)] justify-center sm:w-fit" />
+          <div className="flex flex-1 items-center gap-2 sm:flex-none">
+            <ExportCsvButton filename="users" rows={filtered as any} className="flex-1 justify-center sm:flex-none sm:w-fit" />
+            <ImportCsvButton table="profiles" onImported={() => window.location.reload()} className="flex-1 justify-center sm:flex-none sm:w-fit" />
+          </div>
         </div>
-
       </div>
+
 
       {/* Stats dashboard */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
