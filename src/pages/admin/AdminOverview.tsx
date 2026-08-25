@@ -75,7 +75,7 @@ export default function AdminOverview() {
         .select("user_id", { count: "exact", head: true })
         .gte("created_at", fromIso)
         .lte("created_at", toIso),
-      supabase.from("coaches").select("id, name, phone, is_active").eq("is_active", true),
+      supabase.from("coaches").select("id, user_id, name, phone, is_active").eq("is_active", true),
       supabase.from("coach_assignments").select("coach_id, user_id").eq("is_active", true),
       supabase.from("health_logs").select("user_id").gte("logged_at", since7).limit(5000),
     ]);
