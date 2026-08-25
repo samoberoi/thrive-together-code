@@ -217,8 +217,23 @@ export default function AdminUsers() {
 
       {/* Stats dashboard */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        <StatCard label="Total users" value={stats.total} icon={<Users className="w-5 h-5" />} tone="primary" />
-        <StatCard label="No package" value={stats.none} icon={<UserX className="w-5 h-5" />} tone="amber" />
+        <StatCard
+          label="Total users"
+          value={stats.total}
+          icon={<Users className="w-5 h-5" />}
+          tone="primary"
+          isActive={packageFilter === "all"}
+          onClick={() => setPackageFilter("all")}
+        />
+        <StatCard
+          label="No package"
+          value={stats.none}
+          icon={<UserX className="w-5 h-5" />}
+          tone="amber"
+          isActive={packageFilter === "none"}
+          onClick={() => setPackageFilter(packageFilter === "none" ? "all" : "none")}
+        />
+
         <StatCard
           label={packageOptions[2]?.label || "Foundation"}
           value={stats.foundation}
