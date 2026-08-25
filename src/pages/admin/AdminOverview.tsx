@@ -24,7 +24,7 @@ interface Subscription {
   started_at: string; expires_at: string; created_at: string;
 }
 interface Package { plan_key: string; name: string; }
-interface CoachRow { id: string; name: string | null; phone: string | null; is_active: boolean | null; }
+interface CoachRow { id: string; user_id: string | null; name: string | null; phone: string | null; is_active: boolean | null; }
 interface AssignmentRow { coach_id: string; user_id: string; }
 
 const inr = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
@@ -75,7 +75,7 @@ export default function AdminOverview() {
         .select("user_id", { count: "exact", head: true })
         .gte("created_at", fromIso)
         .lte("created_at", toIso),
-      supabase.from("coaches").select("id, name, phone, is_active").eq("is_active", true),
+      supabase.from("coaches").select("id, user_id, name, phone, is_active").eq("is_active", true),
       supabase.from("coach_assignments").select("coach_id, user_id").eq("is_active", true),
       supabase.from("health_logs").select("user_id").gte("logged_at", since7).limit(5000),
     ]);
@@ -186,7 +186,8 @@ export default function AdminOverview() {
       .sort((a, b) => b.total - a.total);
   }, [coaches, assignments, profileMap, activeLoggerIds]);
 
-  // One row per paying user (latest active sub wins), used by the BBDO streak board.
+  // One row per paying user (latest active sub wins), plus every active coach,
+  // used by the BBDO streak board.
   const streakClients = useMemo<AdminStreakClient[]>(() => {
     const byUser = new Map<string, AdminStreakClient>();
     for (const s of allActiveSubs) {
@@ -199,8 +200,17 @@ export default function AdminOverview() {
         planKey: key,
       });
     }
+    // Coaches follow the same protocol, so they get their own streak group.
+    for (const c of coaches) {
+      if (!c.user_id) continue;
+      byUser.set(c.user_id, {
+        user_id: c.user_id,
+        name: c.name || profileMap.get(c.user_id)?.name || "Unnamed coach",
+        planKey: "coach",
+      });
+    }
     return Array.from(byUser.values());
-  }, [allActiveSubs, profileMap]);
+  }, [allActiveSubs, profileMap, coaches]);
 
   // ----- KPI cards -----
   const kpis = [

@@ -16,8 +16,10 @@ export interface StreakPackage {
   name: string;
 }
 
-/** Fixed display order requested by the business: Foundation → Active → Intensive. */
-const PLAN_ORDER = ["foundation", "active", "intensive"];
+/** Fixed display order: Foundation → Active → Intensive → Coaches. */
+const PLAN_ORDER = ["foundation", "active", "intensive", "coach"];
+/** Coaches aren't a package, but they follow the protocol and get their own group. */
+const COACH_PACKAGE: StreakPackage = { key: "coach", name: "Coaches" };
 
 function orderPackages(pkgs: StreakPackage[]): StreakPackage[] {
   return [...pkgs].sort((a, b) => {
@@ -46,10 +48,11 @@ export default function AdminStreakBoard({
   clients: AdminStreakClient[];
   packages: StreakPackage[];
 }) {
-  const ordered = useMemo(
-    () => orderPackages(packages.filter((p) => PLAN_ORDER.includes(p.key))),
-    [packages],
-  );
+  const ordered = useMemo(() => {
+    const base = packages.filter((p) => PLAN_ORDER.includes(p.key) && p.key !== "coach");
+    const hasCoaches = clients.some((c) => c.planKey === "coach");
+    return orderPackages(hasCoaches ? [...base, COACH_PACKAGE] : base);
+  }, [packages, clients]);
   const [selectedPlans, setSelectedPlans] = useState<string[]>([]);
   const [data, setData] = useState<Record<string, BbdoStreakOverview | null>>({});
   const [loading, setLoading] = useState(true);
