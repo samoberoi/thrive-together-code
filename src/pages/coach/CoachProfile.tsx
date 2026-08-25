@@ -384,11 +384,16 @@ export default function CoachProfile({ onSignOut, onReplayTour }: { onSignOut: (
 
       {/* Stats */}
       <motion.div className="grid grid-cols-3 gap-3" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-        <div className="liquid-glass rounded-2xl p-4 text-center">
+        <button
+          type="button"
+          onClick={() => setReviewsOpen(true)}
+          className="liquid-glass rounded-2xl p-4 text-center active:scale-[0.98] transition-transform"
+        >
           <Star className="w-5 h-5 text-warning mx-auto mb-1.5 fill-warning" />
           <p className="stat-number text-2xl text-foreground">{coach.avg_rating}</p>
-          <p className="text-muted-foreground text-[10px] font-medium">{coach.total_ratings} reviews</p>
-        </div>
+          <p className="text-muted-foreground text-[10px] font-medium underline underline-offset-2">{coach.total_ratings} reviews</p>
+        </button>
+
         <div className="liquid-glass rounded-2xl p-4 text-center">
           <Briefcase className="w-5 h-5 text-success mx-auto mb-1.5" strokeWidth={1.8} />
           <p className="stat-number text-2xl text-foreground">{coach.total_consultations.toLocaleString()}</p>
