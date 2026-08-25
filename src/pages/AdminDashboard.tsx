@@ -862,6 +862,7 @@ export default function AdminDashboard() {
             { id: "videos", icon: Video, label: "Videos" },
             { id: "exercises", icon: Dumbbell, label: "Exercise" },
             { id: "community", icon: MessageSquare, label: "Community" },
+            { id: "profile", icon: UserCog, label: "Profile" },
           ]}
 
         />
