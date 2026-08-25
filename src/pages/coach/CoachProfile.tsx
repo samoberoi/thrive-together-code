@@ -104,6 +104,8 @@ export default function CoachProfile({ onSignOut, onReplayTour }: { onSignOut: (
   const [aadhaarUploading, setAadhaarUploading] = useState(false);
   const [panUploading, setPanUploading] = useState(false);
   const [commission, setCommission] = useState<{ name: string; percent: number; payout_frequency: string } | null>(null);
+  const [reviewsOpen, setReviewsOpen] = useState(false);
+
   const avatarRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
