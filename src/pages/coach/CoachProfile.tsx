@@ -9,6 +9,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { coachTypeLabel, type Coach } from "@/lib/coachService";
 import { useToast } from "@/hooks/use-toast";
+import CoachReviewsDialog from "@/components/coach/CoachReviewsDialog";
+
 
 /* ── Reusable sub-components ─────────────────────────────────────────── */
 
