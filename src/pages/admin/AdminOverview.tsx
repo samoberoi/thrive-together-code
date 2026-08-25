@@ -346,6 +346,9 @@ export default function AdminOverview() {
         </div>
       </div>
 
+      {/* BBDO streaks for every paying user, filterable by package. */}
+      <AdminStreakBoard clients={streakClients} packages={packages.map((p) => ({ key: p.plan_key, name: p.name }))} />
+
       <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Upcoming renewals */}
         <div className="liquid-glass rounded-2xl p-3 sm:p-5">
