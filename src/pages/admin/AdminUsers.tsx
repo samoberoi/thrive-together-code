@@ -13,6 +13,7 @@ import AdminUserProfileSheet from "@/components/admin/AdminUserProfileSheet";
 import AdherencePill from "@/components/admin/AdherencePill";
 import AdherenceNudgeDialog from "@/components/admin/AdherenceNudgeDialog";
 import { useAdherence } from "@/hooks/useAdherence";
+import DateRangeFilter, { defaultRange, inRange, type DateRange } from "@/components/admin/DateRangeFilter";
 
 
 
@@ -59,6 +60,8 @@ export default function AdminUsers() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [packageFilter, setPackageFilter] = useState<string>("all");
+  const [range, setRange] = useState<DateRange>(defaultRange());
+
 
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
@@ -125,13 +128,19 @@ export default function AdminUsers() {
   const adherenceIds = useMemo(() => users.map((u) => u.user_id), [users]);
   const { map: adherence, loading: adherenceLoading } = useAdherence(adherenceIds);
 
+  /** Users created within the selected date range — base set for stats + table. */
+  const inRangeUsers = useMemo(
+    () => users.filter((u) => inRange(range, u.created_at)),
+    [users, range]
+  );
+
   const stats = useMemo(() => {
     const counts = { none: 0, foundation: 0, active: 0, intensive: 0 };
-    for (const u of users) {
+    for (const u of inRangeUsers) {
       counts[userCategory(u.user_id)]++;
     }
-    return { total: users.length, ...counts };
-  }, [users, subsByUser]);
+    return { total: inRangeUsers.length, ...counts };
+  }, [inRangeUsers, subsByUser]);
 
   const packageOptions = useMemo(
     () => [
@@ -146,7 +155,7 @@ export default function AdminUsers() {
 
   const filtered = useMemo(
     () =>
-      users.filter((u) => {
+      inRangeUsers.filter((u) => {
         const category = userCategory(u.user_id);
         if (packageFilter !== "all" && category !== packageFilter) return false;
         const q = search.toLowerCase().trim();
@@ -159,8 +168,9 @@ export default function AdminUsers() {
           u.coach_name?.toLowerCase().includes(q)
         );
       }),
-    [users, search, packageFilter, subsByUser, pkgNames]
+    [inRangeUsers, search, packageFilter, subsByUser, pkgNames]
   );
+
 
 
 
@@ -178,10 +188,12 @@ export default function AdminUsers() {
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-foreground">User Management</h1>
           <p className="text-muted-foreground text-sm">
-            {filtered.length === users.length
-              ? `${users.length} ${users.length === 1 ? "user" : "users"} total`
-              : `${filtered.length} of ${users.length} users`}
+            {filtered.length === inRangeUsers.length
+              ? `${inRangeUsers.length} ${inRangeUsers.length === 1 ? "user" : "users"}`
+              : `${filtered.length} of ${inRangeUsers.length} users`}{" "}
+            · <span className="font-semibold text-foreground">{range.label}</span>
           </p>
+
         </div>
         <div className="grid grid-cols-2 sm:flex gap-2 w-full sm:w-auto">
           <div className="relative col-span-2 w-full sm:w-72">
@@ -208,7 +220,9 @@ export default function AdminUsers() {
               ))}
             </SelectContent>
           </Select>
+          <DateRangeFilter value={range} onChange={setRange} className="col-span-2 w-full justify-center sm:w-fit" />
           <ExportCsvButton filename="users" rows={filtered as any} className="w-full justify-center sm:w-fit" />
+
 
           <ImportCsvButton table="profiles" onImported={() => window.location.reload()} className="w-full justify-center sm:w-fit" />
         </div>
