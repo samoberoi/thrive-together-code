@@ -58,6 +58,7 @@ import logoImg from "@/assets/logo.png";
 // Lazy: each admin panel is its own chunk so end users (and the admin's first
 // paint) don't download every screen up front.
 const AdminOverview = lazy(() => import("./admin/AdminOverview"));
+const EditProfile = lazy(() => import("@/components/EditProfile"));
 const AdminUsers = lazy(() => import("./admin/AdminUsers"));
 const AdminCoaches = lazy(() => import("./admin/AdminCoaches"));
 const AdminSubscriptions = lazy(() => import("./admin/AdminSubscriptions"));
@@ -335,6 +336,7 @@ function AdminProfileView({
   onOpenAdmins,
   onOpenRBAC,
   onOpenNotifications,
+  onOpenEditProfile,
 }: {
   email: string | null | undefined;
   initial: string;
@@ -345,6 +347,7 @@ function AdminProfileView({
   onOpenAdmins: () => void;
   onOpenRBAC: () => void;
   onOpenNotifications: () => void;
+  onOpenEditProfile: () => void;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   // Phone-auth uses shadow emails like `{phone}@bbd.app`; show the phone if we can extract it.
@@ -410,6 +413,20 @@ function AdminProfileView({
 
       <div className="rounded-2xl bg-card border border-border overflow-hidden">
         <button
+          onClick={onOpenEditProfile}
+          className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-accent transition-colors"
+        >
+          <UserIcon className="w-5 h-5 text-primary" strokeWidth={1.8} />
+          <span className="flex-1 text-sm font-semibold text-foreground">
+            My Profile &amp; Preferences
+            <span className="block text-[11px] font-normal text-muted-foreground">
+              Personal details, health metrics, diet type, allergies &amp; food preferences
+            </span>
+          </span>
+          <ChevronDown className="w-4 h-4 -rotate-90 text-muted-foreground" />
+        </button>
+        <div className="h-px bg-border mx-4" />
+        <button
           onClick={onOpenAdmins}
           className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-accent transition-colors"
         >
@@ -468,6 +485,7 @@ export default function AdminDashboard() {
   const adminInitial = (user?.email?.[0] ?? "A").toUpperCase();
   const [adminAllowed, setAdminAllowed] = useState<boolean | null>(null);
   const [adminAvatar, setAdminAvatar] = useState<string | null>(null);
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
 
   useEffect(() => {
@@ -753,7 +771,19 @@ export default function AdminDashboard() {
                     <div className="p-8 text-sm text-muted-foreground">Loading…</div>
                   }
                 >
-                  {notificationsOpen ? (
+                  {editProfileOpen ? (
+                    <EditProfile
+                      onBack={() => setEditProfileOpen(false)}
+                      onSaved={() => {
+                        supabase
+                          .from("profiles")
+                          .select("avatar_url")
+                          .eq("user_id", user?.id ?? "")
+                          .maybeSingle()
+                          .then(({ data }) => setAdminAvatar((data as any)?.avatar_url ?? null));
+                      }}
+                    />
+                  ) : notificationsOpen ? (
                     <NotificationsPanel embedded onClose={() => setNotificationsOpen(false)} />
                   ) : activeTab === "profile" ? (
                     <AdminProfileView
@@ -766,6 +796,7 @@ export default function AdminDashboard() {
                       onOpenAdmins={() => selectTab("admins")}
                       onOpenRBAC={() => selectTab("rbac")}
                       onOpenNotifications={() => selectTab("notifications")}
+                      onOpenEditProfile={() => setEditProfileOpen(true)}
                     />
                   ) : isMobile && desktopOnlyTabs.has(activeTab) ? (
                     <div className="p-8 flex flex-col items-center text-center gap-3">
