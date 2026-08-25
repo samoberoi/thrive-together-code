@@ -9,6 +9,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { coachTypeLabel, type Coach } from "@/lib/coachService";
 import { useToast } from "@/hooks/use-toast";
+import CoachReviewsDialog from "@/components/coach/CoachReviewsDialog";
+
 
 /* ── Reusable sub-components ─────────────────────────────────────────── */
 
@@ -104,6 +106,8 @@ export default function CoachProfile({ onSignOut, onReplayTour }: { onSignOut: (
   const [aadhaarUploading, setAadhaarUploading] = useState(false);
   const [panUploading, setPanUploading] = useState(false);
   const [commission, setCommission] = useState<{ name: string; percent: number; payout_frequency: string } | null>(null);
+  const [reviewsOpen, setReviewsOpen] = useState(false);
+
   const avatarRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -384,11 +388,16 @@ export default function CoachProfile({ onSignOut, onReplayTour }: { onSignOut: (
 
       {/* Stats */}
       <motion.div className="grid grid-cols-3 gap-3" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-        <div className="liquid-glass rounded-2xl p-4 text-center">
+        <button
+          type="button"
+          onClick={() => setReviewsOpen(true)}
+          className="liquid-glass rounded-2xl p-4 text-center active:scale-[0.98] transition-transform"
+        >
           <Star className="w-5 h-5 text-warning mx-auto mb-1.5 fill-warning" />
           <p className="stat-number text-2xl text-foreground">{coach.avg_rating}</p>
-          <p className="text-muted-foreground text-[10px] font-medium">{coach.total_ratings} reviews</p>
-        </div>
+          <p className="text-muted-foreground text-[10px] font-medium underline underline-offset-2">{coach.total_ratings} reviews</p>
+        </button>
+
         <div className="liquid-glass rounded-2xl p-4 text-center">
           <Briefcase className="w-5 h-5 text-success mx-auto mb-1.5" strokeWidth={1.8} />
           <p className="stat-number text-2xl text-foreground">{coach.total_consultations.toLocaleString()}</p>
@@ -486,6 +495,14 @@ export default function CoachProfile({ onSignOut, onReplayTour }: { onSignOut: (
         <LogOut className="w-5 h-5" strokeWidth={1.8} />
         Sign Out
       </motion.button>
+      <CoachReviewsDialog
+        open={reviewsOpen}
+        onOpenChange={setReviewsOpen}
+        coachId={coach.id}
+        avgRating={Number(coach.avg_rating) || 0}
+        totalRatings={Number(coach.total_ratings) || 0}
+      />
     </div>
+
   );
 }
