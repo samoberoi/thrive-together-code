@@ -220,7 +220,9 @@ export default function AdminUsers() {
               ))}
             </SelectContent>
           </Select>
+          <DateRangeFilter value={range} onChange={setRange} className="col-span-2 w-full justify-center sm:w-fit" />
           <ExportCsvButton filename="users" rows={filtered as any} className="w-full justify-center sm:w-fit" />
+
 
           <ImportCsvButton table="profiles" onImported={() => window.location.reload()} className="w-full justify-center sm:w-fit" />
         </div>
