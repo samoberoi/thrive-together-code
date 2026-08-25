@@ -186,7 +186,8 @@ export default function AdminOverview() {
       .sort((a, b) => b.total - a.total);
   }, [coaches, assignments, profileMap, activeLoggerIds]);
 
-  // One row per paying user (latest active sub wins), used by the BBDO streak board.
+  // One row per paying user (latest active sub wins), plus every active coach,
+  // used by the BBDO streak board.
   const streakClients = useMemo<AdminStreakClient[]>(() => {
     const byUser = new Map<string, AdminStreakClient>();
     for (const s of allActiveSubs) {
@@ -199,8 +200,17 @@ export default function AdminOverview() {
         planKey: key,
       });
     }
+    // Coaches follow the same protocol, so they get their own streak group.
+    for (const c of coaches) {
+      if (!c.user_id) continue;
+      byUser.set(c.user_id, {
+        user_id: c.user_id,
+        name: c.name || profileMap.get(c.user_id)?.name || "Unnamed coach",
+        planKey: "coach",
+      });
+    }
     return Array.from(byUser.values());
-  }, [allActiveSubs, profileMap]);
+  }, [allActiveSubs, profileMap, coaches]);
 
   // ----- KPI cards -----
   const kpis = [
