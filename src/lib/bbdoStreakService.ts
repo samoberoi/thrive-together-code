@@ -3,6 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 /** A week counts as "kept" when the client is active on at least this many days. */
 export const ACTIVE_DAYS_TARGET = 5;
 
+/** A day only counts as active when at least this many distinct activities are tracked. */
+export const MIN_ACTIVITIES_PER_DAY = 7;
+
 export type StreakDay = {
   day: string;
   activities: string[];
