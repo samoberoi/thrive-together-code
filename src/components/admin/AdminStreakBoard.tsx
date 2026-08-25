@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Flame, ChevronRight, Loader2 } from "lucide-react";
+import { Flame, ChevronRight, Loader2, Trophy } from "lucide-react";
 import BbdoStreakDialog from "@/components/coach/BbdoStreakDialog";
 import { fetchBbdoStreak, ACTIVE_DAYS_TARGET, type BbdoStreakOverview } from "@/lib/bbdoStreakService";
 import { cn } from "@/lib/utils";
