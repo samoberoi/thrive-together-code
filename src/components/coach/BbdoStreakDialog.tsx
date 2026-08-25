@@ -68,7 +68,7 @@ export function BbdoStreakBody({ userId }: { userId: string }) {
             {data.mode === "daily" ? data.dayStreak : data.weekStreak}
           </p>
           <p className="text-[10px] font-semibold text-muted-foreground mt-1 uppercase tracking-wide">
-            {data.mode === "daily" ? "Day streak" : "Week streak"}
+            {data.mode === "daily" ? "5-of-7 day streak" : "Week streak"}
           </p>
         </div>
         <div className="rounded-2xl bg-primary/10 p-3 text-center">
@@ -83,7 +83,7 @@ export function BbdoStreakBody({ userId }: { userId: string }) {
 
       <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
         <CalendarDays className="w-3.5 h-3.5 shrink-0" />
-        On platform since {formatDayShort(data.startDate)} · a week counts when there are {ACTIVE_DAYS_TARGET}+ active days
+        On platform since {formatDayShort(data.startDate)} · streaks allow 2 rest days in every 7 days
       </p>
 
       {/* Week rows */}
