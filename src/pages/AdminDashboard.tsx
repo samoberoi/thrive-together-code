@@ -735,8 +735,29 @@ export default function AdminDashboard() {
           })}
         </nav>
 
-        <div className="px-4 pb-6">
+        <div className="px-4 pb-6 flex flex-col gap-1">
           <button
+            onClick={() => selectTab("profile")}
+            className={cn(
+              "flex items-center gap-3 px-4 py-3 rounded-2xl transition-colors w-full",
+              activeTab === "profile"
+                ? "liquid-glass bg-primary/10 text-primary"
+                : "text-muted-foreground hover:bg-accent hover:text-foreground"
+            )}
+          >
+            <span className="w-5 h-5 shrink-0 rounded-full overflow-hidden border border-border bg-muted flex items-center justify-center">
+              {adminAvatar ? (
+                <img src={adminAvatar} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-[9px] font-black text-primary">
+                  {(adminInitial?.[0] ?? "A").toUpperCase()}
+                </span>
+              )}
+            </span>
+            <span className="font-medium text-sm">My Profile</span>
+          </button>
+          <button
+
             onClick={handleSignOut}
             className="flex items-center gap-3 px-4 py-3 rounded-2xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors w-full"
           >
