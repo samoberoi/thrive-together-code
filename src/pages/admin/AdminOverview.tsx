@@ -186,6 +186,22 @@ export default function AdminOverview() {
       .sort((a, b) => b.total - a.total);
   }, [coaches, assignments, profileMap, activeLoggerIds]);
 
+  // One row per paying user (latest active sub wins), used by the BBDO streak board.
+  const streakClients = useMemo<AdminStreakClient[]>(() => {
+    const byUser = new Map<string, AdminStreakClient>();
+    for (const s of allActiveSubs) {
+      const key = aliasPlanKey(s.plan_id);
+      if (!key) continue;
+      if (!profileMap.has(s.user_id)) continue;
+      byUser.set(s.user_id, {
+        user_id: s.user_id,
+        name: profileMap.get(s.user_id)?.name || "Unnamed",
+        planKey: key,
+      });
+    }
+    return Array.from(byUser.values());
+  }, [allActiveSubs, profileMap]);
+
   // ----- KPI cards -----
   const kpis = [
     {
