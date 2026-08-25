@@ -264,5 +264,6 @@ export default function AdminStreakBoard({
         />
       )}
     </motion.div>
+    </div>
   );
 }
