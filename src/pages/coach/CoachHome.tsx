@@ -119,7 +119,11 @@ function parseCoachHealthNotification(row: CoachHealthNotification): Alert | nul
   return {
     user_id: row.id,
     patient_name: patientName || "Client",
-    type: rawTitle.includes("🚨") || /critical/i.test(rawTitle) ? "danger" : "warning",
+    type: rawTitle.includes("🚨") || /critical/i.test(rawTitle)
+      ? "danger"
+      : /weight/i.test(metric) && /(down|decreas|dropped|lost)/i.test(message)
+        ? "positive"
+        : "warning",
     message: message || rawBody || "Health data updated",
     metric: metric || "Health",
     created_at: row.created_at,
