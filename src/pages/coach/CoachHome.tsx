@@ -23,6 +23,7 @@ import CoachActivityNudgeDialog, {
 import CoachReviewsDialog from "@/components/coach/CoachReviewsDialog";
 import CoachActivityRings from "@/components/coach/CoachActivityRings";
 import CoachSelfCheckins from "@/components/coach/CoachSelfCheckins";
+import CoachStreakBoard from "@/components/coach/CoachStreakBoard";
 import { buildActivityProgress, splitVideoMinutes, fetchActivityGoals, DEFAULT_ACTIVITY_GOALS, type ActivityCounters } from "@/lib/adherenceService";
 
 
@@ -62,7 +63,7 @@ interface PatientSummary {
 interface Alert {
   user_id: string;
   patient_name: string;
-  type: "danger" | "warning";
+  type: "danger" | "warning" | "positive";
   message: string;
   metric: string;
   created_at?: string;
@@ -118,7 +119,11 @@ function parseCoachHealthNotification(row: CoachHealthNotification): Alert | nul
   return {
     user_id: row.id,
     patient_name: patientName || "Client",
-    type: rawTitle.includes("🚨") || /critical/i.test(rawTitle) ? "danger" : "warning",
+    type: rawTitle.includes("🚨") || /critical/i.test(rawTitle)
+      ? "danger"
+      : /weight/i.test(metric) && /(down|decreas|dropped|lost)/i.test(message)
+        ? "positive"
+        : "warning",
     message: message || rawBody || "Health data updated",
     metric: metric || "Health",
     created_at: row.created_at,
@@ -149,7 +154,8 @@ function evaluateAlerts(patients: PatientSummary[], healthNotifications: CoachHe
         push({
           user_id: p.user_id,
           patient_name: name,
-          type: absDelta >= 10 ? "danger" : "warning",
+          // weight loss is the goal here — surface it as a win, not a warning
+          type: delta < 0 ? (absDelta >= 10 ? "warning" : "positive") : absDelta >= 10 ? "danger" : "warning",
           message: `Weight ${delta > 0 ? "increased" : "decreased"} by ${Math.round(absDelta * 10) / 10} kg (${p.previousWeight} → ${p.latestWeight})`,
           metric: "Weight",
           source: "calculated",
@@ -185,7 +191,8 @@ function evaluateAlerts(patients: PatientSummary[], healthNotifications: CoachHe
     if (a.created_at) return -1;
     if (b.created_at) return 1;
     if (a.type === b.type) return 0;
-    return a.type === "danger" ? -1 : 1;
+    const rank = (t: Alert["type"]) => (t === "danger" ? 0 : t === "warning" ? 1 : 2);
+    return rank(a.type) - rank(b.type);
   });
 }
 
@@ -1171,21 +1178,29 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
               <div
                 key={`${alert.user_id}-${alert.metric}-${i}`}
                 className={`flex items-start gap-3 rounded-2xl p-3 ${
-                  alert.type === "danger" ? "danger-flash" : "bg-warning/10"
+                  alert.type === "danger" ? "danger-flash" : alert.type === "positive" ? "bg-success/10" : "bg-warning/10"
                 }`}
               >
-                <AlertTriangle
-                  className={`w-4 h-4 mt-0.5 shrink-0 ${
-                    alert.type === "danger" ? "text-destructive danger-dot" : "text-warning"
-                  }`}
-                  strokeWidth={2}
-                />
+                {alert.type === "positive" ? (
+                  <TrendingDown className="w-4 h-4 mt-0.5 shrink-0 text-success" strokeWidth={2} />
+                ) : (
+                  <AlertTriangle
+                    className={`w-4 h-4 mt-0.5 shrink-0 ${
+                      alert.type === "danger" ? "text-destructive danger-dot" : "text-warning"
+                    }`}
+                    strokeWidth={2}
+                  />
+                )}
                 <div className="flex-1 min-w-0">
                   <p className="text-foreground text-sm font-semibold">{alert.patient_name}</p>
                   <p className="text-muted-foreground text-xs">{alert.message}</p>
                 </div>
                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
-                  alert.type === "danger" ? "text-destructive bg-destructive/15" : "text-warning bg-warning/15"
+                  alert.type === "danger"
+                    ? "text-destructive bg-destructive/15"
+                    : alert.type === "positive"
+                      ? "text-success bg-success/15"
+                      : "text-warning bg-warning/15"
                 }`}>
                   {alert.metric}
                 </span>
@@ -1194,6 +1209,8 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
           </div>
         </motion.div>
       )}
+
+      <CoachStreakBoard clients={patients.map((p) => ({ user_id: p.user_id, name: p.name, avatar_url: p.avatar_url }))} />
 
       {/* My own check-ins — supplements + fasting (only when they exist) */}
       <CoachSelfCheckins />
