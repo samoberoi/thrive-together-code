@@ -16,8 +16,10 @@ export interface StreakPackage {
   name: string;
 }
 
-/** Fixed display order requested by the business: Foundation → Active → Intensive. */
-const PLAN_ORDER = ["foundation", "active", "intensive"];
+/** Fixed display order: Foundation → Active → Intensive → Coaches. */
+const PLAN_ORDER = ["foundation", "active", "intensive", "coach"];
+/** Coaches aren't a package, but they follow the protocol and get their own group. */
+const COACH_PACKAGE: StreakPackage = { key: "coach", name: "Coaches" };
 
 function orderPackages(pkgs: StreakPackage[]): StreakPackage[] {
   return [...pkgs].sort((a, b) => {
