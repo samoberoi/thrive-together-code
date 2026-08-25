@@ -18,7 +18,7 @@ describe("BBDO 5-of-7 daily streak", () => {
     expect(streak([
       "2026-08-01", "2026-08-02", "2026-08-03", "2026-08-04",
       "2026-08-08", "2026-08-09", "2026-08-10",
-    ], "2026-08-10")).toBe(4);
+    ], "2026-08-10")).toBe(3);
   });
 
   it("returns zero when there has been no qualifying active day", () => {

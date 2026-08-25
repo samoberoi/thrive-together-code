@@ -81,7 +81,7 @@ export function calculateFiveOfSevenDayStreak(
   // For a new/restarted partial window, the same two-rest-day allowance applies.
   for (let candidate = 0; candidate < activity.length; candidate++) {
     const run = activity.slice(candidate);
-    if (!run.some(Boolean)) continue;
+    if (!run[0]) continue;
 
     if (run.length < STREAK_WINDOW_DAYS) {
       const inactiveDays = run.filter((active) => !active).length;
