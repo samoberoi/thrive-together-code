@@ -585,6 +585,7 @@ export default function AdminDashboard() {
   const selectTab = (tab: AdminTab) => {
     setActiveTab(tab);
     setNotificationsOpen(false);
+    setEditProfileOpen(false);
     const next = new URLSearchParams(searchParams);
     next.set("tab", tab);
     if (tab !== "subscriptions") {
