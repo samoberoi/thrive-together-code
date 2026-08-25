@@ -48,10 +48,11 @@ export default function AdminStreakBoard({
   clients: AdminStreakClient[];
   packages: StreakPackage[];
 }) {
-  const ordered = useMemo(
-    () => orderPackages(packages.filter((p) => PLAN_ORDER.includes(p.key))),
-    [packages],
-  );
+  const ordered = useMemo(() => {
+    const base = packages.filter((p) => PLAN_ORDER.includes(p.key) && p.key !== "coach");
+    const hasCoaches = clients.some((c) => c.planKey === "coach");
+    return orderPackages(hasCoaches ? [...base, COACH_PACKAGE] : base);
+  }, [packages, clients]);
   const [selectedPlans, setSelectedPlans] = useState<string[]>([]);
   const [data, setData] = useState<Record<string, BbdoStreakOverview | null>>({});
   const [loading, setLoading] = useState(true);
