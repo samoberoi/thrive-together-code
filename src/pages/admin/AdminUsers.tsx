@@ -128,13 +128,19 @@ export default function AdminUsers() {
   const adherenceIds = useMemo(() => users.map((u) => u.user_id), [users]);
   const { map: adherence, loading: adherenceLoading } = useAdherence(adherenceIds);
 
+  /** Users created within the selected date range — base set for stats + table. */
+  const inRangeUsers = useMemo(
+    () => users.filter((u) => inRange(range, u.created_at)),
+    [users, range]
+  );
+
   const stats = useMemo(() => {
     const counts = { none: 0, foundation: 0, active: 0, intensive: 0 };
-    for (const u of users) {
+    for (const u of inRangeUsers) {
       counts[userCategory(u.user_id)]++;
     }
-    return { total: users.length, ...counts };
-  }, [users, subsByUser]);
+    return { total: inRangeUsers.length, ...counts };
+  }, [inRangeUsers, subsByUser]);
 
   const packageOptions = useMemo(
     () => [
@@ -149,7 +155,7 @@ export default function AdminUsers() {
 
   const filtered = useMemo(
     () =>
-      users.filter((u) => {
+      inRangeUsers.filter((u) => {
         const category = userCategory(u.user_id);
         if (packageFilter !== "all" && category !== packageFilter) return false;
         const q = search.toLowerCase().trim();
@@ -162,8 +168,9 @@ export default function AdminUsers() {
           u.coach_name?.toLowerCase().includes(q)
         );
       }),
-    [users, search, packageFilter, subsByUser, pkgNames]
+    [inRangeUsers, search, packageFilter, subsByUser, pkgNames]
   );
+
 
 
 
