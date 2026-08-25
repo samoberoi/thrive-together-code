@@ -15,6 +15,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { whatsappCallUrl } from "@/lib/coachAvailability";
 import CoachActivityRings from "@/components/coach/CoachActivityRings";
 import CoachSelfCheckins from "@/components/coach/CoachSelfCheckins";
+import AdminStreakBoard, { type AdminStreakClient } from "@/components/admin/AdminStreakBoard";
 
 interface Profile { user_id: string; name: string | null; phone: string | null; }
 interface Subscription {
@@ -185,6 +186,22 @@ export default function AdminOverview() {
       .sort((a, b) => b.total - a.total);
   }, [coaches, assignments, profileMap, activeLoggerIds]);
 
+  // One row per paying user (latest active sub wins), used by the BBDO streak board.
+  const streakClients = useMemo<AdminStreakClient[]>(() => {
+    const byUser = new Map<string, AdminStreakClient>();
+    for (const s of allActiveSubs) {
+      const key = aliasPlanKey(s.plan_id);
+      if (!key) continue;
+      if (!profileMap.has(s.user_id)) continue;
+      byUser.set(s.user_id, {
+        user_id: s.user_id,
+        name: profileMap.get(s.user_id)?.name || "Unnamed",
+        planKey: key,
+      });
+    }
+    return Array.from(byUser.values());
+  }, [allActiveSubs, profileMap]);
+
   // ----- KPI cards -----
   const kpis = [
     {
@@ -328,6 +345,9 @@ export default function AdminOverview() {
           )}
         </div>
       </div>
+
+      {/* BBDO streaks for every paying user, filterable by package. */}
+      <AdminStreakBoard clients={streakClients} packages={packages.map((p) => ({ key: p.plan_key, name: p.name }))} />
 
       <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Upcoming renewals */}
