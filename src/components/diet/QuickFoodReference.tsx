@@ -1236,3 +1236,28 @@ function ConditionBreakdownCard({
   );
 }
 
+
+/** Condition chip icon with graceful fallback — hides broken images and
+    falls back to the catalog emoji so no broken-image glyph ever shows. */
+function ConditionChipIcon({ iconUrl, emoji }: { iconUrl: string | null; emoji?: string | null }) {
+  const [failed, setFailed] = useState(false);
+  if (iconUrl && !failed) {
+    return (
+      <img
+        src={iconUrl}
+        alt=""
+        onError={() => setFailed(true)}
+        className="w-5 h-5 rounded-full bg-white/95 object-contain p-0.5"
+        loading="lazy"
+      />
+    );
+  }
+  if (emoji) {
+    return (
+      <span className="w-5 h-5 rounded-full bg-white/95 flex items-center justify-center text-[11px] leading-none">
+        {emoji}
+      </span>
+    );
+  }
+  return <span className="w-1.5 h-1.5 rounded-full bg-white/90 ml-1" />;
+}
