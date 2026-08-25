@@ -7,6 +7,7 @@ import SavedPlates from "@/components/diet/SavedPlates";
 import DietPlatingCalendar from "@/components/diet/DietPlatingCalendar";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useFoodReferenceCounts } from "@/hooks/useFoodReferenceCounts";
 
 type Mode = "hub" | "reference" | "plate" | "saved";
 
@@ -18,6 +19,10 @@ export default function Diet({ planOverride }: { planOverride?: string } = {}) {
   const [planId, setPlanId] = useState<string | null>(null);
   const [hasCompletedMeeting, setHasCompletedMeeting] = useState<boolean | null>(null);
   const [subLoaded, setSubLoaded] = useState(false);
+  const foodCounts = useFoodReferenceCounts(user?.id);
+  const referenceSubtitle = foodCounts
+    ? `${foodCounts.categories} ${foodCounts.categories === 1 ? "category" : "categories"} · ${foodCounts.foods} foods`
+    : "Loading library…";
 
   useEffect(() => {
     try {
@@ -145,7 +150,7 @@ export default function Diet({ planOverride }: { planOverride?: string } = {}) {
           onClick={() => setMode("reference")}
           icon={BookOpen}
           title="Quick Food Reference"
-          subtitle="13 categories · ~240 foods"
+          subtitle={referenceSubtitle}
           desc="Carbs, protein, GI, portion sizes and metabolic guidance at a glance."
           color="var(--pillar-diet)"
           delay={0.1}
