@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Flame, ChevronRight, Loader2 } from "lucide-react";
+import { Flame, ChevronRight, Loader2, Trophy } from "lucide-react";
 import BbdoStreakDialog from "@/components/coach/BbdoStreakDialog";
 import { fetchBbdoStreak, ACTIVE_DAYS_TARGET, type BbdoStreakOverview } from "@/lib/bbdoStreakService";
 import { cn } from "@/lib/utils";
@@ -94,7 +94,74 @@ export default function AdminStreakBoard({
       prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
     );
 
+  // Wall of Fame — top 10 by qualifying active days (ties broken by current streak).
+  // Users with nothing tracked are excluded entirely.
+  const wall = useMemo(() => {
+    return paidClients
+      .map((c) => {
+        const d = data[c.user_id];
+        if (!d) return null;
+        const streak = d.mode === "daily" ? d.dayStreak : d.weekStreak;
+        const unit = d.mode === "daily" ? "day" : "week";
+        return { client: c, score: d.activeDaysTotal, streak, unit, weeksKept: d.weeksKept };
+      })
+      .filter((r): r is NonNullable<typeof r> => !!r && (r.score > 0 || r.streak > 0))
+      .sort((a, b) => b.score - a.score || b.streak - a.streak)
+      .slice(0, 10);
+  }, [paidClients, data]);
+
+  const medal = (i: number) => (i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}`);
+
   return (
+    <div className="flex flex-col gap-3">
+    <motion.div
+      className="liquid-glass rounded-2xl p-3 sm:p-5"
+      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+    >
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
+        <Trophy className="w-4 h-4 text-amber-500 shrink-0" strokeWidth={2} />
+        <span className="text-foreground font-bold text-sm sm:text-base">BBDO Wall of Fame</span>
+        <span className="text-[10px] font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-full ml-auto">
+          Top {Math.min(10, wall.length) || 10} most maintained streaks
+        </span>
+      </div>
+      {loading ? (
+        <div className="py-6 flex items-center justify-center">
+          <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+        </div>
+      ) : wall.length === 0 ? (
+        <p className="text-sm text-muted-foreground py-5 text-center">No qualifying streaks yet</p>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {wall.map((r, i) => (
+            <button
+              key={r.client.user_id}
+              onClick={() => setSelected(r.client)}
+              className={cn(
+                "flex items-center gap-3 rounded-xl p-2.5 text-left w-full transition-colors",
+                i < 3 ? "bg-amber-500/10 hover:bg-amber-500/20" : "bg-muted/40 hover:bg-accent",
+              )}
+            >
+              <span className="w-7 text-center text-sm font-black shrink-0">{medal(i)}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground truncate">{r.client.name || "Unnamed"}</p>
+                <p className="text-[10px] text-muted-foreground">
+                  {r.score} active day{r.score !== 1 ? "s" : ""} · {r.weeksKept} week{r.weeksKept !== 1 ? "s" : ""} kept
+                </p>
+              </div>
+              <span className="flex items-center gap-1 shrink-0">
+                <Flame className="w-3.5 h-3.5 text-amber-600" />
+                <span className="text-xs font-bold text-foreground">
+                  {r.streak} {r.unit}{r.streak !== 1 ? "s" : ""}
+                </span>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </motion.div>
+
     <motion.div
       className="liquid-glass rounded-2xl p-3 sm:p-5"
       initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
@@ -197,5 +264,6 @@ export default function AdminStreakBoard({
         />
       )}
     </motion.div>
+    </div>
   );
 }
