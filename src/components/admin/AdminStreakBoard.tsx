@@ -94,8 +94,8 @@ export default function AdminStreakBoard({
       prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
     );
 
-  // Wall of Fame — top 10 by qualifying active days (ties broken by current streak).
-  // Users with nothing tracked are excluded entirely.
+  // Wall of Fame — only maintained streaks qualify. Rank the current run first,
+  // then use kept weeks and lifetime qualifying active days as tie-breakers.
   const wall = useMemo(() => {
     return paidClients
       .map((c) => {
@@ -105,8 +105,8 @@ export default function AdminStreakBoard({
         const unit = d.mode === "daily" ? "day" : "week";
         return { client: c, score: d.activeDaysTotal, streak, unit, weeksKept: d.weeksKept };
       })
-      .filter((r): r is NonNullable<typeof r> => !!r && (r.score > 0 || r.streak > 0))
-      .sort((a, b) => b.score - a.score || b.streak - a.streak)
+      .filter((r): r is NonNullable<typeof r> => !!r && r.streak > 0)
+      .sort((a, b) => b.streak - a.streak || b.weeksKept - a.weeksKept || b.score - a.score)
       .slice(0, 10);
   }, [paidClients, data]);
 
@@ -122,7 +122,7 @@ export default function AdminStreakBoard({
         <Trophy className="w-4 h-4 text-amber-500 shrink-0" strokeWidth={2} />
         <span className="text-foreground font-bold text-sm sm:text-base">BBDO Wall of Fame</span>
         <span className="text-[10px] font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-full ml-auto">
-          Top {Math.min(10, wall.length) || 10} most maintained streaks
+          5 of 7 active days · top {Math.min(10, wall.length) || 10}
         </span>
       </div>
       {loading ? (
@@ -170,7 +170,7 @@ export default function AdminStreakBoard({
         <Flame className="w-4 h-4 text-amber-600 shrink-0" strokeWidth={2} />
         <span className="text-foreground font-bold text-sm sm:text-base">BBDO Streaks</span>
         <span className="text-[10px] font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-full ml-auto">
-          {ACTIVE_DAYS_TARGET}+ active days = week kept
+          {ACTIVE_DAYS_TARGET} of 7 active days = streak kept
         </span>
       </div>
 

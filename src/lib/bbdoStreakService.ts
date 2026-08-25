@@ -3,6 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 /** A week counts as "kept" when the client is active on at least this many days. */
 export const ACTIVE_DAYS_TARGET = 5;
 
+/** A maintained daily streak allows up to two non-active days in any seven-day window. */
+export const STREAK_WINDOW_DAYS = 7;
+
 /** A day only counts as active when at least this many distinct activities are tracked. */
 export const MIN_ACTIVITIES_PER_DAY = 7;
 
@@ -36,7 +39,7 @@ export type BbdoStreakOverview = {
   /** consecutive kept weeks ending at the most recent completed week */
   weekStreak: number;
   bestWeekStreak: number;
-  /** consecutive active days ending today (or yesterday) */
+  /** calendar-day run maintained by reaching 5 active days in every rolling 7-day window */
   dayStreak: number;
   weeksKept: number;
   weeksTotal: number;
@@ -64,6 +67,42 @@ function diffDays(a: string, b: string): number {
 
 export function formatDayShort(key: string): string {
   return parseKey(key).toLocaleDateString(undefined, { day: "numeric", month: "short" });
+}
+
+export function calculateFiveOfSevenDayStreak(
+  startDate: string,
+  today: string,
+  isActive: (day: string) => boolean,
+): number {
+  const totalDays = Math.max(1, diffDays(startDate, today) + 1);
+  const activity = Array.from({ length: totalDays }, (_, index) => isActive(addDays(startDate, index)));
+
+  // Find the longest suffix whose every complete seven-day window contains at least five active days.
+  // For a new/restarted partial window, the same two-rest-day allowance applies.
+  for (let candidate = 0; candidate < activity.length; candidate++) {
+    const run = activity.slice(candidate);
+    if (!run[0]) continue;
+
+    if (run.length < STREAK_WINDOW_DAYS) {
+      const inactiveDays = run.filter((active) => !active).length;
+      if (inactiveDays <= STREAK_WINDOW_DAYS - ACTIVE_DAYS_TARGET) return run.length;
+      continue;
+    }
+
+    let maintained = true;
+    for (let windowStart = 0; windowStart <= run.length - STREAK_WINDOW_DAYS; windowStart++) {
+      const activeDays = run
+        .slice(windowStart, windowStart + STREAK_WINDOW_DAYS)
+        .filter(Boolean).length;
+      if (activeDays < ACTIVE_DAYS_TARGET) {
+        maintained = false;
+        break;
+      }
+    }
+    if (maintained) return run.length;
+  }
+
+  return 0;
 }
 
 export function buildOverview(
@@ -120,13 +159,11 @@ export function buildOverview(
     }
   }
 
-  let dayStreak = 0;
-  let cursor = today;
-  if ((byDay.get(today)?.length ?? 0) < MIN_ACTIVITIES_PER_DAY) cursor = addDays(today, -1);
-  while (cursor >= startDate && (byDay.get(cursor)?.length ?? 0) >= MIN_ACTIVITIES_PER_DAY) {
-    dayStreak++;
-    cursor = addDays(cursor, -1);
-  }
+  const dayStreak = calculateFiveOfSevenDayStreak(
+    startDate,
+    today,
+    (day) => (byDay.get(day)?.length ?? 0) >= MIN_ACTIVITIES_PER_DAY,
+  );
 
   return {
     startDate,

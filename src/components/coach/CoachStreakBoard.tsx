@@ -44,7 +44,7 @@ export default function CoachStreakBoard({ clients }: { clients: StreakClient[] 
         <Flame className="w-4 h-4 text-warning" strokeWidth={2} />
         <span className="text-foreground font-bold">BBDO Streak</span>
         <span className="text-[10px] font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-full ml-auto">
-          {ACTIVE_DAYS_TARGET}+ active days = week kept
+          {ACTIVE_DAYS_TARGET} of 7 active days = streak kept
         </span>
       </div>
 
