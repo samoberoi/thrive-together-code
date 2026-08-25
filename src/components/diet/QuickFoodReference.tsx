@@ -729,14 +729,7 @@ export default function QuickFoodReference({ onClose, embedded = false }: { onCl
                           title="Managed in your profile"
                           className="shrink-0 h-8 pl-1.5 pr-3 rounded-full text-[11.5px] font-bold border flex items-center gap-1.5 bg-[var(--bbdo-blue)] text-white border-[var(--bbdo-blue)] shadow-sm shadow-[var(--bbdo-blue)]/25"
                         >
-                          {c.icon_url && (
-                            <img
-                              src={c.icon_url}
-                              alt=""
-                              className="w-5 h-5 rounded-full bg-white/95 object-contain p-0.5"
-                              loading="lazy"
-                            />
-                          )}
+                          <ConditionChipIcon iconUrl={c.icon_url} emoji={c.emoji} />
                           {c.label}
                         </div>
                       );
