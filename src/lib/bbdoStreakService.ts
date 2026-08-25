@@ -3,6 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 /** A week counts as "kept" when the client is active on at least this many days. */
 export const ACTIVE_DAYS_TARGET = 5;
 
+/** A day only counts as active when at least this many distinct activities are tracked. */
+export const MIN_ACTIVITIES_PER_DAY = 7;
+
 export type StreakDay = {
   day: string;
   activities: string[];
@@ -78,7 +81,7 @@ export function buildOverview(
     const days: StreakDay[] = Array.from({ length: 7 }, (_, i) => {
       const day = addDays(start, i);
       const activities = byDay.get(day) ?? [];
-      return { day, activities, active: activities.length > 0, isFuture: day > today };
+      return { day, activities, active: activities.length >= MIN_ACTIVITIES_PER_DAY, isFuture: day > today };
     });
     const elapsedDays = days.filter((d) => !d.isFuture).length;
     const activeDays = days.filter((d) => d.active).length;
@@ -119,8 +122,8 @@ export function buildOverview(
 
   let dayStreak = 0;
   let cursor = today;
-  if (!(byDay.get(today)?.length)) cursor = addDays(today, -1);
-  while (cursor >= startDate && (byDay.get(cursor)?.length ?? 0) > 0) {
+  if ((byDay.get(today)?.length ?? 0) < MIN_ACTIVITIES_PER_DAY) cursor = addDays(today, -1);
+  while (cursor >= startDate && (byDay.get(cursor)?.length ?? 0) >= MIN_ACTIVITIES_PER_DAY) {
     dayStreak++;
     cursor = addDays(cursor, -1);
   }
@@ -131,7 +134,7 @@ export function buildOverview(
     totalDays,
     mode: totalDays <= 28 ? "daily" : "weekly",
     weeks,
-    activeDaysTotal: Array.from(byDay.values()).filter((a) => a.length > 0).length,
+    activeDaysTotal: Array.from(byDay.values()).filter((a) => a.length >= MIN_ACTIVITIES_PER_DAY).length,
     weekStreak,
     bestWeekStreak,
     dayStreak,
