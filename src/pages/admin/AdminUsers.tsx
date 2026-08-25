@@ -205,8 +205,8 @@ export default function AdminUsers() {
             />
           </div>
           <Select value={packageFilter} onValueChange={setPackageFilter}>
-            <SelectTrigger className="w-[calc(50%-0.25rem)] sm:w-48">
-              <div className="flex items-center gap-2 min-w-0">
+            <SelectTrigger className="w-[calc(50%-0.25rem)] sm:w-48 [&>span]:truncate">
+              <div className="flex items-center gap-2 min-w-0 overflow-hidden whitespace-nowrap [&>span]:truncate">
                 <PackageIcon className="w-4 h-4 text-muted-foreground shrink-0" />
                 <SelectValue placeholder="All packages" />
               </div>
