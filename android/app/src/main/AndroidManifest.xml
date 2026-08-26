@@ -78,8 +78,15 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <!-- Camera & media (Take Photo / pick from library) -->
     <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <!-- Photo/video selection uses the Android system picker (WebView file chooser),
+         so no broad media permissions are required. Google Play policy: apps targeting
+         API 33+ must not request READ_MEDIA_IMAGES / READ_MEDIA_VIDEO when the system
+         picker is sufficient. These are stripped even if a dependency merges them in. -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" tools:node="remove" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" tools:node="remove" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" tools:node="remove" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:node="remove" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
 
