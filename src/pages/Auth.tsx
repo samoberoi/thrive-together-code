@@ -149,7 +149,7 @@ export default function Auth() {
   // the persistent Google Play review account).
   const FIXED_OTP_ACCOUNTS = {
     "8373914073": { code: "2503", destination: "/admin-dashboard" },
-    "9000000001": { code: "111111", destination: null },
+    "9000000001": { code: "1111", destination: null },
   } as const;
   const fixedOtpPhone = phone.replace(/\D/g, "").slice(-10) as keyof typeof FIXED_OTP_ACCOUNTS;
   const fixedOtpAccount = FIXED_OTP_ACCOUNTS[fixedOtpPhone];
