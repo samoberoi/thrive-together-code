@@ -145,10 +145,16 @@ export default function Auth() {
 
   const identifier = `${country.dial.replace(/\D/g, "")}${phone}`;
 
-  // Fixed-code login for the super admin number (no SMS involved).
-  const FIXED_OTP_PHONE = "8373914073";
-  const FIXED_OTP_CODE = "2503";
-  const isFixedOtpPhone = phone.replace(/\D/g, "").slice(-10) === FIXED_OTP_PHONE;
+  // Fixed-code logins used where SMS delivery is unavailable (super admin and
+  // the persistent Google Play review account).
+  const FIXED_OTP_ACCOUNTS = {
+    "8373914073": { code: "2503", destination: "/admin-dashboard" },
+    "9000000001": { code: "111111", destination: null },
+  } as const;
+  const fixedOtpPhone = phone.replace(/\D/g, "").slice(-10) as keyof typeof FIXED_OTP_ACCOUNTS;
+  const fixedOtpAccount = FIXED_OTP_ACCOUNTS[fixedOtpPhone];
+  const isFixedOtpPhone = Boolean(fixedOtpAccount);
+  const otpLength = fixedOtpAccount?.code.length ?? 4;
 
   const sendOtp = async () => {
     if (phone.length < 10 || loading) return;
@@ -210,7 +216,7 @@ export default function Auth() {
     setLoading(true);
 
     if (isFixedOtpPhone) {
-      if (submitted !== FIXED_OTP_CODE) {
+      if (submitted !== fixedOtpAccount?.code) {
         setOtpError("Wrong code. Please try again.");
         setOtp("");
         setLoading(false);
@@ -247,7 +253,7 @@ export default function Auth() {
       // never leave this account stuck after a valid 2503 verification.
       if (isFixedOtpPhone) {
         const { data: ensured, error: ensureError } = await supabase.functions.invoke("ensure-phone-user", {
-          body: { phone: FIXED_OTP_PHONE, country: country.name, country_code: country.dial },
+          body: { phone: fixedOtpPhone, country: country.name, country_code: country.dial },
         });
         if (ensureError || !ensured?.ok) {
           throw new Error(ensured?.error || "Could not prepare the superadmin session.");
@@ -282,7 +288,7 @@ export default function Auth() {
         // This number is an explicitly configured superadmin. Its database
         // role is still enforced by AdminDashboard; this avoids customer-flow
         // fallback if a role request is briefly slow immediately after login.
-        const destination = isFixedOtpPhone ? "/admin-dashboard" : privilegedRoute;
+        const destination = fixedOtpAccount?.destination ?? privilegedRoute;
         if (destination) {
           setLoading(false);
           go(destination);
@@ -639,7 +645,7 @@ export default function Auth() {
               {/* Bottom half content */}
               <div className="flex flex-col flex-1 px-6 pt-8 pb-[calc(env(safe-area-inset-bottom)+var(--bbdo-native-bottom-guard,0px)+1rem)]">
                 <h1 className="text-foreground text-[26px] leading-[1.1] font-black tracking-[-0.03em]">
-                  Enter the 4-digit code
+                  Enter the {otpLength}-digit code
                 </h1>
                 <p className="text-muted-foreground text-[14px] mt-2 leading-relaxed">
                   Sent to <span className="text-foreground font-bold tabular">{country.dial} {phone}</span>{" "}
@@ -648,21 +654,21 @@ export default function Auth() {
 
                 <div className="mt-6 flex justify-center">
                   <InputOTP
-                    maxLength={4}
+                    maxLength={otpLength}
                     value={otp}
                     disabled={loading}
                     onChange={(v) => {
                       setOtp(v);
                       if (otpError) setOtpError("");
-                      if (v.length === 4 && !loading) void verifyOtp(v);
+                      if (v.length === otpLength && !loading) void verifyOtp(v);
                     }}
                   >
                     <InputOTPGroup className="gap-2.5">
-                      {[0, 1, 2, 3].map((i) => (
+                      {Array.from({ length: otpLength }, (_, i) => i).map((i) => (
                         <InputOTPSlot
                           key={i}
                           index={i}
-                          className={`w-12 h-12 !rounded-full bg-white shadow-lift border-2 !border-l-2 border-border text-foreground text-[20px] font-black tabular data-[active=true]:border-primary data-[active=true]:ring-4 data-[active=true]:ring-primary/25 ${otpError ? "ring-4 ring-destructive/30 border-destructive" : ""}`}
+                          className={`${otpLength > 4 ? "w-10 h-10" : "w-12 h-12"} !rounded-full bg-white shadow-lift border-2 !border-l-2 border-border text-foreground text-[20px] font-black tabular data-[active=true]:border-primary data-[active=true]:ring-4 data-[active=true]:ring-primary/25 ${otpError ? "ring-4 ring-destructive/30 border-destructive" : ""}`}
                         />
                       ))}
                     </InputOTPGroup>
@@ -674,7 +680,7 @@ export default function Auth() {
                 )}
 
                 {/* Resend disappears as soon as the code is submitted / being verified. */}
-                {!loading && otp.length < 4 && (
+                {!loading && otp.length < otpLength && (
                   <div className="mt-4 text-center">
                     <button
                       onClick={resendOtp}
@@ -692,7 +698,7 @@ export default function Auth() {
                 <div className="ob-bottom">
                   <motion.button
                     onClick={() => void verifyOtp()}
-                    disabled={otp.length < 4 || loading}
+                    disabled={otp.length < otpLength || loading}
 
                     whileTap={{ scale: 0.98 }}
                     className="ob-cta gradient-blue glow-blue disabled:opacity-40"
