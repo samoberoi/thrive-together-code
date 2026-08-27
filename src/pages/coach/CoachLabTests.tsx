@@ -199,7 +199,7 @@ export default function CoachLabTests() {
     setLoading(true);
     try {
       const { data: coach } = await supabase.from("coaches" as any).select("id").eq("user_id", user.id).maybeSingle();
-      if (!coach) { setLoading(false); return; }
+      if (!coach) { setLoading(false); setBooted(true); return; }
 
       const [{ data: t, error: testsError }, { data: assigns }] = await Promise.all([
         supabase.from("thyrocare_tests" as any).select("id, product_code, product_name, category, rate, offer_rate, markup_pct, fasting_required, parameters_count").eq("is_active", true).order("product_name"),
