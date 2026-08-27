@@ -218,7 +218,7 @@ export default function CoachLabTests() {
 
       const userIds = ((assigns as any[]) || []).map((a) => a.user_id);
       if (!userIds.length) {
-        setPatients([]); setRecommendations({}); setOrders({}); setReports({}); setLoading(false); return;
+        setPatients([]); setRecommendations({}); setOrders({}); setReports({}); setLoading(false); setBooted(true); return;
       }
 
       const [{ data: profs }, { data: recRows }, { data: orderRows }, { data: reportRows }, { data: subRows }] = await Promise.all([
@@ -265,6 +265,7 @@ export default function CoachLabTests() {
       toast.error(e.message || "Unable to load lab test assignments");
     } finally {
       setLoading(false);
+      setBooted(true);
     }
   };
 
@@ -374,7 +375,9 @@ export default function CoachLabTests() {
     </div>
   );
 
-  if (loading) return <div className="p-6 text-muted-foreground">Loading lab tests…</div>;
+  // Only block the whole screen on the very first load — later refreshes must
+  // never unmount open dialogs (that looked like the screen "refreshing").
+  if (loading && !booted) return <div className="p-6 text-muted-foreground">Loading lab tests…</div>;
 
   return (
     <div className="p-4 md:p-6 space-y-6 pb-40">
