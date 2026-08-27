@@ -145,7 +145,24 @@ export default function CoachLabTests() {
   const [extReports, setExtReports] = useState<Record<string, ExternalLabReport[]>>({});
   const [markerRevision, setMarkerRevision] = useState(0);
   const [entryTarget, setEntryTarget] = useState<{ userId: string; report: ExternalLabReport } | null>(null);
-  const [uploadTarget, setUploadTarget] = useState<{ userId: string; recommendationId: string | null; productCodes: string[] } | null>(null);
+  type UploadTarget = { userId: string; recommendationId: string | null; productCodes: string[] };
+  const UPLOAD_TARGET_KEY = "bbdo:coach-lab-upload-target";
+  // Android can recreate the WebView while the system file picker is open. Persist
+  // the upload context so the coach comes back to the upload sheet, not the list.
+  const [uploadTarget, setUploadTarget] = useState<UploadTarget | null>(() => {
+    try {
+      const raw = sessionStorage.getItem(UPLOAD_TARGET_KEY);
+      return raw ? (JSON.parse(raw) as UploadTarget) : null;
+    } catch { return null; }
+  });
+
+  useEffect(() => {
+    try {
+      if (uploadTarget) sessionStorage.setItem(UPLOAD_TARGET_KEY, JSON.stringify(uploadTarget));
+      else sessionStorage.removeItem(UPLOAD_TARGET_KEY);
+    } catch { /* ignore */ }
+  }, [uploadTarget]);
+
 
   const loadExternal = async (userIds: string[]) => {
     let rows = await fetchExternalReportsForUsers(userIds);
