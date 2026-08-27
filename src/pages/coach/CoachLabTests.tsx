@@ -166,7 +166,7 @@ export default function CoachLabTests() {
 
   const loadExternal = async (userIds: string[]) => {
     let rows = await fetchExternalReportsForUsers(userIds);
-    const pending = rows.filter((report) => report.status === "uploaded");
+    const pending = rows.filter((report) => report.status === "uploaded" || report.status === "processing");
     if (pending.length) {
       await Promise.allSettled(pending.map((report) => parseExternalReport(report.id)));
       rows = await fetchExternalReportsForUsers(userIds);

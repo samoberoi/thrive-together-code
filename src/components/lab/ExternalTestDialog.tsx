@@ -85,7 +85,11 @@ export default function ExternalTestDialog({
       setMine((prev) => [row, ...prev]);
       setFile(null);
       if (inputRef.current) inputRef.current.value = "";
-      toast.success(`Report processed — ${isCoach ? "client markers" : "your markers"} are now visible`);
+      if (row.status === "reviewed") {
+        toast.success(`Report processed — ${isCoach ? "client markers" : "your markers"} are now visible`);
+      } else {
+        toast.success("Report uploaded — we're still reading the values, they'll appear shortly");
+      }
       onDone?.();
     } catch (e: any) {
       toast.error(e.message || "Upload failed");
