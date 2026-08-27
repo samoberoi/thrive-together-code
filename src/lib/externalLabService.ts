@@ -88,9 +88,17 @@ export async function uploadExternalReport(opts: {
     .single();
   if (error) throw error;
   const report = data as ExternalLabReport;
-  await parseExternalReport(report.id);
-  return { ...report, status: "reviewed", reviewed_at: new Date().toISOString() };
+  // The file is safely stored at this point. Automatic value extraction can be
+  // slow or fail (large PDFs, flaky network on mobile) — never let that discard
+  // the uploaded report: keep the row and surface it as still processing.
+  try {
+    await parseExternalReport(report.id);
+    return { ...report, status: "reviewed", reviewed_at: new Date().toISOString() };
+  } catch {
+    return { ...report, status: "processing" };
+  }
 }
+
 
 export async function fetchExternalReportsForUser(userId: string): Promise<ExternalLabReport[]> {
   const { data, error } = await (supabase as any)
