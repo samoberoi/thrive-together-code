@@ -118,6 +118,8 @@ export default function CoachLabTests() {
   const [orders, setOrders] = useState<Record<string, Order[]>>({});
   const [reports, setReports] = useState<Record<string, Report[]>>({});
   const [loading, setLoading] = useState(true);
+  const [booted, setBooted] = useState(false);
+
   const [catalogSearch, setCatalogSearch] = useState("");
   const [assignSearch, setAssignSearch] = useState("");
   const [selectedTests, setSelectedTests] = useState<Set<string>>(new Set());
@@ -143,11 +145,28 @@ export default function CoachLabTests() {
   const [extReports, setExtReports] = useState<Record<string, ExternalLabReport[]>>({});
   const [markerRevision, setMarkerRevision] = useState(0);
   const [entryTarget, setEntryTarget] = useState<{ userId: string; report: ExternalLabReport } | null>(null);
-  const [uploadTarget, setUploadTarget] = useState<{ userId: string; recommendationId: string | null; productCodes: string[] } | null>(null);
+  type UploadTarget = { userId: string; recommendationId: string | null; productCodes: string[] };
+  const UPLOAD_TARGET_KEY = "bbdo:coach-lab-upload-target";
+  // Android can recreate the WebView while the system file picker is open. Persist
+  // the upload context so the coach comes back to the upload sheet, not the list.
+  const [uploadTarget, setUploadTarget] = useState<UploadTarget | null>(() => {
+    try {
+      const raw = sessionStorage.getItem(UPLOAD_TARGET_KEY);
+      return raw ? (JSON.parse(raw) as UploadTarget) : null;
+    } catch { return null; }
+  });
+
+  useEffect(() => {
+    try {
+      if (uploadTarget) sessionStorage.setItem(UPLOAD_TARGET_KEY, JSON.stringify(uploadTarget));
+      else sessionStorage.removeItem(UPLOAD_TARGET_KEY);
+    } catch { /* ignore */ }
+  }, [uploadTarget]);
+
 
   const loadExternal = async (userIds: string[]) => {
     let rows = await fetchExternalReportsForUsers(userIds);
-    const pending = rows.filter((report) => report.status === "uploaded");
+    const pending = rows.filter((report) => report.status === "uploaded" || report.status === "processing");
     if (pending.length) {
       await Promise.allSettled(pending.map((report) => parseExternalReport(report.id)));
       rows = await fetchExternalReportsForUsers(userIds);
@@ -180,7 +199,7 @@ export default function CoachLabTests() {
     setLoading(true);
     try {
       const { data: coach } = await supabase.from("coaches" as any).select("id").eq("user_id", user.id).maybeSingle();
-      if (!coach) { setLoading(false); return; }
+      if (!coach) { setLoading(false); setBooted(true); return; }
 
       const [{ data: t, error: testsError }, { data: assigns }] = await Promise.all([
         supabase.from("thyrocare_tests" as any).select("id, product_code, product_name, category, rate, offer_rate, markup_pct, fasting_required, parameters_count").eq("is_active", true).order("product_name"),
@@ -199,7 +218,7 @@ export default function CoachLabTests() {
 
       const userIds = ((assigns as any[]) || []).map((a) => a.user_id);
       if (!userIds.length) {
-        setPatients([]); setRecommendations({}); setOrders({}); setReports({}); setLoading(false); return;
+        setPatients([]); setRecommendations({}); setOrders({}); setReports({}); setLoading(false); setBooted(true); return;
       }
 
       const [{ data: profs }, { data: recRows }, { data: orderRows }, { data: reportRows }, { data: subRows }] = await Promise.all([
@@ -246,6 +265,7 @@ export default function CoachLabTests() {
       toast.error(e.message || "Unable to load lab test assignments");
     } finally {
       setLoading(false);
+      setBooted(true);
     }
   };
 
@@ -355,7 +375,9 @@ export default function CoachLabTests() {
     </div>
   );
 
-  if (loading) return <div className="p-6 text-muted-foreground">Loading lab tests…</div>;
+  // Only block the whole screen on the very first load — later refreshes must
+  // never unmount open dialogs (that looked like the screen "refreshing").
+  if (loading && !booted) return <div className="p-6 text-muted-foreground">Loading lab tests…</div>;
 
   return (
     <div className="p-4 md:p-6 space-y-6 pb-40">
