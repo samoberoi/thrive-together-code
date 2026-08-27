@@ -118,6 +118,8 @@ export default function CoachLabTests() {
   const [orders, setOrders] = useState<Record<string, Order[]>>({});
   const [reports, setReports] = useState<Record<string, Report[]>>({});
   const [loading, setLoading] = useState(true);
+  const [booted, setBooted] = useState(false);
+
   const [catalogSearch, setCatalogSearch] = useState("");
   const [assignSearch, setAssignSearch] = useState("");
   const [selectedTests, setSelectedTests] = useState<Set<string>>(new Set());
