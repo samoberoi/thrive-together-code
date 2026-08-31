@@ -201,13 +201,14 @@ export default function StepsShareCard({
         </svg>
 
         <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
-          <div className="flex items-center gap-2">
-            <p className="text-[13px] font-black uppercase tracking-[0.2em]" style={{ color: "var(--bbdo-red)" }}>
+          <Footprints className="h-5 w-5" style={{ color: "var(--bbdo-blue)" }} strokeWidth={2.2} />
+          <div className="mt-0.5 flex items-center gap-2">
+            <p className="text-[12px] font-black uppercase tracking-[0.2em]" style={{ color: "var(--bbdo-red)" }}>
               Steps
             </p>
 
           </div>
-          <p className="mt-1 text-[38px] font-black leading-none tabular-nums" style={{ color: "var(--bbdo-blue)" }}>
+          <p className="mt-1 text-[30px] font-black leading-none tabular-nums" style={{ color: "var(--bbdo-blue)" }}>
             {Math.round(steps).toLocaleString("en-IN")}
           </p>
           <div className="mt-2 flex items-center justify-center">
