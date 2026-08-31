@@ -229,7 +229,7 @@ export default function NotificationsPanel({ onClose, embedded = false }: Notifi
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: Math.min(i, 6) * 0.02, duration: 0.18 }}
                     onClick={() => onItemClick(n)}
-                    className={`no-pill w-full rounded-2xl text-left flex items-start gap-3 px-4 py-3.5 border border-border/70 bg-card hover:bg-accent/40 transition-colors ${
+                    className={`no-pill w-full max-w-full overflow-hidden whitespace-normal rounded-2xl text-left flex items-start gap-3 px-4 py-3.5 border border-border/70 bg-card hover:bg-accent/40 transition-colors ${
                       !n.is_read ? "ring-1 ring-primary/15 bg-primary/5" : ""
                     }`}
                   >
