@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Share2, Loader2, Download, Flame, MapPin } from "lucide-react";
+import { Share2, Loader2, Download, Flame, MapPin, Footprints } from "lucide-react";
 import { toast } from "sonner";
 import bbdoLogo from "@/assets/logo.png";
 import { useAuth } from "@/contexts/AuthContext";
