@@ -236,15 +236,16 @@ export default function NotificationsPanel({ onClose, embedded = false }: Notifi
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${cfg.bg}`}>
                       <Icon className={`w-5 h-5 ${cfg.color}`} strokeWidth={1.75} />
                     </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 overflow-hidden">
                       <div className="flex items-start justify-between gap-2">
-                        <p className={`text-sm leading-tight ${!n.is_read ? "font-bold text-foreground" : "font-medium text-foreground/80"}`}>
+                        <p className={`flex-1 min-w-0 text-sm leading-tight whitespace-normal break-words [overflow-wrap:anywhere] ${!n.is_read ? "font-bold text-foreground" : "font-medium text-foreground/80"}`}>
                           {n.title}
                         </p>
                         {!n.is_read && <span className="w-2 h-2 rounded-[3px] bg-primary shrink-0 mt-1.5" />}
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1">{n.body}</p>
+                      <p className="text-xs text-muted-foreground mt-1 whitespace-normal break-words [overflow-wrap:anywhere]">{n.body}</p>
                       <p className="text-[11px] text-muted-foreground/70 mt-1.5">{timeAgo(n.created_at)}</p>
+
                     </div>
                   </motion.button>
                 );
