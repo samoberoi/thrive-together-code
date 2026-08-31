@@ -226,10 +226,11 @@ export default function WeeklyBadgeCelebration({ badge, open, onClose }: Props) 
           {/* Close */}
           <button
             onClick={handleClose}
-            className="no-pill absolute top-4 right-4 z-20 w-10 h-10 rounded-xl bg-card border border-border shadow-card flex items-center justify-center text-foreground hover:bg-muted transition-colors"
+            className="no-pill absolute top-4 right-4 z-20 w-10 h-10 rounded-xl shadow-lift flex items-center justify-center text-white transition-transform active:scale-95"
+            style={{ background: "linear-gradient(135deg, #0F1A3D 0%, #1E2A52 100%)" }}
             aria-label="Close"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5" strokeWidth={2.5} />
           </button>
 
           <div id={`bbdo-badge-${badge.id}`} className="relative max-w-md mx-auto px-6 py-10 min-h-screen flex flex-col items-center justify-center">
