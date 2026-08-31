@@ -464,7 +464,7 @@ export default function WeeklyBadgeCelebration({ badge, open, onClose }: Props) 
                 className="no-pill flex-1 h-12 rounded-xl font-bold text-sm text-white shadow-lift hover:opacity-90 transition-opacity"
                 style={{ background: "linear-gradient(135deg, #248CCB 0%, #E00101 100%)" }}
               >
-                Save to Achievements
+                Done — Back to Home
               </button>
             </motion.div>
           </div>
