@@ -67,12 +67,22 @@ function waitForAndroidPermissionFlow(): Promise<void> {
 
 /**
  * Native-only Face ID / biometric gate.
- * - Runs on iOS/Android automatically whenever an authenticated session exists.
- * - Prompts on first mount (after login) and again when the app returns
- *   from background.
+ * - Prompts ONCE per app launch (cold start / process start) when an
+ *   authenticated session exists.
+ * - Returning from background (app switching, notifications, camera, video)
+ *   never re-prompts. Only fully killing and relaunching the app does.
  * - On failure the app stays locked behind a full-screen overlay with a
- *   "Try again" button.
+ *   "Try again" button (iOS); Android fails open so users aren't trapped.
  */
+
+// Module-scoped: lives for the lifetime of the JS process. A cold app launch
+// re-evaluates this module, which is exactly the "relaunch" semantics we want.
+let processUnlocked = false;
+
+export function markBiometricProcessUnlocked() {
+  processUnlocked = true;
+}
+
 export default function BiometricGate({ children }: { children: ReactNode }) {
   const { session, loading, signOut } = useAuth();
   const location = useLocation();
@@ -82,12 +92,22 @@ export default function BiometricGate({ children }: { children: ReactNode }) {
   const [biometryAvailable, setBiometryAvailable] = useState<boolean>(false);
   const [diagnostics, setDiagnostics] = useState<BiometricDiagnostics | null>(null);
   const [label, setLabel] = useState<string>("Face ID");
-  const lastAuthAt = useRef<number>(0);
+  const [unlockedTick, setUnlockedTick] = useState(0);
+  const lastAuthAt = useRef<number>(processUnlocked ? Date.now() : 0);
   const authenticatingRef = useRef(false);
-  const inactiveStartedAt = useRef<number | null>(null);
 
   const isVideoSuppressActive = useCallback(() => {
     return Date.now() < readNativeVideoSuppressUntil() || isNativeVideoContextActive();
+  }, []);
+
+  const unlockForProcess = useCallback(() => {
+    processUnlocked = true;
+    lastAuthAt.current = Date.now();
+    authenticatingRef.current = false;
+    setLocked(false);
+    setAuthenticating(false);
+    setBiometryChecked(true);
+    setUnlockedTick((t) => t + 1);
   }, []);
 
   // Native biometric gate runs on both iOS (Face ID / Touch ID) and Android
@@ -95,11 +115,19 @@ export default function BiometricGate({ children }: { children: ReactNode }) {
   // isn't enrolled we let the user in rather than trap them behind the lock.
   const native = isNative();
   const biometricGateSupported = supportsBiometricGate();
-  const startupShield = biometricGateSupported && loading && !isVideoSuppressActive();
-  const shouldGate = biometricGateSupported && !loading && !!session && BIOMETRIC_PROTECTED_ROUTES.has(location.pathname);
+  const startupShield =
+    biometricGateSupported && loading && !processUnlocked && !isVideoSuppressActive();
+  const shouldGate =
+    biometricGateSupported &&
+    !loading &&
+    !processUnlocked &&
+    !!session &&
+    BIOMETRIC_PROTECTED_ROUTES.has(location.pathname);
   const gateVisible =
+    !processUnlocked &&
     !isVideoSuppressActive() &&
     (startupShield || (shouldGate && (locked || authenticating || lastAuthAt.current === 0)));
+
 
   const runAuth = useCallback(async () => {
     if (authenticatingRef.current) return;
