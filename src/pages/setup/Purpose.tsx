@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Progress } from "@/components/ui/progress";
 import { Activity, Flame, Zap, Leaf, ArrowRight } from "lucide-react";
 import { saveUser, getUser } from "@/lib/userStore";
+import SetupEscapeBar from "@/components/onboarding/SetupEscapeBar";
 
 const goals = [
   { id: "diabetes", icon: Activity, title: "Control Diabetes", subtitle: "Balance & reverse blood sugar", color: "text-primary", bg: "bg-primary/10", border: "border-primary/30" },
@@ -28,6 +29,7 @@ export default function Purpose() {
 
   return (
     <div className="phone-container min-h-dvh flex flex-col px-5 pt-14 mobile-bottom-safe bg-background">
+      <SetupEscapeBar />
       <div className="mb-8">
         <div className="flex items-center justify-between mb-2">
           <span className="text-muted-foreground text-xs font-medium">Step 1 of 5</span>
@@ -35,6 +37,7 @@ export default function Purpose() {
         </div>
         <Progress value={20} className="h-1.5" />
       </div>
+
 
       <div className="flex flex-col flex-1">
         <div className="mb-8">
