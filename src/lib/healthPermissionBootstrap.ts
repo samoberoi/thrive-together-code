@@ -170,18 +170,20 @@ let autoPromptScheduled = false;
 export async function scheduleHealthPermissionAutoPrompt(userId: string): Promise<void> {
   if (autoPromptScheduled) return;
   if (!canUseNativeHealth()) return;
-  if (hasAskedHealthPermission(userId)) return;
   autoPromptScheduled = true;
 
   try {
     const state = await getNativeHealthPermissionState();
-    if (state.authorized || !state.canRequest) {
+    if (state.authorized) {
       void ensureNativeHealthPermission(userId, { allowPrompt: false });
       return;
     }
+    // Health access is still missing. An old "asked" marker is not proof of a
+    // grant (it was written even when the sheet never appeared), so keep
+    // offering the sheet — once per app process — until access is granted.
+    if (!state.canRequest) return;
     const quiet = await waitForQuietForeground();
     if (!quiet) return;
-    if (hasAskedHealthPermission(userId)) return;
     logStartupEvent("health permission auto prompt");
     await ensureNativeHealthPermission(userId, { force: true });
   } catch (error) {
