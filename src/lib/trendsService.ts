@@ -78,18 +78,38 @@ export async function fetchTrendSeries(
     }
 
     if (metric === "steps") {
-      const { data } = await (supabase as any)
-        .from("apple_health_snapshots")
-        .select("date, steps")
-        .eq("user_id", userId)
-        .gte("date", start)
-        .lte("date", end)
-        .order("date", { ascending: true });
-      return dedupeByDate(
-        ((data as any[]) ?? [])
-          .filter((r) => r.steps != null)
-          .map((r) => ({ date: r.date, value: Number(r.steps) })),
-      );
+      // Steps live in two places: apple_health_snapshots (iOS snapshot card)
+      // and health_logs.steps_count (the daily steps ring on every platform).
+      // Merge both, keeping the larger value per day.
+      const [{ data: snaps }, { data: logs }] = await Promise.all([
+        (supabase as any)
+          .from("apple_health_snapshots")
+          .select("date, steps")
+          .eq("user_id", userId)
+          .gte("date", start)
+          .lte("date", end)
+          .order("date", { ascending: true }),
+        (supabase as any)
+          .from("health_logs")
+          .select("logged_at, steps_count")
+          .eq("user_id", userId)
+          .eq("log_type", "steps")
+          .gte("logged_at", startIso)
+          .lte("logged_at", endExclusive)
+          .order("logged_at", { ascending: true }),
+      ]);
+      const byDate = new Map<string, number>();
+      for (const r of ((snaps as any[]) ?? [])) {
+        if (r.steps == null) continue;
+        byDate.set(r.date, Math.max(byDate.get(r.date) ?? 0, Number(r.steps)));
+      }
+      for (const r of ((logs as any[]) ?? [])) {
+        if (r.steps_count == null) continue;
+        const d = dateKey(r.logged_at);
+        byDate.set(d, Math.max(byDate.get(d) ?? 0, Number(r.steps_count)));
+      }
+      return dedupeByDate([...byDate.entries()].map(([date, value]) => ({ date, value })));
+
     }
 
     const logType = metric === "weight" ? "weight" : "diabetes";
