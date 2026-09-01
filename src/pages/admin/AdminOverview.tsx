@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { whatsappCallUrl } from "@/lib/coachAvailability";
 import CoachActivityRings from "@/components/coach/CoachActivityRings";
+import MetricTrendsSection from "@/components/MetricTrendsSection";
 import CoachSelfCheckins from "@/components/coach/CoachSelfCheckins";
 import AdminStreakBoard, { type AdminStreakClient } from "@/components/admin/AdminStreakBoard";
 
