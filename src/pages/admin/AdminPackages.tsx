@@ -19,6 +19,7 @@ import { logAudit } from "@/lib/auditLog";
 import ExportCsvButton from "@/components/admin/ExportCsvButton";
 import ImportCsvButton from "@/components/admin/ImportCsvButton";
 import { useConfirm } from "@/components/ConfirmProvider";
+import PackageRegionPricing from "@/components/admin/PackageRegionPricing";
 
 const CYCLES: BillingCycle[] = ["monthly", "quarterly", "half_yearly", "yearly"];
 
@@ -304,6 +305,8 @@ export default function AdminPackages() {
                 })}
               </div>
             </div>
+
+            <PackageRegionPricing pkg={openPkg} />
           </motion.div>
         )}
       </AnimatePresence>
