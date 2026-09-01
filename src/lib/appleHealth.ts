@@ -61,6 +61,32 @@ export function canUseAppleHealthSteps() {
   return Capacitor.getPlatform() === "ios" && Capacitor.isNativePlatform();
 }
 
+/**
+ * HealthKit throws "No data available for the specified predicate" whenever a
+ * query window simply has no samples. That is an empty result, not a failure —
+ * treating it as an error used to surface a red banner and, worse, made the
+ * permission bootstrap believe Apple Health was unauthorized.
+ */
+export function isNoHealthDataError(error: unknown): boolean {
+  const msg = String((error as any)?.message ?? error ?? "").toLowerCase();
+  return msg.includes("no data available");
+}
+
+/** Ask HealthKit for read/write access. Returns true when the sheet completed. */
+export async function requestAppleHealthAuthorization(): Promise<boolean> {
+  if (!canUseAppleHealthSteps()) return false;
+  try {
+    const availability = await BBDOHealthKit.isAvailable();
+    if (!availability.available) return false;
+    const res = await BBDOHealthKit.requestAuthorization();
+    return res?.granted !== false;
+  } catch (error) {
+    if (isNoHealthDataError(error)) return true;
+    reportStartupError("healthkit authorization failed", error);
+    return false;
+  }
+}
+
 export async function syncTodayStepsFromAppleHealth(): Promise<number | null> {
   if (!canUseAppleHealthSteps()) return null;
 
