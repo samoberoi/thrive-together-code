@@ -88,7 +88,12 @@ export async function ensureNativeHealthPermission(
       // while the dashboard and notification setup are mounting can destroy
       // the WebView task on resume. The health card's explicit Allow action
       // calls this function with force=true and remains the only prompt path.
-      if (opts?.allowPrompt === false && !opts?.force) {
+      // iOS is different: the HealthKit sheet is an in-app modal, not a
+      // separate Activity, so it is safe (and required) to present it on the
+      // first launch. Without this, new installs never saw the access sheet
+      // and no health data ever flowed.
+      const iosCanPromptNow = Capacitor.getPlatform() === "ios";
+      if (opts?.allowPrompt === false && !opts?.force && !iosCanPromptNow) {
         return false;
       }
       if (!state.authorized && !state.canRequest && !opts?.force) {
