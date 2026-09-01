@@ -12,6 +12,7 @@ import {
   writeWeightToAppleHealth,
   enableAppleHealthBackgroundSync,
   onAppleHealthDataChanged,
+  requestAppleHealthAuthorization,
 } from "@/lib/appleHealth";
 import {
   canUseHealthConnect,
