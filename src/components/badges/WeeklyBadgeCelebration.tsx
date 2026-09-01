@@ -227,17 +227,26 @@ export default function WeeklyBadgeCelebration({ badge, open, onClose }: Props) 
           {/* Falling glitter — only for celebratory weeks */}
           {!isRough && <Confetti count={tier === "gold" ? 70 : 30} />}
 
-          {/* Close */}
+          {/* Close — pinned below the status bar / notch, always visible */}
           <button
             onClick={handleClose}
-            className="no-pill absolute top-4 right-4 z-20 w-10 h-10 rounded-xl shadow-lift flex items-center justify-center text-white transition-transform active:scale-95"
-            style={{ background: "linear-gradient(135deg, #0F1A3D 0%, #1E2A52 100%)" }}
-            aria-label="Close"
+            className="no-pill fixed right-4 z-[120] h-11 rounded-full pl-3 pr-4 shadow-lift inline-flex items-center gap-1.5 text-white text-sm font-bold transition-transform active:scale-95"
+            style={{
+              top: "calc(env(safe-area-inset-top, 0px) + 14px)",
+              background: "linear-gradient(135deg, #0F1A3D 0%, #1E2A52 100%)",
+            }}
+            aria-label="Close weekly review"
           >
-            <X className="w-5 h-5" strokeWidth={2.5} />
+            <X className="w-5 h-5" strokeWidth={3} />
+            Close
           </button>
 
-          <div id={`bbdo-badge-${badge.id}`} className="relative max-w-md mx-auto px-6 py-10 min-h-screen flex flex-col items-center justify-center">
+          <div
+            id={`bbdo-badge-${badge.id}`}
+            className="relative max-w-md mx-auto px-6 pb-10 min-h-screen flex flex-col items-center justify-center"
+            style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 76px)" }}
+          >
+
             {/* BBDO wordmark */}
             <motion.div
               initial={{ opacity: 0, y: 8 }}
