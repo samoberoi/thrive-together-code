@@ -152,6 +152,33 @@ export async function getWeekDays(): Promise<StreakWeek> {
   };
 }
 
+const DISMISSED_BADGES_KEY = "bbdo_dismissed_badges";
+
+function readDismissedBadges(): string[] {
+  try {
+    const raw = localStorage.getItem(DISMISSED_BADGES_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.filter((v) => typeof v === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Locally remember a dismissed badge so it never re-opens, even if the
+ *  server-side `viewed` write is slow, offline or fails. */
+export function dismissBadgeLocally(id: string): void {
+  try {
+    const next = Array.from(new Set([...readDismissedBadges(), id])).slice(-50);
+    localStorage.setItem(DISMISSED_BADGES_KEY, JSON.stringify(next));
+  } catch {
+    /* storage unavailable — server `viewed` flag still applies */
+  }
+}
+
+export function isBadgeDismissedLocally(id: string): boolean {
+  return readDismissedBadges().includes(id);
+}
+
 export async function getUnviewedBadge(): Promise<BbdoBadge | null> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
@@ -161,10 +188,11 @@ export async function getUnviewedBadge(): Promise<BbdoBadge | null> {
     .eq("user_id", user.id)
     .eq("viewed", false)
     .order("earned_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-  return data as BbdoBadge | null;
+    .limit(10);
+  const rows = (data ?? []) as BbdoBadge[];
+  return rows.find((b) => !isBadgeDismissedLocally(b.id)) ?? null;
 }
+
 
 export async function listBbdoBadges(): Promise<BbdoBadge[]> {
   const { data: { user } } = await supabase.auth.getUser();

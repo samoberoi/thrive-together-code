@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { BbdoBadge, markBadgeViewed } from "@/lib/globalStreak";
+import { BbdoBadge, markBadgeViewed, dismissBadgeLocally } from "@/lib/globalStreak";
 import { X, Download, Sparkles, Award, TrendingDown, TrendingUp, Minus } from "lucide-react";
 import { toast } from "sonner";
 
@@ -175,10 +175,14 @@ export default function WeeklyBadgeCelebration({ badge, open, onClose }: Props) 
   const heroBg = "radial-gradient(1100px 640px at 50% -10%, #EEF3FF 0%, #FCFCFD 55%, #FCFCFD 100%)";
   const dateRange = `${new Date(badge.period_start).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} — ${new Date(badge.period_end).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`;
 
-  const handleClose = async () => {
-    if (!badge.viewed) await markBadgeViewed(badge.id);
+  const handleClose = () => {
+    // Close instantly and remember the dismissal locally so returning from
+    // background / another tab never re-opens this weekly review.
+    dismissBadgeLocally(badge.id);
     onClose();
+    if (!badge.viewed) void markBadgeViewed(badge.id).catch(() => undefined);
   };
+
 
   const handleDownload = async () => {
     try {
@@ -223,17 +227,26 @@ export default function WeeklyBadgeCelebration({ badge, open, onClose }: Props) 
           {/* Falling glitter — only for celebratory weeks */}
           {!isRough && <Confetti count={tier === "gold" ? 70 : 30} />}
 
-          {/* Close */}
+          {/* Close — pinned below the status bar / notch, always visible */}
           <button
             onClick={handleClose}
-            className="no-pill absolute top-4 right-4 z-20 w-10 h-10 rounded-xl shadow-lift flex items-center justify-center text-white transition-transform active:scale-95"
-            style={{ background: "linear-gradient(135deg, #0F1A3D 0%, #1E2A52 100%)" }}
-            aria-label="Close"
+            className="no-pill fixed right-4 z-[120] h-11 rounded-full pl-3 pr-4 shadow-lift inline-flex items-center gap-1.5 text-white text-sm font-bold transition-transform active:scale-95"
+            style={{
+              top: "calc(env(safe-area-inset-top, 0px) + 14px)",
+              background: "linear-gradient(135deg, #0F1A3D 0%, #1E2A52 100%)",
+            }}
+            aria-label="Close weekly review"
           >
-            <X className="w-5 h-5" strokeWidth={2.5} />
+            <X className="w-5 h-5" strokeWidth={3} />
+            Close
           </button>
 
-          <div id={`bbdo-badge-${badge.id}`} className="relative max-w-md mx-auto px-6 py-10 min-h-screen flex flex-col items-center justify-center">
+          <div
+            id={`bbdo-badge-${badge.id}`}
+            className="relative max-w-md mx-auto px-6 pb-10 min-h-screen flex flex-col items-center justify-center"
+            style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 76px)" }}
+          >
+
             {/* BBDO wordmark */}
             <motion.div
               initial={{ opacity: 0, y: 8 }}
