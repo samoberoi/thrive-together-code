@@ -300,6 +300,9 @@ export default function AdminOverview() {
       <CoachActivityRings />
       <CoachSelfCheckins />
 
+      {/* Admin's own long-run trends — same component the end user sees. */}
+      <MetricTrendsSection userId={adminUserId} heightCm={adminHeightCm} weightKg={adminWeightKg} />
+
 
       <div className="grid grid-cols-2 min-[430px]:grid-cols-3 xl:grid-cols-6 gap-2 sm:gap-3">
         {kpis.map((card, i) => {
