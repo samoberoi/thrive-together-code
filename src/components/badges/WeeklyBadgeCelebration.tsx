@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { BbdoBadge, markBadgeViewed } from "@/lib/globalStreak";
+import { BbdoBadge, markBadgeViewed, dismissBadgeLocally } from "@/lib/globalStreak";
 import { X, Download, Sparkles, Award, TrendingDown, TrendingUp, Minus } from "lucide-react";
 import { toast } from "sonner";
 
