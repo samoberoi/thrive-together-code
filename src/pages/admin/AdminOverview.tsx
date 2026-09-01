@@ -46,13 +46,23 @@ export default function AdminOverview() {
   const navigate = useNavigate();
   const { greeting } = useLanguage();
   const [adminName, setAdminName] = useState<string>("");
+  const [adminUserId, setAdminUserId] = useState<string | undefined>(undefined);
+  const [adminHeightCm, setAdminHeightCm] = useState<number | null>(null);
+  const [adminWeightKg, setAdminWeightKg] = useState<number | null>(null);
 
   useEffect(() => {
     (async () => {
       const { data: auth } = await supabase.auth.getUser();
       if (!auth?.user) return;
-      const { data } = await supabase.from("profiles").select("name").eq("user_id", auth.user.id).maybeSingle();
+      setAdminUserId(auth.user.id);
+      const { data } = await supabase
+        .from("profiles")
+        .select("name, height, weight")
+        .eq("user_id", auth.user.id)
+        .maybeSingle();
       setAdminName(((data as any)?.name || "").split(" ")[0]);
+      setAdminHeightCm(((data as any)?.height ?? null) as number | null);
+      setAdminWeightKg(((data as any)?.weight ?? null) as number | null);
     })();
   }, []);
 
