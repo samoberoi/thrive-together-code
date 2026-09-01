@@ -92,7 +92,6 @@ export default function BiometricGate({ children }: { children: ReactNode }) {
   const [biometryAvailable, setBiometryAvailable] = useState<boolean>(false);
   const [diagnostics, setDiagnostics] = useState<BiometricDiagnostics | null>(null);
   const [label, setLabel] = useState<string>("Face ID");
-  const [unlockedTick, setUnlockedTick] = useState(0);
   const lastAuthAt = useRef<number>(processUnlocked ? Date.now() : 0);
   const authenticatingRef = useRef(false);
 
@@ -107,7 +106,6 @@ export default function BiometricGate({ children }: { children: ReactNode }) {
     setLocked(false);
     setAuthenticating(false);
     setBiometryChecked(true);
-    setUnlockedTick((t) => t + 1);
   }, []);
 
   // Native biometric gate runs on both iOS (Face ID / Touch ID) and Android
