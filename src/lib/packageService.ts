@@ -104,3 +104,67 @@ export function getSelectedPlan(): SelectedPlan | null {
     return null;
   }
 }
+
+/* ---------------- Regional pricing (admin backend) ---------------- */
+
+export interface PricingRegion {
+  code: string;
+  name: string;
+  currency: string;
+  symbol: string;
+  fx_per_inr: number;
+  uplift_percent: number;
+  round_to: number;
+  sort_order: number;
+  enabled: boolean;
+}
+
+export interface PackageRegionPrice {
+  id: string;
+  package_id: string;
+  region_code: string;
+  monthly_price: number;
+  enabled: boolean;
+}
+
+export async function fetchPricingRegions(): Promise<PricingRegion[]> {
+  const { data } = await (supabase as any)
+    .from("pricing_regions")
+    .select("*")
+    .order("sort_order", { ascending: true });
+  return (data ?? []).map((r: any) => ({
+    ...r,
+    fx_per_inr: Number(r.fx_per_inr),
+    uplift_percent: Number(r.uplift_percent),
+    round_to: Number(r.round_to),
+  }));
+}
+
+export async function fetchRegionPricing(packageIds?: string[]): Promise<PackageRegionPrice[]> {
+  let q = (supabase as any).from("package_region_pricing").select("*");
+  if (packageIds?.length) q = q.in("package_id", packageIds);
+  const { data } = await q;
+  return (data ?? []).map((r: any) => ({ ...r, monthly_price: Number(r.monthly_price) }));
+}
+
+export async function upsertRegionPrice(row: {
+  package_id: string;
+  region_code: string;
+  monthly_price: number;
+  enabled: boolean;
+}) {
+  return (supabase as any)
+    .from("package_region_pricing")
+    .upsert(row, { onConflict: "package_id,region_code" });
+}
+
+/** Suggested regional monthly price: INR base -> local currency + uplift, rounded up. */
+export function suggestRegionPrice(baseMonthlyInr: number, region: PricingRegion): number {
+  const raw = baseMonthlyInr * region.fx_per_inr * (1 + region.uplift_percent / 100);
+  const step = region.round_to > 0 ? region.round_to : 1;
+  return Math.max(step, Math.ceil(raw / step) * step);
+}
+
+export function formatRegionMoney(amount: number, region: PricingRegion): string {
+  return `${region.symbol}${amount.toLocaleString("en-US")}`;
+}
