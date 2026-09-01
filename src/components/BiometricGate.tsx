@@ -232,7 +232,7 @@ export default function BiometricGate({ children }: { children: ReactNode }) {
     };
   }, [native, unlockForProcess]);
 
-  }, [isVideoSuppressActive, runAuth, shouldGate]);
+
 
   return (
     <>
