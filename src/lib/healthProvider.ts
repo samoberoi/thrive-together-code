@@ -12,6 +12,7 @@ import {
   writeWeightToAppleHealth,
   enableAppleHealthBackgroundSync,
   onAppleHealthDataChanged,
+  requestAppleHealthAuthorization,
 } from "@/lib/appleHealth";
 import {
   canUseHealthConnect,
@@ -126,11 +127,13 @@ export async function getNativeHealthPermissionState(): Promise<NativeHealthPerm
 export async function requestNativeHealthAuthorization(): Promise<NativeHealthPermissionState> {
   if (isAndroid()) return requestHealthConnectAuthorization();
   if (isIOS()) {
-    const available = await syncTodayStepsFromAppleHealth();
+    // Ask HealthKit directly. Never infer authorization from a step query —
+    // an empty day would look like a denial and silently kill the sync.
+    const granted = await requestAppleHealthAuthorization();
     return {
-      authorized: available != null,
-      canRequest: available == null,
-      message: available != null
+      authorized: granted,
+      canRequest: !granted,
+      message: granted
         ? "Apple Health is connected."
         : "Apple Health permission was not granted.",
     };
