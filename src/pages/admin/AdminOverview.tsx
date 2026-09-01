@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { whatsappCallUrl } from "@/lib/coachAvailability";
 import CoachActivityRings from "@/components/coach/CoachActivityRings";
+import TodayStepsCard from "@/components/TodayStepsCard";
 import MetricTrendsSection from "@/components/MetricTrendsSection";
 import CoachSelfCheckins from "@/components/coach/CoachSelfCheckins";
 import AdminStreakBoard, { type AdminStreakClient } from "@/components/admin/AdminStreakBoard";
@@ -299,6 +300,10 @@ export default function AdminOverview() {
 
       {/* The admin's own daily habit rings + check-ins — same engine as coaches. */}
       <CoachActivityRings />
+
+      {/* Admin's own step ring with manual health sync — same card users get. */}
+      <TodayStepsCard />
+
       <CoachSelfCheckins />
 
       {/* Admin's own long-run trends — same component the end user sees. */}
