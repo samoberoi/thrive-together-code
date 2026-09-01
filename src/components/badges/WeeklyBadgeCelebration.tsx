@@ -175,10 +175,14 @@ export default function WeeklyBadgeCelebration({ badge, open, onClose }: Props) 
   const heroBg = "radial-gradient(1100px 640px at 50% -10%, #EEF3FF 0%, #FCFCFD 55%, #FCFCFD 100%)";
   const dateRange = `${new Date(badge.period_start).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} — ${new Date(badge.period_end).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`;
 
-  const handleClose = async () => {
-    if (!badge.viewed) await markBadgeViewed(badge.id);
+  const handleClose = () => {
+    // Close instantly and remember the dismissal locally so returning from
+    // background / another tab never re-opens this weekly review.
+    dismissBadgeLocally(badge.id);
     onClose();
+    if (!badge.viewed) void markBadgeViewed(badge.id).catch(() => undefined);
   };
+
 
   const handleDownload = async () => {
     try {
