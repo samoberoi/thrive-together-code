@@ -67,12 +67,22 @@ function waitForAndroidPermissionFlow(): Promise<void> {
 
 /**
  * Native-only Face ID / biometric gate.
- * - Runs on iOS/Android automatically whenever an authenticated session exists.
- * - Prompts on first mount (after login) and again when the app returns
- *   from background.
+ * - Prompts ONCE per app launch (cold start / process start) when an
+ *   authenticated session exists.
+ * - Returning from background (app switching, notifications, camera, video)
+ *   never re-prompts. Only fully killing and relaunching the app does.
  * - On failure the app stays locked behind a full-screen overlay with a
- *   "Try again" button.
+ *   "Try again" button (iOS); Android fails open so users aren't trapped.
  */
+
+// Module-scoped: lives for the lifetime of the JS process. A cold app launch
+// re-evaluates this module, which is exactly the "relaunch" semantics we want.
+let processUnlocked = false;
+
+export function markBiometricProcessUnlocked() {
+  processUnlocked = true;
+}
+
 export default function BiometricGate({ children }: { children: ReactNode }) {
   const { session, loading, signOut } = useAuth();
   const location = useLocation();
@@ -82,12 +92,20 @@ export default function BiometricGate({ children }: { children: ReactNode }) {
   const [biometryAvailable, setBiometryAvailable] = useState<boolean>(false);
   const [diagnostics, setDiagnostics] = useState<BiometricDiagnostics | null>(null);
   const [label, setLabel] = useState<string>("Face ID");
-  const lastAuthAt = useRef<number>(0);
+  const lastAuthAt = useRef<number>(processUnlocked ? Date.now() : 0);
   const authenticatingRef = useRef(false);
-  const inactiveStartedAt = useRef<number | null>(null);
 
   const isVideoSuppressActive = useCallback(() => {
     return Date.now() < readNativeVideoSuppressUntil() || isNativeVideoContextActive();
+  }, []);
+
+  const unlockForProcess = useCallback(() => {
+    processUnlocked = true;
+    lastAuthAt.current = Date.now();
+    authenticatingRef.current = false;
+    setLocked(false);
+    setAuthenticating(false);
+    setBiometryChecked(true);
   }, []);
 
   // Native biometric gate runs on both iOS (Face ID / Touch ID) and Android
@@ -95,52 +113,52 @@ export default function BiometricGate({ children }: { children: ReactNode }) {
   // isn't enrolled we let the user in rather than trap them behind the lock.
   const native = isNative();
   const biometricGateSupported = supportsBiometricGate();
-  const startupShield = biometricGateSupported && loading && !isVideoSuppressActive();
-  const shouldGate = biometricGateSupported && !loading && !!session && BIOMETRIC_PROTECTED_ROUTES.has(location.pathname);
+  const startupShield =
+    biometricGateSupported && loading && !processUnlocked && !isVideoSuppressActive();
+  const shouldGate =
+    biometricGateSupported &&
+    !loading &&
+    !processUnlocked &&
+    !!session &&
+    BIOMETRIC_PROTECTED_ROUTES.has(location.pathname);
   const gateVisible =
+    !processUnlocked &&
     !isVideoSuppressActive() &&
     (startupShield || (shouldGate && (locked || authenticating || lastAuthAt.current === 0)));
 
+
   const runAuth = useCallback(async () => {
-    if (authenticatingRef.current) return;
+    if (authenticatingRef.current || processUnlocked) return;
     await waitForAndroidPermissionFlow();
-    if (!shouldGate) return;
+    if (!shouldGate || processUnlocked) return;
     if (isVideoSuppressActive()) {
-      lastAuthAt.current = Date.now();
-      setLocked(false);
-      setAuthenticating(false);
-      setBiometryChecked(true);
+      unlockForProcess();
       return;
     }
     authenticatingRef.current = true;
     setLocked(true);
     setAuthenticating(true);
     setBiometryChecked(false);
+    // Single diagnostics call (it already reports availability + label) keeps
+    // the cold-start path fast — no extra round trips before the prompt.
     const nextDiagnostics = await getBiometricDiagnostics();
     setDiagnostics(nextDiagnostics);
-    setLabel(nextDiagnostics.label || await getBiometryLabel());
-    let available = await isBiometricAvailable();
+    setLabel(nextDiagnostics.label || (await getBiometryLabel()));
+    let available = nextDiagnostics.available;
     if (!available) {
-      await new Promise((resolve) => setTimeout(resolve, 350));
       available = await isBiometricAvailable();
     }
     setBiometryAvailable(available);
     setBiometryChecked(true);
     if (isVideoSuppressActive()) {
-      authenticatingRef.current = false;
-      setAuthenticating(false);
-      lastAuthAt.current = Date.now();
-      setLocked(false);
+      unlockForProcess();
       return;
     }
     // On Android, if biometry isn't enrolled/available, don't trap the user
     // behind the lock screen — just let them in. iOS keeps the strict gate.
     const isAndroid = isAndroidNativeApp();
     if (!available && isAndroid) {
-      authenticatingRef.current = false;
-      setAuthenticating(false);
-      lastAuthAt.current = Date.now();
-      setLocked(false);
+      unlockForProcess();
       return;
     }
     let ok = false;
@@ -154,56 +172,40 @@ export default function BiometricGate({ children }: { children: ReactNode }) {
     setAuthenticating(false);
     if (ok) {
       setBiometricEnabled(true);
-      lastAuthAt.current = Date.now();
-      setLocked(false);
+      unlockForProcess();
     } else if (isAndroid) {
       // Android: failure shouldn't lock the user out of their own app.
-      lastAuthAt.current = Date.now();
-      setLocked(false);
+      unlockForProcess();
     } else {
       setLocked(true);
     }
-  }, [isVideoSuppressActive, shouldGate]);
+  }, [isVideoSuppressActive, shouldGate, unlockForProcess]);
 
-  // Initial gate when a session appears
+  // One-time gate per app launch, as soon as a session exists.
   useEffect(() => {
+    if (processUnlocked) return;
     if (!shouldGate) {
       setLocked(false);
       setAuthenticating(false);
       authenticatingRef.current = false;
       setBiometryChecked(false);
       setBiometryAvailable(false);
-      lastAuthAt.current = 0;
       return;
     }
     if (isVideoSuppressActive()) {
-      lastAuthAt.current = Date.now();
-      setLocked(false);
-      setAuthenticating(false);
-      setBiometryChecked(true);
+      unlockForProcess();
       return;
     }
-    let cancelled = false;
     setLocked(true);
     setBiometryChecked(false);
-    void (async () => {
-      await new Promise((resolve) => setTimeout(resolve, 250));
-      if (cancelled) return;
-      await runAuth();
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [isVideoSuppressActive, runAuth, shouldGate, session?.user?.id]);
+    void runAuth();
+  }, [isVideoSuppressActive, runAuth, shouldGate, unlockForProcess, session?.user?.id]);
 
   useEffect(() => {
     if (!native) return;
     const suppressVideoUnlock = () => {
       extendNativeVideoSuppression();
-      lastAuthAt.current = Date.now();
-      setLocked(false);
-      setAuthenticating(false);
-      setBiometryChecked(true);
+      unlockForProcess();
     };
     window.addEventListener("bbdo:native-player-open", suppressVideoUnlock);
     window.addEventListener("bbdo:native-player-close", suppressVideoUnlock);
@@ -211,46 +213,24 @@ export default function BiometricGate({ children }: { children: ReactNode }) {
       window.removeEventListener("bbdo:native-player-open", suppressVideoUnlock);
       window.removeEventListener("bbdo:native-player-close", suppressVideoUnlock);
     };
-  }, [native]);
+  }, [native, unlockForProcess]);
 
-  // Re-lock whenever the native app leaves the foreground, then prompt on resume.
+  // Returning from background NEVER re-prompts. The gate only runs once per
+  // app process; killing and relaunching the app starts a fresh process and
+  // therefore a fresh prompt.
   useEffect(() => {
-    if (!shouldGate) return;
+    if (!native) return;
     const sub = CapApp.addListener("appStateChange", ({ isActive }) => {
-      // Suppress re-lock if the native YouTube player was just used.
-      // iOS's fullscreen presentation puts the WKWebView into background
-      // and back — that should not force a Face ID re-prompt.
-      if (isVideoSuppressActive()) {
-        lastAuthAt.current = Date.now();
-        setLocked(false);
-        setAuthenticating(false);
-        setBiometryChecked(true);
-        return;
-      }
-      if (!isActive) {
-        inactiveStartedAt.current = Date.now();
-        return;
-      }
-      const inactiveFor = inactiveStartedAt.current ? Date.now() - inactiveStartedAt.current : 0;
-      inactiveStartedAt.current = null;
-      // Capacitor emits appStateChange for native overlays (YouTube player,
-      // Face ID, permission sheets), not only true app backgrounding. Do not
-      // re-lock for short/native transitions; that caused the video-close lock hang.
-      if (inactiveFor > 0 && inactiveFor < 2 * 60 * 1000) {
-        lastAuthAt.current = Date.now();
-        setLocked(false);
-        setAuthenticating(false);
-        setBiometryChecked(true);
-        return;
-      }
-      if (lastAuthAt.current === 0 || inactiveFor >= 2 * 60 * 1000) {
-        void runAuth();
+      if (isActive && lastAuthAt.current > 0) {
+        unlockForProcess();
       }
     });
     return () => {
       void sub.then((s) => s.remove());
     };
-  }, [isVideoSuppressActive, runAuth, shouldGate]);
+  }, [native, unlockForProcess]);
+
+
 
   return (
     <>
