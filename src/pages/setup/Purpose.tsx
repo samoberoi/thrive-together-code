@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Progress } from "@/components/ui/progress";
 import { Activity, Flame, Zap, Leaf, ArrowRight } from "lucide-react";
 import { saveUser, getUser } from "@/lib/userStore";
+import SetupEscapeBar from "@/components/onboarding/SetupEscapeBar";
 
 const goals = [
   { id: "diabetes", icon: Activity, title: "Control Diabetes", subtitle: "Balance & reverse blood sugar", color: "text-primary", bg: "bg-primary/10", border: "border-primary/30" },
