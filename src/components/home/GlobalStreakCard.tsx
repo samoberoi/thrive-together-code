@@ -137,15 +137,14 @@ export default function GlobalStreakCard() {
         <WeeklyBadgeCelebration
           badge={pendingBadge}
           open={!!pendingBadge}
-          onClose={async () => {
+          onClose={() => {
+            // Dismiss for good — remaining badges stay in the profile's
+            // achievements/weekly updates section instead of re-popping.
             setPendingBadge(null);
-            setTimeout(async () => {
-              const next = await getUnviewedBadge();
-              if (next) setPendingBadge(next);
-            }, 350);
           }}
         />
       )}
+
     </>
   );
 }
