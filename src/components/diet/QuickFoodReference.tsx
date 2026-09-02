@@ -277,16 +277,15 @@ export default function QuickFoodReference({ onClose, embedded = false }: { onCl
     })();
   }, [activeConditions, items, rulesReloadTick]);
 
+  // Food catalog/rules are static admin-managed reference data. Instead of holding a
+  // realtime subscription open for every client (expensive WAL fan-out), refresh when
+  // the app comes back to the foreground.
   useEffect(() => {
-    const bump = () => setRulesReloadTick((t) => t + 1);
-    const channel = supabase
-      .channel("qfr-condition-rules")
-      .on("postgres_changes", { event: "*", schema: "public", table: "food_condition_rules" }, bump)
-      .on("postgres_changes", { event: "*", schema: "public", table: "food_conditions" }, bump)
-      .on("postgres_changes", { event: "*", schema: "public", table: "food_items" }, bump)
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    const bump = () => { if (document.visibilityState === "visible") setRulesReloadTick((t) => t + 1); };
+    document.addEventListener("visibilitychange", bump);
+    return () => { document.removeEventListener("visibilitychange", bump); };
   }, []);
+
 
   // Per-condition breakdown: for each active condition, group matched foods by action.
   // Used by the "For your <condition>: avoid / limit / encourage" card.
