@@ -188,6 +188,7 @@ export function useAttentionCounts() {
 
     return () => {
       cancelled = true;
+      window.removeEventListener("notifications:changed", safeLoad);
       channels.forEach((channel) => supabase.removeChannel(channel));
     };
   }, [loadCounts, user?.id]);
