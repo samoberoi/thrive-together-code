@@ -38,7 +38,6 @@ export default function AndroidBackHandler() {
   const navigate = useNavigate();
   const location = useLocation();
   const pathRef = useRef(location.pathname);
-  const lastBackAt = useRef(0);
 
   useEffect(() => {
     pathRef.current = location.pathname;
