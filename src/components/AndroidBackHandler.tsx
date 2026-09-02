@@ -55,13 +55,8 @@ export default function AndroidBackHandler() {
         return;
       }
 
-      const now = Date.now();
-      if (now - lastBackAt.current < 2000) {
-        void CapApp.exitApp();
-        return;
-      }
-      lastBackAt.current = now;
-      toast("Press back again to exit");
+      // Root screen: single press backgrounds the app like any native app.
+      void CapApp.minimizeApp();
     });
 
     return () => {
