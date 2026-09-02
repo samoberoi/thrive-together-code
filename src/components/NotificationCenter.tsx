@@ -49,7 +49,10 @@ export default function NotificationCenter({ unreadCount: controlledCount }: { u
         }
       });
     });
-    return unsub;
+    return () => {
+      window.removeEventListener("notifications:changed", onLocalChange);
+      unsub();
+    };
   }, [controlledCount, user]);
 
   return (
