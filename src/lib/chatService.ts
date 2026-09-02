@@ -19,6 +19,7 @@ export interface ChatMessage {
   is_predefined: boolean;
   read_at: string | null;
   created_at: string;
+  edited_at?: string | null;
 }
 
 export const PREDEFINED_QUESTIONS = [
@@ -99,6 +100,31 @@ export async function sendMessage(
     return null;
   }
   return data as unknown as ChatMessage;
+}
+
+/** Edit an own message (RLS + trigger enforce sender-only edits) */
+export async function editMessage(messageId: string, message: string): Promise<ChatMessage | null> {
+  const { data, error } = await supabase
+    .from("chat_messages")
+    .update({ message } as any)
+    .eq("id", messageId)
+    .select()
+    .single();
+  if (error) {
+    console.error("Failed to edit message:", error);
+    return null;
+  }
+  return data as unknown as ChatMessage;
+}
+
+/** Delete an own message */
+export async function deleteMessage(messageId: string): Promise<boolean> {
+  const { error } = await supabase.from("chat_messages").delete().eq("id", messageId);
+  if (error) {
+    console.error("Failed to delete message:", error);
+    return false;
+  }
+  return true;
 }
 
 /** Mark messages as read and reset unread count */
