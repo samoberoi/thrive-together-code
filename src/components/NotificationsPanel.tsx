@@ -124,14 +124,14 @@ export default function NotificationsPanel({ onClose, embedded = false }: Notifi
 
 
   const onMarkAllRead = async () => {
-    await markAllRead();
     setItems((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    await markAllRead(user?.id);
     notifyBadgeSync();
   };
 
   const onClearAll = async () => {
-    await clearAllNotifications();
     setItems([]);
+    await clearAllNotifications(user?.id);
     notifyBadgeSync();
   };
 
