@@ -49,14 +49,20 @@ export function useFoodReferenceCounts(userId?: string | null) {
 
   useEffect(() => {
     void load();
+    // Food catalog is static reference data — refresh on foreground instead of
+    // keeping a realtime subscription open per client.
+    const onVisible = () => { if (document.visibilityState === "visible") void load(); };
+    document.addEventListener("visibilitychange", onVisible);
     const channel = supabase
       .channel(`food-ref-counts-${userId || "anon"}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "food_items" }, () => void load())
-      .on("postgres_changes", { event: "*", schema: "public", table: "food_filters" }, () => void load())
       .on("postgres_changes", { event: "*", schema: "public", table: "user_diet_profiles" }, () => void load())
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      supabase.removeChannel(channel);
+    };
   }, [load, userId]);
+
 
   return counts;
 }
