@@ -95,6 +95,16 @@ export async function fetchNotifications(userId: string, limit = 30): Promise<Ap
   return (data ?? []) as unknown as AppNotification[];
 }
 
+/**
+ * Broadcast that the unread state changed so every badge (bell, attention
+ * counts, native app icon) refetches instead of trusting a stale cache.
+ */
+export function emitNotificationsChanged() {
+  try {
+    window.dispatchEvent(new CustomEvent("notifications:changed"));
+  } catch {}
+}
+
 /** Mark single notification as read */
 export async function markRead(id: string): Promise<void> {
   await supabase
@@ -102,27 +112,37 @@ export async function markRead(id: string): Promise<void> {
     .update({ is_read: true } as any)
     .eq("id", id);
   invalidateUnreadCount();
+  emitNotificationsChanged();
 }
 
-/** Mark all notifications as read */
-export async function markAllRead(): Promise<void> {
-  await supabase
+/** Mark all notifications as read (scoped to the signed-in user) */
+export async function markAllRead(userId?: string): Promise<void> {
+  let query = supabase
     .from("notifications" as any)
     .update({ is_read: true } as any)
     .eq("is_read", false);
+  if (userId) query = query.eq("user_id", userId);
+  await query;
   invalidateUnreadCount();
+  emitNotificationsChanged();
 }
 
 /** Delete a notification */
 export async function deleteNotification(id: string): Promise<void> {
   await supabase.from("notifications" as any).delete().eq("id", id);
   invalidateUnreadCount();
+  emitNotificationsChanged();
 }
 
-/** Clear all notifications */
-export async function clearAllNotifications(): Promise<void> {
-  await supabase.from("notifications" as any).delete().neq("id", "00000000-0000-0000-0000-000000000000");
+/** Clear all notifications (scoped to the signed-in user) */
+export async function clearAllNotifications(userId?: string): Promise<void> {
+  let query = supabase.from("notifications" as any).delete();
+  query = userId
+    ? query.eq("user_id", userId)
+    : query.neq("id", "00000000-0000-0000-0000-000000000000");
+  await query;
   invalidateUnreadCount();
+  emitNotificationsChanged();
 }
 
 
