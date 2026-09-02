@@ -2,7 +2,6 @@ import { useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { App as CapApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
-import { toast } from "sonner";
 
 /**
  * Android hardware back button.
@@ -11,7 +10,8 @@ import { toast } from "sonner";
  * so the button felt dead. Behaviour now matches any native Android app:
  *  - a dismissible overlay is open  → close it
  *  - deeper in the app             → go back one screen
- *  - on a root/home screen         → press twice to exit the app
+ *  - on a root/home screen         → single press moves the app to the
+ *    background (no toast, no double-press, no hard exit)
  */
 const ROOT_ROUTES = new Set([
   "/",
@@ -38,7 +38,6 @@ export default function AndroidBackHandler() {
   const navigate = useNavigate();
   const location = useLocation();
   const pathRef = useRef(location.pathname);
-  const lastBackAt = useRef(0);
 
   useEffect(() => {
     pathRef.current = location.pathname;
@@ -56,13 +55,8 @@ export default function AndroidBackHandler() {
         return;
       }
 
-      const now = Date.now();
-      if (now - lastBackAt.current < 2000) {
-        void CapApp.exitApp();
-        return;
-      }
-      lastBackAt.current = now;
-      toast("Press back again to exit");
+      // Root screen: single press backgrounds the app like any native app.
+      void CapApp.minimizeApp();
     });
 
     return () => {
