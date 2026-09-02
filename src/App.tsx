@@ -9,6 +9,7 @@ import { AnimatePresence } from "framer-motion";
 import PageTransition from "@/components/PageTransition";
 import AppErrorBoundary from "@/components/AppErrorBoundary";
 import BiometricGate from "@/components/BiometricGate";
+import AndroidBackHandler from "@/components/AndroidBackHandler";
 import { isNative } from "@/lib/biometric";
 import { isNativeVideoTransitionActive } from "@/lib/nativeVideoSession";
 
@@ -450,6 +451,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <AndroidBackHandler />
         <AuthProvider>
           <LanguageProvider>
             <AutoTranslator />
