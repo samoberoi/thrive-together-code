@@ -1,13 +1,15 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Send, Loader2, Zap, Check, CheckCheck, Sparkles } from "lucide-react";
+import { ArrowLeft, Send, Loader2, Zap, Check, CheckCheck, Sparkles, Pencil, Trash2, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import {
   getOrCreateConversation,
   fetchMessages,
   sendMessage,
+  editMessage,
+  deleteMessage,
   markConversationRead,
   PREDEFINED_QUESTIONS,
   type ChatMessage,
@@ -44,6 +46,8 @@ export default function PatientChat({ coach, onBack }: PatientChatProps) {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [showQuickQuestions, setShowQuickQuestions] = useState(false);
+  const [actionsFor, setActionsFor] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -74,6 +78,23 @@ export default function PatientChat({ coach, onBack }: PatientChatProps) {
           if (newMsg.sender_role === "coach") markConversationRead(conversation.id, "client");
         },
       )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "chat_messages", filter: `conversation_id=eq.${conversation.id}` },
+        (payload) => {
+          const updated = payload.new as unknown as ChatMessage;
+          setMessages((prev) => prev.map((m) => (m.id === updated.id ? { ...m, ...updated } : m)));
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "chat_messages" },
+        (payload) => {
+          const removed = payload.old as unknown as { id?: string };
+          if (!removed?.id) return;
+          setMessages((prev) => prev.filter((m) => m.id !== removed.id));
+        },
+      )
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [conversation]);
@@ -90,6 +111,14 @@ export default function PatientChat({ coach, onBack }: PatientChatProps) {
   const handleSend = async (text?: string, isPredefined = false) => {
     const msg = (text ?? input).trim();
     if (!msg || !user || !conversation) return;
+    if (editingId) {
+      const id = editingId;
+      setEditingId(null);
+      setInput("");
+      setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, message: msg, edited_at: new Date().toISOString() } : m)));
+      await editMessage(id, msg);
+      return;
+    }
     if (!text) setInput("");
     setSending(true);
     setShowQuickQuestions(false);
@@ -102,6 +131,25 @@ export default function PatientChat({ coach, onBack }: PatientChatProps) {
     // Do not auto-open keyboard after sending; user taps input to reopen.
   };
 
+
+  const startEdit = (msg: ChatMessage) => {
+    setActionsFor(null);
+    setEditingId(msg.id);
+    setInput(msg.message);
+    setTimeout(() => inputRef.current?.focus(), 50);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setInput("");
+  };
+
+  const handleDelete = async (msg: ChatMessage) => {
+    setActionsFor(null);
+    if (editingId === msg.id) cancelEdit();
+    setMessages((prev) => prev.filter((m) => m.id !== msg.id));
+    await deleteMessage(msg.id);
+  };
 
   const formatTime = (dateStr: string) =>
     new Date(dateStr).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -239,8 +287,10 @@ export default function PatientChat({ coach, onBack }: PatientChatProps) {
                           ) : !isMe ? (
                             <div className="w-6 shrink-0" />
                           ) : null}
+                          <div className="flex flex-col items-end gap-1">
                           <div
-                            className={`${bubbleRadius} px-3.5 py-2 shadow-[0_1px_0_rgba(15,26,61,0.04)] ${
+                            onClick={isMe ? () => setActionsFor((v) => (v === msg.id ? null : msg.id)) : undefined}
+                            className={`${bubbleRadius} px-3.5 py-2 shadow-[0_1px_0_rgba(15,26,61,0.04)] ${isMe ? "cursor-pointer" : ""} ${
                               isMe
                                 ? "bg-[var(--bbdo-blue)] text-white"
                                 : "bg-white text-foreground border border-border/70"
@@ -254,7 +304,7 @@ export default function PatientChat({ coach, onBack }: PatientChatProps) {
                             <p className="text-[14px] leading-[1.4] whitespace-pre-wrap break-words">{msg.message}</p>
                             <div className={`flex items-center gap-1 mt-0.5 ${isMe ? "justify-end" : ""}`}>
                               <span className={`text-[10px] ${isMe ? "text-white/60" : "text-muted-foreground"}`}>
-                                {formatTime(msg.created_at)}
+                                {formatTime(msg.created_at)}{msg.edited_at ? " · edited" : ""}
                               </span>
                               {isMe && (
                                 msg.read_at
@@ -262,6 +312,23 @@ export default function PatientChat({ coach, onBack }: PatientChatProps) {
                                   : <Check className="w-3 h-3 text-white/50" />
                               )}
                             </div>
+                          </div>
+                          {isMe && actionsFor === msg.id && (
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                onClick={() => startEdit(msg)}
+                                className="flex items-center gap-1 text-[11px] font-semibold text-foreground bg-white border border-border/70 rounded-full px-2.5 py-1 active:scale-95"
+                              >
+                                <Pencil className="w-3 h-3" /> Edit
+                              </button>
+                              <button
+                                onClick={() => handleDelete(msg)}
+                                className="flex items-center gap-1 text-[11px] font-semibold text-[var(--bbdo-red)] bg-white border border-border/70 rounded-full px-2.5 py-1 active:scale-95"
+                              >
+                                <Trash2 className="w-3 h-3" /> Delete
+                              </button>
+                            </div>
+                          )}
                           </div>
                         </div>
                       </motion.div>
@@ -318,6 +385,14 @@ export default function PatientChat({ coach, onBack }: PatientChatProps) {
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + var(--kb-h, 0px) + var(--nav-h, 0px))" }}
       >
 
+        {editingId && (
+          <div className="max-w-3xl mx-auto px-4 pt-2 flex items-center justify-between gap-2">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--bbdo-blue)]">Editing message</span>
+            <button onClick={cancelEdit} className="flex items-center gap-1 text-[11px] text-muted-foreground">
+              <X className="w-3 h-3" /> Cancel
+            </button>
+          </div>
+        )}
         <div className="max-w-3xl mx-auto px-3 md:px-4 py-2.5 flex items-end gap-2">
           <button
             onClick={() => setShowQuickQuestions((v) => !v)}

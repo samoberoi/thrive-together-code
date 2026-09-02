@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Send, Loader2, Search, MessageCircle, Check, CheckCheck, Zap } from "lucide-react";
+import { ArrowLeft, Send, Loader2, Search, MessageCircle, Check, CheckCheck, Zap, Pencil, Trash2, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import {
   fetchCoachConversations,
   fetchMessages,
   sendMessage,
+  editMessage,
+  deleteMessage,
   markConversationRead,
   fetchLastMessage,
   type ChatMessage,
@@ -30,6 +32,8 @@ export default function CoachInbox({ coachId, openPatientId }: CoachInboxProps) 
   const [conversations, setConversations] = useState<ConvoWithMeta[]>([]);
   const [activeConvo, setActiveConvo] = useState<ConvoWithMeta | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [actionsFor, setActionsFor] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -141,6 +145,32 @@ export default function CoachInbox({ coachId, openPatientId }: CoachInboxProps) 
     return () => { supabase.removeChannel(channel); };
   }, [user]);
 
+  // Realtime edits / deletions of messages
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel("coach-inbox-mutations")
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "chat_messages" },
+        (payload) => {
+          const updated = payload.new as unknown as ChatMessage;
+          setMessages((prev) => prev.map((m) => (m.id === updated.id ? { ...m, ...updated } : m)));
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "chat_messages" },
+        (payload) => {
+          const removed = payload.old as unknown as { id?: string };
+          if (!removed?.id) return;
+          setMessages((prev) => prev.filter((m) => m.id !== removed.id));
+        },
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
+
 
   useChatScroll(messages, scrollRef);
 
@@ -154,9 +184,36 @@ export default function CoachInbox({ coachId, openPatientId }: CoachInboxProps) 
     );
   };
 
+  const startEdit = (msg: ChatMessage) => {
+    setActionsFor(null);
+    setEditingId(msg.id);
+    setInput(msg.message);
+    setTimeout(() => inputRef.current?.focus(), 50);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setInput("");
+  };
+
+  const handleDelete = async (msg: ChatMessage) => {
+    setActionsFor(null);
+    if (editingId === msg.id) cancelEdit();
+    setMessages((prev) => prev.filter((m) => m.id !== msg.id));
+    await deleteMessage(msg.id);
+  };
+
   const handleSend = async () => {
     const msg = input.trim();
     if (!msg || !user || !activeConvo) return;
+    if (editingId) {
+      const id = editingId;
+      setEditingId(null);
+      setInput("");
+      setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, message: msg, edited_at: new Date().toISOString() } : m)));
+      await editMessage(id, msg);
+      return;
+    }
     setInput("");
     setSending(true);
     const sent = await sendMessage(activeConvo.id, user.id, "coach", msg);
@@ -261,8 +318,10 @@ export default function CoachInbox({ coachId, openPatientId }: CoachInboxProps) 
                   animate={{ opacity: 1, y: 0 }}
                   className={`flex ${isMe ? "justify-end" : "justify-start"} mb-1`}
                 >
+                  <div className={`flex flex-col max-w-[80%] gap-1 ${isMe ? "items-end" : "items-start"}`}>
                   <div
-                    className={`max-w-[80%] rounded-2xl px-3.5 py-2.5 ${
+                    onClick={isMe ? () => setActionsFor((v) => (v === msg.id ? null : msg.id)) : undefined}
+                    className={`rounded-2xl px-3.5 py-2.5 ${isMe ? "cursor-pointer" : ""} ${
                       isMe
                         ? "bg-primary text-primary-foreground rounded-br-md"
                         : "bg-muted text-foreground rounded-bl-md"
@@ -275,6 +334,7 @@ export default function CoachInbox({ coachId, openPatientId }: CoachInboxProps) 
                     <div className={`flex items-center gap-1 mt-1 ${isMe ? "justify-end" : ""}`}>
                       <span className={`text-[10px] ${isMe ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
                         {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        {msg.edited_at ? " · edited" : ""}
                       </span>
                       {isMe && (
                         msg.read_at
@@ -282,6 +342,23 @@ export default function CoachInbox({ coachId, openPatientId }: CoachInboxProps) 
                           : <Check className="w-3 h-3 text-primary-foreground/40" />
                       )}
                     </div>
+                  </div>
+                  {isMe && actionsFor === msg.id && (
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => startEdit(msg)}
+                        className="flex items-center gap-1 text-[11px] font-semibold text-foreground bg-background border border-border rounded-full px-2.5 py-1 active:scale-95"
+                      >
+                        <Pencil className="w-3 h-3" /> Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(msg)}
+                        className="flex items-center gap-1 text-[11px] font-semibold text-destructive bg-background border border-border rounded-full px-2.5 py-1 active:scale-95"
+                      >
+                        <Trash2 className="w-3 h-3" /> Delete
+                      </button>
+                    </div>
+                  )}
                   </div>
                 </motion.div>
               </div>
@@ -295,6 +372,11 @@ export default function CoachInbox({ coachId, openPatientId }: CoachInboxProps) 
           style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 8px + var(--kb-h, 0px))" }}
         >
 
+          {editingId && (
+            <button onClick={cancelEdit} className="flex items-center gap-1 text-[11px] text-muted-foreground shrink-0">
+              <X className="w-3.5 h-3.5" /> Cancel edit
+            </button>
+          )}
           <input
             ref={inputRef}
             type="text"
