@@ -315,7 +315,7 @@ function GlobalRealtimeAlerts() {
     });
 
     // Also resync when the user marks notifications read/cleared elsewhere.
-    const onLocalChange = () => void syncBadge();
+    const onLocalChange = () => void syncBadge({ force: true });
     window.addEventListener("notifications:changed", onLocalChange);
 
     return () => {
