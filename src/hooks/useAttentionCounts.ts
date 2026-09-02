@@ -166,6 +166,10 @@ export function useAttentionCounts() {
     addChannel("thyrocare_recommendations", `user_id=eq.${user.id}`);
     addChannel("yoga_bookings", `user_id=eq.${user.id}`);
 
+    // Reading/clearing notifications in the panel must clear the bell badge
+    // instantly — realtime DELETE events don't carry a filterable payload.
+    window.addEventListener("notifications:changed", safeLoad);
+
     (async () => {
       const [{ data: coach }, { data: partner }] = await Promise.all([
         supabase.from("coaches" as any).select("id").eq("user_id", user.id).maybeSingle(),
@@ -184,6 +188,7 @@ export function useAttentionCounts() {
 
     return () => {
       cancelled = true;
+      window.removeEventListener("notifications:changed", safeLoad);
       channels.forEach((channel) => supabase.removeChannel(channel));
     };
   }, [loadCounts, user?.id]);
