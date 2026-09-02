@@ -21,6 +21,13 @@ export default function NotificationCenter({ unreadCount: controlledCount }: { u
   useEffect(() => {
     if (!user) return;
     if (controlledCount == null) fetchUnreadCount(user.id).then(setUnreadCount);
+    // Reading/clearing notifications anywhere must drop this badge instantly.
+    const onLocalChange = () => {
+      if (controlledCount == null) {
+        void fetchUnreadCount(user.id, { force: true }).then(setUnreadCount);
+      }
+    };
+    window.addEventListener("notifications:changed", onLocalChange);
     const unsub = subscribeToNotifications(user.id, (notification) => {
       if (controlledCount == null) {
         // Realtime insert → bump the cached count locally instead of running
