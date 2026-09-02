@@ -43,22 +43,33 @@ function waitForAndroidPermissionFlow(): Promise<void> {
     document.visibilityState !== "visible";
   if (!permissionFlowActive()) return Promise.resolve();
 
+  // Hard cap the wait: a cold launch must never sit for seconds before the
+  // fingerprint / face prompt appears.
+  const MAX_WAIT_MS = 1200;
+  const SETTLE_MS = 200;
+
   return new Promise((resolve) => {
     let settled = false;
     let timer: number | null = null;
-    const finishWhenStable = () => {
-      if (settled || permissionFlowActive()) return;
+    const finish = () => {
+      if (settled) return;
       settled = true;
       window.removeEventListener("bbdo:native-permissions-settled", scheduleCheck);
       document.removeEventListener("visibilitychange", scheduleCheck);
       if (timer != null) window.clearTimeout(timer);
-      // Let Android fully re-attach the resumed Activity before BiometricPrompt.
-      timer = window.setTimeout(resolve, 750);
+      window.clearTimeout(hardStop);
+      resolve();
+    };
+    const finishWhenStable = () => {
+      if (settled || permissionFlowActive()) return;
+      // Let Android re-attach the resumed Activity before BiometricPrompt.
+      timer = window.setTimeout(finish, SETTLE_MS);
     };
     const scheduleCheck = () => {
       if (timer != null) window.clearTimeout(timer);
-      timer = window.setTimeout(finishWhenStable, 100);
+      timer = window.setTimeout(finishWhenStable, 60);
     };
+    const hardStop = window.setTimeout(finish, MAX_WAIT_MS);
     window.addEventListener("bbdo:native-permissions-settled", scheduleCheck);
     document.addEventListener("visibilitychange", scheduleCheck);
     scheduleCheck();
@@ -129,6 +140,9 @@ export default function BiometricGate({ children }: { children: ReactNode }) {
 
   const runAuth = useCallback(async () => {
     if (authenticatingRef.current || processUnlocked) return;
+    // Warm the availability check in parallel with the permission-flow wait so
+    // the prompt fires the instant the activity is ready.
+    const diagnosticsPromise = getBiometricDiagnostics();
     await waitForAndroidPermissionFlow();
     if (!shouldGate || processUnlocked) return;
     if (isVideoSuppressActive()) {
@@ -141,7 +155,7 @@ export default function BiometricGate({ children }: { children: ReactNode }) {
     setBiometryChecked(false);
     // Single diagnostics call (it already reports availability + label) keeps
     // the cold-start path fast — no extra round trips before the prompt.
-    const nextDiagnostics = await getBiometricDiagnostics();
+    const nextDiagnostics = await diagnosticsPromise;
     setDiagnostics(nextDiagnostics);
     setLabel(nextDiagnostics.label || (await getBiometryLabel()));
     let available = nextDiagnostics.available;
