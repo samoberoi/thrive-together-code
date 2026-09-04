@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Phone, ArrowLeft, ChevronRight, ShieldCheck, User, ChevronDown, Search, Globe, Mail } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { COUNTRIES, type Country } from "@/lib/countries";
-import { fetchAuthRegions, INDIA_REGION, setStoredRegionCode, type AuthRegion } from "@/lib/regionPricing";
+import { fetchAuthRegions, getStoredRegionCode, INDIA_REGION, setStoredRegionCode, type AuthRegion } from "@/lib/regionPricing";
 
 import { saveUser } from "@/lib/userStore";
 import { supabase } from "@/integrations/supabase/client";
