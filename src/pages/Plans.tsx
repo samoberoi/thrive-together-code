@@ -22,6 +22,14 @@ import {
   type Subscription,
 } from "@/lib/subscriptionService";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  fetchRegionPriceContext,
+  formatMoney,
+  getStoredRegionCode,
+  subscribeRegionPricing,
+  INR_CONTEXT,
+  type RegionPriceContext,
+} from "@/lib/regionPricing";
 import { cn } from "@/lib/utils";
 
 const CYCLES: BillingCycle[] = ["yearly", "half_yearly", "quarterly", "monthly"];
