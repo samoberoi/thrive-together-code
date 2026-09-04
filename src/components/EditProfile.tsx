@@ -699,7 +699,8 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
       name,
       age: effectiveAge ?? null,
       gender: gender || null,
-      // phone is the unique login identifier — never overwrite from this screen
+      // phone is the login identifier once set — only writable when it was never captured
+      ...(phoneLocked ? {} : { phone: phone.trim() || null }),
       country_code: countryCode || null,
       country: country || null,
       email: trimmedEmail || null,
