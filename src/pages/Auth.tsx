@@ -182,7 +182,6 @@ export default function Auth() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, isEmailMode, normalizedLoginEmail]);
-  }, []);
 
   const identifier = `${country.dial.replace(/\D/g, "")}${phone}`;
 
