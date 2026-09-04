@@ -23,6 +23,7 @@ import AllergyAndSubPrefs from "@/components/diet/AllergyAndSubPrefs";
 import { loadDietProfile, saveDietProfile } from "@/lib/dietProfileService";
 import SymptomsChecklist from "@/components/profile/SymptomsChecklist";
 import { loadUserSymptoms, saveUserSymptoms } from "@/lib/symptomsService";
+import { COUNTRIES as PHONE_COUNTRIES } from "@/lib/countries";
 
 
 const Field = ({ label, icon: Icon, value, onChange, placeholder, type = "text", readOnly, hint }: {
@@ -66,6 +67,17 @@ const formatLabel = (val: string | undefined | null): string => {
   if (!val) return "—";
   return val.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 };
+
+/** Pick the default phone country from the region the user chose at signup. */
+function countryFromRegionCode(regionCode?: string | null) {
+  if (!regionCode) return null;
+  return PHONE_COUNTRIES.find((c) => c.code === regionCode) ?? null;
+}
+
+function countryFromDialCode(dial?: string | null) {
+  if (!dial) return null;
+  return PHONE_COUNTRIES.find((c) => c.dial === dial) ?? null;
+}
 
 const ToggleChip = ({ label, options, value, onChange }: {
   label: string; options: { id: string; label: string }[]; value: string;
@@ -292,6 +304,7 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
   // International (email-OTP) users never provided a phone — let them add one.
   const [phoneLocked, setPhoneLocked] = useState(true);
   const [countryCode, setCountryCode] = useState("+91");
+  const [phoneCountry, setPhoneCountry] = useState<{ code: string; name: string; dial: string; flag: string } | null>(null);
   const [email, setEmail] = useState(stored.profile.email ?? "");
   const [height, setHeight] = useState(stored.bodyMetrics.height?.toString() ?? "");
   const [weight, setWeight] = useState(stored.bodyMetrics.weight?.toString() ?? "");
@@ -332,8 +345,25 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
     fetchProfile(effectiveUserId).then((profile) => {
       if (!profile) return;
       if (profile.phone) setPhone(profile.phone);
-      setPhoneLocked(Boolean(profile.phone && String(profile.phone).trim()));
-      if ((profile as any).country_code) setCountryCode((profile as any).country_code);
+      const hasPhone = Boolean(profile.phone && String(profile.phone).trim());
+      setPhoneLocked(hasPhone);
+
+      // Default the phone country to the region the user picked at signup.
+      // If they already have a stored country_code with a *different* dial code,
+      // honour the stored choice; otherwise let the signup region disambiguate
+      // shared dial codes like +1 (Canada vs US) so Canada stays 🇨🇦.
+      const storedCountry = countryFromDialCode(profile.country_code);
+      const regionCountry = countryFromRegionCode(profile.region_code);
+      const selected =
+        (storedCountry && regionCountry && storedCountry.dial !== regionCountry.dial)
+          ? storedCountry
+          : (regionCountry || storedCountry || PHONE_COUNTRIES[0]);
+      setCountryCode(selected.dial);
+      setPhoneCountry(selected);
+      if (!profile.country_code && regionCountry && !hasPhone) {
+        setCountry(regionCountry.name);
+      }
+
       if ((profile as any).email) setEmail((profile as any).email);
       if (profile.avatar_url) setAvatarUrl(profile.avatar_url);
       if (profile.address_line1) setAddressLine1(profile.address_line1);
@@ -1084,22 +1114,36 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
             </Label>
             <div className="flex gap-2 min-w-0">
               {phoneLocked ? (
-                <div className="bg-muted/40 border border-border/70 text-muted-foreground text-sm rounded-lg h-10 w-24 shrink-0 flex items-center justify-center">
-                  {countryCode || "+91"}
+                <div className="bg-muted/40 border border-border/70 text-muted-foreground text-sm rounded-lg h-10 w-28 shrink-0 flex items-center justify-center gap-1.5">
+                  <span className="text-base leading-none">{phoneCountry?.flag ?? "🇮🇳"}</span>
+                  <span>{countryCode || "+91"}</span>
                 </div>
               ) : (
-                <Input
-                  type="tel"
-                  inputMode="tel"
-                  value={countryCode}
-                  onChange={(e) => {
-                    const raw = e.target.value.replace(/[^\d+]/g, "").slice(0, 5);
-                    setCountryCode(raw.startsWith("+") ? raw : `+${raw.replace(/\+/g, "")}`);
+                <Select
+                  value={phoneCountry?.code ?? "IN"}
+                  onValueChange={(code) => {
+                    const selected = PHONE_COUNTRIES.find((c) => c.code === code) ?? PHONE_COUNTRIES[0];
+                    setCountryCode(selected.dial);
+                    setPhoneCountry(selected);
                   }}
-                  placeholder="+1"
-                  aria-label="Country code"
-                  className="w-24 shrink-0 text-center bg-background border border-border/70 text-foreground text-sm rounded-lg h-10 px-2 py-2 shadow-none"
-                />
+                >
+                  <SelectTrigger
+                    aria-label="Country code"
+                    className="w-28 shrink-0 bg-background border border-border/70 text-foreground text-sm rounded-lg h-10 px-2 shadow-none"
+                  >
+                    <span className="text-base leading-none mr-1">{phoneCountry?.flag ?? "🇮🇳"}</span>
+                    <span>{phoneCountry?.dial ?? countryCode}</span>
+                  </SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    {PHONE_COUNTRIES.map((c) => (
+                      <SelectItem key={c.code} value={c.code} className="text-xs">
+                        <span className="mr-2">{c.flag}</span>
+                        <span className="font-semibold">{c.dial}</span>
+                        <span className="text-muted-foreground ml-1">{c.name}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               )}
               <Input
                 type="tel"

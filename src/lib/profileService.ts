@@ -7,6 +7,7 @@ export interface ProfileRow {
   phone?: string;
   country?: string;
   country_code?: string;
+  region_code?: string;
   email?: string;
   name?: string;
   age?: number;
