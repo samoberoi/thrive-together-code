@@ -54,9 +54,24 @@ Deno.serve(async (req) => {
       ? body.coupon_code.trim()
       : null;
 
-    const regionCode = typeof body.region_code === "string" && body.region_code.trim()
+    const requestedRegionCode = typeof body.region_code === "string" && body.region_code.trim()
       ? body.region_code.trim().toUpperCase()
       : "IN";
+
+    // Use the account's signup region as the source of truth. This prevents a
+    // stale client bundle from downgrading an international checkout to INR.
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("region_code")
+      .eq("user_id", userId)
+      .maybeSingle();
+    const savedRegionCode = typeof (profile as any)?.region_code === "string"
+      ? String((profile as any).region_code).trim().toUpperCase()
+      : "";
+    const regionCode = savedRegionCode || requestedRegionCode;
+    if (savedRegionCode && requestedRegionCode !== savedRegionCode) {
+      return json({ error: "Your selected country does not match your account. Please sign out and select it again." }, 409);
+    }
 
     const { data: pkg, error: pkgErr } = await admin
       .from("packages")
@@ -89,9 +104,16 @@ Deno.serve(async (req) => {
           .eq("package_id", (pkg as any).id)
           .maybeSingle(),
       ]);
-      if (region && (region as any).enabled !== false && regionPrice && (regionPrice as any).enabled !== false) {
-        currency = String((region as any).currency || "INR").toUpperCase();
-        baseMonthly = Number((regionPrice as any).monthly_price);
+      if (!region || (region as any).enabled === false) {
+        return json({ error: "Pricing is not available for the selected country." }, 409);
+      }
+      if (!regionPrice || (regionPrice as any).enabled === false) {
+        return json({ error: "This package is not priced for the selected country." }, 409);
+      }
+      currency = String((region as any).currency || "").toUpperCase();
+      baseMonthly = Number((regionPrice as any).monthly_price);
+      if (!currency || currency === "INR" || !Number.isFinite(baseMonthly) || baseMonthly <= 0) {
+        return json({ error: "International pricing is invalid. No payment was created." }, 409);
       }
     }
 
@@ -143,7 +165,7 @@ Deno.serve(async (req) => {
         amount: amountPaise,
         currency,
         receipt,
-        notes: { user_id: userId, plan_key: planKey, cycle: billingCycle, mode, source: "bbdo" },
+        notes: { user_id: userId, plan_key: planKey, cycle: billingCycle, mode, region_code: regionCode, source: "bbdo" },
       }),
     });
     const order = await rzpRes.json();
@@ -164,6 +186,7 @@ Deno.serve(async (req) => {
         name: pkg.name,
         billing_cycle: billingCycle,
         duration_months: months,
+        region_code: regionCode,
         mode,
         credit,
         coupon_code: validatedCoupon,

@@ -252,6 +252,16 @@ export default function Payment() {
     if (data?.error) throw new Error(data.error);
     if (!data?.order_id) throw new Error("Could not create order.");
 
+    const requestedRegion = String(plan?.region_code ?? getStoredRegionCode()).toUpperCase();
+    const orderCurrency = String(data.currency ?? "").toUpperCase();
+    if (requestedRegion !== "IN" && (!orderCurrency || orderCurrency === "INR")) {
+      throw new Error("International pricing could not be confirmed. No payment was started. Please go back and select your country again.");
+    }
+    if (plan?.currency && orderCurrency !== plan.currency.toUpperCase()) {
+      throw new Error("The checkout currency does not match your selected country. No payment was started.");
+    }
+    const isINR = orderCurrency === "INR";
+
     const contact = (user.email ?? "").endsWith("@bbd.app")
       ? (user.email ?? "").split("@")[0]
       : undefined;
@@ -266,6 +276,9 @@ export default function Payment() {
       prefill: { email: user.email ?? undefined, contact },
       theme: { color: "#248CCB" },
       retry: { enabled: true, max_count: 1 },
+      method: isINR
+        ? { upi: true, card: true, netbanking: true, wallet: true }
+        : { upi: false, card: true, netbanking: false, wallet: false },
     };
 
     // A WebView checkout cannot reliably discover or launch installed UPI apps.
@@ -304,12 +317,8 @@ export default function Payment() {
       // UPI/netbanking/wallet are India (INR) only. International orders must
       // lead with cards so the international card form shows up cleanly;
       // forcing a UPI block on a USD order would render an empty section.
-      const isINR = String(data.currency || "INR").toUpperCase() === "INR";
       const rzp = new window.Razorpay({
         ...checkoutOptions,
-        // Explicitly surface UPI. Without this, Checkout inside an Android
-        // WebView can drop UPI from the default method list.
-        method: { upi: true, card: true, netbanking: true, wallet: true },
         ...(isINR
           ? {
               config: {
