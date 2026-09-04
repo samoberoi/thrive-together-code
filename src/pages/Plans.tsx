@@ -50,18 +50,34 @@ export default function Plans() {
   const [scheduledSub, setScheduledSub] = useState<Subscription | null>(null);
   const [expiredSub, setExpiredSub] = useState<Subscription | null>(null);
   const [priceCtx, setPriceCtx] = useState<RegionPriceContext>(INR_CONTEXT);
+  const selectedRegionCode = getStoredRegionCode();
+  const [regionalPricingReady, setRegionalPricingReady] = useState(selectedRegionCode === "IN");
+  const [regionalPricingError, setRegionalPricingError] = useState(false);
 
   // Regional pricing comes from the backend and stays live while the page is open.
   useEffect(() => {
-    const regionCode = getStoredRegionCode();
+    const regionCode = selectedRegionCode;
     let cancelled = false;
     const load = () => {
+      setRegionalPricingError(false);
       fetchRegionPriceContext(regionCode)
         .then((ctx) => {
-          if (!cancelled) setPriceCtx(ctx);
+          if (cancelled) return;
+          // International pricing must never silently fall back to INR. Keep
+          // checkout blocked until the selected region and prices are loaded.
+          if (regionCode !== "IN" && ctx.region?.code !== regionCode) {
+            setRegionalPricingReady(false);
+            setRegionalPricingError(true);
+            return;
+          }
+          setPriceCtx(ctx);
+          setRegionalPricingReady(true);
         })
         .catch(() => {
-          /* keep INR fallback */
+          if (!cancelled && regionCode !== "IN") {
+            setRegionalPricingReady(false);
+            setRegionalPricingError(true);
+          }
         });
     };
     load();
@@ -70,7 +86,7 @@ export default function Plans() {
       cancelled = true;
       unsubscribe();
     };
-  }, []);
+  }, [selectedRegionCode]);
 
   // Region price when configured, otherwise the India base price.
   const baseMonthlyFor = (pkg: PackageWithPricing) => priceCtx.prices[pkg.id] ?? pkg.base_monthly_price;
@@ -126,7 +142,7 @@ export default function Plans() {
 
   const handleStart = () => {
     const pkg = selectedPkg;
-    if (!pkg) return;
+    if (!pkg || !regionalPricingReady) return;
     const row = pkg.pricing.find((r) => r.billing_cycle === cycle && r.enabled);
     if (!row) return;
     const months = CYCLE_MONTHS[cycle];
@@ -142,7 +158,7 @@ export default function Plans() {
       total_price: total,
       base_monthly_price: baseMonthlyFor(pkg),
       currency: priceCtx.currency,
-      region_code: priceCtx.region?.code ?? "IN",
+      region_code: selectedRegionCode,
       discount_percent: row.discount_percent,
       assigns_coach: pkg.assigns_coach !== false,
       change_mode: direction ?? "new",
@@ -209,6 +225,15 @@ export default function Plans() {
                 Renew a plan below to restore full access to your dashboard, coach, and tracking.
               </p>
             </div>
+          </div>
+        )}
+
+        {regionalPricingError && (
+          <div className="mb-5 rounded-2xl p-4 border border-destructive/40 bg-destructive/10 flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 shrink-0 text-destructive mt-0.5" strokeWidth={2} />
+            <p className="text-foreground text-sm leading-snug">
+              We couldn't load pricing for your selected country. Please go back, reselect your country, and try again.
+            </p>
           </div>
         )}
 
@@ -354,7 +379,7 @@ export default function Plans() {
         <div className="ob-bottom">
           <motion.button
             onClick={handleStart}
-            disabled={!selectedId || (currentPlanKey != null && pkgs.find((p) => p.id === selectedId)?.plan_key === currentPlanKey)}
+            disabled={!selectedId || !regionalPricingReady || (currentPlanKey != null && pkgs.find((p) => p.id === selectedId)?.plan_key === currentPlanKey)}
             className="ob-cta gradient-blue glow-blue disabled:opacity-40"
             whileTap={{ scale: 0.98 }}
             initial={{ opacity: 0 }}
