@@ -352,10 +352,12 @@ export default function Auth() {
         const userId = signInData.user.id;
 
         // Auto-link coach and partner records by phone
-        void Promise.allSettled([
-          supabase.rpc("link_coach_to_user" as any, { _user_id: userId, _phone: phone }),
-          supabase.rpc("link_partner_to_user" as any, { _user_id: userId, _phone: phone }),
-        ]);
+        if (!isEmailMode) {
+          void Promise.allSettled([
+            supabase.rpc("link_coach_to_user" as any, { _user_id: userId, _phone: phone }),
+            supabase.rpc("link_partner_to_user" as any, { _user_id: userId, _phone: phone }),
+          ]);
+        }
 
         // Existing user — resolve role/profile/payment in parallel for fast OTP handoff.
         const [privilegedRoute, profile, activeSubscription] = await Promise.all([
@@ -364,9 +366,14 @@ export default function Auth() {
           fetchActiveSubscription(userId),
         ]);
         if (profile) {
-          saveUser({ profile: { phone, country: country.name, country_code: country.dial } as any });
+          saveUser({
+            profile: isEmailMode
+              ? ({ email: normalizedLoginEmail, country: region.name } as any)
+              : ({ phone, country: country.name, country_code: country.dial } as any),
+          });
           loadProfileToLocal(profile);
         }
+
         // This number is an explicitly configured superadmin. Its database
         // role is still enforced by AdminDashboard; this avoids customer-flow
         // fallback if a role request is briefly slow immediately after login.
