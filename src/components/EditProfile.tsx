@@ -1110,22 +1110,36 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
             </Label>
             <div className="flex gap-2 min-w-0">
               {phoneLocked ? (
-                <div className="bg-muted/40 border border-border/70 text-muted-foreground text-sm rounded-lg h-10 w-24 shrink-0 flex items-center justify-center">
-                  {countryCode || "+91"}
+                <div className="bg-muted/40 border border-border/70 text-muted-foreground text-sm rounded-lg h-10 w-28 shrink-0 flex items-center justify-center gap-1.5">
+                  <span className="text-base leading-none">{phoneCountry?.flag ?? "🇮🇳"}</span>
+                  <span>{countryCode || "+91"}</span>
                 </div>
               ) : (
-                <Input
-                  type="tel"
-                  inputMode="tel"
-                  value={countryCode}
-                  onChange={(e) => {
-                    const raw = e.target.value.replace(/[^\d+]/g, "").slice(0, 5);
-                    setCountryCode(raw.startsWith("+") ? raw : `+${raw.replace(/\+/g, "")}`);
+                <Select
+                  value={phoneCountry?.code ?? "IN"}
+                  onValueChange={(code) => {
+                    const selected = PHONE_COUNTRIES.find((c) => c.code === code) ?? PHONE_COUNTRIES[0];
+                    setCountryCode(selected.dial);
+                    setPhoneCountry(selected);
                   }}
-                  placeholder="+1"
-                  aria-label="Country code"
-                  className="w-24 shrink-0 text-center bg-background border border-border/70 text-foreground text-sm rounded-lg h-10 px-2 py-2 shadow-none"
-                />
+                >
+                  <SelectTrigger
+                    aria-label="Country code"
+                    className="w-28 shrink-0 bg-background border border-border/70 text-foreground text-sm rounded-lg h-10 px-2 shadow-none"
+                  >
+                    <span className="text-base leading-none mr-1">{phoneCountry?.flag ?? "🇮🇳"}</span>
+                    <span>{phoneCountry?.dial ?? countryCode}</span>
+                  </SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    {PHONE_COUNTRIES.map((c) => (
+                      <SelectItem key={c.code} value={c.code} className="text-xs">
+                        <span className="mr-2">{c.flag}</span>
+                        <span className="font-semibold">{c.dial}</span>
+                        <span className="text-muted-foreground ml-1">{c.name}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               )}
               <Input
                 type="tel"
