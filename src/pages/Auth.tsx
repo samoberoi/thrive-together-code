@@ -725,13 +725,12 @@ export default function Auth() {
                   ) : (
                   <div className="flex items-stretch gap-2.5">
                     <Popover open={countryOpen} onOpenChange={setCountryOpen}>
-                      <PopoverTrigger asChild>
+                    <PopoverTrigger asChild>
                         <button
                           type="button"
-                          className="flex items-center gap-2 px-4 rounded-full bg-white shadow-lift border-2 border-border shrink-0 hover:border-primary/50 transition-colors"
+                          className="flex items-center gap-1.5 px-3 rounded-full bg-white shadow-lift border-2 border-border shrink-0 hover:border-primary/50 transition-colors"
                           aria-label="Select country code"
                         >
-                          <span className="text-lg leading-none">{country.flag}</span>
                           <span className="text-foreground font-bold text-[15px] tabular">{country.dial}</span>
                           <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={2.5} />
                         </button>
