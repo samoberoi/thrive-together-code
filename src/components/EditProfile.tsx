@@ -23,6 +23,7 @@ import AllergyAndSubPrefs from "@/components/diet/AllergyAndSubPrefs";
 import { loadDietProfile, saveDietProfile } from "@/lib/dietProfileService";
 import SymptomsChecklist from "@/components/profile/SymptomsChecklist";
 import { loadUserSymptoms, saveUserSymptoms } from "@/lib/symptomsService";
+import { COUNTRIES as PHONE_COUNTRIES } from "@/lib/countries";
 
 
 const Field = ({ label, icon: Icon, value, onChange, placeholder, type = "text", readOnly, hint }: {
