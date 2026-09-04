@@ -73,6 +73,10 @@ export default function Auth() {
   const [country, setCountry] = useState<Country>(COUNTRIES[0]);
   const [countrySearch, setCountrySearch] = useState("");
   const [countryOpen, setCountryOpen] = useState(false);
+  const [region, setRegion] = useState<AuthRegion>(INDIA_REGION);
+  const [regions, setRegions] = useState<AuthRegion[]>([INDIA_REGION]);
+  const [regionOpen, setRegionOpen] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("");
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const rawNext = searchParams.get("next");
@@ -84,8 +88,13 @@ export default function Auth() {
     return c.name.toLowerCase().includes(q) || c.dial.includes(q) || c.code.toLowerCase().includes(q);
   });
 
-  const email = `${phone}@bbd.app`;
-  const password = `bbd_${phone}_secure`;
+  // India signs in with phone + SMS OTP; every other pricing region uses email OTP.
+  const isEmailMode = region.method === "email";
+  const normalizedLoginEmail = loginEmail.trim().toLowerCase();
+  const emailLooksValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedLoginEmail);
+  const email = isEmailMode ? normalizedLoginEmail : `${phone}@bbd.app`;
+  const password = isEmailMode ? `bbd_email_${normalizedLoginEmail}_secure` : `bbd_${phone}_secure`;
+
 
   const persistNativeSession = async (session?: { access_token?: string; refresh_token?: string } | null) => {
     try {
