@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Phone, ArrowLeft, ChevronRight, ShieldCheck, User, ChevronDown, Search } from "lucide-react";
+import { Phone, ArrowLeft, ChevronRight, ShieldCheck, User, ChevronDown, Search, Globe, Mail } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { COUNTRIES, type Country } from "@/lib/countries";
+import { fetchAuthRegions, INDIA_REGION, setStoredRegionCode, type AuthRegion } from "@/lib/regionPricing";
+
 import { saveUser } from "@/lib/userStore";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchProfile, loadProfileToLocal } from "@/lib/profileService";
