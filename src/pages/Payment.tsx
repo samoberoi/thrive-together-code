@@ -301,21 +301,30 @@ export default function Payment() {
     if (!ok) throw new Error("Failed to load Razorpay checkout.");
 
     await new Promise<void>((resolve, reject) => {
+      // UPI/netbanking/wallet are India (INR) only. International orders must
+      // lead with cards so the international card form shows up cleanly;
+      // forcing a UPI block on a USD order would render an empty section.
+      const isINR = String(data.currency || "INR").toUpperCase() === "INR";
       const rzp = new window.Razorpay({
         ...checkoutOptions,
         // Explicitly surface UPI. Without this, Checkout inside an Android
         // WebView can drop UPI from the default method list.
         method: { upi: true, card: true, netbanking: true, wallet: true },
-        config: {
-          display: {
-            blocks: {
-              upi: { name: "Pay via UPI", instruments: [{ method: "upi" }] },
-            },
-            sequence: ["block.upi"],
-            preferences: { show_default_blocks: true },
-          },
-        },
+        ...(isINR
+          ? {
+              config: {
+                display: {
+                  blocks: {
+                    upi: { name: "Pay via UPI", instruments: [{ method: "upi" }] },
+                  },
+                  sequence: ["block.upi"],
+                  preferences: { show_default_blocks: true },
+                },
+              },
+            }
+          : {}),
         theme: { color: "#248CCB" },
+
 
         handler: async (resp: any) => {
           try {
