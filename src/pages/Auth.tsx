@@ -817,7 +817,7 @@ export default function Auth() {
                   Enter the {otpLength}-digit code
                 </h1>
                 <p className="text-muted-foreground text-[14px] mt-2 leading-relaxed">
-                  Sent to <span className="text-foreground font-bold tabular">{country.dial} {phone}</span>{" "}
+                  Sent to <span className="text-foreground font-bold tabular">{isEmailMode ? normalizedLoginEmail : `${country.dial} ${phone}`}</span>{" "}
                   <button onClick={() => { setStep("phone"); setOtp(""); }} className="text-primary font-bold underline underline-offset-2 ml-1">Change</button>
                 </p>
 
