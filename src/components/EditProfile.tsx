@@ -68,6 +68,17 @@ const formatLabel = (val: string | undefined | null): string => {
   return val.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 };
 
+/** Pick the default phone country from the region the user chose at signup. */
+function countryFromRegionCode(regionCode?: string | null) {
+  if (!regionCode) return null;
+  return PHONE_COUNTRIES.find((c) => c.code === regionCode) ?? null;
+}
+
+function countryFromDialCode(dial?: string | null) {
+  if (!dial) return null;
+  return PHONE_COUNTRIES.find((c) => c.dial === dial) ?? null;
+}
+
 const ToggleChip = ({ label, options, value, onChange }: {
   label: string; options: { id: string; label: string }[]; value: string;
   onChange: (v: string) => void;
