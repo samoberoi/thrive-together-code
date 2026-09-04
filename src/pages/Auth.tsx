@@ -204,11 +204,13 @@ export default function Auth() {
 
   const selectRegion = (next: AuthRegion) => {
     setRegion(next);
-    setStoredRegionCode(next.code);
+    setStoredRegionCode(next.code, next);
     setRegionOpen(false);
     setOtp("");
     setOtpError("");
     setStep("phone");
+    // Keep the phone-field flag in lockstep with the region picker — India
+    // shows 🇮🇳 +91, and switching regions never leaves a stale flag behind.
     const match = COUNTRIES.find((c) => c.code === next.code);
     if (match) setCountry(match);
   };
@@ -229,7 +231,7 @@ export default function Auth() {
 
     try {
       if (isEmailMode) {
-        setStoredRegionCode(region.code);
+        setStoredRegionCode(region.code, region);
         saveUser({ profile: { email: normalizedLoginEmail, country: region.name } as any });
         await sendEmailCode();
         setStaffOtp(false);
@@ -239,7 +241,7 @@ export default function Auth() {
         setResendCooldown(30);
         return;
       }
-      setStoredRegionCode(INDIA_REGION.code);
+      setStoredRegionCode(INDIA_REGION.code, INDIA_REGION);
       saveUser({ profile: { phone, country: country.name, country_code: country.dial } as any });
       if (isFixedOtpPhone) {
         setStaffOtp(true);
