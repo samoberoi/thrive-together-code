@@ -152,7 +152,20 @@ export default function Auth() {
     return () => clearTimeout(timer);
   }, [resendCooldown]);
 
-
+  // Regions come from the same backend configuration that drives package pricing.
+  useEffect(() => {
+    let cancelled = false;
+    fetchAuthRegions()
+      .then((list) => {
+        if (!cancelled && list.length) setRegions(list);
+      })
+      .catch(() => {
+        /* keep India-only fallback */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const identifier = `${country.dial.replace(/\D/g, "")}${phone}`;
 
@@ -163,17 +176,50 @@ export default function Auth() {
     "9000000001": { code: "1111", destination: null },
   } as const;
   const fixedOtpPhone = phone.replace(/\D/g, "").slice(-10) as keyof typeof FIXED_OTP_ACCOUNTS;
-  const fixedOtpAccount = FIXED_OTP_ACCOUNTS[fixedOtpPhone];
+  const fixedOtpAccount = isEmailMode ? undefined : FIXED_OTP_ACCOUNTS[fixedOtpPhone];
   const isFixedOtpPhone = Boolean(fixedOtpAccount);
   const otpLength = fixedOtpAccount?.code.length ?? 4;
+  const canSubmitIdentity = isEmailMode ? emailLooksValid : phone.length === 10;
+
+  const selectRegion = (next: AuthRegion) => {
+    setRegion(next);
+    setStoredRegionCode(next.code);
+    setRegionOpen(false);
+    setOtp("");
+    setOtpError("");
+    setStep("phone");
+    const match = COUNTRIES.find((c) => c.code === next.code);
+    if (match) setCountry(match);
+  };
+
+  const sendEmailCode = async () => {
+    const { data, error } = await supabase.functions.invoke("email-otp", {
+      body: { action: "send", email: normalizedLoginEmail },
+    });
+    if (error || !data?.ok) {
+      throw new Error(data?.error || "Could not send the code. Please try again.");
+    }
+  };
 
   const sendOtp = async () => {
-    if (phone.length < 10 || loading) return;
+    if (!canSubmitIdentity || loading) return;
     setLoading(true);
     setOtpError("");
-    saveUser({ profile: { phone, country: country.name, country_code: country.dial } as any });
 
     try {
+      if (isEmailMode) {
+        setStoredRegionCode(region.code);
+        saveUser({ profile: { email: normalizedLoginEmail, country: region.name } as any });
+        await sendEmailCode();
+        setStaffOtp(false);
+        setMsg91ReqId(null);
+        setStep("otp");
+        setOtp("");
+        setResendCooldown(30);
+        return;
+      }
+      setStoredRegionCode(INDIA_REGION.code);
+      saveUser({ profile: { phone, country: country.name, country_code: country.dial } as any });
       if (isFixedOtpPhone) {
         setStaffOtp(true);
         setMsg91ReqId(null);
@@ -208,8 +254,12 @@ export default function Auth() {
     }
     setLoading(true);
     try {
-      const reqId = await msg91SendOtp(identifier);
-      setMsg91ReqId(reqId);
+      if (isEmailMode) {
+        await sendEmailCode();
+      } else {
+        const reqId = await msg91SendOtp(identifier);
+        setMsg91ReqId(reqId);
+      }
       setOtp("");
       setResendCooldown(30);
       toast.success("New verification code sent.");
@@ -233,6 +283,26 @@ export default function Auth() {
         setLoading(false);
         return;
       }
+    } else if (isEmailMode) {
+      try {
+        const { data, error } = await supabase.functions.invoke("email-otp", {
+          body: {
+            action: "verify",
+            email: normalizedLoginEmail,
+            code: submitted,
+            region_code: region.code,
+            country: region.name,
+          },
+        });
+        if (error || !data?.ok) {
+          throw new Error(data?.error || "Wrong code. Please try again.");
+        }
+      } catch (error) {
+        setOtpError((error as Error).message || "Wrong code. Please try again.");
+        setOtp("");
+        setLoading(false);
+        return;
+      }
     } else {
     try {
       const accessToken = await msg91VerifyOtp(submitted, msg91ReqId);
@@ -249,6 +319,7 @@ export default function Auth() {
       return;
     }
     }
+
 
 
 
