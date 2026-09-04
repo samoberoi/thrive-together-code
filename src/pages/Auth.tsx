@@ -402,13 +402,15 @@ export default function Auth() {
 
       // User doesn't exist yet, or an earlier sign-up exists without an active session.
       if (signInError) {
-        const { data: ensureData, error: ensureError } = await supabase.functions.invoke("ensure-phone-user", {
-          body: { phone, country: country.name, country_code: country.dial },
-        });
-        if (ensureError || !ensureData?.ok) {
-          toast.error("We couldn't start your secure session. Please try again.");
-          setLoading(false);
-          return;
+        if (!isEmailMode) {
+          const { data: ensureData, error: ensureError } = await supabase.functions.invoke("ensure-phone-user", {
+            body: { phone, country: country.name, country_code: country.dial },
+          });
+          if (ensureError || !ensureData?.ok) {
+            toast.error("We couldn't start your secure session. Please try again.");
+            setLoading(false);
+            return;
+          }
         }
 
         const { data: newSessionData, error: newSessionError } = await supabase.auth.signInWithPassword({
@@ -427,13 +429,15 @@ export default function Auth() {
 
         if (signedInNewUser) {
           // Auto-link coach or partner record by phone if it exists
-          const linkResults = await Promise.race([
-            Promise.allSettled([
-              supabase.rpc("link_coach_to_user" as any, { _user_id: signedInNewUser.id, _phone: phone }),
-              supabase.rpc("link_partner_to_user" as any, { _user_id: signedInNewUser.id, _phone: phone }),
-            ]),
-            new Promise<null>((resolve) => setTimeout(() => resolve(null), 1200)),
-          ]);
+          const linkResults = isEmailMode
+            ? null
+            : await Promise.race([
+                Promise.allSettled([
+                  supabase.rpc("link_coach_to_user" as any, { _user_id: signedInNewUser.id, _phone: phone }),
+                  supabase.rpc("link_partner_to_user" as any, { _user_id: signedInNewUser.id, _phone: phone }),
+                ]),
+                new Promise<null>((resolve) => setTimeout(() => resolve(null), 1200)),
+              ]);
           if (linkResults) {
             const [coachResult, partnerResult] = linkResults;
             if (coachResult.status === "fulfilled" && (coachResult.value as any)?.data) {
@@ -448,12 +452,23 @@ export default function Auth() {
             }
           }
 
-          await supabase.from("profiles" as any).upsert({
-            user_id: signedInNewUser.id,
-            phone,
-            country: country.name,
-            country_code: country.dial,
-          } as any, { onConflict: "user_id" });
+          await supabase.from("profiles" as any).upsert(
+            isEmailMode
+              ? ({
+                  user_id: signedInNewUser.id,
+                  email: normalizedLoginEmail,
+                  country: region.name,
+                  region_code: region.code,
+                } as any)
+              : ({
+                  user_id: signedInNewUser.id,
+                  phone,
+                  country: country.name,
+                  country_code: country.dial,
+                } as any),
+            { onConflict: "user_id" },
+          );
+
 
           // Referral codes are now applied at payment time.
 
