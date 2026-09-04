@@ -49,6 +49,31 @@ export default function Plans() {
   const [activeSub, setActiveSub] = useState<Subscription | null>(null);
   const [scheduledSub, setScheduledSub] = useState<Subscription | null>(null);
   const [expiredSub, setExpiredSub] = useState<Subscription | null>(null);
+  const [priceCtx, setPriceCtx] = useState<RegionPriceContext>(INR_CONTEXT);
+
+  // Regional pricing comes from the backend and stays live while the page is open.
+  useEffect(() => {
+    const regionCode = getStoredRegionCode();
+    let cancelled = false;
+    const load = () => {
+      fetchRegionPriceContext(regionCode)
+        .then((ctx) => {
+          if (!cancelled) setPriceCtx(ctx);
+        })
+        .catch(() => {
+          /* keep INR fallback */
+        });
+    };
+    load();
+    const unsubscribe = subscribeRegionPricing(regionCode, load);
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, []);
+
+  // Region price when configured, otherwise the India base price.
+  const baseMonthlyFor = (pkg: PackageWithPricing) => priceCtx.prices[pkg.id] ?? pkg.base_monthly_price;
 
   useEffect(() => {
     setPhase("power");
