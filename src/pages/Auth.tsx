@@ -660,38 +660,36 @@ export default function Auth() {
 
               {/* Bottom half content */}
               <div className="flex flex-col flex-1 px-6 pt-8 pb-[calc(env(safe-area-inset-bottom)+var(--bbdo-native-bottom-guard,0px)+1rem)]">
-                {regions.length > 1 && (
-                  <Popover open={regionOpen} onOpenChange={setRegionOpen}>
-                    <PopoverTrigger asChild>
-                      <button
-                        type="button"
-                        className="self-start mb-4 flex items-center gap-2 pl-3 pr-2.5 py-1.5 rounded-full bg-white shadow-lift border-2 border-border hover:border-primary/50 transition-colors"
-                        aria-label="Select your country or region"
-                      >
-                        <Globe className="w-3.5 h-3.5 text-primary" strokeWidth={2.4} />
-                        <span className="text-lg leading-none">{region.flag}</span>
-                        <span className="text-foreground font-bold text-[13px]">{region.name}</span>
-                        <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={2.5} />
-                      </button>
-                    </PopoverTrigger>
-                    <PopoverContent align="start" className="p-0 w-[260px] rounded-2xl overflow-hidden">
-                      <div className="max-h-64 overflow-y-auto py-1">
-                        {regions.map((r) => (
-                          <button
-                            key={r.code}
-                            type="button"
-                            onClick={() => selectRegion(r)}
-                            className={`w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-muted/60 transition-colors ${region.code === r.code ? "bg-muted/40" : ""}`}
-                          >
-                            <span className="text-lg leading-none">{r.flag}</span>
-                            <span className="text-foreground text-[14px] font-semibold flex-1 truncate">{r.name}</span>
-                            <span className="text-muted-foreground text-[12px] font-bold">{r.currency}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                )}
+                <Popover open={regionOpen} onOpenChange={setRegionOpen}>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      className="self-start mb-4 flex items-center gap-2 pl-3 pr-2.5 py-1.5 rounded-full bg-white shadow-lift border-2 border-border hover:border-primary/50 transition-colors"
+                      aria-label="Select your country or region"
+                    >
+                      <Globe className="w-3.5 h-3.5 text-primary" strokeWidth={2.4} />
+                      <span className="text-lg leading-none">{region.flag}</span>
+                      <span className="text-foreground font-bold text-[13px]">{region.name}</span>
+                      <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={2.5} />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="p-0 w-[260px] rounded-2xl overflow-hidden">
+                    <div className="max-h-64 overflow-y-auto py-1">
+                      {regions.map((r) => (
+                        <button
+                          key={r.code}
+                          type="button"
+                          onClick={() => selectRegion(r)}
+                          className={`w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-muted/60 transition-colors ${region.code === r.code ? "bg-muted/40" : ""}`}
+                        >
+                          <span className="text-lg leading-none">{r.flag}</span>
+                          <span className="text-foreground text-[14px] font-semibold flex-1 truncate">{r.name}</span>
+                          <span className="text-muted-foreground text-[12px] font-bold">{r.currency}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
 
                 <h1 className="text-foreground text-[32px] leading-[1.05] font-black tracking-[-0.03em]">
                   {isEmailMode ? (<>What's your <br /> email address?</>) : (<>What's your <br /> phone number?</>)}
@@ -727,13 +725,12 @@ export default function Auth() {
                   ) : (
                   <div className="flex items-stretch gap-2.5">
                     <Popover open={countryOpen} onOpenChange={setCountryOpen}>
-                      <PopoverTrigger asChild>
+                    <PopoverTrigger asChild>
                         <button
                           type="button"
-                          className="flex items-center gap-2 px-4 rounded-full bg-white shadow-lift border-2 border-border shrink-0 hover:border-primary/50 transition-colors"
+                          className="flex items-center gap-1.5 px-3 rounded-full bg-white shadow-lift border-2 border-border shrink-0 hover:border-primary/50 transition-colors"
                           aria-label="Select country code"
                         >
-                          <span className="text-lg leading-none">{country.flag}</span>
                           <span className="text-foreground font-bold text-[15px] tabular">{country.dial}</span>
                           <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={2.5} />
                         </button>
