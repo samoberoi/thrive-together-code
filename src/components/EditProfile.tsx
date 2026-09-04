@@ -289,6 +289,8 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
   const [age, setAge] = useState(stored.profile.age?.toString() ?? "");
   const [gender, setGender] = useState((stored.profile.gender ?? "").toLowerCase());
   const [phone, setPhone] = useState("");
+  // International (email-OTP) users never provided a phone — let them add one.
+  const [phoneLocked, setPhoneLocked] = useState(true);
   const [countryCode, setCountryCode] = useState("+91");
   const [email, setEmail] = useState(stored.profile.email ?? "");
   const [height, setHeight] = useState(stored.bodyMetrics.height?.toString() ?? "");
@@ -330,6 +332,7 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
     fetchProfile(effectiveUserId).then((profile) => {
       if (!profile) return;
       if (profile.phone) setPhone(profile.phone);
+      setPhoneLocked(Boolean(profile.phone && String(profile.phone).trim()));
       if ((profile as any).country_code) setCountryCode((profile as any).country_code);
       if ((profile as any).email) setEmail((profile as any).email);
       if (profile.avatar_url) setAvatarUrl(profile.avatar_url);
@@ -696,7 +699,8 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
       name,
       age: effectiveAge ?? null,
       gender: gender || null,
-      // phone is the unique login identifier — never overwrite from this screen
+      // phone is the login identifier once set — only writable when it was never captured
+      ...(phoneLocked ? {} : { phone: phone.trim() || null }),
       country_code: countryCode || null,
       country: country || null,
       email: trimmedEmail || null,
@@ -1079,23 +1083,45 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
               Phone
             </Label>
             <div className="flex gap-2 min-w-0">
-              <div className="bg-muted/40 border border-border/70 text-muted-foreground text-sm rounded-lg h-10 w-24 shrink-0 flex items-center justify-center">
-                {countryCode || "+91"}
-              </div>
+              {phoneLocked ? (
+                <div className="bg-muted/40 border border-border/70 text-muted-foreground text-sm rounded-lg h-10 w-24 shrink-0 flex items-center justify-center">
+                  {countryCode || "+91"}
+                </div>
+              ) : (
+                <Input
+                  type="tel"
+                  inputMode="tel"
+                  value={countryCode}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/[^\d+]/g, "").slice(0, 5);
+                    setCountryCode(raw.startsWith("+") ? raw : `+${raw.replace(/\+/g, "")}`);
+                  }}
+                  placeholder="+1"
+                  aria-label="Country code"
+                  className="w-24 shrink-0 text-center bg-background border border-border/70 text-foreground text-sm rounded-lg h-10 px-2 py-2 shadow-none"
+                />
+              )}
               <Input
                 type="tel"
                 inputMode="tel"
                 value={phone}
-                readOnly
-                disabled
-                aria-readonly="true"
-                title="Phone number is your login ID and can't be changed"
+                onChange={phoneLocked ? undefined : (e) => setPhone(e.target.value.replace(/[^\d]/g, "").slice(0, 15))}
+                readOnly={phoneLocked}
+                disabled={phoneLocked}
+                aria-readonly={phoneLocked}
+                title={phoneLocked ? "Phone number is your login ID and can't be changed" : undefined}
                 placeholder="Phone number"
-                className="flex-1 min-w-0 bg-muted/40 border border-border/70 text-muted-foreground text-sm rounded-lg h-10 px-3 py-2 shadow-none cursor-not-allowed"
+                className={
+                  phoneLocked
+                    ? "flex-1 min-w-0 bg-muted/40 border border-border/70 text-muted-foreground text-sm rounded-lg h-10 px-3 py-2 shadow-none cursor-not-allowed"
+                    : "flex-1 min-w-0 bg-background border border-border/70 text-foreground text-sm rounded-lg h-10 px-3 py-2 shadow-none"
+                }
               />
             </div>
             <p className="text-[10px] text-muted-foreground/80 leading-tight">
-              Phone number is your login ID and can't be changed.
+              {phoneLocked
+                ? "Phone number is your login ID and can't be changed."
+                : "Add your phone number so your coach can reach you. Once saved, it can't be changed."}
             </p>
           </div>
           <Field label="Email" icon={Mail} value={email} onChange={setEmail} placeholder="you@example.com" type="email" />
