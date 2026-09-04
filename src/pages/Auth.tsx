@@ -167,6 +167,23 @@ export default function Auth() {
     };
   }, []);
 
+  // Restore the previously chosen region once the list arrives.
+  useEffect(() => {
+    const stored = getStoredRegionCode();
+    const match = regions.find((r) => r.code === stored);
+    if (match && match.code !== region.code) setRegion(match);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [regions]);
+
+  // Email-OTP users already gave us their address — carry it into the profile step.
+  useEffect(() => {
+    if (step === "name" && isEmailMode && !emailInput && normalizedLoginEmail) {
+      setEmailInput(normalizedLoginEmail);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, isEmailMode, normalizedLoginEmail]);
+  }, []);
+
   const identifier = `${country.dial.replace(/\D/g, "")}${phone}`;
 
   // Fixed-code logins used where SMS delivery is unavailable (super admin and
