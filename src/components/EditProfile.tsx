@@ -349,11 +349,15 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
       setPhoneLocked(hasPhone);
 
       // Default the phone country to the region the user picked at signup.
-      // If they already have a stored country_code, honour that; otherwise
-      // fall back to the signup region (e.g. Canada -> +1 🇨🇦).
+      // If they already have a stored country_code with a *different* dial code,
+      // honour the stored choice; otherwise let the signup region disambiguate
+      // shared dial codes like +1 (Canada vs US) so Canada stays 🇨🇦.
       const storedCountry = countryFromDialCode(profile.country_code);
       const regionCountry = countryFromRegionCode(profile.region_code);
-      const selected = storedCountry || regionCountry || PHONE_COUNTRIES[0];
+      const selected =
+        (storedCountry && regionCountry && storedCountry.dial !== regionCountry.dial)
+          ? storedCountry
+          : (regionCountry || storedCountry || PHONE_COUNTRIES[0]);
       setCountryCode(selected.dial);
       setPhoneCountry(selected);
       if (!profile.country_code && regionCountry && !hasPhone) {
