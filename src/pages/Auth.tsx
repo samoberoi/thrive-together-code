@@ -631,14 +631,71 @@ export default function Auth() {
 
               {/* Bottom half content */}
               <div className="flex flex-col flex-1 px-6 pt-8 pb-[calc(env(safe-area-inset-bottom)+var(--bbdo-native-bottom-guard,0px)+1rem)]">
+                {regions.length > 1 && (
+                  <Popover open={regionOpen} onOpenChange={setRegionOpen}>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        className="self-start mb-4 flex items-center gap-2 pl-3 pr-2.5 py-1.5 rounded-full bg-white shadow-lift border-2 border-border hover:border-primary/50 transition-colors"
+                        aria-label="Select your country or region"
+                      >
+                        <Globe className="w-3.5 h-3.5 text-primary" strokeWidth={2.4} />
+                        <span className="text-lg leading-none">{region.flag}</span>
+                        <span className="text-foreground font-bold text-[13px]">{region.name}</span>
+                        <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={2.5} />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent align="start" className="p-0 w-[260px] rounded-2xl overflow-hidden">
+                      <div className="max-h-64 overflow-y-auto py-1">
+                        {regions.map((r) => (
+                          <button
+                            key={r.code}
+                            type="button"
+                            onClick={() => selectRegion(r)}
+                            className={`w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-muted/60 transition-colors ${region.code === r.code ? "bg-muted/40" : ""}`}
+                          >
+                            <span className="text-lg leading-none">{r.flag}</span>
+                            <span className="text-foreground text-[14px] font-semibold flex-1 truncate">{r.name}</span>
+                            <span className="text-muted-foreground text-[12px] font-bold">{r.currency}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                )}
+
                 <h1 className="text-foreground text-[32px] leading-[1.05] font-black tracking-[-0.03em]">
-                  What's your <br /> phone number?
+                  {isEmailMode ? (<>What's your <br /> email address?</>) : (<>What's your <br /> phone number?</>)}
                 </h1>
                 <p className="text-muted-foreground text-[14px] mt-3 leading-relaxed">
-                  We'll text you a 4-digit code to verify it's you. No spam, ever.
+                  {isEmailMode
+                    ? "We'll email you a 4-digit code to verify it's you. No spam, ever."
+                    : "We'll text you a 4-digit code to verify it's you. No spam, ever."}
                 </p>
 
                 <div className="mt-6">
+                  {isEmailMode ? (
+                    <div className={`relative rounded-full bg-white shadow-lift border-2 px-5 flex items-center gap-3 transition-all ${emailLooksValid ? "border-primary ring-4 ring-primary/20" : "border-border"}`}>
+                      <Mail className="w-4 h-4 text-muted-foreground shrink-0" strokeWidth={2.2} />
+                      <input
+                        type="email"
+                        inputMode="email"
+                        autoComplete="email"
+                        autoCapitalize="none"
+                        spellCheck={false}
+                        placeholder="you@example.com"
+                        value={loginEmail}
+                        onChange={(e) => setLoginEmail(e.target.value)}
+                        className="w-full bg-transparent text-foreground font-bold text-[16px] outline-none placeholder:text-muted-foreground/60 placeholder:font-medium py-4"
+                      />
+                      {emailLooksValid && (
+                        <motion.div initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }}
+                          className="w-6 h-6 rounded-full bg-primary flex items-center justify-center shrink-0">
+                          <span className="text-primary-foreground text-[11px] font-black">✓</span>
+                        </motion.div>
+                      )}
+                    </div>
+                  ) : (
                   <div className="flex items-stretch gap-2.5">
                     <Popover open={countryOpen} onOpenChange={setCountryOpen}>
                       <PopoverTrigger asChild>
@@ -699,7 +756,9 @@ export default function Auth() {
                       )}
                     </div>
                   </div>
+                  )}
                 </div>
+
 
                 <label className="text-muted-foreground text-[12px] mt-5 flex items-start gap-2.5 cursor-pointer select-none leading-relaxed">
                   <input
