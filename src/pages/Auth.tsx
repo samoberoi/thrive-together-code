@@ -73,8 +73,13 @@ export default function Auth() {
   const [country, setCountry] = useState<Country>(COUNTRIES[0]);
   const [countrySearch, setCountrySearch] = useState("");
   const [countryOpen, setCountryOpen] = useState(false);
-  const [region, setRegion] = useState<AuthRegion>(INDIA_REGION);
-  const [regions, setRegions] = useState<AuthRegion[]>([INDIA_REGION]);
+  // Seed from the cached last choice so the correct mode (phone vs email) and
+  // flag render on the very first frame — no flash of India before the fetch.
+  const [region, setRegion] = useState<AuthRegion>(() => getStoredRegion());
+  const [regions, setRegions] = useState<AuthRegion[]>(() => {
+    const stored = getStoredRegion();
+    return stored.code === INDIA_REGION.code ? [INDIA_REGION] : [INDIA_REGION, stored];
+  });
   const [regionOpen, setRegionOpen] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const navigate = useNavigate();
