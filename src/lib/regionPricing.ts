@@ -30,6 +30,7 @@ const REGION_FLAGS: Record<string, string> = {
 };
 
 const REGION_KEY = "bb_region_code";
+const REGION_OBJ_KEY = "bb_region_obj";
 
 export function getStoredRegionCode(): string {
   try {
@@ -39,9 +40,32 @@ export function getStoredRegionCode(): string {
   }
 }
 
-export function setStoredRegionCode(code: string) {
+/**
+ * The full last-selected region, available synchronously on the very first
+ * render so the auth screen never flashes India/phone before switching to the
+ * user's actual region (email OTP) once the backend list arrives.
+ */
+export function getStoredRegion(): AuthRegion {
+  try {
+    const raw = localStorage.getItem(REGION_OBJ_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as AuthRegion;
+      if (parsed && parsed.code === getStoredRegionCode() && parsed.method) return parsed;
+    }
+  } catch {
+    /* fall through */
+  }
+  return INDIA_REGION;
+}
+
+export function setStoredRegionCode(code: string, region?: AuthRegion) {
   try {
     localStorage.setItem(REGION_KEY, code);
+    if (region && region.code === code) {
+      localStorage.setItem(REGION_OBJ_KEY, JSON.stringify(region));
+    } else {
+      localStorage.removeItem(REGION_OBJ_KEY);
+    }
   } catch {
     /* storage unavailable */
   }

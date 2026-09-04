@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Phone, ArrowLeft, ChevronRight, ShieldCheck, User, ChevronDown, Search, Globe, Mail } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { COUNTRIES, type Country } from "@/lib/countries";
-import { fetchAuthRegions, getStoredRegionCode, INDIA_REGION, setStoredRegionCode, type AuthRegion } from "@/lib/regionPricing";
+import { fetchAuthRegions, getStoredRegion, getStoredRegionCode, INDIA_REGION, setStoredRegionCode, type AuthRegion } from "@/lib/regionPricing";
 
 import { saveUser } from "@/lib/userStore";
 import { supabase } from "@/integrations/supabase/client";
@@ -73,8 +73,13 @@ export default function Auth() {
   const [country, setCountry] = useState<Country>(COUNTRIES[0]);
   const [countrySearch, setCountrySearch] = useState("");
   const [countryOpen, setCountryOpen] = useState(false);
-  const [region, setRegion] = useState<AuthRegion>(INDIA_REGION);
-  const [regions, setRegions] = useState<AuthRegion[]>([INDIA_REGION]);
+  // Seed from the cached last choice so the correct mode (phone vs email) and
+  // flag render on the very first frame — no flash of India before the fetch.
+  const [region, setRegion] = useState<AuthRegion>(() => getStoredRegion());
+  const [regions, setRegions] = useState<AuthRegion[]>(() => {
+    const stored = getStoredRegion();
+    return stored.code === INDIA_REGION.code ? [INDIA_REGION] : [INDIA_REGION, stored];
+  });
   const [regionOpen, setRegionOpen] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const navigate = useNavigate();
@@ -167,11 +172,17 @@ export default function Auth() {
     };
   }, []);
 
-  // Restore the previously chosen region once the list arrives.
+  // Restore the previously chosen region once the list arrives, and keep the
+  // phone-field flag aligned with whatever region is active.
   useEffect(() => {
     const stored = getStoredRegionCode();
     const match = regions.find((r) => r.code === stored);
     if (match && match.code !== region.code) setRegion(match);
+    const active = match ?? region;
+    if (active.method === "phone") {
+      const c = COUNTRIES.find((x) => x.code === active.code);
+      if (c && c.code !== country.code) setCountry(c);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [regions]);
 
@@ -199,11 +210,13 @@ export default function Auth() {
 
   const selectRegion = (next: AuthRegion) => {
     setRegion(next);
-    setStoredRegionCode(next.code);
+    setStoredRegionCode(next.code, next);
     setRegionOpen(false);
     setOtp("");
     setOtpError("");
     setStep("phone");
+    // Keep the phone-field flag in lockstep with the region picker — India
+    // shows 🇮🇳 +91, and switching regions never leaves a stale flag behind.
     const match = COUNTRIES.find((c) => c.code === next.code);
     if (match) setCountry(match);
   };
@@ -224,7 +237,7 @@ export default function Auth() {
 
     try {
       if (isEmailMode) {
-        setStoredRegionCode(region.code);
+        setStoredRegionCode(region.code, region);
         saveUser({ profile: { email: normalizedLoginEmail, country: region.name } as any });
         await sendEmailCode();
         setStaffOtp(false);
@@ -234,7 +247,7 @@ export default function Auth() {
         setResendCooldown(30);
         return;
       }
-      setStoredRegionCode(INDIA_REGION.code);
+      setStoredRegionCode(INDIA_REGION.code, INDIA_REGION);
       saveUser({ profile: { phone, country: country.name, country_code: country.dial } as any });
       if (isFixedOtpPhone) {
         setStaffOtp(true);
