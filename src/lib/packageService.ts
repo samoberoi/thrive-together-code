@@ -54,6 +54,10 @@ export interface SelectedPlan {
   base_monthly_price: number;
   discount_percent: number;
   assigns_coach: boolean;
+  /** Currency the displayed prices are in (INR for India). */
+  currency?: string;
+  /** Pricing region the amounts came from. */
+  region_code?: string;
   /** new = first purchase, upgrade = starts today (prorated), downgrade = starts at current expiry */
   change_mode?: "new" | "upgrade" | "downgrade" | "renewal";
 }
