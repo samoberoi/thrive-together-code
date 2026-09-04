@@ -777,7 +777,7 @@ export default function Auth() {
                 <div className="ob-bottom">
                   <motion.button
                     onClick={sendOtp}
-                    disabled={phone.length < 10 || !consent || loading}
+                    disabled={!canSubmitIdentity || !consent || loading}
                     whileTap={{ scale: 0.98 }}
                     className="ob-cta gradient-blue glow-blue disabled:opacity-40"
                   >
