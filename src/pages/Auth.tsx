@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Phone, ArrowLeft, ChevronRight, ShieldCheck, User, ChevronDown, Search, Globe, Mail } from "lucide-react";
+import { ArrowLeft, ChevronRight, ShieldCheck, User, ChevronDown, Globe, Mail } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { COUNTRIES, type Country } from "@/lib/countries";
 import { fetchAuthRegions, getStoredRegion, getStoredRegionCode, INDIA_REGION, setStoredRegionCode, type AuthRegion } from "@/lib/regionPricing";
 
 import { saveUser } from "@/lib/userStore";
@@ -70,9 +69,7 @@ export default function Auth() {
   const [consent, setConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [sessionPreparing, setSessionPreparing] = useState(true);
-  const [country, setCountry] = useState<Country>(COUNTRIES[0]);
-  const [countrySearch, setCountrySearch] = useState("");
-  const [countryOpen, setCountryOpen] = useState(false);
+  const country = { code: "IN", name: "India", dial: "+91" } as const;
   // Seed from the cached last choice so the correct mode (phone vs email) and
   // flag render on the very first frame — no flash of India before the fetch.
   const [region, setRegion] = useState<AuthRegion>(() => getStoredRegion());
@@ -87,12 +84,6 @@ export default function Auth() {
   const rawNext = searchParams.get("next");
   const nextPath = rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : null;
   const go = (route: string, options?: { replace?: boolean }) => navigate(nextPath ?? route, options);
-  const filteredCountries = COUNTRIES.filter((c) => {
-    const q = countrySearch.trim().toLowerCase();
-    if (!q) return true;
-    return c.name.toLowerCase().includes(q) || c.dial.includes(q) || c.code.toLowerCase().includes(q);
-  });
-
   // India signs in with phone + SMS OTP; every other pricing region uses email OTP.
   const isEmailMode = region.method === "email";
   const normalizedLoginEmail = loginEmail.trim().toLowerCase();
@@ -172,17 +163,11 @@ export default function Auth() {
     };
   }, []);
 
-  // Restore the previously chosen region once the list arrives, and keep the
-  // phone-field flag aligned with whatever region is active.
+  // Restore the previously chosen region once the list arrives.
   useEffect(() => {
     const stored = getStoredRegionCode();
     const match = regions.find((r) => r.code === stored);
     if (match && match.code !== region.code) setRegion(match);
-    const active = match ?? region;
-    if (active.method === "phone") {
-      const c = COUNTRIES.find((x) => x.code === active.code);
-      if (c && c.code !== country.code) setCountry(c);
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [regions]);
 
@@ -215,10 +200,6 @@ export default function Auth() {
     setOtp("");
     setOtpError("");
     setStep("phone");
-    // Keep the phone-field flag in lockstep with the region picker — India
-    // shows 🇮🇳 +91, and switching regions never leaves a stale flag behind.
-    const match = COUNTRIES.find((c) => c.code === next.code);
-    if (match) setCountry(match);
   };
 
   const sendEmailCode = async () => {
@@ -724,45 +705,9 @@ export default function Auth() {
                     </div>
                   ) : (
                   <div className="flex items-stretch gap-2.5">
-                    <Popover open={countryOpen} onOpenChange={setCountryOpen}>
-                    <PopoverTrigger asChild>
-                        <button
-                          type="button"
-                          className="flex items-center gap-1.5 px-3 rounded-full bg-white shadow-lift border-2 border-border shrink-0 hover:border-primary/50 transition-colors"
-                          aria-label="Select country code"
-                        >
-                          <span className="text-foreground font-bold text-[15px] tabular">{country.dial}</span>
-                          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={2.5} />
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent align="start" className="p-0 w-[280px] rounded-2xl overflow-hidden">
-                        <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border">
-                          <Search className="w-4 h-4 text-muted-foreground shrink-0" />
-                          <input
-                            value={countrySearch}
-                            onChange={(e) => setCountrySearch(e.target.value)}
-                            placeholder="Search country or code"
-                            className="w-full bg-transparent text-[14px] outline-none placeholder:text-muted-foreground/60"
-                          />
-                        </div>
-                        <div className="max-h-64 overflow-y-auto py-1">
-                          {filteredCountries.length === 0 ? (
-                            <p className="text-muted-foreground text-[13px] px-4 py-6 text-center">No matches</p>
-                          ) : filteredCountries.map((c) => (
-                            <button
-                              key={c.code}
-                              type="button"
-                              onClick={() => { setCountry(c); setCountryOpen(false); setCountrySearch(""); }}
-                              className={`w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-muted/60 transition-colors ${country.code === c.code ? "bg-muted/40" : ""}`}
-                            >
-                              <span className="text-lg leading-none">{c.flag}</span>
-                              <span className="text-foreground text-[14px] font-semibold flex-1 truncate">{c.name}</span>
-                              <span className="text-muted-foreground text-[13px] font-bold tabular">{c.dial}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+                    <div className="flex items-center px-4 rounded-full bg-white shadow-lift border-2 border-border shrink-0" aria-label="India country code">
+                      <span className="text-foreground font-bold text-[15px] tabular">+91</span>
+                    </div>
                     <div className={`relative flex-1 rounded-full bg-white shadow-lift border-2 px-5 flex items-center transition-all ${phone.length === 10 ? "border-primary ring-4 ring-primary/20" : "border-border"}`}>
                       <input
                         type="tel"
