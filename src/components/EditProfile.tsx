@@ -304,6 +304,7 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
   // International (email-OTP) users never provided a phone — let them add one.
   const [phoneLocked, setPhoneLocked] = useState(true);
   const [countryCode, setCountryCode] = useState("+91");
+  const [phoneCountry, setPhoneCountry] = useState<{ code: string; name: string; dial: string; flag: string } | null>(null);
   const [email, setEmail] = useState(stored.profile.email ?? "");
   const [height, setHeight] = useState(stored.bodyMetrics.height?.toString() ?? "");
   const [weight, setWeight] = useState(stored.bodyMetrics.weight?.toString() ?? "");
