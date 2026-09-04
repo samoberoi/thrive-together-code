@@ -172,11 +172,17 @@ export default function Auth() {
     };
   }, []);
 
-  // Restore the previously chosen region once the list arrives.
+  // Restore the previously chosen region once the list arrives, and keep the
+  // phone-field flag aligned with whatever region is active.
   useEffect(() => {
     const stored = getStoredRegionCode();
     const match = regions.find((r) => r.code === stored);
     if (match && match.code !== region.code) setRegion(match);
+    const active = match ?? region;
+    if (active.method === "phone") {
+      const c = COUNTRIES.find((x) => x.code === active.code);
+      if (c && c.code !== country.code) setCountry(c);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [regions]);
 
