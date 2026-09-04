@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Phone, ArrowLeft, ChevronRight, ShieldCheck, User, ChevronDown, Search } from "lucide-react";
+import { Phone, ArrowLeft, ChevronRight, ShieldCheck, User, ChevronDown, Search, Globe, Mail } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { COUNTRIES, type Country } from "@/lib/countries";
+import { fetchAuthRegions, getStoredRegionCode, INDIA_REGION, setStoredRegionCode, type AuthRegion } from "@/lib/regionPricing";
+
 import { saveUser } from "@/lib/userStore";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchProfile, loadProfileToLocal } from "@/lib/profileService";
@@ -71,6 +73,10 @@ export default function Auth() {
   const [country, setCountry] = useState<Country>(COUNTRIES[0]);
   const [countrySearch, setCountrySearch] = useState("");
   const [countryOpen, setCountryOpen] = useState(false);
+  const [region, setRegion] = useState<AuthRegion>(INDIA_REGION);
+  const [regions, setRegions] = useState<AuthRegion[]>([INDIA_REGION]);
+  const [regionOpen, setRegionOpen] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("");
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const rawNext = searchParams.get("next");
@@ -82,8 +88,13 @@ export default function Auth() {
     return c.name.toLowerCase().includes(q) || c.dial.includes(q) || c.code.toLowerCase().includes(q);
   });
 
-  const email = `${phone}@bbd.app`;
-  const password = `bbd_${phone}_secure`;
+  // India signs in with phone + SMS OTP; every other pricing region uses email OTP.
+  const isEmailMode = region.method === "email";
+  const normalizedLoginEmail = loginEmail.trim().toLowerCase();
+  const emailLooksValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedLoginEmail);
+  const email = isEmailMode ? normalizedLoginEmail : `${phone}@bbd.app`;
+  const password = isEmailMode ? `bbd_email_${normalizedLoginEmail}_secure` : `bbd_${phone}_secure`;
+
 
   const persistNativeSession = async (session?: { access_token?: string; refresh_token?: string } | null) => {
     try {
@@ -141,7 +152,36 @@ export default function Auth() {
     return () => clearTimeout(timer);
   }, [resendCooldown]);
 
+  // Regions come from the same backend configuration that drives package pricing.
+  useEffect(() => {
+    let cancelled = false;
+    fetchAuthRegions()
+      .then((list) => {
+        if (!cancelled && list.length) setRegions(list);
+      })
+      .catch(() => {
+        /* keep India-only fallback */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
+  // Restore the previously chosen region once the list arrives.
+  useEffect(() => {
+    const stored = getStoredRegionCode();
+    const match = regions.find((r) => r.code === stored);
+    if (match && match.code !== region.code) setRegion(match);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [regions]);
+
+  // Email-OTP users already gave us their address — carry it into the profile step.
+  useEffect(() => {
+    if (step === "name" && isEmailMode && !emailInput && normalizedLoginEmail) {
+      setEmailInput(normalizedLoginEmail);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, isEmailMode, normalizedLoginEmail]);
 
   const identifier = `${country.dial.replace(/\D/g, "")}${phone}`;
 
@@ -152,17 +192,50 @@ export default function Auth() {
     "9000000001": { code: "1111", destination: null },
   } as const;
   const fixedOtpPhone = phone.replace(/\D/g, "").slice(-10) as keyof typeof FIXED_OTP_ACCOUNTS;
-  const fixedOtpAccount = FIXED_OTP_ACCOUNTS[fixedOtpPhone];
+  const fixedOtpAccount = isEmailMode ? undefined : FIXED_OTP_ACCOUNTS[fixedOtpPhone];
   const isFixedOtpPhone = Boolean(fixedOtpAccount);
   const otpLength = fixedOtpAccount?.code.length ?? 4;
+  const canSubmitIdentity = isEmailMode ? emailLooksValid : phone.length === 10;
+
+  const selectRegion = (next: AuthRegion) => {
+    setRegion(next);
+    setStoredRegionCode(next.code);
+    setRegionOpen(false);
+    setOtp("");
+    setOtpError("");
+    setStep("phone");
+    const match = COUNTRIES.find((c) => c.code === next.code);
+    if (match) setCountry(match);
+  };
+
+  const sendEmailCode = async () => {
+    const { data, error } = await supabase.functions.invoke("email-otp", {
+      body: { action: "send", email: normalizedLoginEmail },
+    });
+    if (error || !data?.ok) {
+      throw new Error(data?.error || "Could not send the code. Please try again.");
+    }
+  };
 
   const sendOtp = async () => {
-    if (phone.length < 10 || loading) return;
+    if (!canSubmitIdentity || loading) return;
     setLoading(true);
     setOtpError("");
-    saveUser({ profile: { phone, country: country.name, country_code: country.dial } as any });
 
     try {
+      if (isEmailMode) {
+        setStoredRegionCode(region.code);
+        saveUser({ profile: { email: normalizedLoginEmail, country: region.name } as any });
+        await sendEmailCode();
+        setStaffOtp(false);
+        setMsg91ReqId(null);
+        setStep("otp");
+        setOtp("");
+        setResendCooldown(30);
+        return;
+      }
+      setStoredRegionCode(INDIA_REGION.code);
+      saveUser({ profile: { phone, country: country.name, country_code: country.dial } as any });
       if (isFixedOtpPhone) {
         setStaffOtp(true);
         setMsg91ReqId(null);
@@ -197,8 +270,12 @@ export default function Auth() {
     }
     setLoading(true);
     try {
-      const reqId = await msg91SendOtp(identifier);
-      setMsg91ReqId(reqId);
+      if (isEmailMode) {
+        await sendEmailCode();
+      } else {
+        const reqId = await msg91SendOtp(identifier);
+        setMsg91ReqId(reqId);
+      }
       setOtp("");
       setResendCooldown(30);
       toast.success("New verification code sent.");
@@ -222,6 +299,26 @@ export default function Auth() {
         setLoading(false);
         return;
       }
+    } else if (isEmailMode) {
+      try {
+        const { data, error } = await supabase.functions.invoke("email-otp", {
+          body: {
+            action: "verify",
+            email: normalizedLoginEmail,
+            code: submitted,
+            region_code: region.code,
+            country: region.name,
+          },
+        });
+        if (error || !data?.ok) {
+          throw new Error(data?.error || "Wrong code. Please try again.");
+        }
+      } catch (error) {
+        setOtpError((error as Error).message || "Wrong code. Please try again.");
+        setOtp("");
+        setLoading(false);
+        return;
+      }
     } else {
     try {
       const accessToken = await msg91VerifyOtp(submitted, msg91ReqId);
@@ -238,6 +335,7 @@ export default function Auth() {
       return;
     }
     }
+
 
 
 
@@ -270,10 +368,12 @@ export default function Auth() {
         const userId = signInData.user.id;
 
         // Auto-link coach and partner records by phone
-        void Promise.allSettled([
-          supabase.rpc("link_coach_to_user" as any, { _user_id: userId, _phone: phone }),
-          supabase.rpc("link_partner_to_user" as any, { _user_id: userId, _phone: phone }),
-        ]);
+        if (!isEmailMode) {
+          void Promise.allSettled([
+            supabase.rpc("link_coach_to_user" as any, { _user_id: userId, _phone: phone }),
+            supabase.rpc("link_partner_to_user" as any, { _user_id: userId, _phone: phone }),
+          ]);
+        }
 
         // Existing user — resolve role/profile/payment in parallel for fast OTP handoff.
         const [privilegedRoute, profile, activeSubscription] = await Promise.all([
@@ -282,9 +382,14 @@ export default function Auth() {
           fetchActiveSubscription(userId),
         ]);
         if (profile) {
-          saveUser({ profile: { phone, country: country.name, country_code: country.dial } as any });
+          saveUser({
+            profile: isEmailMode
+              ? ({ email: normalizedLoginEmail, country: region.name } as any)
+              : ({ phone, country: country.name, country_code: country.dial } as any),
+          });
           loadProfileToLocal(profile);
         }
+
         // This number is an explicitly configured superadmin. Its database
         // role is still enforced by AdminDashboard; this avoids customer-flow
         // fallback if a role request is briefly slow immediately after login.
@@ -313,13 +418,15 @@ export default function Auth() {
 
       // User doesn't exist yet, or an earlier sign-up exists without an active session.
       if (signInError) {
-        const { data: ensureData, error: ensureError } = await supabase.functions.invoke("ensure-phone-user", {
-          body: { phone, country: country.name, country_code: country.dial },
-        });
-        if (ensureError || !ensureData?.ok) {
-          toast.error("We couldn't start your secure session. Please try again.");
-          setLoading(false);
-          return;
+        if (!isEmailMode) {
+          const { data: ensureData, error: ensureError } = await supabase.functions.invoke("ensure-phone-user", {
+            body: { phone, country: country.name, country_code: country.dial },
+          });
+          if (ensureError || !ensureData?.ok) {
+            toast.error("We couldn't start your secure session. Please try again.");
+            setLoading(false);
+            return;
+          }
         }
 
         const { data: newSessionData, error: newSessionError } = await supabase.auth.signInWithPassword({
@@ -338,13 +445,15 @@ export default function Auth() {
 
         if (signedInNewUser) {
           // Auto-link coach or partner record by phone if it exists
-          const linkResults = await Promise.race([
-            Promise.allSettled([
-              supabase.rpc("link_coach_to_user" as any, { _user_id: signedInNewUser.id, _phone: phone }),
-              supabase.rpc("link_partner_to_user" as any, { _user_id: signedInNewUser.id, _phone: phone }),
-            ]),
-            new Promise<null>((resolve) => setTimeout(() => resolve(null), 1200)),
-          ]);
+          const linkResults = isEmailMode
+            ? null
+            : await Promise.race([
+                Promise.allSettled([
+                  supabase.rpc("link_coach_to_user" as any, { _user_id: signedInNewUser.id, _phone: phone }),
+                  supabase.rpc("link_partner_to_user" as any, { _user_id: signedInNewUser.id, _phone: phone }),
+                ]),
+                new Promise<null>((resolve) => setTimeout(() => resolve(null), 1200)),
+              ]);
           if (linkResults) {
             const [coachResult, partnerResult] = linkResults;
             if (coachResult.status === "fulfilled" && (coachResult.value as any)?.data) {
@@ -359,12 +468,23 @@ export default function Auth() {
             }
           }
 
-          await supabase.from("profiles" as any).upsert({
-            user_id: signedInNewUser.id,
-            phone,
-            country: country.name,
-            country_code: country.dial,
-          } as any, { onConflict: "user_id" });
+          await supabase.from("profiles" as any).upsert(
+            isEmailMode
+              ? ({
+                  user_id: signedInNewUser.id,
+                  email: normalizedLoginEmail,
+                  country: region.name,
+                  region_code: region.code,
+                } as any)
+              : ({
+                  user_id: signedInNewUser.id,
+                  phone,
+                  country: country.name,
+                  country_code: country.dial,
+                } as any),
+            { onConflict: "user_id" },
+          );
+
 
           // Referral codes are now applied at payment time.
 
@@ -427,19 +547,25 @@ export default function Auth() {
     );
     const { data: exists, error: checkErr } = (await Promise.race([uniquenessCheck, timeout])) as any;
 
-    if (!checkErr && exists === true) {
+    // In email-OTP regions the user already owns this email, so skip the clash.
+    if (!checkErr && exists === true && trimmedEmail.toLowerCase() !== normalizedLoginEmail) {
       setLoading(false);
       setEmailError("This email is already registered. Please sign in with the phone number linked to it.");
       return;
     }
 
-    saveUser({ profile: { name: name.trim(), email: trimmedEmail, phone, country: country.name, country_code: country.dial } as any });
+    const identityFields = isEmailMode
+      ? { country: region.name, region_code: region.code }
+      : { phone, country: country.name, country_code: country.dial };
+
+    saveUser({ profile: { name: name.trim(), email: trimmedEmail, ...identityFields } as any });
 
     // Prefer local session (no network) — user just verified OTP moments ago.
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData.session?.user?.id;
 
-    const profilePayload = { name: name.trim(), email: trimmedEmail, phone, country: country.name, country_code: country.dial } as any;
+    const profilePayload = { name: name.trim(), email: trimmedEmail, ...identityFields } as any;
+
 
     // Fire the profile update + native persistence in the background; don't block navigation.
     if (userId) {
@@ -521,14 +647,71 @@ export default function Auth() {
 
               {/* Bottom half content */}
               <div className="flex flex-col flex-1 px-6 pt-8 pb-[calc(env(safe-area-inset-bottom)+var(--bbdo-native-bottom-guard,0px)+1rem)]">
+                {regions.length > 1 && (
+                  <Popover open={regionOpen} onOpenChange={setRegionOpen}>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        className="self-start mb-4 flex items-center gap-2 pl-3 pr-2.5 py-1.5 rounded-full bg-white shadow-lift border-2 border-border hover:border-primary/50 transition-colors"
+                        aria-label="Select your country or region"
+                      >
+                        <Globe className="w-3.5 h-3.5 text-primary" strokeWidth={2.4} />
+                        <span className="text-lg leading-none">{region.flag}</span>
+                        <span className="text-foreground font-bold text-[13px]">{region.name}</span>
+                        <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={2.5} />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent align="start" className="p-0 w-[260px] rounded-2xl overflow-hidden">
+                      <div className="max-h-64 overflow-y-auto py-1">
+                        {regions.map((r) => (
+                          <button
+                            key={r.code}
+                            type="button"
+                            onClick={() => selectRegion(r)}
+                            className={`w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-muted/60 transition-colors ${region.code === r.code ? "bg-muted/40" : ""}`}
+                          >
+                            <span className="text-lg leading-none">{r.flag}</span>
+                            <span className="text-foreground text-[14px] font-semibold flex-1 truncate">{r.name}</span>
+                            <span className="text-muted-foreground text-[12px] font-bold">{r.currency}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                )}
+
                 <h1 className="text-foreground text-[32px] leading-[1.05] font-black tracking-[-0.03em]">
-                  What's your <br /> phone number?
+                  {isEmailMode ? (<>What's your <br /> email address?</>) : (<>What's your <br /> phone number?</>)}
                 </h1>
                 <p className="text-muted-foreground text-[14px] mt-3 leading-relaxed">
-                  We'll text you a 4-digit code to verify it's you. No spam, ever.
+                  {isEmailMode
+                    ? "We'll email you a 4-digit code to verify it's you. No spam, ever."
+                    : "We'll text you a 4-digit code to verify it's you. No spam, ever."}
                 </p>
 
                 <div className="mt-6">
+                  {isEmailMode ? (
+                    <div className={`relative rounded-full bg-white shadow-lift border-2 px-5 flex items-center gap-3 transition-all ${emailLooksValid ? "border-primary ring-4 ring-primary/20" : "border-border"}`}>
+                      <Mail className="w-4 h-4 text-muted-foreground shrink-0" strokeWidth={2.2} />
+                      <input
+                        type="email"
+                        inputMode="email"
+                        autoComplete="email"
+                        autoCapitalize="none"
+                        spellCheck={false}
+                        placeholder="you@example.com"
+                        value={loginEmail}
+                        onChange={(e) => setLoginEmail(e.target.value)}
+                        className="w-full bg-transparent text-foreground font-bold text-[16px] outline-none placeholder:text-muted-foreground/60 placeholder:font-medium py-4"
+                      />
+                      {emailLooksValid && (
+                        <motion.div initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }}
+                          className="w-6 h-6 rounded-full bg-primary flex items-center justify-center shrink-0">
+                          <span className="text-primary-foreground text-[11px] font-black">✓</span>
+                        </motion.div>
+                      )}
+                    </div>
+                  ) : (
                   <div className="flex items-stretch gap-2.5">
                     <Popover open={countryOpen} onOpenChange={setCountryOpen}>
                       <PopoverTrigger asChild>
@@ -589,7 +772,9 @@ export default function Auth() {
                       )}
                     </div>
                   </div>
+                  )}
                 </div>
+
 
                 <label className="text-muted-foreground text-[12px] mt-5 flex items-start gap-2.5 cursor-pointer select-none leading-relaxed">
                   <input
@@ -608,7 +793,7 @@ export default function Auth() {
                 <div className="ob-bottom">
                   <motion.button
                     onClick={sendOtp}
-                    disabled={phone.length < 10 || !consent || loading}
+                    disabled={!canSubmitIdentity || !consent || loading}
                     whileTap={{ scale: 0.98 }}
                     className="ob-cta gradient-blue glow-blue disabled:opacity-40"
                   >
@@ -648,7 +833,7 @@ export default function Auth() {
                   Enter the {otpLength}-digit code
                 </h1>
                 <p className="text-muted-foreground text-[14px] mt-2 leading-relaxed">
-                  Sent to <span className="text-foreground font-bold tabular">{country.dial} {phone}</span>{" "}
+                  Sent to <span className="text-foreground font-bold tabular">{isEmailMode ? normalizedLoginEmail : `${country.dial} ${phone}`}</span>{" "}
                   <button onClick={() => { setStep("phone"); setOtp(""); }} className="text-primary font-bold underline underline-offset-2 ml-1">Change</button>
                 </p>
 

@@ -13,6 +13,7 @@ import { autoAssignCoach, fetchAssignedCoach, coachTypeLabel, type Coach } from 
 import { sendWelcomeNotification } from "@/lib/notificationService";
 import { validateCoupon, type CouponValidation } from "@/lib/couponService";
 import { updateProfile } from "@/lib/profileService";
+import { fetchRegionPriceContext, formatMoney, getStoredRegionCode, INR_CONTEXT, type RegionPriceContext } from "@/lib/regionPricing";
 import logoImg from "@/assets/logo.png";
 
 declare global {
@@ -92,6 +93,17 @@ export default function Payment() {
   const baseAmount = preview ? preview.amount_due : (plan?.total_price ?? 0);
   const couponDiscount = coupon?.valid ? Number(coupon.discount_amount ?? 0) : 0;
   const payableAmount = Math.max(baseAmount - couponDiscount, 0);
+  const [priceCtx, setPriceCtx] = useState<RegionPriceContext>(INR_CONTEXT);
+
+  // Amounts are shown in the currency of the region the user signed up in.
+  useEffect(() => {
+    let cancelled = false;
+    fetchRegionPriceContext(plan?.region_code ?? getStoredRegionCode())
+      .then((ctx) => { if (!cancelled) setPriceCtx(ctx); })
+      .catch(() => { /* keep INR fallback */ });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plan?.region_code]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -128,7 +140,7 @@ export default function Payment() {
     }
     setCoupon(res);
     setCouponStatus("valid");
-    setCouponMessage(`${res.name} applied — you save ₹${Number(res.discount_amount ?? 0).toLocaleString("en-IN")}`);
+    setCouponMessage(`${res.name} applied — you save ${formatMoney(Number(res.discount_amount ?? 0), priceCtx)}`);
   };
 
   useEffect(() => {
@@ -233,6 +245,7 @@ export default function Payment() {
         billing_cycle: plan!.billing_cycle,
         mode: changeMode,
         coupon_code: coupon?.valid ? coupon.code : null,
+        region_code: plan?.region_code ?? getStoredRegionCode(),
       },
     });
     if (error) throw error;
@@ -391,7 +404,7 @@ export default function Payment() {
                 </div>
                 <div className="text-right">
                   <p className="text-primary font-black text-xl">
-                    {plan ? `₹${payableAmount.toLocaleString("en-IN")}` : "—"}
+                    {plan ? formatMoney(payableAmount, priceCtx) : "—"}
                   </p>
                   <p className="text-muted-foreground text-xs">{plan ? `for ${duration} month${duration > 1 ? "s" : ""}` : "Select first"}</p>
                 </div>
@@ -401,7 +414,7 @@ export default function Payment() {
                   {preview.credit > 0 && (
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-muted-foreground">Credit for unused days</span>
-                      <span className="text-emerald-600 font-semibold">−₹{preview.credit.toLocaleString("en-IN")}</span>
+                      <span className="text-emerald-600 font-semibold">−{formatMoney(preview.credit, priceCtx)}</span>
                     </div>
                   )}
                   <div className="flex items-center justify-between text-xs">
@@ -506,8 +519,8 @@ export default function Payment() {
               )}
               {couponDiscount > 0 && (
                 <div className="flex items-center justify-between text-xs mt-2 px-1">
-                  <span className="text-muted-foreground line-through">₹{baseAmount.toLocaleString("en-IN")}</span>
-                  <span className="text-emerald-600 font-semibold">You pay ₹{payableAmount.toLocaleString("en-IN")}</span>
+                  <span className="text-muted-foreground line-through">{formatMoney(baseAmount, priceCtx)}</span>
+                  <span className="text-emerald-600 font-semibold">You pay {formatMoney(payableAmount, priceCtx)}</span>
                 </div>
               )}
             </div>

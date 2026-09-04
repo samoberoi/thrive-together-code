@@ -22,6 +22,14 @@ import {
   type Subscription,
 } from "@/lib/subscriptionService";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  fetchRegionPriceContext,
+  formatMoney,
+  getStoredRegionCode,
+  subscribeRegionPricing,
+  INR_CONTEXT,
+  type RegionPriceContext,
+} from "@/lib/regionPricing";
 import { cn } from "@/lib/utils";
 
 const CYCLES: BillingCycle[] = ["yearly", "half_yearly", "quarterly", "monthly"];
@@ -41,6 +49,31 @@ export default function Plans() {
   const [activeSub, setActiveSub] = useState<Subscription | null>(null);
   const [scheduledSub, setScheduledSub] = useState<Subscription | null>(null);
   const [expiredSub, setExpiredSub] = useState<Subscription | null>(null);
+  const [priceCtx, setPriceCtx] = useState<RegionPriceContext>(INR_CONTEXT);
+
+  // Regional pricing comes from the backend and stays live while the page is open.
+  useEffect(() => {
+    const regionCode = getStoredRegionCode();
+    let cancelled = false;
+    const load = () => {
+      fetchRegionPriceContext(regionCode)
+        .then((ctx) => {
+          if (!cancelled) setPriceCtx(ctx);
+        })
+        .catch(() => {
+          /* keep INR fallback */
+        });
+    };
+    load();
+    const unsubscribe = subscribeRegionPricing(regionCode, load);
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, []);
+
+  // Region price when configured, otherwise the India base price.
+  const baseMonthlyFor = (pkg: PackageWithPricing) => priceCtx.prices[pkg.id] ?? pkg.base_monthly_price;
 
   useEffect(() => {
     setPhase("power");
@@ -97,7 +130,7 @@ export default function Plans() {
     const row = pkg.pricing.find((r) => r.billing_cycle === cycle && r.enabled);
     if (!row) return;
     const months = CYCLE_MONTHS[cycle];
-    const { monthly, total } = computePrice(pkg.base_monthly_price, row.discount_percent, months);
+    const { monthly, total } = computePrice(baseMonthlyFor(pkg), row.discount_percent, months);
     const direction = directionFor(pkg);
     saveSelectedPlan({
       package_id: pkg.id,
@@ -107,7 +140,9 @@ export default function Plans() {
       duration_months: months,
       monthly_price: monthly,
       total_price: total,
-      base_monthly_price: pkg.base_monthly_price,
+      base_monthly_price: baseMonthlyFor(pkg),
+      currency: priceCtx.currency,
+      region_code: priceCtx.region?.code ?? "IN",
       discount_percent: row.discount_percent,
       assigns_coach: pkg.assigns_coach !== false,
       change_mode: direction ?? "new",
@@ -198,7 +233,7 @@ export default function Plans() {
             const row = plan.pricing.find((r) => r.billing_cycle === cycle && r.enabled);
             if (!row) return null;
             const months = CYCLE_MONTHS[cycle];
-            const { monthly, total } = computePrice(plan.base_monthly_price, row.discount_percent, months);
+            const { monthly, total } = computePrice(baseMonthlyFor(plan), row.discount_percent, months);
             const isCurrent = currentPlanKey != null && plan.plan_key === currentPlanKey;
             const isSelected = !isCurrent && selectedId === plan.id;
             const isPopular = plan.accent === "popular";
@@ -269,7 +304,7 @@ export default function Plans() {
                     {plan.tagline && <p className="text-muted-foreground text-xs">{plan.tagline}</p>}
                   </div>
                   <div className="text-right shrink-0">
-                    <span className="text-2xl font-black text-primary">₹{monthly.toLocaleString("en-IN")}</span>
+                    <span className="text-2xl font-black text-primary">{formatMoney(monthly, priceCtx)}</span>
                     <p className="text-muted-foreground text-xs">/mo</p>
                     {row.discount_percent > 0 && (
                       <p className="text-[10px] text-emerald-600 font-semibold">{row.discount_percent}% off</p>
@@ -279,7 +314,7 @@ export default function Plans() {
                 <p className="text-xs text-muted-foreground mb-3">
                   {isCurrent
                     ? "You're already enrolled on this plan."
-                    : `Billed ₹${total.toLocaleString("en-IN")} every ${months} month${months > 1 ? "s" : ""}`}
+                    : `Billed ${formatMoney(total, priceCtx)} every ${months} month${months > 1 ? "s" : ""}`}
                 </p>
                 {!isCurrent && direction && (
                   <p
