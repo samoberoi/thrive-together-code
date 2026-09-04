@@ -20,7 +20,7 @@ import com.getcapacitor.BridgeWebViewClient;
 import com.ionicframework.capacitor.Checkout;
 
 public class MainActivity extends BridgeActivity {
-    private static final String BBDO_PUSH_CHANNEL_ID = "bbdo-alerts-v15";
+    private static final String BBDO_PUSH_CHANNEL_ID = "bbdo-alerts-v16";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -130,6 +130,7 @@ public class MainActivity extends BridgeActivity {
         try { manager.deleteNotificationChannel("bbdo-alerts-v12"); } catch (Exception ignored) {}
         try { manager.deleteNotificationChannel("bbdo-alerts-v13"); } catch (Exception ignored) {}
         try { manager.deleteNotificationChannel("bbdo-alerts-v14"); } catch (Exception ignored) {}
+        try { manager.deleteNotificationChannel("bbdo-alerts-v15"); } catch (Exception ignored) {}
 
         if (manager.getNotificationChannel(BBDO_PUSH_CHANNEL_ID) != null) return;
 
