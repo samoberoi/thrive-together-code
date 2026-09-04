@@ -289,6 +289,8 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
   const [age, setAge] = useState(stored.profile.age?.toString() ?? "");
   const [gender, setGender] = useState((stored.profile.gender ?? "").toLowerCase());
   const [phone, setPhone] = useState("");
+  // International (email-OTP) users never provided a phone — let them add one.
+  const [phoneLocked, setPhoneLocked] = useState(true);
   const [countryCode, setCountryCode] = useState("+91");
   const [email, setEmail] = useState(stored.profile.email ?? "");
   const [height, setHeight] = useState(stored.bodyMetrics.height?.toString() ?? "");
