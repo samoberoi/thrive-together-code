@@ -132,7 +132,7 @@ Deno.serve(async (req) => {
 
     amount = Math.max(0, amount - couponDiscount);
 
-    const amountPaise = Math.max(100, Math.round(amount * 100));
+    const amountPaise = Math.max(100, Math.round(amount * 100)); // smallest currency unit
     const receipt = `bbdo_${userId.slice(0, 8)}_${Date.now()}`;
 
     const auth = btoa(`${KEY_ID}:${KEY_SECRET}`);
@@ -141,7 +141,7 @@ Deno.serve(async (req) => {
       headers: { "Content-Type": "application/json", Authorization: `Basic ${auth}` },
       body: JSON.stringify({
         amount: amountPaise,
-        currency: "INR",
+        currency,
         receipt,
         notes: { user_id: userId, plan_key: planKey, cycle: billingCycle, mode, source: "bbdo" },
       }),
@@ -157,7 +157,7 @@ Deno.serve(async (req) => {
       plan_key: planKey,
       order_id: order.id,
       amount_paise: amountPaise,
-      currency: "INR",
+      currency,
       status: "created",
       notes: {
         receipt,
@@ -180,7 +180,7 @@ Deno.serve(async (req) => {
       order_id: order.id,
       key_id: KEY_ID,
       amount: amountPaise,
-      currency: "INR",
+      currency,
       plan_name: pkg.name,
       duration_months: months,
       credit,
