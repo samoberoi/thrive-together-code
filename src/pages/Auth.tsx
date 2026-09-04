@@ -531,19 +531,25 @@ export default function Auth() {
     );
     const { data: exists, error: checkErr } = (await Promise.race([uniquenessCheck, timeout])) as any;
 
-    if (!checkErr && exists === true) {
+    // In email-OTP regions the user already owns this email, so skip the clash.
+    if (!checkErr && exists === true && trimmedEmail.toLowerCase() !== normalizedLoginEmail) {
       setLoading(false);
       setEmailError("This email is already registered. Please sign in with the phone number linked to it.");
       return;
     }
 
-    saveUser({ profile: { name: name.trim(), email: trimmedEmail, phone, country: country.name, country_code: country.dial } as any });
+    const identityFields = isEmailMode
+      ? { country: region.name, region_code: region.code }
+      : { phone, country: country.name, country_code: country.dial };
+
+    saveUser({ profile: { name: name.trim(), email: trimmedEmail, ...identityFields } as any });
 
     // Prefer local session (no network) — user just verified OTP moments ago.
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData.session?.user?.id;
 
-    const profilePayload = { name: name.trim(), email: trimmedEmail, phone, country: country.name, country_code: country.dial } as any;
+    const profilePayload = { name: name.trim(), email: trimmedEmail, ...identityFields } as any;
+
 
     // Fire the profile update + native persistence in the background; don't block navigation.
     if (userId) {
