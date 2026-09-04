@@ -332,6 +332,7 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
     fetchProfile(effectiveUserId).then((profile) => {
       if (!profile) return;
       if (profile.phone) setPhone(profile.phone);
+      setPhoneLocked(Boolean(profile.phone && String(profile.phone).trim()));
       if ((profile as any).country_code) setCountryCode((profile as any).country_code);
       if ((profile as any).email) setEmail((profile as any).email);
       if (profile.avatar_url) setAvatarUrl(profile.avatar_url);
