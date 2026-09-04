@@ -345,8 +345,21 @@ export default function EditProfile({ onBack, targetUserId, targetName, coachMod
     fetchProfile(effectiveUserId).then((profile) => {
       if (!profile) return;
       if (profile.phone) setPhone(profile.phone);
-      setPhoneLocked(Boolean(profile.phone && String(profile.phone).trim()));
-      if ((profile as any).country_code) setCountryCode((profile as any).country_code);
+      const hasPhone = Boolean(profile.phone && String(profile.phone).trim());
+      setPhoneLocked(hasPhone);
+
+      // Default the phone country to the region the user picked at signup.
+      // If they already have a stored country_code, honour that; otherwise
+      // fall back to the signup region (e.g. Canada -> +1 🇨🇦).
+      const storedCountry = countryFromDialCode(profile.country_code);
+      const regionCountry = countryFromRegionCode(profile.region_code);
+      const selected = storedCountry || regionCountry || PHONE_COUNTRIES[0];
+      setCountryCode(selected.dial);
+      setPhoneCountry(selected);
+      if (!profile.country_code && regionCountry && !hasPhone) {
+        setCountry(regionCountry.name);
+      }
+
       if ((profile as any).email) setEmail((profile as any).email);
       if (profile.avatar_url) setAvatarUrl(profile.avatar_url);
       if (profile.address_line1) setAddressLine1(profile.address_line1);
