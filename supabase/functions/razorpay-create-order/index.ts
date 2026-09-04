@@ -54,9 +54,13 @@ Deno.serve(async (req) => {
       ? body.coupon_code.trim()
       : null;
 
+    const regionCode = typeof body.region_code === "string" && body.region_code.trim()
+      ? body.region_code.trim().toUpperCase()
+      : "IN";
+
     const { data: pkg, error: pkgErr } = await admin
       .from("packages")
-      .select("plan_key, name, base_monthly_price, assigns_coach")
+      .select("id, plan_key, name, base_monthly_price, assigns_coach")
       .eq("plan_key", planKey)
       .eq("enabled", true)
       .maybeSingle();
@@ -71,9 +75,30 @@ Deno.serve(async (req) => {
       .eq("billing_cycle", billingCycle)
       .maybeSingle();
 
+    // International regions are billed in their own currency at the configured
+    // regional price; India keeps the INR base price.
+    let currency = "INR";
+    let baseMonthly = Number(pkg.base_monthly_price);
+    if (regionCode !== "IN") {
+      const [{ data: region }, { data: regionPrice }] = await Promise.all([
+        admin.from("pricing_regions").select("code, currency, enabled").eq("code", regionCode).maybeSingle(),
+        admin
+          .from("package_region_pricing")
+          .select("monthly_price, enabled")
+          .eq("region_code", regionCode)
+          .eq("package_id", (pkg as any).id)
+          .maybeSingle(),
+      ]);
+      if (region && (region as any).enabled !== false && regionPrice && (regionPrice as any).enabled !== false) {
+        currency = String((region as any).currency || "INR").toUpperCase();
+        baseMonthly = Number((regionPrice as any).monthly_price);
+      }
+    }
+
     const discountPercent = Number((pricing as any)?.discount_percent ?? 0);
-    const monthlyPrice = Math.round(Number(pkg.base_monthly_price) * (1 - discountPercent / 100));
+    const monthlyPrice = Math.round(baseMonthly * (1 - discountPercent / 100));
     let amount = monthlyPrice * months;
+
 
     // Proration credit for upgrades / scheduling for downgrades.
     let credit = 0;
