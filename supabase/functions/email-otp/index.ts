@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
 
       const apiKey = Deno.env.get("RESEND_API_KEY");
       if (!apiKey) return json({ error: "Email sending is not configured yet." }, 500);
-      const from = Deno.env.get("RESEND_FROM") || "BBDO <noreply@byebyediabetesandobesity.com>";
+      const from = Deno.env.get("RESEND_FROM") || "BBDO <noreply@hyperrevamp.com>";
 
       const res = await fetch("https://api.resend.com/emails", {
         method: "POST",
