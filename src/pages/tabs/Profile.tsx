@@ -31,6 +31,7 @@ import ReferAndEarn from "@/components/ReferAndEarn";
 import LabHistorySection from "@/components/lab/LabHistorySection";
 import AbnormalMarkersCard from "@/components/dashboard/AbnormalMarkersCard";
 import PrivacySecurityPage from "@/components/PrivacySecurityPage";
+import { appVersionLabel } from "@/lib/appVersion";
 import DietPreferences from "@/components/DietPreferences";
 import { calculateStreak, checkAndAwardBadges, fetchBadgeDefinitions, fetchUserBadges, getBadgeLevel, type FastingBadge, type UserFastingBadge } from "@/lib/streakService";
 import { fetchSupplementBadgeDefinitions, fetchUserSupplementBadges, getSupplementBadgeLevel, type SupplementBadge, type UserSupplementBadge } from "@/lib/supplementBadgeService";
@@ -1408,6 +1409,10 @@ export default function Profile({ onClose, isDark = true, onToggleTheme }: Profi
           </>
         )}
       </motion.button>
+
+      <p className="text-center text-muted-foreground text-[11px] font-medium mb-8">
+        App version {appVersionLabel()}
+      </p>
     </div>
   );
 }
