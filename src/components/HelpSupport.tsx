@@ -96,7 +96,7 @@ export default function HelpSupport() {
     try {
       const { error } = await supabase.functions.invoke("support-query", {
         body: {
-          name: user?.name || user?.email || "App user",
+          name: (user as any)?.user_metadata?.name || user?.email || "App user",
           email: user?.email || "",
           userId: user?.id || "",
           subject: subject.trim(),

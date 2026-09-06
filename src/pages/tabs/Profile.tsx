@@ -121,7 +121,7 @@ function FlatComplimentIcon({ type }: { type?: string | null }) {
 
 // Health logs are now fetched from the backend
 
-type SubPage = null | "logs" | "appSettings" | "notifications" | "plan" | "editProfile" | "referral" | "achievements" | "privacy" | "diet" | "rings";
+type SubPage = null | "logs" | "appSettings" | "notifications" | "plan" | "editProfile" | "referral" | "achievements" | "privacy" | "diet" | "rings" | "help";
 
 function SubScreenShell({ title, onBack, children }: { title: string; onBack: () => void; children: React.ReactNode }) {
   return (
@@ -445,6 +445,7 @@ export default function Profile({ onClose, isDark = true, onToggleTheme }: Profi
     { icon: ClipboardList, label: t("myLogs"), sublabel: t("logsSubtitle"), action: () => setSubPage("logs") },
     { icon: Package, label: t("myPlan"), sublabel: t("planSubtitle"), action: () => setSubPage("plan") },
     { icon: Gift, label: "Refer & Earn", sublabel: "Invite friends, earn free months", action: () => setSubPage("referral") },
+    { icon: LifeBuoy, label: "Help & Support", sublabel: "FAQs and raise a query", action: () => setSubPage("help") },
     { icon: Star, label: "Rate the app", sublabel: "Enjoying BBDO? Leave a review", action: () => {
         const ua = navigator.userAgent || "";
         const isIOS = /iPad|iPhone|iPod/.test(ua);
@@ -1011,6 +1012,14 @@ export default function Profile({ onClose, isDark = true, onToggleTheme }: Profi
     return (
       <SubScreenShell onBack={() => setSubPage(null)} title="Ring Manager">
         <RingManagement />
+      </SubScreenShell>
+    );
+  }
+
+  if (subPage === "help") {
+    return (
+      <SubScreenShell onBack={() => setSubPage(null)} title="Help & Support">
+        <HelpSupport />
       </SubScreenShell>
     );
   }
