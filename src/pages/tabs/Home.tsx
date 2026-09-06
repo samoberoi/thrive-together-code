@@ -681,10 +681,10 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
         return p;
       });
       const profilePromise = fetchProfile(authUser.id);
+      void fetchMetricPrefs(authUser.id).then(setMetricPrefs);
       Promise.all([
         fetchHealthLogsMulti(authUser.id, ["diabetes", "bp", "weight", "water"]),
         fetchProgressSummaries(authUser.id),
-        void fetchMetricPrefs(authUser.id).then(setMetricPrefs),
         profilePromise,
       ]).then(([logsByType, summaries, p]) => {
         const diabetesLogs = logsByType.diabetes;
