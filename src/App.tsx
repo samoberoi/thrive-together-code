@@ -434,6 +434,7 @@ function AnimatedRoutes() {
         <Route path="/admin/users-insights" element={<PageTransition><AdminUsersInsights /></PageTransition>} />
         <Route path="/partner-dashboard" element={<PageTransition><PartnerDashboard /></PageTransition>} />
         <Route path="/notifications" element={<PageTransition><NotificationsPage /></PageTransition>} />
+        <Route path="/log/:metric" element={<PageTransition><MetricLog /></PageTransition>} />
 
 
         <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
