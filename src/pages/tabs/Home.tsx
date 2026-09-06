@@ -17,6 +17,7 @@ import { fetchProfile } from "@/lib/profileService";
 import { sendWelcomeNotification } from "@/lib/notificationService";
 
 import { fetchHealthLogsMulti, fetchProgressSummaries, type HealthLog, type ProgressSummary } from "@/lib/healthLogsService";
+import { fetchMetricPrefs, isScheduledToday, type MetricPref, type TrackedMetric } from "@/lib/metricTrackingService";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   fetchUserProtocol, fetchWeeklyPlans, fetchProtocols, fetchTrackingForUser, upsertTracking,
