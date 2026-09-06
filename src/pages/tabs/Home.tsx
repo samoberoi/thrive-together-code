@@ -1635,13 +1635,6 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
           },
 
           {
-            key: "water",
-            label: "Water",
-            ratio: waterRatio,
-            color: "#38BDF8",
-            hint: `${waterGlasses} / 8 glasses`,
-          },
-          {
             key: "breath",
             label: "Breath Protocol",
             ratio: breathGoalToday > 0 ? Math.min(1, breathCountToday / breathGoalToday) : 0,
@@ -1657,15 +1650,48 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
             disabled: soleusGoalToday <= 0,
             hint: soleusGoalToday > 0 ? `${Math.min(soleusCountToday, soleusGoalToday)} / ${soleusGoalToday} rounds` : undefined,
           },
-          {
+        ];
+
+        // Health-log rings only appear when the user actually tracks that metric
+        // and today is one of their chosen tracking days.
+        const tracksToday = (m: TrackedMetric) => (metricPrefs ? isScheduledToday(metricPrefs[m]) : true);
+
+        if (tracksToday("water")) {
+          rings.push({
+            key: "water",
+            label: "Water",
+            ratio: waterRatio,
+            color: "#38BDF8",
+            hint: `${waterGlasses} / 8 glasses`,
+          });
+        }
+        if (hasDiabetesFlag && tracksToday("diabetes")) {
+          rings.push({
             key: "diabetes",
             label: "Blood sugar log",
-            ratio: hasDiabetesFlag && hasTodayDiabetesLog ? 1 : 0,
+            ratio: hasTodayDiabetesLog ? 1 : 0,
             color: "#E00101",
-            disabled: !hasDiabetesFlag,
-            hint: hasDiabetesFlag ? (hasTodayDiabetesLog ? "Logged today" : "Not logged yet") : undefined,
-          },
-        ];
+            hint: hasTodayDiabetesLog ? "Logged today" : "Not logged yet",
+          });
+        }
+        if (hasHypertensionFlag && tracksToday("bp")) {
+          rings.push({
+            key: "bp",
+            label: "Blood pressure log",
+            ratio: hasTodayBpLog ? 1 : 0,
+            color: "#F26D6D",
+            hint: hasTodayBpLog ? "Logged today" : "Not logged yet",
+          });
+        }
+        if (tracksToday("weight")) {
+          rings.push({
+            key: "weight",
+            label: "Weight log",
+            ratio: hasTodayWeightLog ? 1 : 0,
+            color: "#7C6BF0",
+            hint: hasTodayWeightLog ? "Logged today" : "Not logged yet",
+          });
+        }
 
         return (
           <div data-tour="rings">
