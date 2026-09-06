@@ -121,7 +121,7 @@ function FlatComplimentIcon({ type }: { type?: string | null }) {
 
 // Health logs are now fetched from the backend
 
-type SubPage = null | "logs" | "appSettings" | "notifications" | "plan" | "editProfile" | "referral" | "achievements" | "privacy" | "diet";
+type SubPage = null | "logs" | "appSettings" | "notifications" | "plan" | "editProfile" | "referral" | "achievements" | "privacy" | "diet" | "rings";
 
 function SubScreenShell({ title, onBack, children }: { title: string; onBack: () => void; children: React.ReactNode }) {
   return (
@@ -437,6 +437,7 @@ export default function Profile({ onClose, isDark = true, onToggleTheme }: Profi
         onClose?.();
         window.setTimeout(() => window.dispatchEvent(new Event("bbdo:start-tour")), 120);
       } },
+    { icon: CircleDashed, label: "Ring Manager", sublabel: "Choose your rings and tracking days", action: () => setSubPage("rings") },
     { icon: Utensils, label: "Diet Preferences", sublabel: "Veg, Vegan, Jain, Non-veg & allergies", action: () => setSubPage("diet") },
     { icon: Bell, label: t("notifications"), sublabel: t("manageAlerts"), action: () => setSubPage("notifications") },
     { icon: Shield, label: t("privacySecurity"), sublabel: t("dataControl"), action: () => setSubPage("privacy") },
@@ -1004,6 +1005,14 @@ export default function Profile({ onClose, isDark = true, onToggleTheme }: Profi
 
   if (subPage === "referral") {
     return <ReferAndEarn onBack={() => setSubPage(null)} />;
+  }
+
+  if (subPage === "rings") {
+    return (
+      <SubScreenShell onBack={() => setSubPage(null)} title="Ring Manager">
+        <RingManagement />
+      </SubScreenShell>
+    );
   }
 
   if (subPage === "diet") {
