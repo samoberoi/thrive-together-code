@@ -243,14 +243,7 @@ export default function DailyActivityDial({
                       ease: [0.22, 1, 0.36, 1],
                     }}
                     transform={`rotate(-90 ${CENTER} ${CENTER})`}
-                    style={{
-                      filter:
-                        pct >= 1
-                          ? `drop-shadow(0 0 3px ${c}55)`
-                          : pct > 0
-                            ? `drop-shadow(0 1px 1.5px ${c}33)`
-                            : undefined,
-                    }}
+                    style={{ filter: pct > 0 ? "drop-shadow(0 1px 1px rgba(60, 64, 67, 0.14))" : undefined }}
                   />
                 </g>
               );
@@ -353,7 +346,7 @@ export default function DailyActivityDial({
             const inProgress = !disabled && it.ratio > 0 && it.ratio < 1;
             const pct = Math.round(Math.max(0, Math.min(1, it.ratio)) * 100);
             const Icon = ICONS[it.key] ?? Heart;
-            const accent = complete ? ringColor(it) : inProgress ? `${ringColor(it)}CC` : undefined;
+            const accent = complete || inProgress ? ringColor(it) : undefined;
             const open = openKey === it.key;
             return (
               <div key={`leg-${it.key}`} className="min-w-0">
