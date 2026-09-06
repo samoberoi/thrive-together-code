@@ -343,9 +343,9 @@ export default function DailyActivityDial({
               const glyphColor = it.disabled
                 ? "#CBD5E1"
                 : complete
-                  ? it.color
+                  ? ringColor(it)
                   : inProgress
-                    ? it.color
+                    ? ringColor(it)
                     : "#94A3B8";
               return (
                 <g key={`chip-${it.key}`} opacity={it.disabled ? 0.55 : 1}>
@@ -355,7 +355,7 @@ export default function DailyActivityDial({
                     cy={y}
                     r={r}
                     fill="#ffffff"
-                    stroke={complete ? it.color : "hsl(var(--border))"}
+                    stroke={complete ? ringColor(it) : "hsl(var(--border))"}
                     strokeWidth={complete ? 1.6 : 1}
                     strokeDasharray={it.disabled ? "2 3" : undefined}
                   />
@@ -384,7 +384,7 @@ export default function DailyActivityDial({
             const inProgress = !disabled && it.ratio > 0 && it.ratio < 1;
             const pct = Math.round(Math.max(0, Math.min(1, it.ratio)) * 100);
             const Icon = ICONS[it.key] ?? Heart;
-            const accent = complete ? it.color : inProgress ? `${it.color}CC` : undefined;
+            const accent = complete ? ringColor(it) : inProgress ? `${ringColor(it)}CC` : undefined;
             const open = openKey === it.key;
             return (
               <div key={`leg-${it.key}`} className="min-w-0">
@@ -395,9 +395,9 @@ export default function DailyActivityDial({
                   className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
                   style={{
                     backgroundColor: complete
-                      ? `${it.color}18`
+                      ? `${ringColor(it)}18`
                       : inProgress
-                        ? `${it.color}0F`
+                        ? `${ringColor(it)}0F`
                         : "hsl(var(--muted))",
                   }}
                 >
@@ -424,7 +424,7 @@ export default function DailyActivityDial({
                           aria-expanded={open}
                           aria-label={`${open ? "Hide" : "Show"} ${it.label} details`}
                           className="inline-flex h-6 w-6 items-center justify-center rounded-full text-white transition-transform"
-                          style={{ backgroundColor: it.color, transform: open ? "rotate(90deg)" : undefined }}
+                          style={{ backgroundColor: ringColor(it), transform: open ? "rotate(90deg)" : undefined }}
                         >
                           <ChevronRight className="h-3.5 w-3.5" strokeWidth={3} />
                         </button>
@@ -433,7 +433,7 @@ export default function DailyActivityDial({
                     <span
                       className="inline-flex w-[66px] shrink-0 items-center justify-end whitespace-nowrap text-right text-[10px] font-black tabular-nums"
                       style={{
-                        color: complete ? it.color : "hsl(var(--muted-foreground))",
+                        color: complete ? ringColor(it) : "hsl(var(--muted-foreground))",
                       }}
                     >
                       {disabled ? (
