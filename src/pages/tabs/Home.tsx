@@ -533,9 +533,8 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
   const { t, greeting } = useLanguage();
   const rawHabits = getHabitItems(t);
   const profileClinical = dbProfile?.clinical ?? user.clinical;
-  const profileDeep = dbProfile?.deep_profiling ?? user.deepProfiling;
-  const hasDiabetesFlag = !!(profileClinical?.hasDiabetes || (profileDeep as any)?.hba1cInput != null || (profileDeep as any)?.fastingGlucose != null);
-  const hasHypertensionFlag = !!(user.clinical?.hasHypertension || (user.clinical as any)?.bpMedication);
+  const hasDiabetesFlag = profileClinical?.hasDiabetes === true;
+  const hasHypertensionFlag = profileClinical?.hasHypertension === true;
   const activeSuppItems = suppItems.filter((item) => item.is_active !== false);
   const activeSuppItemIds = new Set(activeSuppItems.map((item) => item.id));
   const suppTakenCount = new Set(
@@ -811,7 +810,13 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
       fetchUserStats(authUser.id).then((s) => setOverallStreak(s.dayStreak)).catch(console.error);
     };
     window.addEventListener("health-log-saved", handler);
-    return () => window.removeEventListener("health-log-saved", handler);
+    window.addEventListener("metric-tracking-changed", handler);
+    window.addEventListener("bb_user_updated", handler);
+    return () => {
+      window.removeEventListener("health-log-saved", handler);
+      window.removeEventListener("metric-tracking-changed", handler);
+      window.removeEventListener("bb_user_updated", handler);
+    };
   }, [authUser, todayKey]);
 
   // Detect improvements and prompt sharing
@@ -1654,7 +1659,7 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
 
         // Health-log rings only appear when the user actually tracks that metric
         // and today is one of their chosen tracking days.
-        const tracksToday = (m: TrackedMetric) => (metricPrefs ? isScheduledToday(metricPrefs[m]) : true);
+        const tracksToday = (m: TrackedMetric) => metricPrefs ? isScheduledToday(metricPrefs[m]) : false;
 
         if (tracksToday("water")) {
           rings.push({

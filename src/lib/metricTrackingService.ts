@@ -72,6 +72,9 @@ export async function saveMetricPref(userId: string, pref: MetricPref): Promise<
     .from("metric_tracking_prefs")
     .upsert(payload, { onConflict: "user_id,metric" });
   if (error) console.error("Failed to save tracking preference", error);
+  if (!error && typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("metric-tracking-changed", { detail: pref.metric }));
+  }
   return !error;
 }
 
