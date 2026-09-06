@@ -23,15 +23,6 @@ const CONFIGURABLE: { metric: TrackedMetric; label: string; icon: typeof Heart; 
   { metric: "water", label: "Water", icon: Droplets, accent: "#38BDF8", note: "Glasses of water each day" },
 ];
 
-const AUTO_RINGS: { label: string; icon: typeof Heart; accent: string; note: string }[] = [
-  { label: "Fasting", icon: Timer, accent: "#0F1A3D", note: "Shows when a fasting protocol is active" },
-  { label: "Supplements", icon: Pill, accent: "#F59E0B", note: "Shows when you have an active supplement plan" },
-  { label: "Movement", icon: Footprints, accent: "#10B981", note: "Daily steps — always on" },
-  { label: "Exercise", icon: Dumbbell, accent: "#248CCB", note: "Daily exercise minutes — always on" },
-  { label: "Yoga & Stress", icon: Flower2, accent: "#8B5CF6", note: "Daily yoga minutes — always on" },
-  { label: "Breath Protocol", icon: Wind, accent: "#EA6A5E", note: "Daily breathing sessions — always on" },
-  { label: "Soleus Push-Ups", icon: ArrowUpDown, accent: "#B91C1C", note: "Daily soleus rounds — always on" },
-];
 
 /**
  * Ring Manager — one place to decide which daily rings appear and on which days.
