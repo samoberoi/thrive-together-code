@@ -51,39 +51,30 @@ const ICONS: Record<string, LucideIcon> = {
   weight: Scale,
 };
 
-/**
- * Refined, harmonised ring palette. Callers pass semantic colours; the dial
- * maps the known pillars onto one deliberate jewel-tone scale so the rings read
- * as a premium set rather than a rainbow of primaries.
- */
+/** Google Fit-inspired system palette: activity uses teal/blue, recovery uses
+ * purple, and clinical tracking stays calm and highly legible. */
 const RING_PALETTE: Record<string, string> = {
-  fasting: "#2B3A67",
-  supplements: "#C08A2E",
-  movement: "#2E9E7B",
-  exercise: "#2F6FB2",
-  yoga: "#7A66C4",
-  water: "#3F9FD0",
-  breath: "#D98368",
-  soleus: "#A85068",
-  diabetes: "#C24D63",
-  bp: "#D0736F",
-  weight: "#6C63A8",
+  fasting: "var(--sleep-purple)",
+  supplements: "var(--fit-teal)",
+  movement: "var(--google-blue)",
+  exercise: "var(--fit-teal)",
+  yoga: "var(--sleep-purple)",
+  water: "var(--google-blue)",
+  breath: "var(--fit-teal)",
+  soleus: "var(--google-blue)",
+  diabetes: "var(--sleep-purple)",
+  bp: "var(--fit-teal)",
+  weight: "var(--google-blue)",
 };
-
-/** Slightly lighter tint of a hex colour, used for the ring gradient sweep. */
-function tint(hex: string, amount = 0.32): string {
-  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
-  if (!m) return hex;
-  const num = parseInt(m[1], 16);
-  const mix = (c: number) => Math.round(c + (255 - c) * amount);
-  const r = mix((num >> 16) & 255);
-  const g = mix((num >> 8) & 255);
-  const b = mix(num & 255);
-  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, "0")}`;
-}
 
 function ringColor(item: DialRingItem): string {
   return RING_PALETTE[item.key] ?? item.color;
+}
+
+function ringSoftColor(item: DialRingItem): string {
+  if (["fasting", "yoga", "diabetes"].includes(item.key)) return "var(--sleep-purple-soft)";
+  if (["supplements", "exercise", "breath", "bp"].includes(item.key)) return "var(--fit-teal-soft)";
+  return "var(--google-blue-soft)";
 }
 
 // SVG viewBox: 240x240, centered at (120, 120).
@@ -200,28 +191,6 @@ export default function DailyActivityDial({
               );
             })}
 
-            {/* Ring gradients — each pillar sweeps from its base tone into a
-                lighter tint so the arc reads as polished metal, not flat ink. */}
-            <defs>
-              {safe.map((it) => {
-                const c = ringColor(it);
-                return (
-                  <linearGradient
-                    key={`grad-${it.key}`}
-                    id={`bbdo-ring-${it.key}`}
-                    x1="0%"
-                    y1="0%"
-                    x2="100%"
-                    y2="100%"
-                  >
-                    <stop offset="0%" stopColor={tint(c, 0.38)} />
-                    <stop offset="55%" stopColor={c} />
-                    <stop offset="100%" stopColor={tint(c, 0.18)} />
-                  </linearGradient>
-                );
-              })}
-            </defs>
-
             {/* Concentric progress rings */}
             {safe.map((it, i) => {
               const r = geo.OUTER_RADIUS - i * geo.gap;
@@ -262,7 +231,7 @@ export default function DailyActivityDial({
                     cy={CENTER}
                     r={r}
                     fill="none"
-                    stroke={`url(#bbdo-ring-${it.key})`}
+                    stroke={c}
                     strokeWidth={geo.stroke}
                     strokeLinecap="round"
                     strokeDasharray={circ}
@@ -346,7 +315,7 @@ export default function DailyActivityDial({
                   ? ringColor(it)
                   : inProgress
                     ? ringColor(it)
-                    : "#94A3B8";
+                    : "var(--bbdo-ink-soft)";
               return (
                 <g key={`chip-${it.key}`} opacity={it.disabled ? 0.55 : 1}>
                   <title>{`${it.label}${it.disabled ? " · Not unlocked" : it.hint ? ` · ${it.hint}` : ""}`}</title>
@@ -354,7 +323,7 @@ export default function DailyActivityDial({
                     cx={x}
                     cy={y}
                     r={r}
-                    fill="#ffffff"
+                    fill="var(--pure-white)"
                     stroke={complete ? ringColor(it) : "hsl(var(--border))"}
                     strokeWidth={complete ? 1.6 : 1}
                     strokeDasharray={it.disabled ? "2 3" : undefined}
@@ -395,15 +364,15 @@ export default function DailyActivityDial({
                   className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
                   style={{
                     backgroundColor: complete
-                      ? `${ringColor(it)}18`
+                      ? ringSoftColor(it)
                       : inProgress
-                        ? `${ringColor(it)}0F`
+                        ? ringSoftColor(it)
                         : "hsl(var(--muted))",
                   }}
                 >
                   <Icon
                     className="w-3 h-3"
-                    style={{ color: disabled ? "#CBD5E1" : (accent ?? "#94A3B8") }}
+                    style={{ color: disabled ? "hsl(var(--border))" : (accent ?? "var(--bbdo-ink-soft)") }}
                     strokeWidth={2.6}
                   />
                 </span>
@@ -423,7 +392,7 @@ export default function DailyActivityDial({
                           onClick={() => setOpenKey(open ? null : it.key)}
                           aria-expanded={open}
                           aria-label={`${open ? "Hide" : "Show"} ${it.label} details`}
-                          className="inline-flex h-6 w-6 items-center justify-center rounded-full text-white transition-transform"
+                           className="inline-flex h-6 w-6 items-center justify-center rounded-full text-primary-foreground transition-transform"
                           style={{ backgroundColor: ringColor(it), transform: open ? "rotate(90deg)" : undefined }}
                         >
                           <ChevronRight className="h-3.5 w-3.5" strokeWidth={3} />
