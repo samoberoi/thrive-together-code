@@ -60,6 +60,7 @@ const CoachDashboard = lazy(() => import("./pages/CoachDashboard"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminUsersInsights = lazy(() => import("./pages/admin/AdminUsersInsights"));
 const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
+const MetricLog = lazy(() => import("./pages/MetricLog"));
 const PartnerDashboard = lazy(() => import("./pages/PartnerDashboard"));
 
 const TransformationStory = lazy(() => import("./pages/onboarding/TransformationStory"));
