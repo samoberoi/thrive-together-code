@@ -7,9 +7,10 @@ import {
   Flame, Zap, Award, ClipboardList, Activity, Scale, Heart,
   Globe, Moon, Sun, Package, ArrowLeft, BellOff, BellRing, X, Camera,
   UserCog, Gift, Trophy, Lock, Timer, Utensils, Pill, Check, XCircle, MessageCircle, Sparkles,
-  AlertTriangle, Plus, Footprints, Star, Compass, CircleDashed, type LucideIcon
+  AlertTriangle, Plus, Footprints, Star, Compass, CircleDashed, LifeBuoy, type LucideIcon
 } from "lucide-react";
 import RingManagement from "@/components/RingManagement";
+import HelpSupport from "@/components/HelpSupport";
 import { Switch } from "@/components/ui/switch";
 import EditProfile from "@/components/EditProfile";
 import { useLanguage } from "@/contexts/LanguageContext";
