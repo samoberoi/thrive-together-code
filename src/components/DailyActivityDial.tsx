@@ -200,12 +200,35 @@ export default function DailyActivityDial({
               );
             })}
 
+            {/* Ring gradients — each pillar sweeps from its base tone into a
+                lighter tint so the arc reads as polished metal, not flat ink. */}
+            <defs>
+              {safe.map((it) => {
+                const c = ringColor(it);
+                return (
+                  <linearGradient
+                    key={`grad-${it.key}`}
+                    id={`bbdo-ring-${it.key}`}
+                    x1="0%"
+                    y1="0%"
+                    x2="100%"
+                    y2="100%"
+                  >
+                    <stop offset="0%" stopColor={tint(c, 0.38)} />
+                    <stop offset="55%" stopColor={c} />
+                    <stop offset="100%" stopColor={tint(c, 0.18)} />
+                  </linearGradient>
+                );
+              })}
+            </defs>
+
             {/* Concentric progress rings */}
             {safe.map((it, i) => {
               const r = geo.OUTER_RADIUS - i * geo.gap;
               if (r < geo.INNER_RESERVED - geo.stroke / 2) return null;
               const circ = 2 * Math.PI * r;
               const pct = Math.max(0, Math.min(1, it.ratio));
+              const c = ringColor(it);
               if (it.disabled) {
                 return (
                   <circle
@@ -215,9 +238,9 @@ export default function DailyActivityDial({
                     r={r}
                     fill="none"
                     stroke="hsl(var(--muted-foreground))"
-                    strokeOpacity={0.14}
+                    strokeOpacity={0.1}
                     strokeWidth={geo.stroke}
-                    strokeDasharray="2 5"
+                    strokeDasharray="1.5 6"
                     strokeLinecap="round"
                   />
                 );
@@ -229,29 +252,35 @@ export default function DailyActivityDial({
                     cy={CENTER}
                     r={r}
                     fill="none"
-                    stroke={it.color}
-                    strokeOpacity={0.15}
+                    stroke={c}
+                    strokeOpacity={0.1}
                     strokeWidth={geo.stroke}
+                    strokeLinecap="round"
                   />
                   <motion.circle
                     cx={CENTER}
                     cy={CENTER}
                     r={r}
                     fill="none"
-                    stroke={it.color}
+                    stroke={`url(#bbdo-ring-${it.key})`}
                     strokeWidth={geo.stroke}
                     strokeLinecap="round"
                     strokeDasharray={circ}
                     initial={{ strokeDashoffset: circ }}
                     animate={{ strokeDashoffset: circ * (1 - pct) }}
                     transition={{
-                      delay: 0.1 + Math.min(i, 6) * 0.05,
-                      duration: 0.6,
+                      delay: 0.08 + Math.min(i, 6) * 0.06,
+                      duration: 0.85,
                       ease: [0.22, 1, 0.36, 1],
                     }}
                     transform={`rotate(-90 ${CENTER} ${CENTER})`}
                     style={{
-                      filter: pct >= 1 ? `drop-shadow(0 0 5px ${it.color}88)` : undefined,
+                      filter:
+                        pct >= 1
+                          ? `drop-shadow(0 0 3px ${c}55)`
+                          : pct > 0
+                            ? `drop-shadow(0 1px 1.5px ${c}33)`
+                            : undefined,
                     }}
                   />
                 </g>
