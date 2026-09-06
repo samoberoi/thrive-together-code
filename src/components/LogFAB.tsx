@@ -160,8 +160,10 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
   }, [activeLog, user]);
 
   const openLog = (type: LogType) => {
+    if (!type) return;
     setOpen(false);
-    setTimeout(() => setActiveLog(type), 200);
+    const slug = type === "diabetes" ? "sugar" : type;
+    setTimeout(() => navigate(`/log/${slug}`), 160);
   };
 
   const closeLog = () => {
