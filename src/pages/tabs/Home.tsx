@@ -17,6 +17,7 @@ import { fetchProfile } from "@/lib/profileService";
 import { sendWelcomeNotification } from "@/lib/notificationService";
 
 import { fetchHealthLogsMulti, fetchProgressSummaries, type HealthLog, type ProgressSummary } from "@/lib/healthLogsService";
+import { fetchMetricPrefs, isScheduledToday, type MetricPref, type TrackedMetric } from "@/lib/metricTrackingService";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   fetchUserProtocol, fetchWeeklyPlans, fetchProtocols, fetchTrackingForUser, upsertTracking,
@@ -399,6 +400,9 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
   const [hasCompletedMeeting, setHasCompletedMeeting] = useState<boolean>(false);
   const [glucoseData, setGlucoseData] = useState<{ v: number }[]>([]);
    const [hasTodayDiabetesLog, setHasTodayDiabetesLog] = useState(false);
+   const [hasTodayBpLog, setHasTodayBpLog] = useState(false);
+   const [hasTodayWeightLog, setHasTodayWeightLog] = useState(false);
+   const [metricPrefs, setMetricPrefs] = useState<Record<TrackedMetric, MetricPref> | null>(null);
    const [diabetesMorningDone, setDiabetesMorningDone] = useState(false);
    const [diabetesEveningDone, setDiabetesEveningDone] = useState(false);
    const [diabetesMorningValue, setDiabetesMorningValue] = useState<number | null>(null);
@@ -677,6 +681,7 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
         return p;
       });
       const profilePromise = fetchProfile(authUser.id);
+      void fetchMetricPrefs(authUser.id).then(setMetricPrefs);
       Promise.all([
         fetchHealthLogsMulti(authUser.id, ["diabetes", "bp", "weight", "water"]),
         fetchProgressSummaries(authUser.id),
@@ -724,6 +729,8 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
         setDiabetesMorningValue(morningLog ? Number(morningLog.glucose_morning) : null);
         setDiabetesEveningValue(eveningLog ? Number(eveningLog.glucose_evening) : null);
         setHasTodayDiabetesLog(!!morningLog || !!eveningLog);
+        setHasTodayBpLog(bpLogs.some(l => toLocalDateKey(l.logged_at) === todayStr && l.bp_systolic != null));
+        setHasTodayWeightLog(weightLogs.some(l => toLocalDateKey(l.logged_at) === todayStr && l.weight_kg != null));
         // Check if water goal met today
         const todayWater = waterLogs.filter(l => toLocalDateKey(l.logged_at) === todayStr);
         const totalGlasses = todayWater.reduce((sum, l) => sum + (l.weight_kg ?? 0), 0);
@@ -748,6 +755,7 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
   useEffect(() => {
     const handler = () => {
       if (!authUser) return;
+      void fetchMetricPrefs(authUser.id).then(setMetricPrefs);
       Promise.all([
         fetchHealthLogsMulti(authUser.id, ["diabetes", "bp", "weight", "water"]),
         fetchProgressSummaries(authUser.id),
@@ -792,6 +800,8 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
         setDiabetesMorningValue(morningLog ? Number(morningLog.glucose_morning) : null);
         setDiabetesEveningValue(eveningLog ? Number(eveningLog.glucose_evening) : null);
         setHasTodayDiabetesLog(!!morningLog || !!eveningLog);
+        setHasTodayBpLog(bpLogs.some(l => toLocalDateKey(l.logged_at) === todayStr && l.bp_systolic != null));
+        setHasTodayWeightLog(weightLogs.some(l => toLocalDateKey(l.logged_at) === todayStr && l.weight_kg != null));
         const todayWater = waterLogs.filter(l => toLocalDateKey(l.logged_at) === todayStr);
         const totalGlasses = todayWater.reduce((sum, l) => sum + (l.weight_kg ?? 0), 0);
         setWaterDone(totalGlasses >= 8);
@@ -1625,13 +1635,6 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
           },
 
           {
-            key: "water",
-            label: "Water",
-            ratio: waterRatio,
-            color: "#38BDF8",
-            hint: `${waterGlasses} / 8 glasses`,
-          },
-          {
             key: "breath",
             label: "Breath Protocol",
             ratio: breathGoalToday > 0 ? Math.min(1, breathCountToday / breathGoalToday) : 0,
@@ -1647,15 +1650,48 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
             disabled: soleusGoalToday <= 0,
             hint: soleusGoalToday > 0 ? `${Math.min(soleusCountToday, soleusGoalToday)} / ${soleusGoalToday} rounds` : undefined,
           },
-          {
+        ];
+
+        // Health-log rings only appear when the user actually tracks that metric
+        // and today is one of their chosen tracking days.
+        const tracksToday = (m: TrackedMetric) => (metricPrefs ? isScheduledToday(metricPrefs[m]) : true);
+
+        if (tracksToday("water")) {
+          rings.push({
+            key: "water",
+            label: "Water",
+            ratio: waterRatio,
+            color: "#38BDF8",
+            hint: `${waterGlasses} / 8 glasses`,
+          });
+        }
+        if (hasDiabetesFlag && tracksToday("diabetes")) {
+          rings.push({
             key: "diabetes",
             label: "Blood sugar log",
-            ratio: hasDiabetesFlag && hasTodayDiabetesLog ? 1 : 0,
+            ratio: hasTodayDiabetesLog ? 1 : 0,
             color: "#E00101",
-            disabled: !hasDiabetesFlag,
-            hint: hasDiabetesFlag ? (hasTodayDiabetesLog ? "Logged today" : "Not logged yet") : undefined,
-          },
-        ];
+            hint: hasTodayDiabetesLog ? "Logged today" : "Not logged yet",
+          });
+        }
+        if (hasHypertensionFlag && tracksToday("bp")) {
+          rings.push({
+            key: "bp",
+            label: "Blood pressure log",
+            ratio: hasTodayBpLog ? 1 : 0,
+            color: "#F26D6D",
+            hint: hasTodayBpLog ? "Logged today" : "Not logged yet",
+          });
+        }
+        if (tracksToday("weight")) {
+          rings.push({
+            key: "weight",
+            label: "Weight log",
+            ratio: hasTodayWeightLog ? 1 : 0,
+            color: "#7C6BF0",
+            hint: hasTodayWeightLog ? "Logged today" : "Not logged yet",
+          });
+        }
 
         return (
           <div data-tour="rings">

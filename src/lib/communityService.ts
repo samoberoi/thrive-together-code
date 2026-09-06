@@ -5,6 +5,7 @@ export interface CommunityPost {
   user_id: string;
   content: string;
   image_url: string | null;
+  image_urls?: string[] | null;
   post_type: string;
   achievement_data: any;
   like_count: number;
@@ -14,6 +15,15 @@ export interface CommunityPost {
   // joined from profiles
   user_name?: string;
   user_avatar?: string;
+}
+
+/** Maximum photos a member can attach to one post. */
+export const MAX_POST_IMAGES = 4;
+
+/** All photos on a post, tolerating older single-image rows. */
+export function postImages(post: CommunityPost): string[] {
+  if (Array.isArray(post.image_urls) && post.image_urls.length > 0) return post.image_urls.filter(Boolean);
+  return post.image_url ? [post.image_url] : [];
 }
 
 export interface PostCategory {
@@ -103,15 +113,17 @@ export async function createPost(
   content: string,
   postType: string = "manual",
   achievementData?: any,
-  imageUrl?: string,
+  imageUrl?: string | string[],
   categorySlug?: string | null,
 ): Promise<boolean> {
+  const urls = Array.isArray(imageUrl) ? imageUrl.filter(Boolean).slice(0, MAX_POST_IMAGES) : imageUrl ? [imageUrl] : [];
   const { error } = await (supabase as any).from("community_posts").insert({
     user_id: userId,
     content,
     post_type: postType,
     achievement_data: achievementData || null,
-    image_url: imageUrl || null,
+    image_url: urls[0] || null,
+    image_urls: urls.length > 0 ? urls : null,
     category_slug: categorySlug || null,
   });
   return !error;

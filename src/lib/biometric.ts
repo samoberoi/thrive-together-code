@@ -35,10 +35,9 @@ export function isNative(): boolean {
 }
 
 export function supportsBiometricGate(): boolean {
-  // iOS uses the native BBDOBiometrics Swift plugin; Android uses the
-  // first-party BBDOBiometricsPlugin (BiometricPrompt hosted on MainActivity).
-  // The crashing third-party plugin is never packaged on Android.
-  return isNative();
+  // Face ID / Touch ID / fingerprint unlock is intentionally disabled product-wide.
+  // Sign-in is OTP only; the app never re-prompts for biometrics.
+  return false;
 }
 
 export type BiometricDiagnostics = {

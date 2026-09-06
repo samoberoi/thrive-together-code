@@ -60,6 +60,7 @@ const CoachDashboard = lazy(() => import("./pages/CoachDashboard"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminUsersInsights = lazy(() => import("./pages/admin/AdminUsersInsights"));
 const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
+const MetricLog = lazy(() => import("./pages/MetricLog"));
 const PartnerDashboard = lazy(() => import("./pages/PartnerDashboard"));
 
 const TransformationStory = lazy(() => import("./pages/onboarding/TransformationStory"));
@@ -433,6 +434,7 @@ function AnimatedRoutes() {
         <Route path="/admin/users-insights" element={<PageTransition><AdminUsersInsights /></PageTransition>} />
         <Route path="/partner-dashboard" element={<PageTransition><PartnerDashboard /></PageTransition>} />
         <Route path="/notifications" element={<PageTransition><NotificationsPage /></PageTransition>} />
+        <Route path="/log/:metric" element={<PageTransition><MetricLog /></PageTransition>} />
 
 
         <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />

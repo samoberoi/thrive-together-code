@@ -36,7 +36,7 @@ import { useSearchParams } from "react-router-dom";
 import {
   fetchPosts, createPost, deletePost, updatePost, fetchComments, addComment,
   updateComment, deleteComment,
-  toggleLike, fetchUserLikes, fetchPostCategories, uploadCommunityImage,
+  toggleLike, fetchUserLikes, fetchPostCategories, uploadCommunityImage, postImages, MAX_POST_IMAGES,
   fetchPostLikers,
   type CommunityPost, type CommunityComment, type PostCategory, type PostLiker,
 } from "@/lib/communityService";
@@ -348,9 +348,29 @@ function PostCard({
       )}
 
 
-      {post.image_url && (
-        <img src={post.image_url} alt="" loading="lazy" decoding="async" className="w-full rounded-2xl object-contain max-h-[520px] mt-3 bg-muted/30" />
-      )}
+      {(() => {
+        const images = postImages(post);
+        if (images.length === 0) return null;
+        if (images.length === 1) {
+          return (
+            <img src={images[0]} alt="" loading="lazy" decoding="async" className="w-full rounded-2xl object-contain max-h-[520px] mt-3 bg-muted/30" />
+          );
+        }
+        return (
+          <div className={`mt-3 grid gap-1.5 ${images.length === 3 ? "grid-cols-2" : "grid-cols-2"}`}>
+            {images.map((src, idx) => (
+              <img
+                key={src}
+                src={src}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                className={`w-full h-40 rounded-2xl object-cover bg-muted/30 ${images.length === 3 && idx === 0 ? "col-span-2 h-56" : ""}`}
+              />
+            ))}
+          </div>
+        );
+      })()}
 
       {tagInfo && (
         <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--bbdo-blue)]/8 text-[var(--bbdo-blue)]">
@@ -474,7 +494,7 @@ function CreatePostSheet({
   onClose, onPost, initialContent, categories, initialCategorySlug, userId, initialImageUrl,
 }: {
   onClose: () => void;
-  onPost: (content: string, categorySlug: string | null, imageUrl: string | null) => Promise<void>;
+  onPost: (content: string, categorySlug: string | null, imageUrls: string[]) => Promise<void>;
   initialContent?: string;
   initialImageUrl?: string | null;
   categories: PostCategory[];
@@ -484,38 +504,58 @@ function CreatePostSheet({
   const [content, setContent] = useState(initialContent || "");
   const [posting, setPosting] = useState(false);
   const [slug, setSlug] = useState<string | null>(initialCategorySlug ?? null);
-  const [imageUrl, setImageUrl] = useState<string | null>(initialImageUrl ?? null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(initialImageUrl ?? null);
+  const [imageUrls, setImageUrls] = useState<string[]>(initialImageUrl ? [initialImageUrl] : []);
+  const [previewUrls, setPreviewUrls] = useState<string[]>(initialImageUrl ? [initialImageUrl] : []);
   const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
 
-  const handleFile = async (file: File | null | undefined) => {
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      toast({ title: "Only images", description: "Please pick a JPG, PNG or WEBP", variant: "destructive" });
+  const handleFiles = async (files: FileList | null | undefined) => {
+    if (!files || files.length === 0) return;
+    const room = MAX_POST_IMAGES - imageUrls.length;
+    if (room <= 0) {
+      toast({ title: "Photo limit reached", description: `You can add up to ${MAX_POST_IMAGES} photos`, variant: "destructive" });
       return;
     }
-    if (file.size > 8 * 1024 * 1024) {
-      toast({ title: "Image too large", description: "Please choose an image under 8 MB", variant: "destructive" });
-      return;
+    const picked = Array.from(files).slice(0, room);
+    if (files.length > room) {
+      toast({ title: "Some photos skipped", description: `Only ${MAX_POST_IMAGES} photos per post` });
     }
-    const localUrl = URL.createObjectURL(file);
-    setPreviewUrl(localUrl);
+    const valid: File[] = [];
+    for (const file of picked) {
+      if (!file.type.startsWith("image/")) {
+        toast({ title: "Only images", description: "Please pick a JPG, PNG or WEBP", variant: "destructive" });
+        continue;
+      }
+      if (file.size > 8 * 1024 * 1024) {
+        toast({ title: "Image too large", description: "Please choose images under 8 MB", variant: "destructive" });
+        continue;
+      }
+      valid.push(file);
+    }
+    if (valid.length === 0) return;
+
+    const locals = valid.map((f) => URL.createObjectURL(f));
+    setPreviewUrls((prev) => [...prev, ...locals]);
     setUploading(true);
-    const url = await uploadCommunityImage(userId, file);
+    const uploaded = await Promise.all(valid.map((f) => uploadCommunityImage(userId, f)));
     setUploading(false);
-    if (!url) {
-      setPreviewUrl(null);
-      toast({ title: "Upload failed", description: "Try again in a moment", variant: "destructive" });
-      return;
+    const ok = uploaded.filter((u): u is string => !!u);
+    if (ok.length !== valid.length) {
+      toast({ title: "Some uploads failed", description: "Try adding them again", variant: "destructive" });
     }
-    setImageUrl(url);
+    setPreviewUrls((prev) => [...prev.filter((u) => !locals.includes(u)), ...ok]);
+    setImageUrls((prev) => [...prev, ...ok].slice(0, MAX_POST_IMAGES));
+  };
+
+  const removeImage = (url: string) => {
+    setPreviewUrls((prev) => prev.filter((u) => u !== url));
+    setImageUrls((prev) => prev.filter((u) => u !== url));
   };
 
   const handlePost = async () => {
-    if (!content.trim() && !imageUrl) return;
+    if (!content.trim() && imageUrls.length === 0) return;
     setPosting(true);
-    await onPost(content.trim(), slug, imageUrl);
+    await onPost(content.trim(), slug, imageUrls);
     setPosting(false);
     onClose();
   };
@@ -540,36 +580,41 @@ function CreatePostSheet({
           onChange={(e) => setContent(e.target.value)}
         />
 
-        {/* Image preview */}
-        {previewUrl && (
-          <div className="relative mt-3 rounded-2xl overflow-hidden border border-border">
-            <img loading="lazy" decoding="async" src={previewUrl} alt="" className="w-full max-h-[420px] object-contain bg-muted/30" />
-            {uploading && (
-              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                <Loader2 className="w-5 h-5 text-white animate-spin" />
+        {/* Image previews — up to four photos per post */}
+        {previewUrls.length > 0 && (
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {previewUrls.map((url) => (
+              <div key={url} className="relative rounded-2xl overflow-hidden border border-border">
+                <img loading="lazy" decoding="async" src={url} alt="" className="w-full h-32 object-cover bg-muted/30" />
+                {uploading && (
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                    <Loader2 className="w-5 h-5 text-white animate-spin" />
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => removeImage(url)}
+                  className="absolute top-1.5 right-1.5 rounded-full bg-black/60 text-white p-1.5 hover:bg-black/80"
+                  aria-label="Remove image"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
               </div>
-            )}
-            <button
-              type="button"
-              onClick={() => { setPreviewUrl(null); setImageUrl(null); }}
-              className="absolute top-2 right-2 rounded-full bg-black/60 text-white p-1.5 hover:bg-black/80"
-              aria-label="Remove image"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            ))}
           </div>
         )}
 
         {/* Add photo trigger */}
-        {!previewUrl && (
+        {previewUrls.length < MAX_POST_IMAGES && (
           <label className="mt-3 inline-flex items-center gap-2 cursor-pointer rounded-full bg-primary/10 hover:bg-primary/15 text-primary px-3 py-1.5 text-xs font-bold transition-colors">
             <ImagePlus className="w-4 h-4" strokeWidth={2.25} />
-            Add a photo
+            {previewUrls.length === 0 ? "Add photos" : `Add more (${previewUrls.length}/${MAX_POST_IMAGES})`}
             <input
               type="file"
               accept="image/*"
+              multiple
               className="hidden"
-              onChange={(e) => handleFile(e.target.files?.[0])}
+              onChange={(e) => handleFiles(e.target.files)}
             />
           </label>
         )}
@@ -619,7 +664,7 @@ function CreatePostSheet({
           <button onClick={onClose} className="flex-1 py-3 rounded-2xl bg-muted text-foreground font-bold text-sm">Cancel</button>
           <button
             onClick={handlePost}
-            disabled={posting || uploading || (!content.trim() && !imageUrl)}
+            disabled={posting || uploading || (!content.trim() && imageUrls.length === 0)}
             className="flex-1 py-3 rounded-2xl text-white font-bold text-sm disabled:opacity-50"
             style={{ background: "var(--bbdo-gradient)" }}
           >
@@ -751,9 +796,9 @@ export default function Community() {
     return () => { supabase.removeChannel(channel); };
   }, [loadFeed]);
 
-  const handlePost = async (content: string, categorySlug: string | null, imageUrl: string | null) => {
+  const handlePost = async (content: string, categorySlug: string | null, imageUrls: string[]) => {
     if (!user) return;
-    const ok = await createPost(user.id, content, "manual", null, imageUrl || undefined, categorySlug);
+    const ok = await createPost(user.id, content, "manual", null, imageUrls, categorySlug);
     if (ok) {
       toast({ title: "Posted!", description: "Your post is live in the community" });
       setPrefillContent("");

@@ -11,6 +11,7 @@ import {
   Heart,
   Wind,
   ChevronsUp,
+  Scale,
   ChevronRight,
   Sparkles,
   CheckCircle2,
@@ -46,7 +47,44 @@ const ICONS: Record<string, LucideIcon> = {
   diabetes: Activity,
   breath: Wind,
   soleus: ChevronsUp,
+  bp: Heart,
+  weight: Scale,
 };
+
+/**
+ * Refined, harmonised ring palette. Callers pass semantic colours; the dial
+ * maps the known pillars onto one deliberate jewel-tone scale so the rings read
+ * as a premium set rather than a rainbow of primaries.
+ */
+const RING_PALETTE: Record<string, string> = {
+  fasting: "#2B3A67",
+  supplements: "#C08A2E",
+  movement: "#2E9E7B",
+  exercise: "#2F6FB2",
+  yoga: "#7A66C4",
+  water: "#3F9FD0",
+  breath: "#D98368",
+  soleus: "#A85068",
+  diabetes: "#C24D63",
+  bp: "#D0736F",
+  weight: "#6C63A8",
+};
+
+/** Slightly lighter tint of a hex colour, used for the ring gradient sweep. */
+function tint(hex: string, amount = 0.32): string {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return hex;
+  const num = parseInt(m[1], 16);
+  const mix = (c: number) => Math.round(c + (255 - c) * amount);
+  const r = mix((num >> 16) & 255);
+  const g = mix((num >> 8) & 255);
+  const b = mix(num & 255);
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, "0")}`;
+}
+
+function ringColor(item: DialRingItem): string {
+  return RING_PALETTE[item.key] ?? item.color;
+}
 
 // SVG viewBox: 240x240, centered at (120, 120).
 const VB = 240;
@@ -162,12 +200,35 @@ export default function DailyActivityDial({
               );
             })}
 
+            {/* Ring gradients — each pillar sweeps from its base tone into a
+                lighter tint so the arc reads as polished metal, not flat ink. */}
+            <defs>
+              {safe.map((it) => {
+                const c = ringColor(it);
+                return (
+                  <linearGradient
+                    key={`grad-${it.key}`}
+                    id={`bbdo-ring-${it.key}`}
+                    x1="0%"
+                    y1="0%"
+                    x2="100%"
+                    y2="100%"
+                  >
+                    <stop offset="0%" stopColor={tint(c, 0.38)} />
+                    <stop offset="55%" stopColor={c} />
+                    <stop offset="100%" stopColor={tint(c, 0.18)} />
+                  </linearGradient>
+                );
+              })}
+            </defs>
+
             {/* Concentric progress rings */}
             {safe.map((it, i) => {
               const r = geo.OUTER_RADIUS - i * geo.gap;
               if (r < geo.INNER_RESERVED - geo.stroke / 2) return null;
               const circ = 2 * Math.PI * r;
               const pct = Math.max(0, Math.min(1, it.ratio));
+              const c = ringColor(it);
               if (it.disabled) {
                 return (
                   <circle
@@ -177,9 +238,9 @@ export default function DailyActivityDial({
                     r={r}
                     fill="none"
                     stroke="hsl(var(--muted-foreground))"
-                    strokeOpacity={0.14}
+                    strokeOpacity={0.1}
                     strokeWidth={geo.stroke}
-                    strokeDasharray="2 5"
+                    strokeDasharray="1.5 6"
                     strokeLinecap="round"
                   />
                 );
@@ -191,29 +252,35 @@ export default function DailyActivityDial({
                     cy={CENTER}
                     r={r}
                     fill="none"
-                    stroke={it.color}
-                    strokeOpacity={0.15}
+                    stroke={c}
+                    strokeOpacity={0.1}
                     strokeWidth={geo.stroke}
+                    strokeLinecap="round"
                   />
                   <motion.circle
                     cx={CENTER}
                     cy={CENTER}
                     r={r}
                     fill="none"
-                    stroke={it.color}
+                    stroke={`url(#bbdo-ring-${it.key})`}
                     strokeWidth={geo.stroke}
                     strokeLinecap="round"
                     strokeDasharray={circ}
                     initial={{ strokeDashoffset: circ }}
                     animate={{ strokeDashoffset: circ * (1 - pct) }}
                     transition={{
-                      delay: 0.1 + Math.min(i, 6) * 0.05,
-                      duration: 0.6,
+                      delay: 0.08 + Math.min(i, 6) * 0.06,
+                      duration: 0.85,
                       ease: [0.22, 1, 0.36, 1],
                     }}
                     transform={`rotate(-90 ${CENTER} ${CENTER})`}
                     style={{
-                      filter: pct >= 1 ? `drop-shadow(0 0 5px ${it.color}88)` : undefined,
+                      filter:
+                        pct >= 1
+                          ? `drop-shadow(0 0 3px ${c}55)`
+                          : pct > 0
+                            ? `drop-shadow(0 1px 1.5px ${c}33)`
+                            : undefined,
                     }}
                   />
                 </g>
@@ -276,9 +343,9 @@ export default function DailyActivityDial({
               const glyphColor = it.disabled
                 ? "#CBD5E1"
                 : complete
-                  ? it.color
+                  ? ringColor(it)
                   : inProgress
-                    ? it.color
+                    ? ringColor(it)
                     : "#94A3B8";
               return (
                 <g key={`chip-${it.key}`} opacity={it.disabled ? 0.55 : 1}>
@@ -288,7 +355,7 @@ export default function DailyActivityDial({
                     cy={y}
                     r={r}
                     fill="#ffffff"
-                    stroke={complete ? it.color : "hsl(var(--border))"}
+                    stroke={complete ? ringColor(it) : "hsl(var(--border))"}
                     strokeWidth={complete ? 1.6 : 1}
                     strokeDasharray={it.disabled ? "2 3" : undefined}
                   />
@@ -317,7 +384,7 @@ export default function DailyActivityDial({
             const inProgress = !disabled && it.ratio > 0 && it.ratio < 1;
             const pct = Math.round(Math.max(0, Math.min(1, it.ratio)) * 100);
             const Icon = ICONS[it.key] ?? Heart;
-            const accent = complete ? it.color : inProgress ? `${it.color}CC` : undefined;
+            const accent = complete ? ringColor(it) : inProgress ? `${ringColor(it)}CC` : undefined;
             const open = openKey === it.key;
             return (
               <div key={`leg-${it.key}`} className="min-w-0">
@@ -328,9 +395,9 @@ export default function DailyActivityDial({
                   className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
                   style={{
                     backgroundColor: complete
-                      ? `${it.color}18`
+                      ? `${ringColor(it)}18`
                       : inProgress
-                        ? `${it.color}0F`
+                        ? `${ringColor(it)}0F`
                         : "hsl(var(--muted))",
                   }}
                 >
@@ -357,7 +424,7 @@ export default function DailyActivityDial({
                           aria-expanded={open}
                           aria-label={`${open ? "Hide" : "Show"} ${it.label} details`}
                           className="inline-flex h-6 w-6 items-center justify-center rounded-full text-white transition-transform"
-                          style={{ backgroundColor: it.color, transform: open ? "rotate(90deg)" : undefined }}
+                          style={{ backgroundColor: ringColor(it), transform: open ? "rotate(90deg)" : undefined }}
                         >
                           <ChevronRight className="h-3.5 w-3.5" strokeWidth={3} />
                         </button>
@@ -366,7 +433,7 @@ export default function DailyActivityDial({
                     <span
                       className="inline-flex w-[66px] shrink-0 items-center justify-end whitespace-nowrap text-right text-[10px] font-black tabular-nums"
                       style={{
-                        color: complete ? it.color : "hsl(var(--muted-foreground))",
+                        color: complete ? ringColor(it) : "hsl(var(--muted-foreground))",
                       }}
                     >
                       {disabled ? (
