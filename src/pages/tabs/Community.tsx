@@ -36,7 +36,7 @@ import { useSearchParams } from "react-router-dom";
 import {
   fetchPosts, createPost, deletePost, updatePost, fetchComments, addComment,
   updateComment, deleteComment,
-  toggleLike, fetchUserLikes, fetchPostCategories, uploadCommunityImage,
+  toggleLike, fetchUserLikes, fetchPostCategories, uploadCommunityImage, postImages, MAX_POST_IMAGES,
   fetchPostLikers,
   type CommunityPost, type CommunityComment, type PostCategory, type PostLiker,
 } from "@/lib/communityService";
