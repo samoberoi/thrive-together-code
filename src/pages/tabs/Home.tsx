@@ -399,6 +399,9 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
   const [hasCompletedMeeting, setHasCompletedMeeting] = useState<boolean>(false);
   const [glucoseData, setGlucoseData] = useState<{ v: number }[]>([]);
    const [hasTodayDiabetesLog, setHasTodayDiabetesLog] = useState(false);
+   const [hasTodayBpLog, setHasTodayBpLog] = useState(false);
+   const [hasTodayWeightLog, setHasTodayWeightLog] = useState(false);
+   const [metricPrefs, setMetricPrefs] = useState<Record<TrackedMetric, MetricPref> | null>(null);
    const [diabetesMorningDone, setDiabetesMorningDone] = useState(false);
    const [diabetesEveningDone, setDiabetesEveningDone] = useState(false);
    const [diabetesMorningValue, setDiabetesMorningValue] = useState<number | null>(null);
