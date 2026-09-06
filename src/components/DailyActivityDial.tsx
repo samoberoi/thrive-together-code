@@ -11,6 +11,7 @@ import {
   Heart,
   Wind,
   ChevronsUp,
+  Scale,
   ChevronRight,
   Sparkles,
   CheckCircle2,
