@@ -85,6 +85,19 @@ export function isScheduledToday(pref: MetricPref | undefined, date = new Date()
   return pref.days_of_week.includes(date.getDay());
 }
 
+/** One visibility rule shared by the Home rings and the Quick Log menu. */
+export function isMetricVisibleToday(
+  metric: TrackedMetric,
+  prefs: Record<TrackedMetric, MetricPref> | null,
+  clinical: { hasDiabetes?: boolean; hasHypertension?: boolean } | null | undefined,
+  date = new Date(),
+): boolean {
+  if (!prefs || !isScheduledToday(prefs[metric], date)) return false;
+  if (metric === "diabetes") return clinical?.hasDiabetes === true;
+  if (metric === "bp") return clinical?.hasHypertension === true;
+  return true;
+}
+
 export function scheduleSummary(pref: MetricPref): string {
   if (!pref.enabled) return "Not tracking";
   if (pref.frequency === "daily") return "Every day";

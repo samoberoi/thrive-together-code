@@ -16,7 +16,8 @@ import SoleusProtocolDrawer from "@/components/SoleusProtocolDrawer";
 import { useTodayExerciseProgress } from "@/hooks/useTodayExerciseProgress";
 import { useRbac } from "@/hooks/useRbac";
 import { fetchProfile } from "@/lib/profileService";
-import { fetchMetricPrefs, type MetricPref, type TrackedMetric } from "@/lib/metricTrackingService";
+import { fetchMetricPrefs, isMetricVisibleToday, type MetricPref, type TrackedMetric } from "@/lib/metricTrackingService";
+import { getUser } from "@/lib/userStore";
 
 type LogType = "diabetes" | "bp" | "weight" | "water" | null;
 type TimeOfDay = "morning" | "afternoon" | "evening";
@@ -62,10 +63,13 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
     const loadVisibility = async () => {
       const [prefs, profile] = await Promise.all([
         fetchMetricPrefs(user.id),
-        fetchProfile(user.id).catch(() => null),
+        fetchProfile(user.id, { force: true }).catch(() => null),
       ]);
       if (!alive) return;
-      const clinical = (profile as any)?.clinical ?? storedUser.clinical ?? {};
+      // The local profile is updated synchronously when Edit Profile is saved;
+      // prefer it so the Plus menu changes immediately instead of waiting on a
+      // cached backend profile.
+      const clinical = getUser().clinical ?? (profile as any)?.clinical ?? {};
       setMetricPrefs(prefs);
       setClinicalFlags({
         loaded: true,
@@ -76,23 +80,25 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
     void loadVisibility();
     window.addEventListener("metric-tracking-changed", loadVisibility);
     window.addEventListener("bb_user_updated", loadVisibility);
+    window.addEventListener("bb_profile_updated", loadVisibility);
     return () => {
       alive = false;
       window.removeEventListener("metric-tracking-changed", loadVisibility);
       window.removeEventListener("bb_user_updated", loadVisibility);
+      window.removeEventListener("bb_profile_updated", loadVisibility);
     };
   }, [user?.id, storedUser.clinical]);
 
-  const trackingEnabled = (metric: TrackedMetric) => metricPrefs?.[metric]?.enabled === true;
   const { minutes: exerciseMinutesToday, goal: EXERCISE_GOAL, done: exerciseDone } = useTodayExerciseProgress(5);
   const exerciseBadgeValue = `${Math.min(exerciseMinutesToday, EXERCISE_GOAL).toLocaleString("en-IN", { maximumFractionDigits: 1 })}/${EXERCISE_GOAL}`;
   const visibleActions = actions.filter((a) => {
     // Coaches/admins have no patient clinical profile — never hide their own log tiles.
     if (props.showAllLogs || isStaff) return true;
     if (!metricPrefs || !clinicalFlags.loaded) return false;
-    if (a.id === "diabetes") return clinicalFlags.diabetes && trackingEnabled("diabetes");
-    if (a.id === "bp") return clinicalFlags.hypertension && trackingEnabled("bp");
-    return trackingEnabled(a.id);
+    return isMetricVisibleToday(a.id, metricPrefs, {
+      hasDiabetes: clinicalFlags.diabetes,
+      hasHypertension: clinicalFlags.hypertension,
+    });
   });
   const [open, setOpen] = useState(false);
   const [activeLog, setActiveLog] = useState<LogType>(null);

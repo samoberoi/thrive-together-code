@@ -17,7 +17,7 @@ import { fetchProfile } from "@/lib/profileService";
 import { sendWelcomeNotification } from "@/lib/notificationService";
 
 import { fetchHealthLogsMulti, fetchProgressSummaries, type HealthLog, type ProgressSummary } from "@/lib/healthLogsService";
-import { fetchMetricPrefs, isScheduledToday, type MetricPref, type TrackedMetric } from "@/lib/metricTrackingService";
+import { fetchMetricPrefs, isMetricVisibleToday, type MetricPref, type TrackedMetric } from "@/lib/metricTrackingService";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   fetchUserProtocol, fetchWeeklyPlans, fetchProtocols, fetchTrackingForUser, upsertTracking,
@@ -532,7 +532,9 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
   }, [authUser?.id, completedExercisesToday, yogaMinutesToday, EXERCISE_DAILY_GOAL, YOGA_DAILY_MINUTES]);
   const { t, greeting } = useLanguage();
   const rawHabits = getHabitItems(t);
-  const profileClinical = dbProfile?.clinical ?? user.clinical;
+  // Edit Profile updates the local store synchronously. Prefer it over the
+  // cached backend copy so rings react in the same frame as the saved change.
+  const profileClinical = user.clinical ?? dbProfile?.clinical;
   const hasDiabetesFlag = profileClinical?.hasDiabetes === true;
   const hasHypertensionFlag = profileClinical?.hasHypertension === true;
   const activeSuppItems = suppItems.filter((item) => item.is_active !== false);
@@ -812,10 +814,12 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
     window.addEventListener("health-log-saved", handler);
     window.addEventListener("metric-tracking-changed", handler);
     window.addEventListener("bb_user_updated", handler);
+    window.addEventListener("bb_profile_updated", handler);
     return () => {
       window.removeEventListener("health-log-saved", handler);
       window.removeEventListener("metric-tracking-changed", handler);
       window.removeEventListener("bb_user_updated", handler);
+      window.removeEventListener("bb_profile_updated", handler);
     };
   }, [authUser, todayKey]);
 
@@ -1659,7 +1663,7 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
 
         // Health-log rings only appear when the user actually tracks that metric
         // and today is one of their chosen tracking days.
-        const tracksToday = (m: TrackedMetric) => metricPrefs ? isScheduledToday(metricPrefs[m]) : false;
+        const tracksToday = (m: TrackedMetric) => isMetricVisibleToday(m, metricPrefs, profileClinical);
 
         if (tracksToday("water")) {
           rings.push({
@@ -1670,7 +1674,7 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
             hint: `${waterGlasses} / 8 glasses`,
           });
         }
-        if (hasDiabetesFlag && tracksToday("diabetes")) {
+        if (tracksToday("diabetes")) {
           rings.push({
             key: "diabetes",
             label: "Blood sugar log",
@@ -1679,7 +1683,7 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
             hint: hasTodayDiabetesLog ? "Logged today" : "Not logged yet",
           });
         }
-        if (hasHypertensionFlag && tracksToday("bp")) {
+        if (tracksToday("bp")) {
           rings.push({
             key: "bp",
             label: "Blood pressure log",
