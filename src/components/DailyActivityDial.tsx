@@ -46,7 +46,44 @@ const ICONS: Record<string, LucideIcon> = {
   diabetes: Activity,
   breath: Wind,
   soleus: ChevronsUp,
+  bp: Heart,
+  weight: Scale,
 };
+
+/**
+ * Refined, harmonised ring palette. Callers pass semantic colours; the dial
+ * maps the known pillars onto one deliberate jewel-tone scale so the rings read
+ * as a premium set rather than a rainbow of primaries.
+ */
+const RING_PALETTE: Record<string, string> = {
+  fasting: "#2B3A67",
+  supplements: "#C08A2E",
+  movement: "#2E9E7B",
+  exercise: "#2F6FB2",
+  yoga: "#7A66C4",
+  water: "#3F9FD0",
+  breath: "#D98368",
+  soleus: "#A85068",
+  diabetes: "#C24D63",
+  bp: "#D0736F",
+  weight: "#6C63A8",
+};
+
+/** Slightly lighter tint of a hex colour, used for the ring gradient sweep. */
+function tint(hex: string, amount = 0.32): string {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return hex;
+  const num = parseInt(m[1], 16);
+  const mix = (c: number) => Math.round(c + (255 - c) * amount);
+  const r = mix((num >> 16) & 255);
+  const g = mix((num >> 8) & 255);
+  const b = mix(num & 255);
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, "0")}`;
+}
+
+function ringColor(item: DialRingItem): string {
+  return RING_PALETTE[item.key] ?? item.color;
+}
 
 // SVG viewBox: 240x240, centered at (120, 120).
 const VB = 240;
