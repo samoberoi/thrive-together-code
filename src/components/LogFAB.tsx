@@ -15,6 +15,8 @@ import { useSoleusSessionsToday } from "@/hooks/useSoleusSessionsToday";
 import SoleusProtocolDrawer from "@/components/SoleusProtocolDrawer";
 import { useTodayExerciseProgress } from "@/hooks/useTodayExerciseProgress";
 import { useRbac } from "@/hooks/useRbac";
+import { fetchProfile } from "@/lib/profileService";
+import { fetchMetricPrefs, type MetricPref, type TrackedMetric } from "@/lib/metricTrackingService";
 
 type LogType = "diabetes" | "bp" | "weight" | "water" | null;
 type TimeOfDay = "morning" | "afternoon" | "evening";
@@ -47,15 +49,50 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
   const storedUser = useUserStore();
   const { isAdmin, isCoach } = useRbac();
   const isStaff = isAdmin || isCoach;
-  const hasDiabetesFlag = !!(storedUser.clinical?.hasDiabetes || (storedUser.deepProfiling as any)?.hba1cInput != null || (storedUser.deepProfiling as any)?.fastingGlucose != null);
-  const hasHypertensionFlag = !!(storedUser.clinical?.hasHypertension || (storedUser.clinical as any)?.bpMedication);
+  const [metricPrefs, setMetricPrefs] = useState<Record<TrackedMetric, MetricPref> | null>(null);
+  const [clinicalFlags, setClinicalFlags] = useState({ loaded: false, diabetes: false, hypertension: false });
+
+  useEffect(() => {
+    if (!user?.id) {
+      setMetricPrefs(null);
+      setClinicalFlags({ loaded: false, diabetes: false, hypertension: false });
+      return;
+    }
+    let alive = true;
+    const loadVisibility = async () => {
+      const [prefs, profile] = await Promise.all([
+        fetchMetricPrefs(user.id),
+        fetchProfile(user.id).catch(() => null),
+      ]);
+      if (!alive) return;
+      const clinical = (profile as any)?.clinical ?? storedUser.clinical ?? {};
+      setMetricPrefs(prefs);
+      setClinicalFlags({
+        loaded: true,
+        diabetes: clinical.hasDiabetes === true,
+        hypertension: clinical.hasHypertension === true,
+      });
+    };
+    void loadVisibility();
+    window.addEventListener("metric-tracking-changed", loadVisibility);
+    window.addEventListener("bb_user_updated", loadVisibility);
+    return () => {
+      alive = false;
+      window.removeEventListener("metric-tracking-changed", loadVisibility);
+      window.removeEventListener("bb_user_updated", loadVisibility);
+    };
+  }, [user?.id, storedUser.clinical]);
+
+  const trackingEnabled = (metric: TrackedMetric) => metricPrefs?.[metric]?.enabled === true;
   const { minutes: exerciseMinutesToday, goal: EXERCISE_GOAL, done: exerciseDone } = useTodayExerciseProgress(5);
   const exerciseBadgeValue = `${Math.min(exerciseMinutesToday, EXERCISE_GOAL).toLocaleString("en-IN", { maximumFractionDigits: 1 })}/${EXERCISE_GOAL}`;
   const visibleActions = actions.filter((a) => {
     // Coaches/admins have no patient clinical profile — never hide their own log tiles.
-    if (a.id === "diabetes") return props.showAllLogs || isStaff || hasDiabetesFlag;
-    // Blood pressure is always shown per clinical guidance — everyone should be able to log BP.
-    return true;
+    if (props.showAllLogs || isStaff) return true;
+    if (!metricPrefs || !clinicalFlags.loaded) return false;
+    if (a.id === "diabetes") return clinicalFlags.diabetes && trackingEnabled("diabetes");
+    if (a.id === "bp") return clinicalFlags.hypertension && trackingEnabled("bp");
+    return trackingEnabled(a.id);
   });
   const [open, setOpen] = useState(false);
   const [activeLog, setActiveLog] = useState<LogType>(null);
