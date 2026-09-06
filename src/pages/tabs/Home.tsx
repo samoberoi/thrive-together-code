@@ -684,6 +684,7 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
       Promise.all([
         fetchHealthLogsMulti(authUser.id, ["diabetes", "bp", "weight", "water"]),
         fetchProgressSummaries(authUser.id),
+        void fetchMetricPrefs(authUser.id).then(setMetricPrefs),
         profilePromise,
       ]).then(([logsByType, summaries, p]) => {
         const diabetesLogs = logsByType.diabetes;
@@ -728,6 +729,8 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
         setDiabetesMorningValue(morningLog ? Number(morningLog.glucose_morning) : null);
         setDiabetesEveningValue(eveningLog ? Number(eveningLog.glucose_evening) : null);
         setHasTodayDiabetesLog(!!morningLog || !!eveningLog);
+        setHasTodayBpLog(bpLogs.some(l => toLocalDateKey(l.logged_at) === todayStr && l.bp_systolic != null));
+        setHasTodayWeightLog(weightLogs.some(l => toLocalDateKey(l.logged_at) === todayStr && l.weight_kg != null));
         // Check if water goal met today
         const todayWater = waterLogs.filter(l => toLocalDateKey(l.logged_at) === todayStr);
         const totalGlasses = todayWater.reduce((sum, l) => sum + (l.weight_kg ?? 0), 0);
@@ -796,6 +799,8 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
         setDiabetesMorningValue(morningLog ? Number(morningLog.glucose_morning) : null);
         setDiabetesEveningValue(eveningLog ? Number(eveningLog.glucose_evening) : null);
         setHasTodayDiabetesLog(!!morningLog || !!eveningLog);
+        setHasTodayBpLog(bpLogs.some(l => toLocalDateKey(l.logged_at) === todayStr && l.bp_systolic != null));
+        setHasTodayWeightLog(weightLogs.some(l => toLocalDateKey(l.logged_at) === todayStr && l.weight_kg != null));
         const todayWater = waterLogs.filter(l => toLocalDateKey(l.logged_at) === todayStr);
         const totalGlasses = todayWater.reduce((sum, l) => sum + (l.weight_kg ?? 0), 0);
         setWaterDone(totalGlasses >= 8);
