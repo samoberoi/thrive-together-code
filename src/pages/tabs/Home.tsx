@@ -755,6 +755,7 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
   useEffect(() => {
     const handler = () => {
       if (!authUser) return;
+      void fetchMetricPrefs(authUser.id).then(setMetricPrefs);
       Promise.all([
         fetchHealthLogsMulti(authUser.id, ["diabetes", "bp", "weight", "water"]),
         fetchProgressSummaries(authUser.id),
