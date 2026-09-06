@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Activity, Droplets, Heart, Scale, Timer, Pill, Footprints, Dumbbell, Flower2, Wind, ArrowUpDown } from "lucide-react";
+import { Activity, Droplets, Heart, Scale } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchProfile } from "@/lib/profileService";
@@ -165,23 +165,6 @@ export default function RingManagement() {
         })}
       </div>
 
-      <div className="flex flex-col gap-3">
-        <h3 className="text-foreground font-bold text-sm">Part of your programme</h3>
-        {AUTO_RINGS.map(({ label, icon: Icon, accent, note }) => (
-          <div key={label} className="rounded-2xl liquid-glass p-4 flex items-center gap-3">
-            <div
-              className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center"
-              style={{ background: `${accent}1F` }}
-            >
-              <Icon className="w-5 h-5" strokeWidth={1.8} style={{ color: accent }} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-foreground font-semibold text-sm leading-tight">{label}</p>
-              <p className="text-muted-foreground text-xs mt-0.5 break-words">{note}</p>
-            </div>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
