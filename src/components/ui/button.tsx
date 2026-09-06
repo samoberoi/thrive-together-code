@@ -9,16 +9,16 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        // Primary: BBDO red CTA (one per screen)
-        default: "bg-primary text-primary-foreground hover:bg-[var(--bbdo-blue-deep)] hover:text-white shadow-card",
+        // Primary: Google Blue for the clearest action hierarchy.
+        default: "bg-primary text-primary-foreground hover:bg-[var(--bbdo-blue-deep)] hover:text-primary-foreground shadow-card",
         destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        // Secondary: white + 1px blue border + blue text
-        outline: "border border-[var(--bbdo-blue)] bg-white text-[var(--bbdo-blue)] hover:bg-[var(--bbdo-blue-soft)]",
-        // Solid blue (e.g. trust marks)
-        secondary: "bg-secondary text-secondary-foreground hover:bg-[var(--bbdo-blue-deep)]",
+        // Secondary: white + 1px Google Blue border.
+        outline: "border border-primary bg-card text-primary hover:bg-info-soft",
+        // Fit Teal for supportive actions.
+        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/90",
         // Ghost: blue text with underline reveal
-        ghost: "text-[var(--bbdo-blue)] hover:bg-[var(--bbdo-blue-soft)]",
-        link: "text-[var(--bbdo-blue)] underline-offset-4 hover:underline",
+        ghost: "text-primary hover:bg-info-soft",
+        link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
         default: "h-12 px-7 py-3",

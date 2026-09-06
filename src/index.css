@@ -3,39 +3,39 @@
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════
-   BBDO DESIGN SYSTEM v2 — cream canvas × navy hero cards
-   Ref: uploaded designs (cream+glass palette × card architecture)
+   BBDO DESIGN SYSTEM v3 — Google Fit clarity × clinical calm
+   Palette: Fit Teal, Google Blue, Sleep Purple, White, Graphite
    ═══════════════════════════════════════════════════ */
 
 @layer base {
   :root {
     /* ── Semantic shadcn tokens (HSL triples) ── */
     --background: 0 0% 100%;              /* white canvas */
-    --foreground: 226 62% 15%;            /* #0F1A3D navy ink */
+    --foreground: 206 6% 25%;             /* #3C4043 graphite */
 
     --card: 0 0% 100%;
-    --card-foreground: 226 62% 15%;
+    --card-foreground: 206 6% 25%;
     --popover: 0 0% 100%;
-    --popover-foreground: 226 62% 15%;
+    --popover-foreground: 206 6% 25%;
 
-    --primary: 202 70% 47%;               /* #248CCB brand blue — primary */
+    --primary: 214 82% 51%;               /* #1A73E8 Google Blue */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 6 76% 64%;               /* #EA6A5E soft coral — secondary/CTA (health-friendly) */
+    --secondary: 174 100% 29%;             /* #009688 Fit Teal */
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 40 25% 92%;                  /* soft cream */
-    --muted-foreground: 226 20% 40%;
+    --muted: 210 17% 96%;                 /* cool neutral */
+    --muted-foreground: 206 7% 43%;
 
-    --accent: 168 68% 42%;                /* #22B8A3 teal accent — calm, wellness */
+    --accent: 230 44% 64%;                /* #7986CB Sleep Purple */
     --accent-foreground: 0 0% 100%;
 
     --destructive: 355 78% 56%;           /* true red — reserved for real danger only */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 202 30% 88%;
-    --input: 202 30% 88%;
-    --ring: 202 70% 47%;
+    --border: 210 12% 89%;
+    --input: 210 12% 89%;
+    --ring: 214 82% 51%;
 
     --radius: 0.75rem;                    /* 12px — consistent card scale */
 
@@ -44,41 +44,50 @@
     --bbdo-cream: #FFFFFF;
     --bbdo-cream-2: #F6F7FB;
     --bbdo-paper: #FFFFFF;
-    --bbdo-ink: #0F1A3D;
-    --bbdo-ink-soft: #5B6480;
-    --bbdo-line: rgba(15, 26, 61, 0.08);
-    --bbdo-blue: #248CCB;                 /* primary brand */
-    --bbdo-blue-deep: #1970A6;
-    --bbdo-blue-soft: #E3F1FB;
-    --bbdo-blue-gradient: linear-gradient(135deg, #4FB0E8 0%, #248CCB 50%, #1970A6 100%);
+    --fit-teal: #009688;
+    --fit-teal-soft: #E0F2F1;
+    --google-blue: #1A73E8;
+    --google-blue-deep: #155FC0;
+    --google-blue-soft: #E8F0FE;
+    --sleep-purple: #7986CB;
+    --sleep-purple-soft: #EEF0FA;
+    --pure-white: #FFFFFF;
+    --graphite: #3C4043;
+    --bbdo-ink: var(--graphite);
+    --bbdo-ink-soft: #687074;
+    --bbdo-line: rgba(60, 64, 67, 0.10);
+    --bbdo-blue: var(--google-blue);
+    --bbdo-blue-deep: var(--google-blue-deep);
+    --bbdo-blue-soft: var(--google-blue-soft);
+    --bbdo-blue-gradient: var(--google-blue);
     --bbdo-red: #EA6A5E;                  /* softened coral — CTAs (not alarming) */
     --bbdo-red-deep: #C24A42;
     --bbdo-red-soft: #FCE8E4;
     --bbdo-red-gradient: linear-gradient(135deg, #F49185 0%, #EA6A5E 50%, #C24A42 100%);
-    --bbdo-mint: #10B981;
-    --bbdo-mint-soft: #D4F4E4;
-    --bbdo-mint-gradient: linear-gradient(135deg, #4ADFA8 0%, #10B981 60%, #0A8A61 100%);
-    --bbdo-lime: #E8F27D;
-    --bbdo-amber: #F59E0B;
-    --bbdo-amber-soft: #FEF0D0;
-    --bbdo-amber-gradient: linear-gradient(135deg, #FCC757 0%, #F59E0B 60%, #C67A00 100%);
-    --bbdo-violet: #7C3AED;
-    --bbdo-violet-soft: #EEE4FD;
-    --bbdo-teal: #22B8A3;
-    --bbdo-teal-soft: #D6F3EE;
-    --bbdo-gradient: linear-gradient(135deg, #248CCB 0%, #22B8A3 100%);
+    --bbdo-mint: var(--fit-teal);
+    --bbdo-mint-soft: var(--fit-teal-soft);
+    --bbdo-mint-gradient: var(--fit-teal);
+    --bbdo-lime: var(--fit-teal-soft);
+    --bbdo-amber: var(--sleep-purple);
+    --bbdo-amber-soft: var(--sleep-purple-soft);
+    --bbdo-amber-gradient: var(--sleep-purple);
+    --bbdo-violet: var(--sleep-purple);
+    --bbdo-violet-soft: var(--sleep-purple-soft);
+    --bbdo-teal: var(--fit-teal);
+    --bbdo-teal-soft: var(--fit-teal-soft);
+    --bbdo-gradient: var(--google-blue);
 
     /* ── PUNCH pillar colors (one per lifestyle pillar) ── */
-    --pillar-diet: #10B981;              /* mint green — Diet */
-    --pillar-diet-soft: #D4F4E4;
-    --pillar-move: #F59E0B;              /* amber — Move / Habits */
-    --pillar-move-soft: #FEF0D0;
-    --pillar-exercise: #F97316;          /* warm orange — Exercise (energetic, not danger) */
-    --pillar-exercise-soft: #FFE7D1;
-    --pillar-supplements: #248CCB;       /* blue — Supplements */
-    --pillar-supplements-soft: #E3F1FB;
-    --pillar-fasting: #7C3AED;           /* violet — Fasting */
-    --pillar-fasting-soft: #EEE4FD;
+    --pillar-diet: var(--fit-teal);
+    --pillar-diet-soft: var(--fit-teal-soft);
+    --pillar-move: var(--google-blue);
+    --pillar-move-soft: var(--google-blue-soft);
+    --pillar-exercise: var(--google-blue);
+    --pillar-exercise-soft: var(--google-blue-soft);
+    --pillar-supplements: var(--fit-teal);
+    --pillar-supplements-soft: var(--fit-teal-soft);
+    --pillar-fasting: var(--sleep-purple);
+    --pillar-fasting-soft: var(--sleep-purple-soft);
 
     /* ── Elevation ── */
     --shadow-card: 0 1px 2px rgba(15,26,61,0.05), 0 8px 24px -12px rgba(15,26,61,0.10);
@@ -90,12 +99,12 @@
     --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
 
     /* ── Status ── */
-    --success: 160 84% 39%;
-    --success-soft: 160 70% 94%;
-    --warning: 38 92% 50%;
-    --warning-soft: 38 90% 95%;
-    --info: 224 66% 33%;
-    --info-soft: 222 76% 95%;
+    --success: 174 100% 29%;
+    --success-soft: 174 42% 91%;
+    --warning: 230 44% 64%;
+    --warning-soft: 230 50% 96%;
+    --info: 214 82% 51%;
+    --info-soft: 218 92% 95%;
     --critical: 355 78% 56%;
     --critical-soft: 354 87% 96%;
 
@@ -107,19 +116,19 @@
     --amber: 38 92% 50%;
     --lime: 65 82% 72%;
 
-    --surface: 40 25% 92%;
-    --surface-2: 40 20% 88%;
-    --surface-3: 226 20% 90%;
+    --surface: 210 17% 96%;
+    --surface-2: 218 92% 95%;
+    --surface-3: 230 50% 96%;
 
     /* Sidebar */
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 226 62% 15%;
-    --sidebar-primary: 226 62% 15%;
+    --sidebar-foreground: 206 6% 25%;
+    --sidebar-primary: 214 82% 51%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 40 25% 92%;
-    --sidebar-accent-foreground: 226 62% 15%;
-    --sidebar-border: 226 20% 90%;
-    --sidebar-ring: 226 62% 15%;
+    --sidebar-accent: 218 92% 95%;
+    --sidebar-accent-foreground: 206 6% 25%;
+    --sidebar-border: 210 12% 89%;
+    --sidebar-ring: 214 82% 51%;
   }
 
   .dark { color-scheme: light; }
