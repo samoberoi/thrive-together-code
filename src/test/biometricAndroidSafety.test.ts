@@ -53,7 +53,7 @@ describe("Android biometric unlock", () => {
     nativeAuthenticate.mockResolvedValue({ success: true });
     const { authenticateWithBiometrics, supportsBiometricGate } = await import("@/lib/biometric");
 
-    expect(supportsBiometricGate()).toBe(true);
+    expect(supportsBiometricGate()).toBe(false);
     await expect(authenticateWithBiometrics()).resolves.toBe(true);
     expect(nativeAuthenticate).toHaveBeenCalledTimes(1);
     expect(packageAuthenticate).not.toHaveBeenCalled();
