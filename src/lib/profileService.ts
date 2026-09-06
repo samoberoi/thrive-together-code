@@ -160,6 +160,10 @@ export async function updateProfile(userId: string, updates: Partial<ProfileRow>
     return false;
   }
 
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("bb_profile_updated", { detail: { userId } }));
+  }
+
   if (skipHealthLogs) return true;
 
   const nextWeight = Number((updates as any).weight);

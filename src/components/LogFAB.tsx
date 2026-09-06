@@ -17,6 +17,7 @@ import { useTodayExerciseProgress } from "@/hooks/useTodayExerciseProgress";
 import { useRbac } from "@/hooks/useRbac";
 import { fetchProfile } from "@/lib/profileService";
 import { fetchMetricPrefs, isMetricVisibleToday, type MetricPref, type TrackedMetric } from "@/lib/metricTrackingService";
+import { getUser } from "@/lib/userStore";
 
 type LogType = "diabetes" | "bp" | "weight" | "water" | null;
 type TimeOfDay = "morning" | "afternoon" | "evening";
@@ -62,13 +63,13 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
     const loadVisibility = async () => {
       const [prefs, profile] = await Promise.all([
         fetchMetricPrefs(user.id),
-        fetchProfile(user.id).catch(() => null),
+        fetchProfile(user.id, { force: true }).catch(() => null),
       ]);
       if (!alive) return;
       // The local profile is updated synchronously when Edit Profile is saved;
       // prefer it so the Plus menu changes immediately instead of waiting on a
       // cached backend profile.
-      const clinical = storedUser.clinical ?? (profile as any)?.clinical ?? {};
+      const clinical = getUser().clinical ?? (profile as any)?.clinical ?? {};
       setMetricPrefs(prefs);
       setClinicalFlags({
         loaded: true,
@@ -79,10 +80,12 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
     void loadVisibility();
     window.addEventListener("metric-tracking-changed", loadVisibility);
     window.addEventListener("bb_user_updated", loadVisibility);
+    window.addEventListener("bb_profile_updated", loadVisibility);
     return () => {
       alive = false;
       window.removeEventListener("metric-tracking-changed", loadVisibility);
       window.removeEventListener("bb_user_updated", loadVisibility);
+      window.removeEventListener("bb_profile_updated", loadVisibility);
     };
   }, [user?.id, storedUser.clinical]);
 

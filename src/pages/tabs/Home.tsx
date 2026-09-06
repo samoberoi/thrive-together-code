@@ -814,10 +814,12 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
     window.addEventListener("health-log-saved", handler);
     window.addEventListener("metric-tracking-changed", handler);
     window.addEventListener("bb_user_updated", handler);
+    window.addEventListener("bb_profile_updated", handler);
     return () => {
       window.removeEventListener("health-log-saved", handler);
       window.removeEventListener("metric-tracking-changed", handler);
       window.removeEventListener("bb_user_updated", handler);
+      window.removeEventListener("bb_profile_updated", handler);
     };
   }, [authUser, todayKey]);
 
