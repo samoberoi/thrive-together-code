@@ -18,8 +18,9 @@ import TodayStepsCard from "@/components/TodayStepsCard";
 import MetricTrendsSection from "@/components/MetricTrendsSection";
 import CoachSelfCheckins from "@/components/coach/CoachSelfCheckins";
 import AdminStreakBoard, { type AdminStreakClient } from "@/components/admin/AdminStreakBoard";
+import { fetchRegionFxMap, regionOf, formatMoneyIn, toInr, type RegionFx } from "@/lib/currencyDisplay";
 
-interface Profile { user_id: string; name: string | null; phone: string | null; }
+interface Profile { user_id: string; name: string | null; phone: string | null; region_code?: string | null; }
 interface Subscription {
   id: string; user_id: string; plan_id: string; plan_name: string;
   plan_price: number; status: string;
@@ -51,6 +52,9 @@ export default function AdminOverview() {
   const [adminUserId, setAdminUserId] = useState<string | undefined>(undefined);
   const [adminHeightCm, setAdminHeightCm] = useState<number | null>(null);
   const [adminWeightKg, setAdminWeightKg] = useState<number | null>(null);
+  const [regionFx, setRegionFx] = useState<Map<string, RegionFx>>(new Map());
+
+  useEffect(() => { fetchRegionFxMap().then(setRegionFx).catch(() => {}); }, []);
 
   useEffect(() => {
     (async () => {
@@ -81,7 +85,7 @@ export default function AdminOverview() {
       supabase.from("packages").select("plan_key, name"),
       supabase.from("subscriptions").select("*").eq("status", "active"),
       supabase.from("subscriptions").select("*").gte("started_at", fromIso).lte("started_at", toIso),
-      supabase.from("profiles").select("user_id, name, phone"),
+      supabase.from("profiles").select("user_id, name, phone, region_code"),
       supabase
         .from("profiles")
         .select("user_id", { count: "exact", head: true })
@@ -110,13 +114,25 @@ export default function AdminOverview() {
   };
 
   // --- KPI calculations ---
+  // Members pay in their own currency (USD, CAD, GBP...). Totals are consolidated
+  // back to INR using the FX rates configured in pricing_regions.
+  const inrOf = useMemo(
+    () => (s: Subscription) =>
+      toInr(s.plan_price || 0, regionOf(regionFx, profileMap.get(s.user_id)?.region_code)),
+    [regionFx, profileMap]
+  );
+  const nativeMoney = useMemo(
+    () => (s: Subscription) =>
+      formatMoneyIn(s.plan_price || 0, regionOf(regionFx, profileMap.get(s.user_id)?.region_code)),
+    [regionFx, profileMap]
+  );
   const revenueInRange = useMemo(
-    () => rangeSubs.reduce((s, x) => s + (x.plan_price || 0), 0),
-    [rangeSubs]
+    () => rangeSubs.reduce((sum, x) => sum + inrOf(x), 0),
+    [rangeSubs, inrOf]
   );
   const activeRevenueRunRate = useMemo(
-    () => allActiveSubs.reduce((s, x) => s + (x.plan_price || 0), 0),
-    [allActiveSubs]
+    () => allActiveSubs.reduce((sum, x) => sum + inrOf(x), 0),
+    [allActiveSubs, inrOf]
   );
   const activeSubsCount = allActiveSubs.length;
   const activeAssignments = assignments.filter((a) => profileMap.has(a.user_id)).length;
@@ -137,11 +153,11 @@ export default function AdminOverview() {
       const row = counts.get(k);
       if (row) {
         row.sold += 1;
-        row.revenue += s.plan_price || 0;
+        row.revenue += inrOf(s);
       }
     }
     return Array.from(counts.entries()).map(([key, v]) => ({ key, ...v }));
-  }, [packages, allActiveSubs, rangeSubs]);
+  }, [packages, allActiveSubs, rangeSubs, inrOf]);
 
   const upcomingRenewals = useMemo(() => {
     const now = Date.now();
@@ -227,14 +243,14 @@ export default function AdminOverview() {
   // ----- KPI cards -----
   const kpis = [
     {
-      label: "Revenue (range)",
+      label: "Revenue (range, INR)",
       value: inr(revenueInRange),
       sub: `${rangeSubs.length} new sales`,
       icon: IndianRupee, tone: "text-emerald-600", bg: "bg-emerald-500/10",
       onClick: () => navigate("/admin-dashboard?tab=subscriptions&metric=range_revenue"),
     },
     {
-      label: "Run-rate",
+      label: "Run-rate (INR)",
       value: inr(activeRevenueRunRate),
       sub: `${activeSubsCount} active subs`,
       icon: TrendingUp, tone: "text-secondary", bg: "bg-secondary/10",
@@ -401,7 +417,7 @@ export default function AdminOverview() {
                   <div className="min-w-0 flex-1">
                     <p className="text-foreground font-semibold text-sm truncate">{p?.name || "Unknown"}</p>
                     <p className="text-muted-foreground text-xs truncate">
-                      {s.plan_name} · {inr(s.plan_price)}
+                      {s.plan_name} · {nativeMoney(s)}
                     </p>
                   </div>
                   <div className="text-right shrink-0">
