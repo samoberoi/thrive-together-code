@@ -85,7 +85,7 @@ export default function AdminOverview() {
       supabase.from("packages").select("plan_key, name"),
       supabase.from("subscriptions").select("*").eq("status", "active"),
       supabase.from("subscriptions").select("*").gte("started_at", fromIso).lte("started_at", toIso),
-      supabase.from("profiles").select("user_id, name, phone, region_code"),
+      (supabase as any).from("profiles").select("user_id, name, phone, region_code"),
       supabase
         .from("profiles")
         .select("user_id", { count: "exact", head: true })
@@ -105,7 +105,7 @@ export default function AdminOverview() {
     setActiveLoggerIds(new Set(((logsRes.data ?? []) as { user_id: string }[]).map((l) => l.user_id)));
 
     const pmap = new Map<string, Profile>();
-    const allProfiles = (profilesAllRes.data ?? []) as Profile[];
+    const allProfiles = (profilesAllRes.data ?? []) as unknown as Profile[];
     for (const p of allProfiles) pmap.set(p.user_id, p);
     setProfileMap(pmap);
     setTotalUsers(allProfiles.length);
