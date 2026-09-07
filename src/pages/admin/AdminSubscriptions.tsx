@@ -409,7 +409,7 @@ export default function AdminSubscriptions() {
         <div>
           <h1 className="text-2xl font-black">Subscriptions</h1>
           <p className="text-muted-foreground text-sm">
-            {activeSubs.length + yogaActiveSubs.length} total active · {inr(bbdoActiveRevenue + yogaActiveRevenue)} active revenue · {range.label} sales: {inr(bbdoRangeRevenue + yogaRangeRevenue)}
+            {activeSubs.length + yogaActiveSubs.length} total active · {inr(bbdoActiveRevenue + yogaActiveRevenue)} active revenue (INR equiv.) · {range.label} sales: {inr(bbdoRangeRevenue + yogaRangeRevenue)}
           </p>
         </div>
         <DateRangeFilter value={range} onChange={setRange} />
@@ -419,7 +419,7 @@ export default function AdminSubscriptions() {
         <StatCard label="BBDO Active" value={activeSubs.length} tone="primary" onClick={() => setRoute({ subscriptionTab: "bbdo" })} />
         <StatCard label="Yoga Active" value={yogaActiveSubs.length} tone="emerald" onClick={() => setRoute({ subscriptionTab: "yoga" })} />
         <StatCard label="Renewals Due" value={bbdoRenewals.length + yogaRenewals.length} tone="amber" onClick={() => setRoute({ metric: "renewals" })} />
-        <StatCard label="Active Revenue" value={inr(bbdoActiveRevenue + yogaActiveRevenue)} tone="purple" onClick={() => setRoute({ metric: "active_revenue" })} />
+        <StatCard label="Active Revenue (INR)" value={inr(bbdoActiveRevenue + yogaActiveRevenue)} tone="purple" onClick={() => setRoute({ metric: "active_revenue" })} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-3">
