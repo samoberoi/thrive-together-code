@@ -15,6 +15,8 @@ import {
   type ChatConversation,
 } from "@/lib/chatService";
 import { useChatScroll } from "@/hooks/useChatScroll";
+import EmojiPickerButton from "@/components/emoji/EmojiPickerButton";
+import EmojiText from "@/components/emoji/EmojiText";
 
 interface ConvoWithMeta extends ChatConversation {
   patient_name: string | null;

@@ -17,6 +17,8 @@ import {
 } from "@/lib/chatService";
 import type { Coach } from "@/lib/coachService";
 import { useChatScroll } from "@/hooks/useChatScroll";
+import EmojiPickerButton from "@/components/emoji/EmojiPickerButton";
+import EmojiText from "@/components/emoji/EmojiText";
 
 interface PatientChatProps {
   coach: Coach;

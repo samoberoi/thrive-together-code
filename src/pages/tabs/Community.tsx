@@ -43,6 +43,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { fetchCommunityMemberCount } from "@/lib/communityService";
 import { formatDistanceToNow } from "date-fns";
+import EmojiPickerButton from "@/components/emoji/EmojiPickerButton";
+import EmojiText from "@/components/emoji/EmojiText";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
