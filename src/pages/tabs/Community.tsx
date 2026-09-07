@@ -412,6 +412,16 @@ function PostCard({
           <MessageCircle className={`w-5 h-5 transition-colors ${showComments ? "text-[var(--bbdo-blue)]" : "text-muted-foreground"}`} strokeWidth={1.6} />
           <span className={`text-sm font-semibold ${showComments ? "text-[var(--bbdo-blue)]" : "text-muted-foreground"}`}>{localCommentCount}</span>
         </button>
+        {isAuthor && (
+          <div className="ml-auto flex items-center gap-3">
+            <button onClick={shareFacebook} aria-label="Share on Facebook" className="text-muted-foreground hover:text-[#1877F2] transition-colors">
+              <Facebook className="w-5 h-5" strokeWidth={1.6} />
+            </button>
+            <button onClick={shareInstagram} aria-label="Share on Instagram" className="text-muted-foreground hover:text-[#E1306C] transition-colors">
+              <Instagram className="w-5 h-5" strokeWidth={1.6} />
+            </button>
+          </div>
+        )}
       </div>
 
       {likedByLine}
