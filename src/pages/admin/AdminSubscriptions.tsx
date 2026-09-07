@@ -14,6 +14,7 @@ import AdherencePill from "@/components/admin/AdherencePill";
 import AdherenceNudgeDialog from "@/components/admin/AdherenceNudgeDialog";
 import { useAdherence } from "@/hooks/useAdherence";
 import type { AdherenceSummary } from "@/lib/adherenceService";
+import { fetchRegionFxMap, regionOf, formatMoneyIn, toInr, INR_REGION, type RegionFx } from "@/lib/currencyDisplay";
 
 import { differenceInDays } from "date-fns";
 
@@ -31,6 +32,7 @@ interface Sub {
   userPhone?: string;
   userEmail?: string;
   coachName?: string | null;
+  regionCode?: string | null;
 }
 
 interface YogaSub {
@@ -104,6 +106,12 @@ export default function AdminSubscriptions() {
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<"bbdo" | "yoga">("bbdo");
   const [nudgeTarget, setNudgeTarget] = useState<{ userId: string; name: string } | null>(null);
+  const [regionFx, setRegionFx] = useState<Map<string, RegionFx>>(new Map());
+
+  /** Native currency the member paid in. */
+  const money = (amount: number, regionCode?: string | null) => formatMoneyIn(amount, regionOf(regionFx, regionCode));
+  /** Same amount normalised to INR so mixed-currency totals add up. */
+  const asInr = (amount: number, regionCode?: string | null) => toInr(amount, regionOf(regionFx, regionCode));
 
   const adherenceIds = useMemo(
     () => [
@@ -182,6 +190,8 @@ export default function AdminSubscriptions() {
     setLoading(true);
     const fromIso = range.from.toISOString();
     const toIso = range.to.toISOString();
+    const fxMap = await fetchRegionFxMap();
+    setRegionFx(fxMap);
     const [{ data: activeSubData }, { data: rangeSubData }, { data: yogaActiveData }, { data: yogaRangeData }, { data: pkgs }, { data: ypkgs }] = await Promise.all([
       supabase.from("subscriptions").select("*").eq("status", "active").order("expires_at", { ascending: true }),
       supabase.from("subscriptions").select("*").gte("started_at", fromIso).lte("started_at", toIso).order("started_at", { ascending: false }),
@@ -197,7 +207,7 @@ export default function AdminSubscriptions() {
     const partnerIds = [...new Set(yogaRows.map((y) => y.partner_id).filter(Boolean))];
 
     const [{ data: profiles }, { data: assignments }, { data: partners }] = await Promise.all([
-      userIds.length ? supabase.from("profiles").select("user_id, name, phone, email").in("user_id", userIds) : Promise.resolve({ data: [] as any[] }),
+      userIds.length ? supabase.from("profiles").select("user_id, name, phone, email, region_code").in("user_id", userIds) : Promise.resolve({ data: [] as any[] }),
       userIds.length ? (supabase as any).from("coach_assignments").select("user_id, coach_id, is_active, coaches(name)").in("user_id", userIds).eq("is_active", true) : Promise.resolve({ data: [] as any[] }),
       partnerIds.length ? (supabase as any).from("channel_partners").select("id, business_name, name").in("id", partnerIds) : Promise.resolve({ data: [] as any[] }),
     ]);
@@ -213,6 +223,7 @@ export default function AdminSubscriptions() {
       userPhone: pMap.get(s.user_id)?.phone || "",
       userEmail: pMap.get(s.user_id)?.email || "",
       coachName: cMap.get(s.user_id) || null,
+      regionCode: pMap.get(s.user_id)?.region_code || "IN",
     });
     const enrichYoga = (y: any): YogaSub => ({
       ...y,
@@ -250,8 +261,8 @@ export default function AdminSubscriptions() {
     return map;
   }, [yogaActiveSubs]);
 
-  const bbdoActiveRevenue = activeSubs.reduce((s, x) => s + (x.plan_price || 0), 0);
-  const bbdoRangeRevenue = rangeSubs.reduce((s, x) => s + (x.plan_price || 0), 0);
+  const bbdoActiveRevenue = activeSubs.reduce((s, x) => s + asInr(x.plan_price || 0, x.regionCode), 0);
+  const bbdoRangeRevenue = rangeSubs.reduce((s, x) => s + asInr(x.plan_price || 0, x.regionCode), 0);
   const yogaActiveRevenue = yogaActiveSubs.reduce((s, y) => s + (y.price_inr || 0), 0);
   const yogaRangeRevenue = yogaRangeSubs.reduce((s, y) => s + (y.price_inr || 0), 0);
   const bbdoRenewals = activeSubs.filter((s) => {
@@ -275,7 +286,7 @@ export default function AdminSubscriptions() {
       const matchesSearch = !q || s.userName?.toLowerCase().includes(q) || s.userPhone?.includes(q) || s.coachName?.toLowerCase().includes(q);
       return matchesSearch && inRange(detailRange, s.started_at);
     });
-    const totalRev = list.reduce((sum, s) => sum + s.plan_price, 0);
+    const totalRev = list.reduce((sum, s) => sum + asInr(s.plan_price || 0, s.regionCode), 0);
     const withCoach = list.filter((s) => s.coachName).length;
     const renewingSoon = list.filter((s) => {
       const days = differenceInDays(new Date(s.expires_at), new Date());
@@ -307,6 +318,7 @@ export default function AdminSubscriptions() {
               adherence={adherence.get(s.user_id)}
               adherenceLoading={adherenceLoading}
               onNudge={() => setNudgeTarget({ userId: s.user_id, name: s.userName || "Member" })}
+              money={money}
             />
           ))}
           {list.length === 0 && <EmptyState label="No subscribers in this plan for the selected period" />}
@@ -356,7 +368,7 @@ export default function AdminSubscriptions() {
       const q = search.toLowerCase();
       return !q || r.userName.toLowerCase().includes(q) || r.userPhone.includes(q) || r.owner.toLowerCase().includes(q) || r.product.toLowerCase().includes(q);
     });
-    const total = list.reduce((sum, row) => sum + row.amount, 0);
+    const total = list.reduce((sum, row) => sum + asInr(row.amount, row.regionCode), 0);
     return (
       <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
@@ -379,6 +391,7 @@ export default function AdminSubscriptions() {
               adherence={adherence.get(row.userId)}
               adherenceLoading={adherenceLoading}
               onNudge={() => setNudgeTarget({ userId: row.userId, name: row.userName })}
+              money={money}
             />
           ))}
           {list.length === 0 && <EmptyState label="No matching subscription records" />}
@@ -396,7 +409,7 @@ export default function AdminSubscriptions() {
         <div>
           <h1 className="text-2xl font-black">Subscriptions</h1>
           <p className="text-muted-foreground text-sm">
-            {activeSubs.length + yogaActiveSubs.length} total active · {inr(bbdoActiveRevenue + yogaActiveRevenue)} active revenue · {range.label} sales: {inr(bbdoRangeRevenue + yogaRangeRevenue)}
+            {activeSubs.length + yogaActiveSubs.length} total active · {inr(bbdoActiveRevenue + yogaActiveRevenue)} active revenue (INR equiv.) · {range.label} sales: {inr(bbdoRangeRevenue + yogaRangeRevenue)}
           </p>
         </div>
         <DateRangeFilter value={range} onChange={setRange} />
@@ -406,7 +419,7 @@ export default function AdminSubscriptions() {
         <StatCard label="BBDO Active" value={activeSubs.length} tone="primary" onClick={() => setRoute({ subscriptionTab: "bbdo" })} />
         <StatCard label="Yoga Active" value={yogaActiveSubs.length} tone="emerald" onClick={() => setRoute({ subscriptionTab: "yoga" })} />
         <StatCard label="Renewals Due" value={bbdoRenewals.length + yogaRenewals.length} tone="amber" onClick={() => setRoute({ metric: "renewals" })} />
-        <StatCard label="Active Revenue" value={inr(bbdoActiveRevenue + yogaActiveRevenue)} tone="purple" onClick={() => setRoute({ metric: "active_revenue" })} />
+        <StatCard label="Active Revenue (INR)" value={inr(bbdoActiveRevenue + yogaActiveRevenue)} tone="purple" onClick={() => setRoute({ metric: "active_revenue" })} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-3">
@@ -549,7 +562,7 @@ function SearchExport({ search, setSearch, placeholder, filename, rows }: { sear
   );
 }
 
-function BBDORow({ sub, index, onOpenProfile, adherence, adherenceLoading, onNudge }: { sub: Sub; index: number; onOpenProfile?: (userId: string) => void; adherence?: AdherenceSummary; adherenceLoading?: boolean; onNudge?: () => void }) {
+function BBDORow({ sub, index, onOpenProfile, adherence, adherenceLoading, onNudge, money }: { sub: Sub; index: number; onOpenProfile?: (userId: string) => void; adherence?: AdherenceSummary; adherenceLoading?: boolean; onNudge?: () => void; money?: (amount: number, regionCode?: string | null) => string }) {
   const daysLeft = differenceInDays(new Date(sub.expires_at), new Date());
   const renewSoon = daysLeft >= 0 && daysLeft <= 30;
   return (
@@ -587,7 +600,7 @@ function BBDORow({ sub, index, onOpenProfile, adherence, adherenceLoading, onNud
             ) : (
               <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">No coach</span>
             )}
-            <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">{sub.duration_months}mo · {inr(sub.plan_price)}</span>
+            <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">{sub.duration_months}mo · {money ? money(sub.plan_price, sub.regionCode) : inr(sub.plan_price)}</span>
             {onNudge && <AdherencePill summary={adherence} loading={adherenceLoading} onNudge={onNudge} />}
           </div>
         </div>
@@ -644,6 +657,7 @@ interface ListRowData {
   product: string;
   owner: string;
   amount: number;
+  regionCode?: string | null;
   startedAt: string;
   expiresAt: string;
 }
@@ -665,6 +679,7 @@ function getListRows(view: Extract<View, { kind: "list" }>, activeSubs: Sub[], r
       product: `${planNumber(aliasPlanKey(s.plan_id))} · ${s.plan_name}`,
       owner: s.coachName ? `Coach: ${s.coachName}` : "No coach",
       amount: s.plan_price || 0,
+      regionCode: s.regionCode || "IN",
       startedAt: s.started_at,
       expiresAt: s.expires_at,
     })) : [];
@@ -680,6 +695,7 @@ function getListRows(view: Extract<View, { kind: "list" }>, activeSubs: Sub[], r
       product: y.packageName || "Yoga Package",
       owner: `Instructor: ${y.partnerName || "Instructor"}`,
       amount: y.price_inr || 0,
+      regionCode: "IN",
       startedAt: y.starts_on || y.created_at,
       expiresAt: y.expires_on,
     })) : [];
@@ -692,7 +708,7 @@ function betweenRenewalDays(date: string, days: number) {
   return left >= 0 && left <= days;
 }
 
-function ListRow({ row, index, onOpenProfile, adherence, adherenceLoading, onNudge }: { row: ListRowData; index: number; onOpenProfile?: (userId: string) => void; adherence?: AdherenceSummary; adherenceLoading?: boolean; onNudge?: () => void }) {
+function ListRow({ row, index, onOpenProfile, adherence, adherenceLoading, onNudge, money }: { row: ListRowData; index: number; onOpenProfile?: (userId: string) => void; adherence?: AdherenceSummary; adherenceLoading?: boolean; onNudge?: () => void; money?: (amount: number, regionCode?: string | null) => string }) {
   const daysLeft = differenceInDays(new Date(row.expiresAt), new Date());
   const renewSoon = row.type === "BBDO" ? betweenRenewalDays(row.expiresAt, 30) : betweenRenewalDays(row.expiresAt, 15);
   return (
@@ -713,7 +729,7 @@ function ListRow({ row, index, onOpenProfile, adherence, adherenceLoading, onNud
         </div>
         <div className="mt-2 flex flex-wrap gap-2 text-xs">
           <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">{row.owner}</span>
-          <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">{inr(row.amount)}</span>
+          <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">{money ? money(row.amount, row.regionCode) : inr(row.amount)}</span>
           {onNudge && row.type === "BBDO" && <AdherencePill summary={adherence} loading={adherenceLoading} onNudge={onNudge} />}
         </div>
       </div>
