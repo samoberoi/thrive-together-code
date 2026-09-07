@@ -301,7 +301,7 @@ export default function PatientChat({ coach, onBack }: PatientChatProps) {
                                 Quick Question
                               </span>
                             )}
-                            <p className="text-[14px] leading-[1.4] whitespace-pre-wrap break-words">{msg.message}</p>
+                            <EmojiText text={msg.message} className="text-[14px] leading-[1.4]" />
                             <div className={`flex items-center gap-1 mt-0.5 ${isMe ? "justify-end" : ""}`}>
                               <span className={`text-[10px] ${isMe ? "text-white/60" : "text-muted-foreground"}`}>
                                 {formatTime(msg.created_at)}{msg.edited_at ? " · edited" : ""}
@@ -405,6 +405,12 @@ export default function PatientChat({ coach, onBack }: PatientChatProps) {
           >
             <Zap className="w-5 h-5" strokeWidth={2.2} />
           </button>
+          <EmojiPickerButton
+            onSelect={(emoji) => {
+              setInput((v) => v + emoji);
+              inputRef.current?.focus();
+            }}
+          />
           <div className="flex-1 relative">
             <textarea
               ref={inputRef}
