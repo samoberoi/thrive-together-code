@@ -67,6 +67,7 @@ export default function AdminAssignments() {
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState<string | null>(null);
   const [open, setOpen] = useState<Record<string, boolean>>({});
+  const [reassign, setReassign] = useState<{ userId: string; name: string; coachType: string | null } | null>(null);
 
   useEffect(() => {
     loadAll();
