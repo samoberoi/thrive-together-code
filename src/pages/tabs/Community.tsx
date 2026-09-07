@@ -71,26 +71,6 @@ function PostCard({
   onToggleLike: (id: string) => void; onDelete: (id: string) => void;
 }) {
   const isAuthor = post.user_id === currentUserId;
-  const { toast: postToast } = useToast();
-
-  const shareText = `${postContent}\n\n— shared from the Bye Bye Diabetes & Obesity community`;
-  const shareUrl = typeof window !== "undefined" ? `${window.location.origin}/community` : "";
-  const shareFacebook = () => {
-    const u = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}`;
-    window.open(u, "_blank", "noopener,width=640,height=720");
-  };
-  const shareInstagram = async () => {
-    // Instagram has no web share endpoint — use the native share sheet when available, else copy
-    if (typeof navigator !== "undefined" && (navigator as any).share) {
-      try { await (navigator as any).share({ text: shareText, url: shareUrl }); return; } catch { /* dismissed */ }
-    }
-    try {
-      await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
-      postToast({ title: "Copied!", description: "Post copied — paste it in your Instagram story or bio." });
-    } catch {
-      postToast({ title: "Couldn't copy", description: "Please copy the post text manually.", variant: "destructive" });
-    }
-  };
   const [editingPost, setEditingPost] = useState(false);
   const [postDraft, setPostDraft] = useState(post.content);
   const [savingPost, setSavingPost] = useState(false);
