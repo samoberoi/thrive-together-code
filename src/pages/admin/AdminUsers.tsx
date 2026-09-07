@@ -344,6 +344,16 @@ export default function AdminUsers() {
                       <UserCheck className="w-3 h-3 shrink-0" />
                       <span className="truncate">{coach}</span>
                     </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setReassignTarget({ userId: user.user_id, name: user.name || "Member" });
+                      }}
+                      className="mt-1 block text-[11px] font-semibold text-primary hover:underline"
+                    >
+                      {user.coach_name ? "Reassign" : "Assign coach"}
+                    </button>
                   </div>
 
                   <div className="hidden md:block">
