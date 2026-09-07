@@ -344,16 +344,20 @@ export default function AdminUsers() {
                       <UserCheck className="w-3 h-3 shrink-0" />
                       <span className="truncate">{coach}</span>
                     </span>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setReassignTarget({ userId: user.user_id, name: user.name || "Member" });
-                      }}
-                      className="mt-1 block text-[11px] font-semibold text-primary hover:underline"
-                    >
-                      {user.coach_name ? "Reassign" : "Assign coach"}
-                    </button>
+                    {userCategory(user.user_id) === "active" || userCategory(user.user_id) === "intensive" ? (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setReassignTarget({ userId: user.user_id, name: user.name || "Member" });
+                        }}
+                        className="mt-1 block text-[11px] font-semibold text-primary hover:underline"
+                      >
+                        {user.coach_name ? "Reassign" : "Assign coach"}
+                      </button>
+                    ) : (
+                      <span className="mt-1 block text-[11px] text-muted-foreground">No coach on this plan</span>
+                    )}
                   </div>
 
                   <div className="hidden md:block">
@@ -392,20 +396,24 @@ export default function AdminUsers() {
                 <div className="md:hidden px-3 sm:px-4 pb-3 grid grid-cols-1 min-[430px]:grid-cols-2 gap-1.5">
                   <Pill icon={<PackageIcon className="w-3 h-3" />} label={pkg} tone="blue" />
                   <Pill label={`${fmtDate(sub?.started_at)} → ${fmtDate(sub?.expires_at)}`} tone="muted" />
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setReassignTarget({ userId: user.user_id, name: user.name || "Member" });
-                    }}
-                    className="text-left"
-                  >
-                    <Pill
-                      icon={<UserCheck className="w-3 h-3" />}
-                      label={`${coach} · ${user.coach_name ? "Reassign" : "Assign"}`}
-                      tone={user.coach_name ? "green" : "muted"}
-                    />
-                  </button>
+                  {userCategory(user.user_id) === "active" || userCategory(user.user_id) === "intensive" ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setReassignTarget({ userId: user.user_id, name: user.name || "Member" });
+                      }}
+                      className="text-left"
+                    >
+                      <Pill
+                        icon={<UserCheck className="w-3 h-3" />}
+                        label={`${coach} · ${user.coach_name ? "Reassign" : "Assign"}`}
+                        tone={user.coach_name ? "green" : "muted"}
+                      />
+                    </button>
+                  ) : (
+                    <Pill icon={<UserCheck className="w-3 h-3" />} label="No coach on this plan" tone="muted" />
+                  )}
                   <span
                     className={`text-[11px] px-2 py-1 rounded-full font-semibold ${
                       user.onboarding_completed
