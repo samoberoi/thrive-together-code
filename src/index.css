@@ -1115,3 +1115,9 @@ html.bb-android .press-ripple:active::after { opacity: 0.08; }
 
 /* When keyboard is open, hide fixed bottom nav bars marked as hide-on-kb. */
 html.kb-open .kb-hide { display: none !important; }
+
+/* WhatsApp-style colour emoji rendering in messages and replies */
+.emoji-text {
+  font-family: inherit, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Twemoji Mozilla", sans-serif;
+  font-variant-emoji: emoji;
+}

@@ -15,6 +15,8 @@ import {
   type ChatConversation,
 } from "@/lib/chatService";
 import { useChatScroll } from "@/hooks/useChatScroll";
+import EmojiPickerButton from "@/components/emoji/EmojiPickerButton";
+import EmojiText from "@/components/emoji/EmojiText";
 
 interface ConvoWithMeta extends ChatConversation {
   patient_name: string | null;
@@ -330,7 +332,7 @@ export default function CoachInbox({ coachId, openPatientId }: CoachInboxProps) 
                     {msg.is_predefined && !isMe && (
                       <span className="text-[9px] uppercase tracking-wider opacity-60 block mb-0.5">Quick Question</span>
                     )}
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.message}</p>
+                    <EmojiText text={msg.message} className="text-sm leading-relaxed" />
                     <div className={`flex items-center gap-1 mt-1 ${isMe ? "justify-end" : ""}`}>
                       <span className={`text-[10px] ${isMe ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
                         {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
@@ -377,6 +379,13 @@ export default function CoachInbox({ coachId, openPatientId }: CoachInboxProps) 
               <X className="w-3.5 h-3.5" /> Cancel edit
             </button>
           )}
+          <EmojiPickerButton
+            className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center bg-muted text-muted-foreground hover:text-foreground transition"
+            onSelect={(emoji) => {
+              setInput((v) => v + emoji);
+              inputRef.current?.focus();
+            }}
+          />
           <input
             ref={inputRef}
             type="text"

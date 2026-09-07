@@ -43,6 +43,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { fetchCommunityMemberCount } from "@/lib/communityService";
 import { formatDistanceToNow } from "date-fns";
+import EmojiPickerButton from "@/components/emoji/EmojiPickerButton";
+import EmojiText from "@/components/emoji/EmojiText";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -459,13 +461,18 @@ function PostCard({
                           </div>
                         </div>
                       ) : (
-                        <p className="text-foreground/80 text-xs mt-0.5 whitespace-pre-wrap">{c.content}</p>
+                        <EmojiText text={c.content} className="text-foreground/80 text-xs mt-0.5" />
                       )}
                     </div>
                   </div>
                 ))
               )}
               <div className="flex items-center gap-2 mt-1">
+                <EmojiPickerButton
+                  className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center bg-muted/60 text-muted-foreground hover:text-foreground transition"
+                  iconClassName="w-4 h-4"
+                  onSelect={(emoji) => setCommentText((v) => v + emoji)}
+                />
                 <input
                   className="flex-1 bg-muted/60 rounded-full px-4 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-[var(--bbdo-blue)]/30"
                   placeholder="Write a reply…"
@@ -579,6 +586,13 @@ function CreatePostSheet({
           value={content}
           onChange={(e) => setContent(e.target.value)}
         />
+        <div className="mt-2 flex items-center">
+          <EmojiPickerButton
+            className="w-9 h-9 rounded-full flex items-center justify-center bg-muted/60 text-muted-foreground hover:text-foreground transition"
+            iconClassName="w-4 h-4"
+            onSelect={(emoji) => setContent((v) => v + emoji)}
+          />
+        </div>
 
         {/* Image previews — up to four photos per post */}
         {previewUrls.length > 0 && (
