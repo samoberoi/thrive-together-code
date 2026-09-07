@@ -12,6 +12,7 @@ import ImportCsvButton from "@/components/admin/ImportCsvButton";
 import AdminUserProfileSheet from "@/components/admin/AdminUserProfileSheet";
 import AdherencePill from "@/components/admin/AdherencePill";
 import AdherenceNudgeDialog from "@/components/admin/AdherenceNudgeDialog";
+import ReassignCoachDialog from "@/components/admin/ReassignCoachDialog";
 import { useAdherence } from "@/hooks/useAdherence";
 import DateRangeFilter, { defaultRange, inRange, type DateRange } from "@/components/admin/DateRangeFilter";
 
@@ -66,6 +67,7 @@ export default function AdminUsers() {
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
   const [nudgeTarget, setNudgeTarget] = useState<{ userId: string; name: string } | null>(null);
+  const [reassignTarget, setReassignTarget] = useState<{ userId: string; name: string } | null>(null);
 
 
   useEffect(() => {
@@ -342,6 +344,16 @@ export default function AdminUsers() {
                       <UserCheck className="w-3 h-3 shrink-0" />
                       <span className="truncate">{coach}</span>
                     </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setReassignTarget({ userId: user.user_id, name: user.name || "Member" });
+                      }}
+                      className="mt-1 block text-[11px] font-semibold text-primary hover:underline"
+                    >
+                      {user.coach_name ? "Reassign" : "Assign coach"}
+                    </button>
                   </div>
 
                   <div className="hidden md:block">
@@ -380,7 +392,20 @@ export default function AdminUsers() {
                 <div className="md:hidden px-3 sm:px-4 pb-3 grid grid-cols-1 min-[430px]:grid-cols-2 gap-1.5">
                   <Pill icon={<PackageIcon className="w-3 h-3" />} label={pkg} tone="blue" />
                   <Pill label={`${fmtDate(sub?.started_at)} → ${fmtDate(sub?.expires_at)}`} tone="muted" />
-                  <Pill icon={<UserCheck className="w-3 h-3" />} label={coach} tone={user.coach_name ? "green" : "muted"} />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setReassignTarget({ userId: user.user_id, name: user.name || "Member" });
+                    }}
+                    className="text-left"
+                  >
+                    <Pill
+                      icon={<UserCheck className="w-3 h-3" />}
+                      label={`${coach} · ${user.coach_name ? "Reassign" : "Assign"}`}
+                      tone={user.coach_name ? "green" : "muted"}
+                    />
+                  </button>
                   <span
                     className={`text-[11px] px-2 py-1 rounded-full font-semibold ${
                       user.onboarding_completed
@@ -466,6 +491,15 @@ export default function AdminUsers() {
         userName={nudgeTarget?.name ?? ""}
         summary={nudgeTarget ? adherence.get(nudgeTarget.userId) ?? null : null}
       />
+      {reassignTarget && (
+        <ReassignCoachDialog
+          open={!!reassignTarget}
+          onOpenChange={(v) => !v && setReassignTarget(null)}
+          userId={reassignTarget.userId}
+          userName={reassignTarget.name}
+          onDone={loadAll}
+        />
+      )}
     </div>
 
 

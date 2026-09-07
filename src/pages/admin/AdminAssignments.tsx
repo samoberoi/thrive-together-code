@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { logAudit } from "@/lib/auditLog";
 import ExportCsvButton from "@/components/admin/ExportCsvButton";
 import ImportCsvButton from "@/components/admin/ImportCsvButton";
+import ReassignCoachDialog from "@/components/admin/ReassignCoachDialog";
 
 interface Package {
   plan_key: string;
@@ -66,6 +67,7 @@ export default function AdminAssignments() {
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState<string | null>(null);
   const [open, setOpen] = useState<Record<string, boolean>>({});
+  const [reassign, setReassign] = useState<{ userId: string; name: string; coachType: string | null } | null>(null);
 
   useEffect(() => {
     loadAll();
@@ -344,13 +346,29 @@ export default function AdminAssignments() {
                                       </Button>
                                     )}
                                   </>
-                                ) : (
-                                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full bg-amber-500/10 text-amber-600">
-                                    <UserCheck className="w-3 h-3" />
-                                    Unassigned
-                                  </span>
-                                )}
-                              </div>
+                                 ) : (
+                                   <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full bg-amber-500/10 text-amber-600">
+                                     <UserCheck className="w-3 h-3" />
+                                     Unassigned
+                                   </span>
+                                 )}
+                                 {!noCoach && (
+                                   <Button
+                                     variant="outline"
+                                     size="sm"
+                                     className="h-7 px-2 text-[11px]"
+                                     onClick={() =>
+                                       setReassign({
+                                         userId: u.user_id,
+                                         name: prof?.name || "Member",
+                                         coachType: ct,
+                                       })
+                                     }
+                                   >
+                                     {coach ? "Reassign" : "Assign"}
+                                   </Button>
+                                 )}
+                               </div>
                             </div>
                           );
                         })}
@@ -363,6 +381,17 @@ export default function AdminAssignments() {
           </div>
         );
       })}
+
+      {reassign && (
+        <ReassignCoachDialog
+          open={!!reassign}
+          onOpenChange={(v) => !v && setReassign(null)}
+          userId={reassign.userId}
+          userName={reassign.name}
+          coachType={reassign.coachType}
+          onDone={loadAll}
+        />
+      )}
     </div>
   );
 }
