@@ -586,6 +586,13 @@ function CreatePostSheet({
           value={content}
           onChange={(e) => setContent(e.target.value)}
         />
+        <div className="mt-2 flex items-center">
+          <EmojiPickerButton
+            className="w-9 h-9 rounded-full flex items-center justify-center bg-muted/60 text-muted-foreground hover:text-foreground transition"
+            iconClassName="w-4 h-4"
+            onSelect={(emoji) => setContent((v) => v + emoji)}
+          />
+        </div>
 
         {/* Image previews — up to four photos per post */}
         {previewUrls.length > 0 && (
