@@ -67,6 +67,7 @@ export default function AdminUsers() {
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
   const [nudgeTarget, setNudgeTarget] = useState<{ userId: string; name: string } | null>(null);
+  const [reassignTarget, setReassignTarget] = useState<{ userId: string; name: string } | null>(null);
 
 
   useEffect(() => {
