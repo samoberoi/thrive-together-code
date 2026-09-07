@@ -381,6 +381,17 @@ export default function AdminAssignments() {
           </div>
         );
       })}
+
+      {reassign && (
+        <ReassignCoachDialog
+          open={!!reassign}
+          onOpenChange={(v) => !v && setReassign(null)}
+          userId={reassign.userId}
+          userName={reassign.name}
+          coachType={reassign.coachType}
+          onDone={loadAll}
+        />
+      )}
     </div>
   );
 }
