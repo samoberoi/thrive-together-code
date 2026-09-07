@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Heart, MessageCircle, Users, Send, Plus,
   Loader2, Trash2, Pencil, Trophy, Flame, TrendingDown, TrendingUp, X, Sparkles,
+  Facebook, Instagram,
   Footprints, Utensils, Award, Activity, Wind, Scale, HeartPulse, Star,
   ImagePlus, Check,
 } from "lucide-react";
@@ -89,6 +90,26 @@ function PostCard({
   const [showLikers, setShowLikers] = useState(false);
   const [allLikers, setAllLikers] = useState<PostLiker[] | null>(null);
   const [localCommentCount, setLocalCommentCount] = useState(post.comment_count);
+  const { toast: postToast } = useToast();
+
+  const shareText = `${postContent}\n\n— shared from the Bye Bye Diabetes & Obesity community`;
+  const shareUrl = typeof window !== "undefined" ? `${window.location.origin}/community` : "";
+  const shareFacebook = () => {
+    const u = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}`;
+    window.open(u, "_blank", "noopener,width=640,height=720");
+  };
+  const shareInstagram = async () => {
+    // Instagram has no web share endpoint — use the native share sheet when available, else copy
+    if (typeof navigator !== "undefined" && (navigator as any).share) {
+      try { await (navigator as any).share({ text: shareText, url: shareUrl }); return; } catch { /* dismissed */ }
+    }
+    try {
+      await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
+      postToast({ title: "Copied!", description: "Post copied — paste it in your Instagram story or bio." });
+    } catch {
+      postToast({ title: "Couldn't copy", description: "Please copy the post text manually.", variant: "destructive" });
+    }
+  };
 
   // Sync when parent state changes (e.g. after refetch)
   useEffect(() => { setLocalLiked(isLiked); }, [isLiked]);
@@ -391,6 +412,16 @@ function PostCard({
           <MessageCircle className={`w-5 h-5 transition-colors ${showComments ? "text-[var(--bbdo-blue)]" : "text-muted-foreground"}`} strokeWidth={1.6} />
           <span className={`text-sm font-semibold ${showComments ? "text-[var(--bbdo-blue)]" : "text-muted-foreground"}`}>{localCommentCount}</span>
         </button>
+        {isAuthor && (
+          <div className="ml-auto flex items-center gap-3">
+            <button onClick={shareFacebook} aria-label="Share on Facebook" className="text-muted-foreground hover:text-[#1877F2] transition-colors">
+              <Facebook className="w-5 h-5" strokeWidth={1.6} />
+            </button>
+            <button onClick={shareInstagram} aria-label="Share on Instagram" className="text-muted-foreground hover:text-[#E1306C] transition-colors">
+              <Instagram className="w-5 h-5" strokeWidth={1.6} />
+            </button>
+          </div>
+        )}
       </div>
 
       {likedByLine}
