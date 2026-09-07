@@ -466,6 +466,15 @@ export default function AdminUsers() {
         userName={nudgeTarget?.name ?? ""}
         summary={nudgeTarget ? adherence.get(nudgeTarget.userId) ?? null : null}
       />
+      {reassignTarget && (
+        <ReassignCoachDialog
+          open={!!reassignTarget}
+          onOpenChange={(v) => !v && setReassignTarget(null)}
+          userId={reassignTarget.userId}
+          userName={reassignTarget.name}
+          onDone={loadAll}
+        />
+      )}
     </div>
 
 
