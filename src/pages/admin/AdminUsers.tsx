@@ -12,6 +12,7 @@ import ImportCsvButton from "@/components/admin/ImportCsvButton";
 import AdminUserProfileSheet from "@/components/admin/AdminUserProfileSheet";
 import AdherencePill from "@/components/admin/AdherencePill";
 import AdherenceNudgeDialog from "@/components/admin/AdherenceNudgeDialog";
+import ReassignCoachDialog from "@/components/admin/ReassignCoachDialog";
 import { useAdherence } from "@/hooks/useAdherence";
 import DateRangeFilter, { defaultRange, inRange, type DateRange } from "@/components/admin/DateRangeFilter";
 
