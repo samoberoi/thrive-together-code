@@ -562,7 +562,7 @@ function SearchExport({ search, setSearch, placeholder, filename, rows }: { sear
   );
 }
 
-function BBDORow({ sub, index, onOpenProfile, adherence, adherenceLoading, onNudge }: { sub: Sub; index: number; onOpenProfile?: (userId: string) => void; adherence?: AdherenceSummary; adherenceLoading?: boolean; onNudge?: () => void }) {
+function BBDORow({ sub, index, onOpenProfile, adherence, adherenceLoading, onNudge, money }: { sub: Sub; index: number; onOpenProfile?: (userId: string) => void; adherence?: AdherenceSummary; adherenceLoading?: boolean; onNudge?: () => void; money?: (amount: number, regionCode?: string | null) => string }) {
   const daysLeft = differenceInDays(new Date(sub.expires_at), new Date());
   const renewSoon = daysLeft >= 0 && daysLeft <= 30;
   return (
@@ -708,7 +708,7 @@ function betweenRenewalDays(date: string, days: number) {
   return left >= 0 && left <= days;
 }
 
-function ListRow({ row, index, onOpenProfile, adherence, adherenceLoading, onNudge }: { row: ListRowData; index: number; onOpenProfile?: (userId: string) => void; adherence?: AdherenceSummary; adherenceLoading?: boolean; onNudge?: () => void }) {
+function ListRow({ row, index, onOpenProfile, adherence, adherenceLoading, onNudge, money }: { row: ListRowData; index: number; onOpenProfile?: (userId: string) => void; adherence?: AdherenceSummary; adherenceLoading?: boolean; onNudge?: () => void; money?: (amount: number, regionCode?: string | null) => string }) {
   const daysLeft = differenceInDays(new Date(row.expiresAt), new Date());
   const renewSoon = row.type === "BBDO" ? betweenRenewalDays(row.expiresAt, 30) : betweenRenewalDays(row.expiresAt, 15);
   return (
