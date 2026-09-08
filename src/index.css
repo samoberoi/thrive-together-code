@@ -711,6 +711,37 @@
 
   /* Kill horizontal scroll anywhere it slips through */
   html, body { max-width: 100vw; overflow-x: hidden; }
+  #root { max-width: 100vw; overflow-x: clip; }
+
+  /* Never let a focused field trigger the browser's auto-zoom (which then
+     leaves the whole page pannable left/right). 16px is the threshold. */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+  select,
+  textarea,
+  [contenteditable="true"] {
+    font-size: max(16px, 1em);
+    touch-action: manipulation;
+  }
+
+  /* Emoji keyboard — sits inside the app column, never full-bleed/ugly */
+  .bbdo-emoji-sheet .EmojiPickerReact {
+    --epr-emoji-size: 30px;
+    width: 100% !important;
+    border: 0 !important;
+    background: hsl(var(--background)) !important;
+    font-family: inherit !important;
+  }
+  .bbdo-emoji-sheet .EmojiPickerReact .epr-search-container input.epr-search {
+    height: 40px;
+    font-size: 16px;
+    border-radius: 12px;
+  }
+  .bbdo-emoji-sheet .EmojiPickerReact .epr-emoji-category-label {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: hsl(var(--background)) !important;
+  }
 
   /* ── Mobile-safety layer — applied across the entire app ── */
   @media (max-width: 767px) {
