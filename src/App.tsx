@@ -9,6 +9,8 @@ import { AnimatePresence } from "framer-motion";
 import PageTransition from "@/components/PageTransition";
 import AppErrorBoundary from "@/components/AppErrorBoundary";
 import AndroidBackHandler from "@/components/AndroidBackHandler";
+import AppUpdateBanner from "@/components/AppUpdateBanner";
+
 import { isNative } from "@/lib/biometric";
 import { isNativeVideoTransitionActive } from "@/lib/nativeVideoSession";
 
@@ -461,6 +463,8 @@ const App = () => (
                     <NativeAuthStartupGate>
                       <NativeSessionRedirect />
                       <GlobalRealtimeAlerts />
+                      <AppUpdateBanner />
+
                       <AnimatedRoutes />
                     </NativeAuthStartupGate>
                   </SubscriptionGate>
