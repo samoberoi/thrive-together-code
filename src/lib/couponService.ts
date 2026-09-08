@@ -28,7 +28,51 @@ export interface Coupon {
   redeemed_count: number;
   active: boolean;
   created_at: string;
+  assigned_coach_id: string | null;
 }
+
+export interface CoachCoupon {
+  coupon_id: string;
+  code: string;
+  coupon_active: boolean;
+  redeemed_count: number;
+  max_redemptions: number | null;
+  campaign_name: string;
+  campaign_description: string | null;
+  discount_type: DiscountType;
+  discount_value: number;
+  start_date: string;
+  end_date: string | null;
+  campaign_active: boolean;
+  applicable_cycles: string[] | null;
+  applicable_plan_keys: string[] | null;
+  used_by: string | null;
+  used_at: string | null;
+  used_plan_key: string | null;
+  used_discount_amount: number | null;
+}
+
+/** Coaches available for coupon assignment (admin only). */
+export async function fetchCoachOptions(): Promise<{ id: string; name: string }[]> {
+  const { data } = await (supabase as any).from("coaches").select("id, name").order("name");
+  return (data ?? []) as { id: string; name: string }[];
+}
+
+export async function assignCouponToCoach(couponId: string, coachId: string | null) {
+  const { error } = await (supabase as any)
+    .from("coupons")
+    .update({ assigned_coach_id: coachId })
+    .eq("id", couponId);
+  if (error) throw error;
+}
+
+/** Coupons handed to the signed-in coach, with usage details. */
+export async function fetchMyCoachCoupons(): Promise<CoachCoupon[]> {
+  const { data, error } = await (supabase as any).rpc("coach_my_coupons");
+  if (error) throw error;
+  return (data ?? []) as CoachCoupon[];
+}
+
 
 export interface CouponRedemption {
   id: string;

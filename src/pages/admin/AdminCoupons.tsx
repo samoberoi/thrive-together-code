@@ -18,11 +18,14 @@ import {
   fetchCoupons,
   fetchRedemptions,
   fetchUserLabels,
+  fetchCoachOptions,
+  assignCouponToCoach,
   type CouponCampaign,
   type Coupon,
   type CouponRedemption,
   type DiscountType,
 } from "@/lib/couponService";
+
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 const toDateInput = (iso: string | null | undefined) => (iso ? new Date(iso).toISOString().slice(0, 10) : "");
@@ -283,6 +286,7 @@ export default function AdminCoupons() {
   const [genCount, setGenCount] = useState(50);
   const [codeEditId, setCodeEditId] = useState<string | null>(null);
   const [codeDraft, setCodeDraft] = useState("");
+  const [coachOptions, setCoachOptions] = useState<{ id: string; name: string }[]>([]);
 
   const load = async () => {
     setLoading(true);
@@ -291,7 +295,9 @@ export default function AdminCoupons() {
   };
   useEffect(() => {
     load();
+    fetchCoachOptions().then(setCoachOptions).catch(() => setCoachOptions([]));
   }, []);
+
 
   useEffect(() => {
     (async () => {
@@ -445,6 +451,17 @@ export default function AdminCoupons() {
     const { error } = await (supabase as any).from("coupons").update({ active }).eq("id", c.id);
     if (error) toast.error("Could not update code");
   };
+
+  const assignCoach = async (c: Coupon, coachId: string | null) => {
+    setCoupons((p) => p.map((x) => (x.id === c.id ? { ...x, assigned_coach_id: coachId } : x)));
+    try {
+      await assignCouponToCoach(c.id, coachId);
+      toast.success(coachId ? "Coupon given to coach" : "Coach removed from coupon");
+    } catch {
+      toast.error("Could not assign coupon");
+    }
+  };
+
 
   if (loading) {
     return (
@@ -619,10 +636,21 @@ export default function AdminCoupons() {
                         </Button>
                       </div>
                     )}
+                    <select
+                      value={c.assigned_coach_id ?? ""}
+                      onChange={(e) => assignCoach(c, e.target.value || null)}
+                      className="mt-2 w-full h-8 rounded-md border bg-background px-2 text-[11px]"
+                    >
+                      <option value="">Not given to a coach</option>
+                      {coachOptions.map((co) => (
+                        <option key={co.id} value={co.id}>{co.name}</option>
+                      ))}
+                    </select>
                     <span className="block font-sans text-[10px] text-muted-foreground mt-1">
                       used {c.redeemed_count}
                       {c.max_redemptions !== null ? `/${c.max_redemptions}` : ""}
                     </span>
+
                   </div>
                 ))}
                 {coupons.length === 0 && <p className="text-xs text-muted-foreground">No codes yet.</p>}
