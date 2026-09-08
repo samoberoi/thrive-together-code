@@ -291,7 +291,7 @@ export default function AdminUsers() {
       sorted.sort((a, b) => d(a) - d(b));
     }
     return sorted;
-  }, [scoped, search, packageFilter, riskFilter, sortKey, adherence, risk, subsByUser, pkgNames, regionNames]);
+  }, [riskScoped, packageFilter, sortKey, adherence, subsByUser]);
 
   const activeChips = [
     packageFilter !== "all"
