@@ -65,25 +65,17 @@ export default function AdminOverview() {
     })();
   }, []);
 
-  useEffect(() => { load(); }, [range]);
+  useEffect(() => { load(); }, []);
 
   const load = async () => {
     setLoading(true);
 
-    const fromIso = range.from.toISOString();
-    const toIso = range.to.toISOString();
     const since7 = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-    const [pkgRes, activeSubsRes, rangeSubsRes, profilesAllRes, profilesRangeRes, coachesRes, assignRes, logsRes] = await Promise.all([
+    const [pkgRes, activeSubsRes, profilesAllRes, coachesRes, assignRes, logsRes] = await Promise.all([
       supabase.from("packages").select("plan_key, name"),
       supabase.from("subscriptions").select("*").eq("status", "active"),
-      supabase.from("subscriptions").select("*").gte("started_at", fromIso).lte("started_at", toIso),
       (supabase as any).from("profiles").select("user_id, name, phone, region_code"),
-      supabase
-        .from("profiles")
-        .select("user_id", { count: "exact", head: true })
-        .gte("created_at", fromIso)
-        .lte("created_at", toIso),
       supabase.from("coaches").select("id, user_id, name, phone, is_active").eq("is_active", true),
       supabase.from("coach_assignments").select("coach_id, user_id").eq("is_active", true),
       supabase.from("health_logs").select("user_id").gte("logged_at", since7).limit(5000),
@@ -91,8 +83,6 @@ export default function AdminOverview() {
 
     setPackages((pkgRes.data ?? []) as Package[]);
     setAllActiveSubs((activeSubsRes.data ?? []) as Subscription[]);
-    setRangeSubs((rangeSubsRes.data ?? []) as Subscription[]);
-    setUsersInRange(profilesRangeRes.count ?? 0);
     setCoaches((coachesRes.data ?? []) as CoachRow[]);
     setAssignments((assignRes.data ?? []) as AssignmentRow[]);
     setActiveLoggerIds(new Set(((logsRes.data ?? []) as { user_id: string }[]).map((l) => l.user_id)));
@@ -101,7 +91,6 @@ export default function AdminOverview() {
     const allProfiles = (profilesAllRes.data ?? []) as unknown as Profile[];
     for (const p of allProfiles) pmap.set(p.user_id, p);
     setProfileMap(pmap);
-    setTotalUsers(allProfiles.length);
 
     setLoading(false);
   };
