@@ -16,6 +16,7 @@ import LabBookingDialog from "@/components/lab/LabBookingDialog";
 import { LabTestParametersDialog } from "@/components/lab/LabTestParametersDialog";
 import ExternalTestDialog from "@/components/lab/ExternalTestDialog";
 import LabHistorySection from "@/components/lab/LabHistorySection";
+import { payForService } from "@/lib/servicePayment";
 import PastReportsCard from "@/components/lab/PastReportsCard";
 
 import {
@@ -84,6 +85,8 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
   const [recs, setRecs] = useState<Rec[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersByRec, setOrdersByRec] = useState<Record<string, Order>>({});
+  const [unpaidOrders, setUnpaidOrders] = useState<Order[]>([]);
+  const [payingId, setPayingId] = useState<string | null>(null);
   const [testsByCode, setTestsByCode] = useState<Record<string, Test>>({});
   const [reports, setReports] = useState<any[]>([]);
   const [foundationTests, setFoundationTests] = useState<Test[]>([]);
@@ -142,7 +145,7 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
             .select("id, report_url, report_type, delivered_at, order_id, parameters")
             .eq("user_id", user.id).order("delivered_at", { ascending: false }),
           supabase.from("thyrocare_orders" as any)
-            .select("id, recommendation_id, product_codes, thyrocare_order_id, thyrocare_lead_id, status, status_detail, beneficiary_name, beneficiary_age, beneficiary_gender, mobile, email, pincode, address, collection_date, collection_slot, amount, raw_response, created_at")
+            .select("id, recommendation_id, product_codes, thyrocare_order_id, thyrocare_lead_id, status, status_detail, payment_status, beneficiary_name, beneficiary_age, beneficiary_gender, mobile, email, pincode, address, collection_date, collection_slot, amount, raw_response, created_at")
             .eq("user_id", user.id).order("created_at", { ascending: false }),
 
           supabase.from("profiles")
@@ -159,6 +162,10 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
         );
         setRecs(list);
         setOrders(orderList);
+        // Staged bookings that were never paid for: NOT booked with the lab.
+        setUnpaidOrders(rawOrders.filter(
+          (o) => (o.status || "").toLowerCase() === "awaiting_payment" && (o as any).payment_status !== "paid",
+        ));
         setReports((rep.data as any) || []);
         const orderMap: Record<string, Order> = {};
         for (const o of orderList) {
@@ -177,7 +184,7 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
             ),
           ).then(async () => {
             const { data: o2, error: o2Err } = await supabase.from("thyrocare_orders" as any)
-              .select("id, recommendation_id, product_codes, thyrocare_order_id, thyrocare_lead_id, status, status_detail, beneficiary_name, beneficiary_age, beneficiary_gender, mobile, email, pincode, address, collection_date, collection_slot, amount, raw_response, created_at")
+              .select("id, recommendation_id, product_codes, thyrocare_order_id, thyrocare_lead_id, status, status_detail, payment_status, beneficiary_name, beneficiary_age, beneficiary_gender, mobile, email, pincode, address, collection_date, collection_slot, amount, raw_response, created_at")
               .eq("user_id", user.id).order("created_at", { ascending: false });
             const refreshedRaw = (((o2 as any) || []) as Order[]);
             const refreshedOrders = refreshedRaw.filter(
@@ -194,6 +201,9 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
             }
             setOrders(nextOrders);
             setOrdersByRec(map2);
+            setUnpaidOrders(refreshedRaw.filter(
+              (o) => (o.status || "").toLowerCase() === "awaiting_payment" && (o as any).payment_status !== "paid",
+            ));
 
             const doneOrders = nextOrders.filter((o) => {
               const raw = o.raw_response || {};
@@ -770,7 +780,7 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
               .select("id, product_codes, notes, status, recommended_at, external_intent, external_note")
               .eq("user_id", user.id).order("recommended_at", { ascending: false }),
             supabase.from("thyrocare_orders" as any)
-              .select("id, recommendation_id, product_codes, thyrocare_order_id, thyrocare_lead_id, status, status_detail, beneficiary_name, beneficiary_age, beneficiary_gender, mobile, email, pincode, address, collection_date, collection_slot, amount, raw_response, created_at")
+              .select("id, recommendation_id, product_codes, thyrocare_order_id, thyrocare_lead_id, status, status_detail, payment_status, beneficiary_name, beneficiary_age, beneficiary_gender, mobile, email, pincode, address, collection_date, collection_slot, amount, raw_response, created_at")
               .eq("user_id", user.id).order("created_at", { ascending: false }),
           ]);
           setRecs(((r as any) || []) as Rec[]);
