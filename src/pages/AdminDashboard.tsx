@@ -496,6 +496,10 @@ function AdminProfileView({
         </button>
       </div>
 
+      <CoachCouponsSection />
+
+
+
       <button
         onClick={onSignOut}
         className="w-full flex items-center justify-center gap-2 h-12 rounded-2xl font-semibold text-sm transition-colors"
