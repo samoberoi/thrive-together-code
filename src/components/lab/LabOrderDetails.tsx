@@ -17,6 +17,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { openLabReport } from "@/lib/thyrocareReport";
+
 
 type TrackStep = {
   status: string;
@@ -251,12 +253,22 @@ export default function LabOrderDetails({ order, fastingRequired, reports = [], 
                           </div>
                         )}
                       </div>
-                      <Button size="sm" asChild className="shrink-0 rounded-full">
-                        <a href={r.report_url!} target="_blank" rel="noreferrer">
-                          <Download className="w-3.5 h-3.5 mr-1.5" />
-                          View
-                        </a>
+                      <Button
+                        size="sm"
+                        className="shrink-0 rounded-full"
+                        onClick={async () => {
+                          const ok = await openLabReport({
+                            thyrocareOrderId: order.thyrocare_order_id,
+                            thyrocareLeadId: order.thyrocare_lead_id,
+                            fallbackUrl: r.report_url,
+                          });
+                          if (!ok) toast.error("The report link could not be opened. Please try again in a moment.");
+                        }}
+                      >
+                        <Download className="w-3.5 h-3.5 mr-1.5" />
+                        View
                       </Button>
+
                     </li>
                   );
                 })}

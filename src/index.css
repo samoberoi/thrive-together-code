@@ -750,14 +750,29 @@
     font-size: 16px;
     border-radius: 12px;
   }
-  /* Keep the library's fixed-size sprite buttons intact. Stretching each
-     button exposes neighbouring sprite cells and makes the category strip
-     look like several clipped emoji rows. */
+  /* WhatsApp layout: search on top, emoji grid in the middle, one single
+     row of category icons pinned to the bottom (never wrapping/clipping). */
+  .bbdo-emoji-sheet .EmojiPickerReact {
+    position: relative;
+    padding-bottom: 52px;
+  }
   .bbdo-emoji-sheet .EmojiPickerReact .epr-category-nav {
-    min-height: 48px;
-    padding: 10px 8px !important;
-    overflow: visible !important;
-    border-bottom: 1px solid hsl(var(--border));
+    position: absolute !important;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 3;
+    height: 52px;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2px;
+    padding: 0 10px !important;
+    overflow: hidden !important;
+    background: hsl(var(--background));
+    border-top: 1px solid hsl(var(--border));
+    border-bottom: 0 !important;
   }
   .bbdo-emoji-sheet .EmojiPickerReact .epr-category-nav > .epr-cat-btn {
     flex: 0 0 var(--epr-category-navigation-button-size) !important;
@@ -765,6 +780,7 @@
     min-width: var(--epr-category-navigation-button-size) !important;
     height: var(--epr-category-navigation-button-size) !important;
   }
+
   .bbdo-emoji-sheet .EmojiPickerReact .epr-body {
     overflow-x: hidden !important;
     padding-top: 4px;
