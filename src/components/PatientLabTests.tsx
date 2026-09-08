@@ -404,12 +404,22 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
                 </p>
               </div>
               {basicReportReady && basicReports[0]?.report_url && (
-                <Button size="sm" className="h-9 font-bold bg-white text-[var(--bbdo-red)] hover:bg-white/90 shrink-0" asChild>
-                  <a href={basicReports[0].report_url!} target="_blank" rel="noreferrer">
-                    <Eye className="w-3.5 h-3.5 mr-1" /> View report
-                  </a>
+                <Button
+                  size="sm"
+                  className="h-9 font-bold bg-white text-[var(--bbdo-red)] hover:bg-white/90 shrink-0"
+                  onClick={async () => {
+                    const ok = await openLabReport({
+                      thyrocareOrderId: basicOrder.thyrocare_order_id,
+                      thyrocareLeadId: (basicOrder as any).thyrocare_lead_id,
+                      fallbackUrl: basicReports[0].report_url,
+                    });
+                    if (!ok) toast.error("The report link could not be opened. Please try again in a moment.");
+                  }}
+                >
+                  <Eye className="w-3.5 h-3.5 mr-1" /> View report
                 </Button>
               )}
+
             </div>
           </div>
 
