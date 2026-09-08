@@ -69,6 +69,7 @@ function WatchModal({
   const lastWatchedRef = useRef({ watched: 0, duration: 0, completed: false });
   const lastReportedSecRef = useRef(0);
   const creditedWatchedRef = useRef(0);
+  const playingRef = useRef(false);
   const lastTickRef = useRef<number | null>(null);
   const lastPosRef = useRef(0);
   const onProgressRef = useRef(onProgress);
@@ -157,14 +158,6 @@ function WatchModal({
           lastPosRef.current = currentTime;
           return;
         }
-        const wall = lastTickRef.current ? (now - lastTickRef.current) / 1000 : 0;
-        const posDelta = currentTime - lastPosRef.current;
-        if (lastTickRef.current && wall > 0 && posDelta > 0 && posDelta <= wall + 1.5) {
-          creditedWatchedRef.current += posDelta;
-          if (creditedWatchedRef.current - lastReportedSecRef.current >= 5) {
-            reportDelta(creditedWatchedRef.current, duration, false);
-          }
-        }
         lastTickRef.current = now;
         lastPosRef.current = currentTime;
       }
@@ -172,9 +165,11 @@ function WatchModal({
       if (event.data.type === "state") {
         const currentTime = Number(event.data.currentTime || 0);
         if (event.data.state === 1) {
+          playingRef.current = true;
           lastTickRef.current = Date.now();
           lastPosRef.current = currentTime;
         } else {
+          playingRef.current = false;
           lastTickRef.current = null;
         }
       }
@@ -183,7 +178,7 @@ function WatchModal({
         firedRef.current = true;
         const duration = Math.floor(event.data.duration || lastWatchedRef.current.duration || 0);
         lastWatchedRef.current = { watched: duration, duration, completed: true };
-        reportDelta(Math.max(creditedWatchedRef.current, duration), duration, true, true);
+        reportDelta(creditedWatchedRef.current, duration, true, true);
         window.setTimeout(() => { firedRef.current = false; }, 1500);
       }
     };
@@ -197,6 +192,19 @@ function WatchModal({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [useAndroidSimpleEmbed, videoId]);
+
+  // Use actual time spent playing as the canonical minute counter. Playback
+  // position events are sparse in mobile WebViews and previously under-counted
+  // a two-minute session as only a few tenths of a minute.
+  useEffect(() => {
+    if (noPostMessagePath) return;
+    const interval = window.setInterval(() => {
+      if (!playingRef.current) return;
+      creditedWatchedRef.current += 1;
+      reportDelta(creditedWatchedRef.current, lastWatchedRef.current.duration, false);
+    }, 1000);
+    return () => window.clearInterval(interval);
+  }, [noPostMessagePath, reportDelta]);
 
   // Cross-platform set credit: one real watch (full clip, capped at 3 minutes)
   // logs one set. Works on web, Android WebView and the iOS native player.

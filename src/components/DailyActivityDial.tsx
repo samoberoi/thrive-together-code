@@ -380,22 +380,22 @@ export default function DailyActivityDial({
                   />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <div className="flex min-w-0 items-center">
+                  <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_28px_66px] items-center gap-x-1">
                     <span
-                      className="min-w-0 flex-1 truncate pr-2 text-[11px] font-bold"
+                      className="min-w-0 truncate text-[11px] font-bold"
                       style={{ color: disabled ? "hsl(var(--muted-foreground))" : (accent ?? "hsl(var(--foreground))") }}
                     >
                       {it.label}
                     </span>
                     {/* Fixed trailing cluster: arrow sits 3px before a right-aligned status. */}
-                    <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center mr-[3px]">
+                    <span className="inline-flex h-7 w-7 items-center justify-center">
                       {!disabled && it.expanded && (
                         <button
                           type="button"
                           onClick={() => setOpenKey(open ? null : it.key)}
                           aria-expanded={open}
                           aria-label={`${open ? "Hide" : "Show"} ${it.label} details`}
-                           className="inline-flex h-6 w-6 items-center justify-center rounded-full text-primary-foreground transition-transform"
+                           className="no-touch-target inline-flex h-6 w-6 min-h-0 min-w-0 items-center justify-center rounded-full text-primary-foreground transition-transform"
                           style={{ backgroundColor: ringColor(it), transform: open ? "rotate(90deg)" : undefined }}
                         >
                           <ChevronRight className="h-3.5 w-3.5" strokeWidth={3} />

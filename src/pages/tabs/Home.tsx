@@ -547,8 +547,7 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
   const suppTotalCount = activeSuppItems.length;
   const hasActiveSupplements = !!(suppPlan && suppPlan.status === "active" && suppTotalCount > 0);
   const habits = rawHabits.filter((h) => {
-    if (h.id === "fasting") return fastingState !== "no_plan" && fastingState !== "loading";
-    if (h.id === "supplements") return hasActiveSupplements;
+    if (h.id === "fasting" || h.id === "supplements") return true;
     if (h.id === "diabetes") return hasDiabetesFlag;
     return true;
   });
@@ -575,10 +574,6 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
   useEffect(() => {
     // Reset manual habits on date change
     setCheckedHabits([]);
-    setDbProfile(null);
-    setSuppPlan(null);
-    setSuppItems([]);
-    setSuppTracking([]);
     setHasTodayDiabetesLog(false);
     setDiabetesMorningDone(false);
     setDiabetesEveningDone(false);
@@ -589,7 +584,6 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
     setMovementDone(false);
     setMovementRatio(0);
     setMovementHint("");
-    setFastingState("loading");
     setFmodDoneToday(false);
     setLmodDoneToday(false);
     if (authUser) {
@@ -633,9 +627,10 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
           .eq("status", "completed");
         setHasCompletedMeeting((doneCount ?? 0) > 0);
       })();
+      const profilePromise = fetchProfile(authUser.id);
       const loadMovement = async () => {
         try {
-          const p = await fetchProfile(authUser.id);
+          const p = await profilePromise;
           setDbProfile(p ?? null);
           const ov = await fetchMovementOverview(authUser.id, {
             bmiCategory: (p as any)?.bmi_category ?? null,
@@ -653,7 +648,7 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
       };
       loadMovement();
       (window as any).__bbdoReloadMovement = loadMovement;
-      fetchProfile(authUser.id).then(async (p) => {
+      profilePromise.then(async (p) => {
         setDbProfile(p ?? null);
         // Use the same resolver as the My Coach tab so Home never shows a stale/ghost coach.
         try {
@@ -681,7 +676,6 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
         }
         return p;
       });
-      const profilePromise = fetchProfile(authUser.id);
       void fetchMetricPrefs(authUser.id).then(setMetricPrefs);
       Promise.all([
         fetchHealthLogsMulti(authUser.id, ["diabetes", "bp", "weight", "water"]),
@@ -949,7 +943,11 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
         setFastingElapsedStatic(0);
         setFastingTrackDate(null);
       }
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      // Keep the last known plan visible during a temporary resume/network failure.
+      console.error(e);
+      setFastingState((current) => current === "loading" ? "none" : current);
+    }
   };
 
   const handleStartProtocol = async (protoId: string) => {
@@ -1141,10 +1139,9 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
         setSuppItems([]);
         setSuppTracking([]);
       }
-    } catch {
-      setSuppPlan(null);
-      setSuppItems([]);
-      setSuppTracking([]);
+    } catch (error) {
+      // A transient request failure is not proof that the member lost their plan.
+      console.error("Couldn't refresh supplement plan", error);
     }
   };
 
@@ -1568,28 +1565,28 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
         // All nine pillars always render. Pillars the user's plan hasn't
         // unlocked yet stay in place but are shown greyed out ("Not unlocked")
         // and never count towards today's completion tally.
-        const fastingEnabled = fastingState !== "no_plan" && fastingState !== "loading";
+        const fastingReady = fastingState !== "loading";
         const rings: HeartRingItem[] = [
           {
             key: "fasting",
             label: "Fasting",
-            ratio: fastingEnabled ? fastingRatio : 0,
+            ratio: fastingRatio,
             color: "#0F1A3D",
-            disabled: !fastingEnabled,
-            hint: fastingEnabled
+            disabled: false,
+            hint: fastingReady
               ? [
                   fmodDoneToday ? "FMOD ✓" : "FMOD pending",
                   fastingTarget ? `${Math.min(fastingElapsedStatic, fastingTarget).toFixed(1)} / ${fastingTarget}h` : (lmodDoneToday ? "LMOD ✓" : "LMOD pending"),
                 ].join(" · ")
-              : undefined,
+              : "Updating today's fasting",
           },
           {
             key: "supplements",
             label: "Supplements",
-            ratio: hasActiveSupplements && suppTotal > 0 ? suppTaken / suppTotal : 0,
+            ratio: suppTotal > 0 ? suppTaken / suppTotal : 0,
             color: "#F59E0B",
-            disabled: !hasActiveSupplements || suppTotal === 0,
-            hint: hasActiveSupplements && suppTotal > 0 ? `${suppTaken} / ${suppTotal} taken` : undefined,
+            disabled: false,
+            hint: suppTotal > 0 ? `${suppTaken} / ${suppTotal} taken` : "No supplements due today",
           },
           {
             key: "movement",
