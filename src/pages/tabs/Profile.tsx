@@ -447,18 +447,29 @@ export default function Profile({ onClose, isDark = true, onToggleTheme }: Profi
     { icon: Package, label: t("myPlan"), sublabel: t("planSubtitle"), action: () => setSubPage("plan") },
     { icon: Gift, label: "Refer & Earn", sublabel: "Invite friends, earn free months", action: () => setSubPage("referral") },
     { icon: LifeBuoy, label: "Help & Support", sublabel: "FAQs and raise a query", action: () => setSubPage("help") },
-    { icon: Star, label: "Rate the app", sublabel: "Enjoying BBDO? Leave a review", action: () => {
+    { icon: Star, label: "Rate the app", sublabel: "Enjoying BBDO? Leave a review", action: async () => {
         const ua = navigator.userAgent || "";
         const isIOS = /iPad|iPhone|iPod/.test(ua);
+        const open = (url: string) => {
+          const opened = window.open(url, "_system") || window.open(url, "_blank", "noopener,noreferrer");
+          if (!opened) window.location.href = url;
+        };
         if (isIOS) {
-          // No App Store listing yet — don't open a dead placeholder page.
-          toast.info("Rating on the App Store is coming soon. Thank you for the love!");
+          // Resolve the live App Store listing from the bundle id so no hardcoded app id is needed.
+          let url = "https://apps.apple.com/app/apple-store";
+          try {
+            const res = await fetch("https://itunes.apple.com/lookup?bundleId=com.hyperrevamp.bbdo");
+            const json = await res.json();
+            const trackId = json?.results?.[0]?.trackId;
+            if (trackId) url = `https://apps.apple.com/app/id${trackId}?action=write-review`;
+            else if (json?.results?.[0]?.trackViewUrl) url = `${json.results[0].trackViewUrl}?action=write-review`;
+          } catch {}
+          open(url);
           return;
         }
-        const url = "https://play.google.com/store/apps/details?id=com.hyperrevamp.bbdo";
-        const opened = window.open(url, "_system") || window.open(url, "_blank", "noopener,noreferrer");
-        if (!opened) window.location.href = url;
+        open("https://play.google.com/store/apps/details?id=com.hyperrevamp.bbdo");
       } },
+
 
   ];
 
