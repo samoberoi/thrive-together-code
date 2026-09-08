@@ -734,9 +734,9 @@
   /* Emoji keyboard — sits inside the app column, never full-bleed/ugly */
   .bbdo-emoji-sheet .EmojiPickerReact {
     --epr-emoji-size: 30px;
-    --epr-emoji-gap: 6px;
     --epr-header-padding: 10px 12px;
-    --epr-category-navigation-button-size: 24px;
+    --epr-horizontal-padding: 10px;
+    --epr-category-navigation-button-size: 28px;
     --epr-preview-height: 0px;
     width: 100% !important;
     max-width: 100% !important;
@@ -750,34 +750,20 @@
     font-size: 16px;
     border-radius: 12px;
   }
-  /* Skin-tone bubble was rendering as a giant circle over the search box */
-  .bbdo-emoji-sheet .EmojiPickerReact .epr-skin-tones {
-    display: none !important;
-  }
-  /* Category row: fixed height, evenly spaced, never wraps or overlaps the grid */
+  /* Keep the library's fixed-size sprite buttons intact. Stretching each
+     button exposes neighbouring sprite cells and makes the category strip
+     look like several clipped emoji rows. */
   .bbdo-emoji-sheet .EmojiPickerReact .epr-category-nav {
-    display: flex !important;
-    flex-wrap: nowrap !important;
-    align-items: center;
-    justify-content: space-around;
-    gap: 0;
-    min-height: 44px;
-    overflow: hidden !important;
-    padding: 0 10px !important;
+    min-height: 48px;
+    padding: 10px 8px !important;
+    overflow: visible !important;
     border-bottom: 1px solid hsl(var(--border));
   }
-  .bbdo-emoji-sheet .EmojiPickerReact .epr-category-nav > button.epr-cat-btn {
-    flex: 1 1 0;
-    min-width: 0 !important;
-    width: auto !important;
-    height: 36px !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-  .bbdo-emoji-sheet .EmojiPickerReact .epr-category-nav > button.epr-cat-btn:after,
-  .bbdo-emoji-sheet .EmojiPickerReact .epr-category-nav > button.epr-cat-btn:before {
-    bottom: -6px !important;
-    height: 2px !important;
+  .bbdo-emoji-sheet .EmojiPickerReact .epr-category-nav > .epr-cat-btn {
+    flex: 0 0 var(--epr-category-navigation-button-size) !important;
+    width: var(--epr-category-navigation-button-size) !important;
+    min-width: var(--epr-category-navigation-button-size) !important;
+    height: var(--epr-category-navigation-button-size) !important;
   }
   .bbdo-emoji-sheet .EmojiPickerReact .epr-body {
     overflow-x: hidden !important;
