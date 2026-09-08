@@ -41,6 +41,10 @@ export default function CoachActivityRings() {
   const [water, setWater] = useState(0);
   const [hasDiabetes, setHasDiabetes] = useState(false);
   const [diabetesLoggedToday, setDiabetesLoggedToday] = useState(false);
+  const [bpLoggedToday, setBpLoggedToday] = useState(false);
+  const [weightLoggedToday, setWeightLoggedToday] = useState(false);
+  const [metricPrefs, setMetricPrefs] = useState<Record<TrackedMetric, MetricPref> | null>(null);
+  const [clinical, setClinical] = useState<Record<string, any> | null>(null);
   const [supps, setSupps] = useState({ taken: 0, total: 0 });
   const [fasting, setFasting] = useState<{ active: boolean; ratio: number; hint: string }>({
     active: false, ratio: 0, hint: "",
