@@ -97,11 +97,7 @@ export default function Dashboard() {
 
   // Prefetch sibling tabs during idle time so switches feel instant.
   useEffect(() => {
-    const idle = (cb: () => void) =>
-      (window as any).requestIdleCallback
-        ? (window as any).requestIdleCallback(cb, { timeout: 2500 })
-        : setTimeout(cb, 800);
-    idle(() => {
+    const timer = window.setTimeout(() => {
       void import("./tabs/Exercise");
       void import("./tabs/Videos");
       void import("./tabs/Diet");
@@ -111,7 +107,8 @@ export default function Dashboard() {
       void import("./tabs/LabTests");
       void import("./tabs/Consult");
       void import("./tabs/Messages");
-    });
+    }, 50);
+    return () => window.clearTimeout(timer);
   }, []);
 
 
@@ -508,7 +505,7 @@ export default function Dashboard() {
           </div>
 
           <div className="w-full max-w-3xl xl:max-w-4xl mx-auto min-w-0">
-            <AnimatePresence initial={false} mode="wait" custom={direction}>
+            <AnimatePresence initial={false} mode="sync" custom={direction}>
               <motion.div
                 key={notificationsOpen ? "notifications" : activeTab}
                 custom={direction}
@@ -520,7 +517,7 @@ export default function Dashboard() {
                 initial="enter"
                 animate="center"
                 exit="exit"
-                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                transition={{ duration: 0.12, ease: "easeOut" }}
               >
                 {notificationsOpen ? (
                   <NotificationsPanel embedded onClose={() => setNotificationsOpen(false)} />
