@@ -176,6 +176,17 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
   const [coachId, setCoachId] = useState<string | null>(null);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [summaryRefresh, setSummaryRefresh] = useState(0);
+  const [search, setSearch] = useState("");
+  const [countryFilter, setCountryFilter] = useState<string>("all");
+  const [riskFilter, setRiskFilter] = useState<ClientRiskKey>("all");
+  const [sortKey, setSortKey] = useState<ClientSortKey>("recent");
+  const [regionNames, setRegionNames] = useState<Record<string, string>>({ IN: "India" });
+  const [risk, setRisk] = useState<Map<string, RiskSnapshot>>(new Map());
+  const [nudgeTarget, setNudgeTarget] = useState<{ userId: string; name: string } | null>(null);
+
+  const adherenceIds = useMemo(() => patients.map((p) => p.user_id), [patients]);
+  const { map: adherence, loading: adherenceLoading } = useAdherence(adherenceIds);
+
 
 
   useEffect(() => {
