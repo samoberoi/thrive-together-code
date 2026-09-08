@@ -214,11 +214,29 @@ export default function AdminUsers() {
     }
   };
 
+  /** Scope after country/date + risk + search, but before the package filter,
+   *  so the package tiles always add up to what the current filters return. */
+  const riskScoped = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    return scoped.filter((u) => {
+      if (!matchesRisk(u, riskFilter)) return false;
+      if (!q) return true;
+      return (
+        u.name?.toLowerCase().includes(q) ||
+        u.phone?.includes(q) ||
+        u.city?.toLowerCase().includes(q) ||
+        regionLabel(regionOf(u)).toLowerCase().includes(q) ||
+        packageLabel(u.user_id).toLowerCase().includes(q) ||
+        u.coach_name?.toLowerCase().includes(q)
+      );
+    });
+  }, [scoped, riskFilter, search, adherence, risk, subsByUser, pkgNames, regionNames]);
+
   const stats = useMemo(() => {
     const counts = { none: 0, foundation: 0, active: 0, intensive: 0 };
-    for (const u of scoped) counts[userCategory(u.user_id)]++;
-    return { total: scoped.length, ...counts };
-  }, [scoped, subsByUser]);
+    for (const u of riskScoped) counts[userCategory(u.user_id)]++;
+    return { total: riskScoped.length, ...counts };
+  }, [riskScoped, subsByUser]);
 
   const riskCounts = useMemo(() => {
     const keys: RiskKey[] = ["offtrack", "inactive", "severe_sugar", "severe_bp", "no_coach", "onboarding", "expiring"];
