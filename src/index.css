@@ -228,7 +228,13 @@
   }
   .health-datetime::-webkit-date-and-time-value {
     min-width: 0;
-    text-align: left;
+    text-align: center;
+  }
+  .health-datetime::-webkit-datetime-edit {
+    display: flex;
+    justify-content: center;
+    min-width: 0;
+    padding: 0;
   }
 
   #root,
@@ -860,11 +866,12 @@
 
     /* Vaul bottom-sheet drawers — always full-width, scrollable, respect their own grid. */
     [data-vaul-drawer] {
-      left: 50% !important;
-      right: auto !important;
-      width: min(100%, 430px) !important;
-      max-width: 100% !important;
-      transform: translateX(-50%);
+      left: 0 !important;
+      right: 0 !important;
+      width: 100% !important;
+      max-width: 430px !important;
+      margin-left: auto !important;
+      margin-right: auto !important;
       max-height: 92dvh !important;
       display: flex !important;
       flex-direction: column !important;
