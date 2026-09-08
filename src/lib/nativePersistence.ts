@@ -213,7 +213,7 @@ export async function hydrateNativePersistence() {
     ].filter(isAuthStorageKey));
 
     await Promise.all([...keys].map(async (key) => {
-      if (key === AUTH_SESSION_BACKUP_KEY || key === AUTH_TOKENS_BACKUP_KEY) continue;
+      if (key === AUTH_SESSION_BACKUP_KEY || key === AUTH_TOKENS_BACKUP_KEY) return;
       const { value } = await Preferences.get({ key });
       if (value == null) {
         if (authBackup?.key === key) {
