@@ -3,39 +3,39 @@
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════
-   BBDO DESIGN SYSTEM v3 — Google Fit clarity × clinical calm
-   Palette: Fit Teal, Google Blue, Sleep Purple, White, Graphite
+   BBDO DESIGN SYSTEM v4 — Modern Mineral wellness
+   Palette: mineral white, graphite, eucalyptus, muted violet
    ═══════════════════════════════════════════════════ */
 
 @layer base {
   :root {
     /* ── Semantic shadcn tokens (HSL triples) ── */
-    --background: 0 0% 100%;              /* white canvas */
-    --foreground: 206 6% 25%;             /* #3C4043 graphite */
+    --background: 200 18% 97%;
+    --foreground: 198 18% 22%;
 
     --card: 0 0% 100%;
     --card-foreground: 206 6% 25%;
     --popover: 0 0% 100%;
     --popover-foreground: 206 6% 25%;
 
-    --primary: 214 82% 51%;               /* #1A73E8 Google Blue */
+    --primary: 198 18% 39%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 174 100% 29%;             /* #009688 Fit Teal */
+    --secondary: 174 20% 46%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 210 17% 96%;                 /* cool neutral */
-    --muted-foreground: 206 7% 43%;
+    --muted: 195 14% 94%;
+    --muted-foreground: 198 11% 45%;
 
-    --accent: 230 44% 64%;                /* #7986CB Sleep Purple */
+    --accent: 259 18% 58%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 355 78% 56%;           /* true red — reserved for real danger only */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 210 12% 89%;
-    --input: 210 12% 89%;
-    --ring: 214 82% 51%;
+    --border: 195 12% 87%;
+    --input: 195 12% 87%;
+    --ring: 198 18% 39%;
 
     --radius: 0.75rem;                    /* 12px — consistent card scale */
 
@@ -76,6 +76,30 @@
     --bbdo-teal: var(--fit-teal);
     --bbdo-teal-soft: var(--fit-teal-soft);
     --bbdo-gradient: var(--google-blue);
+
+    /* Modern Mineral ring system — intentionally muted and individually distinct. */
+    --ring-fasting: #6F7894;
+    --ring-fasting-soft: #EDF0F5;
+    --ring-supplements: #A88755;
+    --ring-supplements-soft: #F6F0E7;
+    --ring-movement: #5E8F89;
+    --ring-movement-soft: #E9F2F0;
+    --ring-exercise: #526B76;
+    --ring-exercise-soft: #EAF0F2;
+    --ring-yoga: #8B7FA8;
+    --ring-yoga-soft: #F0EDF4;
+    --ring-water: #6192A4;
+    --ring-water-soft: #EAF3F6;
+    --ring-breath: #A27373;
+    --ring-breath-soft: #F6ECEC;
+    --ring-soleus: #70896B;
+    --ring-soleus-soft: #EDF3EB;
+    --ring-diabetes: #9B6D7D;
+    --ring-diabetes-soft: #F6ECEF;
+    --ring-bp: #A66F65;
+    --ring-bp-soft: #F8EEEB;
+    --ring-weight: #727D88;
+    --ring-weight-soft: #EEF0F2;
 
     /* ── PUNCH pillar colors (one per lifestyle pillar) ── */
     --pillar-diet: var(--fit-teal);
@@ -137,7 +161,7 @@
 @layer base {
   * { @apply border-border; }
   html {
-    font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, system-ui, sans-serif;
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, system-ui, sans-serif;
     font-size: 16px;
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
@@ -183,15 +207,27 @@
   *:focus-visible { outline: 2px solid var(--bbdo-ink); outline-offset: 3px; border-radius: 4px; }
   h1, h2, h3, h4, h5, h6 {
     color: inherit;
-    font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, system-ui, sans-serif;
-    letter-spacing: -0.035em;
+    font-family: 'Sora', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, system-ui, sans-serif;
+    letter-spacing: 0;
     font-weight: 500;
   }
-  .font-black, .font-extrabold, .font-bold, .font-semibold { font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, system-ui, sans-serif; letter-spacing: -0.02em; font-weight: 500 !important; }
+  .font-black, .font-extrabold, .font-bold, .font-semibold { font-family: 'Sora', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, system-ui, sans-serif; letter-spacing: 0; font-weight: 600 !important; }
   b, strong { font-weight: 500; }
   .stat-number, .tabular { font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, system-ui, sans-serif; font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
   ::-webkit-scrollbar { display: none; }
   * { -ms-overflow-style: none; scrollbar-width: none; }
+
+  .health-datetime {
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+    color-scheme: light;
+  }
+  .health-datetime::-webkit-date-and-time-value {
+    min-width: 0;
+    text-align: left;
+  }
 
   #root,
   .phone-container,

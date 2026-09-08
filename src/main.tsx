@@ -14,12 +14,14 @@ import {
 import { bindAudioUnlock } from "@/lib/soundEngine";
 import { installPlatformAdapter } from "@/lib/platform";
 
-// Global typography — Montserrat
-import "@fontsource/montserrat/400.css";
-import "@fontsource/montserrat/500.css";
-import "@fontsource/montserrat/600.css";
-import "@fontsource/montserrat/700.css";
-import "@fontsource/montserrat/800.css";
+// Global typography — Manrope body + Sora display
+import "@fontsource/manrope/400.css";
+import "@fontsource/manrope/500.css";
+import "@fontsource/manrope/600.css";
+import "@fontsource/manrope/700.css";
+import "@fontsource/sora/500.css";
+import "@fontsource/sora/600.css";
+import "@fontsource/sora/700.css";
 
 async function bootstrap() {
     installStartupDiagnostics();
