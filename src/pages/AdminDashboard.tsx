@@ -65,6 +65,7 @@ const AdminOverview = lazy(() => import("./admin/AdminOverview"));
 const EditProfile = lazy(() => import("@/components/EditProfile"));
 const RingManagement = lazy(() => import("@/components/RingManagement"));
 const HelpSupport = lazy(() => import("@/components/HelpSupport"));
+const CoachCouponsSection = lazy(() => import("@/components/coach/CoachCouponsSection"));
 const AdminUsers = lazy(() => import("./admin/AdminUsers"));
 const AdminCoaches = lazy(() => import("./admin/AdminCoaches"));
 const AdminSubscriptions = lazy(() => import("./admin/AdminSubscriptions"));
@@ -495,6 +496,10 @@ function AdminProfileView({
           <ChevronDown className="w-4 h-4 -rotate-90 text-muted-foreground" />
         </button>
       </div>
+
+      <CoachCouponsSection />
+
+
 
       <button
         onClick={onSignOut}

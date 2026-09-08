@@ -29,6 +29,7 @@ export interface Coupon {
   active: boolean;
   created_at: string;
   assigned_coach_id: string | null;
+  assigned_admin_user_id: string | null;
 }
 
 export interface CoachCoupon {
@@ -58,15 +59,37 @@ export async function fetchCoachOptions(): Promise<{ id: string; name: string }[
   return (data ?? []) as { id: string; name: string }[];
 }
 
-export async function assignCouponToCoach(couponId: string, coachId: string | null) {
+/** Super admins available for coupon assignment (admin only). */
+export async function fetchAdminOptions(): Promise<{ id: string; name: string }[]> {
+  const { data: roles } = await (supabase as any).from("user_roles").select("user_id").eq("role", "admin");
+  const ids: string[] = [...new Set(((roles ?? []) as any[]).map((r) => r.user_id))];
+  if (ids.length === 0) return [];
+  const { data: profs } = await (supabase as any).from("profiles").select("user_id, name, phone").in("user_id", ids);
+  return ((profs ?? []) as any[])
+    .map((p) => ({ id: p.user_id as string, name: (p.name || p.phone || p.user_id.slice(0, 8)) as string }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** Give a coupon code to a coach, a super admin, or nobody. */
+export async function assignCouponOwner(
+  couponId: string,
+  owner: { type: "coach" | "admin"; id: string } | null,
+) {
   const { error } = await (supabase as any)
     .from("coupons")
-    .update({ assigned_coach_id: coachId })
+    .update({
+      assigned_coach_id: owner?.type === "coach" ? owner.id : null,
+      assigned_admin_user_id: owner?.type === "admin" ? owner.id : null,
+    })
     .eq("id", couponId);
   if (error) throw error;
 }
 
-/** Coupons handed to the signed-in coach, with usage details. */
+export async function assignCouponToCoach(couponId: string, coachId: string | null) {
+  return assignCouponOwner(couponId, coachId ? { type: "coach", id: coachId } : null);
+}
+
+/** Coupons handed to the signed-in coach or super admin, with usage details. */
 export async function fetchMyCoachCoupons(): Promise<CoachCoupon[]> {
   const { data, error } = await (supabase as any).rpc("coach_my_coupons");
   if (error) throw error;

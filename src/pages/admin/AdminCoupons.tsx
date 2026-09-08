@@ -19,7 +19,8 @@ import {
   fetchRedemptions,
   fetchUserLabels,
   fetchCoachOptions,
-  assignCouponToCoach,
+  fetchAdminOptions,
+  assignCouponOwner,
   type CouponCampaign,
   type Coupon,
   type CouponRedemption,
@@ -287,6 +288,7 @@ export default function AdminCoupons() {
   const [codeEditId, setCodeEditId] = useState<string | null>(null);
   const [codeDraft, setCodeDraft] = useState("");
   const [coachOptions, setCoachOptions] = useState<{ id: string; name: string }[]>([]);
+  const [adminOptions, setAdminOptions] = useState<{ id: string; name: string }[]>([]);
 
   const load = async () => {
     setLoading(true);
@@ -296,6 +298,7 @@ export default function AdminCoupons() {
   useEffect(() => {
     load();
     fetchCoachOptions().then(setCoachOptions).catch(() => setCoachOptions([]));
+    fetchAdminOptions().then(setAdminOptions).catch(() => setAdminOptions([]));
   }, []);
 
 
@@ -452,11 +455,22 @@ export default function AdminCoupons() {
     if (error) toast.error("Could not update code");
   };
 
-  const assignCoach = async (c: Coupon, coachId: string | null) => {
-    setCoupons((p) => p.map((x) => (x.id === c.id ? { ...x, assigned_coach_id: coachId } : x)));
+  const assignOwner = async (c: Coupon, value: string) => {
+    const [type, id] = value ? (value.split(":") as ["coach" | "admin", string]) : [null, null];
+    setCoupons((p) =>
+      p.map((x) =>
+        x.id === c.id
+          ? {
+              ...x,
+              assigned_coach_id: type === "coach" ? id : null,
+              assigned_admin_user_id: type === "admin" ? id : null,
+            }
+          : x,
+      ),
+    );
     try {
-      await assignCouponToCoach(c.id, coachId);
-      toast.success(coachId ? "Coupon given to coach" : "Coach removed from coupon");
+      await assignCouponOwner(c.id, type ? { type, id: id as string } : null);
+      toast.success(type ? "Coupon assigned" : "Assignment removed");
     } catch {
       toast.error("Could not assign coupon");
     }
@@ -637,14 +651,27 @@ export default function AdminCoupons() {
                       </div>
                     )}
                     <select
-                      value={c.assigned_coach_id ?? ""}
-                      onChange={(e) => assignCoach(c, e.target.value || null)}
+                      value={
+                        c.assigned_coach_id
+                          ? `coach:${c.assigned_coach_id}`
+                          : c.assigned_admin_user_id
+                            ? `admin:${c.assigned_admin_user_id}`
+                            : ""
+                      }
+                      onChange={(e) => assignOwner(c, e.target.value)}
                       className="mt-2 w-full h-8 rounded-md border bg-background px-2 text-[11px]"
                     >
-                      <option value="">Not given to a coach</option>
-                      {coachOptions.map((co) => (
-                        <option key={co.id} value={co.id}>{co.name}</option>
-                      ))}
+                      <option value="">Not assigned to anyone</option>
+                      <optgroup label="Coaches">
+                        {coachOptions.map((co) => (
+                          <option key={co.id} value={`coach:${co.id}`}>{co.name}</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Super admins">
+                        {adminOptions.map((ad) => (
+                          <option key={ad.id} value={`admin:${ad.id}`}>{ad.name}</option>
+                        ))}
+                      </optgroup>
                     </select>
                     <span className="block font-sans text-[10px] text-muted-foreground mt-1">
                       used {c.redeemed_count}
