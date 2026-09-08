@@ -36,14 +36,17 @@ interface Props {
   onClose: () => void;
   activity: ActivityKey;
   pending: PendingPatient[];
+  /** Clients who already completed this activity today. */
+  completed?: PendingPatient[];
   doneCount: number;
   totalApplicable: number;
   coachName?: string | null;
 }
 
 export default function CoachActivityNudgeDialog({
-  open, onClose, activity, pending, doneCount, totalApplicable, coachName,
+  open, onClose, activity, pending, completed = [], doneCount, totalApplicable, coachName,
 }: Props) {
+
   const [nudging, setNudging] = useState<string | "all" | null>(null);
   if (!open) return null;
   const meta = ACTIVITY_META[activity];
@@ -152,6 +155,9 @@ export default function CoachActivityNudgeDialog({
               </div>
             ) : (
               <div className="space-y-2">
+                <p className="text-[10px] font-black uppercase tracking-wide text-muted-foreground">
+                  Pending · {pending.length}
+                </p>
                 {pending.map((p) => (
                   <div key={p.user_id} className="flex items-center gap-3 p-2.5 rounded-2xl bg-muted/40">
                     <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
@@ -192,7 +198,34 @@ export default function CoachActivityNudgeDialog({
                 ))}
               </div>
             )}
+
+            {completed.length > 0 && (
+              <div className="space-y-2 mt-5">
+                <p className="text-[10px] font-black uppercase tracking-wide text-success">
+                  Completed today · {completed.length}
+                </p>
+                {completed.map((p) => (
+                  <div key={p.user_id} className="flex items-center gap-3 p-2.5 rounded-2xl bg-success/10">
+                    <div className="w-9 h-9 rounded-xl bg-success/15 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                      {p.avatar_url ? (
+                        <img src={p.avatar_url} alt="" className="w-9 h-9 rounded-xl object-cover" />
+                      ) : (
+                        <span className="text-success font-bold text-xs">{(p.name ?? "?")[0].toUpperCase()}</span>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-foreground font-semibold text-sm truncate">{p.name ?? "Client"}</p>
+                      {p.progress && (
+                        <p className="text-[10px] font-semibold text-muted-foreground truncate">{p.progress}</p>
+                      )}
+                    </div>
+                    <CheckCircle2 className="w-4 h-4 text-success shrink-0" />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
+
         </motion.div>
       </motion.div>
     </AnimatePresence>

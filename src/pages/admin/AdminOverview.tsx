@@ -15,6 +15,8 @@ import TodayStepsCard from "@/components/TodayStepsCard";
 import MetricTrendsSection from "@/components/MetricTrendsSection";
 import CoachSelfCheckins from "@/components/coach/CoachSelfCheckins";
 import AdminStreakBoard, { type AdminStreakClient } from "@/components/admin/AdminStreakBoard";
+import FitnessGainsBoard from "@/components/shared/FitnessGainsBoard";
+
 import { fetchRegionFxMap, regionOf, formatMoneyIn, type RegionFx } from "@/lib/currencyDisplay";
 
 interface Profile { user_id: string; name: string | null; phone: string | null; region_code?: string | null; }
@@ -204,6 +206,10 @@ export default function AdminOverview() {
 
       {/* BBDO streaks for every paying user, filterable by package. */}
       <AdminStreakBoard clients={streakClients} packages={packages.map((p) => ({ key: p.plan_key, name: p.name }))} />
+
+      {/* Who is actually getting fitter — sugar, BP, weight and score gains. */}
+      <FitnessGainsBoard clients={streakClients.map((c) => ({ user_id: c.user_id, name: c.name }))} />
+
 
       <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Upcoming renewals */}
