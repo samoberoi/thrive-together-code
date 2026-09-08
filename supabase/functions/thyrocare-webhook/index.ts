@@ -28,6 +28,20 @@ async function syncReportToProfile(orderId: string) {
   }
 }
 
+/** Our permanent report link — the lab's own URLs expire within hours. */
+async function permanentReportLink(thyrocareOrderId: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(Deno.env.get("LAB_REPORT_LINK_SECRET") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`lab-report:${thyrocareOrderId}`));
+  const tok = Array.from(new Uint8Array(sig)).map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 24);
+  return `${Deno.env.get("SUPABASE_URL")!}/functions/v1/lab-report-open?o=${encodeURIComponent(thyrocareOrderId)}&t=${tok}`;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -84,16 +98,17 @@ Deno.serve(async (req) => {
           payload?.reports || payload?.data?.reports ||
           (payload?.reportUrl ? [{ url: payload.reportUrl }] : []);
         let hasReportUrl = false;
+        const stableUrl = thyOrderId ? await permanentReportLink(String(thyOrderId)) : null;
         for (const r of reports) {
           const reportUrl = r.url || r.reportUrl || null;
           if (reportUrl) hasReportUrl = true;
           await sbAdmin.from("thyrocare_reports").insert({
             order_id: order.id,
             user_id: order.user_id,
-            report_url: reportUrl,
+            report_url: reportUrl ? (stableUrl || reportUrl) : null,
             report_type: r.type || r.reportType || null,
             parameters: r.parameters || null,
-            raw_data: r,
+            raw_data: reportUrl ? { ...r, vendor_url: reportUrl } : r,
           });
         }
         if (hasReportUrl) await syncReportToProfile(order.id);

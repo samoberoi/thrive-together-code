@@ -37,6 +37,23 @@ async function syncReportToProfile(orderId: string) {
   }
 }
 
+/**
+ * Our own permanent report link. The lab's signed URLs expire within hours, so
+ * we store this instead and resolve a fresh file at the moment it is opened.
+ */
+async function permanentReportLink(thyrocareOrderId: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(Deno.env.get("LAB_REPORT_LINK_SECRET") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`lab-report:${thyrocareOrderId}`));
+  const tok = Array.from(new Uint8Array(sig)).map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 24);
+  return `${Deno.env.get("SUPABASE_URL")!}/functions/v1/lab-report-open?o=${encodeURIComponent(thyrocareOrderId)}&t=${tok}`;
+}
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -683,16 +700,19 @@ async function fetchReport(payload: any, userId: string) {
   }
   await sbAdmin.from("thyrocare_reports").delete().eq("order_id", order.id);
   let hasReportUrl = false;
+  const stableUrl = await permanentReportLink(orderId);
   for (const r of reports) {
     const url = r.url || r.reportUrl || r.pdfUrl || r.downloadUrl || null;
     if (url) hasReportUrl = true;
     await sbAdmin.from("thyrocare_reports").insert({
       order_id: order.id,
       user_id: order.user_id,
-      report_url: url,
+      // Store OUR permanent link, never the lab's short-lived signed URL —
+      // apps already installed on phones open whatever is saved here.
+      report_url: url ? stableUrl : null,
       report_type: r.type || r.reportType || r.name || "Lab Report",
       parameters: r.parameters || r.tests || null,
-      raw_data: r,
+      raw_data: url ? { ...r, vendor_url: url } : r,
     });
   }
   if (hasReportUrl) await syncReportToProfile(order.id);
