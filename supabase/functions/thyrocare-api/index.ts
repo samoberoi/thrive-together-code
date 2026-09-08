@@ -443,26 +443,23 @@ async function createOrder(payload: any, userId: string) {
     orderOptions: { isPdpcOrder: false },
   };
 
-  const res = await fetch(`${BASE_URL}/partners/v1/orders`, {
-    method: "POST",
-    headers: await thyHeaders(),
-    body: JSON.stringify(reqBody),
-  });
-  const respText = await res.text();
-  let respBody: any = {};
-  try { respBody = JSON.parse(respText); } catch {}
-
-  const thyOrderId =
-    respBody?.data?.orderId || respBody?.orderId || respBody?.OrderNo || null;
-  const leadId = respBody?.data?.leadId || respBody?.leadId || null;
+  // PAYMENT-FIRST: we do NOT place the Thyrocare order here. The booking is
+  // staged as `awaiting_payment` and only sent to the vendor once money is
+  // actually received (see confirmOrder, called after Razorpay verification).
+  let priceInr = totalMrp;
+  try {
+    const { data: markup } = await sbAdmin.rpc("get_lab_test_markup_pct");
+    const pct = Number(markup) || 0;
+    if (pct > 0) priceInr = Math.round(priceInr * (1 + pct / 100));
+  } catch (_e) { /* fall back to catalog total */ }
 
   const { data: row, error } = await sbAdmin
     .from("thyrocare_orders")
     .insert({
       user_id: userId,
       recommendation_id: payload.recommendation_id || null,
-      thyrocare_order_id: thyOrderId,
-      thyrocare_lead_id: leadId,
+      thyrocare_order_id: null,
+      thyrocare_lead_id: null,
       product_codes: payload.productCodes,
       beneficiary_name: payload.beneficiary.name,
       beneficiary_age: payload.beneficiary.age,
@@ -473,29 +470,96 @@ async function createOrder(payload: any, userId: string) {
       address: bookingAddress,
       collection_date: payload.collection_date,
       collection_slot: payload.collection_slot,
-      amount: respBody?.data?.amount || null,
-      status: res.ok ? "created" : "failed",
-      status_detail: res.ok ? null : respText.slice(0, 500),
+      amount: Math.round(priceInr) || null,
+      status: "awaiting_payment",
+      status_detail: "Waiting for payment. The lab slot is confirmed only after payment succeeds.",
+      payment_status: "unpaid",
       raw_request: reqBody,
-      raw_response: respBody,
+      raw_response: null,
     })
     .select()
     .single();
 
   if (error) return json({ error: error.message }, 500);
 
-  // mark recommendation booked
-  if (payload.recommendation_id && res.ok) {
+  return json({
+    ok: true,
+    requires_payment: true,
+    amount_inr: Math.round(priceInr) || null,
+    order: row,
+  }, 200);
+}
+
+/**
+ * Place the staged booking with Thyrocare. Only ever called once the payment
+ * for that booking row is recorded as paid (Razorpay verify or webhook).
+ */
+async function confirmOrder(orderRowId: string) {
+  if (!orderRowId) return json({ error: "order_id required" }, 400);
+
+  const { data: row } = await sbAdmin
+    .from("thyrocare_orders")
+    .select("id, user_id, recommendation_id, payment_status, thyrocare_order_id, raw_request")
+    .eq("id", orderRowId)
+    .maybeSingle();
+  if (!row) return json({ error: "order not found" }, 404);
+  if (row.thyrocare_order_id) return json({ ok: true, already_booked: true });
+  if (row.payment_status !== "paid") return json({ ok: false, error: "payment not confirmed" }, 402);
+
+  const reqBody = row.raw_request;
+  if (!reqBody) return json({ ok: false, error: "missing booking payload" }, 400);
+
+  const res = await fetch(`${BASE_URL}/partners/v1/orders`, {
+    method: "POST",
+    headers: await thyHeaders(),
+    body: JSON.stringify(reqBody),
+  });
+  const respText = await res.text();
+  let respBody: any = {};
+  try { respBody = JSON.parse(respText); } catch {}
+
+  const thyOrderId = respBody?.data?.orderId || respBody?.orderId || respBody?.OrderNo || null;
+  const leadId = respBody?.data?.leadId || respBody?.leadId || null;
+
+  await sbAdmin
+    .from("thyrocare_orders")
+    .update({
+      thyrocare_order_id: thyOrderId,
+      thyrocare_lead_id: leadId,
+      amount: respBody?.data?.amount || undefined,
+      status: res.ok && thyOrderId ? "created" : "booking_failed",
+      status_detail: res.ok && thyOrderId
+        ? null
+        : `Payment received. Lab booking could not be placed automatically — our team will confirm your slot. ${respText.slice(0, 300)}`,
+      raw_response: respBody,
+    })
+    .eq("id", row.id);
+
+  if (row.recommendation_id && res.ok && thyOrderId) {
     await sbAdmin
       .from("thyrocare_recommendations")
       .update({ status: "booked" })
-      .eq("id", payload.recommendation_id);
+      .eq("id", row.recommendation_id);
   }
+
+  try {
+    await sbAdmin.rpc("create_notification", {
+      _user_id: row.user_id,
+      _title: thyOrderId ? "Lab test confirmed" : "Payment received — booking in progress",
+      _body: thyOrderId
+        ? `Payment received. Your home sample collection is confirmed (Order ${thyOrderId}).`
+        : "We have your payment. Our team is confirming your collection slot with the lab.",
+      _type: "lab",
+      _icon: "🧪",
+    });
+  } catch (_e) { /* notification is best-effort */ }
+
   const vendorErrors = Array.isArray(respBody?.errors)
     ? respBody.errors.map((err: any) => err?.message).filter(Boolean).join("; ")
     : respBody?.message || respText;
-  return json({ ok: res.ok, order: row, thyrocare: respBody, error: res.ok ? null : vendorErrors }, 200);
+  return json({ ok: res.ok && !!thyOrderId, thyrocare_order_id: thyOrderId, error: thyOrderId ? null : vendorErrors }, 200);
 }
+
 
 async function orderStatus(payload: any) {
   const orderId = payload?.thyrocare_order_id;
