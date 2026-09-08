@@ -198,7 +198,15 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
     if (!user) return;
     setLoading(true);
 
-    const coachData = await resolveCurrentCoach(user, "id");
+    // Country names are tiny and independent — fetch alongside the coach lookup.
+    const [coachData, regionsRes] = await Promise.all([
+      resolveCurrentCoach(user, "id"),
+      (supabase as any).from("pricing_regions").select("code, name"),
+    ]);
+    const regions: Record<string, string> = { IN: "India" };
+    for (const r of ((regionsRes as any)?.data ?? []) as any[]) regions[r.code] = r.name || r.code;
+    setRegionNames(regions);
+
     if (!coachData) { setLoading(false); return; }
     setCoachId((coachData as any).id);
 
@@ -208,76 +216,79 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
       .eq("coach_id", (coachData as any).id)
       .eq("is_active", true);
 
-    if (assignments && assignments.length > 0) {
-      const patientIds = (assignments as any[]).map((a) => a.user_id);
-      const [{ data: profiles }, { data: subs }] = await Promise.all([
-        supabase
-          .from("profiles" as any)
-          .select("user_id, name, phone, avatar_url, age, gender, weight, bmi, bmi_category, height, clinical, deep_profiling, assessment, initial_health_score")
-          .in("user_id", patientIds),
-        supabase
-          .from("subscriptions" as any)
-          .select("user_id, plan_name, expires_at, started_at, status")
-          .in("user_id", patientIds)
-          .eq("status", "active"),
-      ]);
+    if (!assignments || assignments.length === 0) { setLoading(false); return; }
 
-      // Pick most-recent active sub per user
-      const subByUser = new Map<string, { plan_name: string | null; expires_at: string | null }>();
-      ((subs as any[]) ?? []).forEach((s) => {
-        const prev = subByUser.get(s.user_id);
-        if (!prev || (s.started_at ?? "") > ((prev as any).started_at ?? "")) {
-          subByUser.set(s.user_id, { plan_name: s.plan_name ?? null, expires_at: s.expires_at ?? null, ...(s as any) });
-        }
-      });
-
-      const merged = (assignments as any[]).flatMap((a) => {
-        const p = (profiles as any[])?.find((pr) => pr.user_id === a.user_id);
-        // Never surface purged or incomplete placeholder accounts as coach patients.
-        if (!p || (!p.name?.trim() && !p.phone?.trim())) return [];
-        const s = subByUser.get(a.user_id);
-        return [{ ...a, ...p, plan_name: s?.plan_name ?? null, plan_expires_at: s?.expires_at ?? null }];
-      });
-      setPatients(merged);
-
-      // Fetch latest logs per patient for status indicators
-      const { data: allLogs } = await supabase
-        .from("health_logs" as any)
-        .select("user_id, logged_at, glucose_morning, glucose_evening, bp_systolic, bp_diastolic, weight_kg, log_type")
+    const patientIds = (assignments as any[]).map((a) => a.user_id);
+    const [{ data: profiles }, { data: subs }] = await Promise.all([
+      supabase
+        .from("profiles" as any)
+        .select("user_id, name, phone, avatar_url, age, gender, weight, bmi, bmi_category, height, city, region_code, clinical, deep_profiling, assessment, initial_health_score")
+        .in("user_id", patientIds),
+      supabase
+        .from("subscriptions" as any)
+        .select("user_id, plan_name, expires_at, started_at, status")
         .in("user_id", patientIds)
-        .order("logged_at", { ascending: false })
-        .limit(200);
+        .eq("status", "active"),
+    ]);
 
-      if (allLogs) {
-        const statusMap: Record<string, PatientHealthStatus> = {};
-        const metricsMap: Record<string, { healthScore: number | null; initialScore: number | null; latestWeight: number | null; initialWeight: number | null; latestGlucose: number | null; initialGlucose: number | null }> = {};
-        merged.forEach((p: Patient) => {
-          const pLogs = (allLogs as any[]).filter(l => l.user_id === p.user_id);
-          statusMap[p.user_id] = getHealthStatus(pLogs, p);
-          
-          // Extract health score from profile
-          const profile = (profiles as any[])?.find((pr: any) => pr.user_id === p.user_id);
-          const currentScore = profile?.assessment?.healthScore ?? null;
-          const initScore = profile?.initial_health_score ?? null;
-          
-          // Latest & initial weight
-          const wLogs = pLogs.filter((l: any) => l.log_type === "weight" && l.weight_kg != null).sort((a: any, b: any) => b.logged_at.localeCompare(a.logged_at));
-          const latestW = wLogs[0]?.weight_kg ?? p.weight ?? null;
-          const initialW = wLogs.length > 0 ? wLogs[wLogs.length - 1].weight_kg : p.weight ?? null;
-          
-          // Latest & initial glucose
-          const gLogs = pLogs.filter((l: any) => l.log_type === "diabetes" && l.glucose_morning != null).sort((a: any, b: any) => b.logged_at.localeCompare(a.logged_at));
-          const latestG = gLogs[0]?.glucose_morning ?? null;
-          const initialG = gLogs.length > 0 ? gLogs[gLogs.length - 1].glucose_morning : null;
-          
-          metricsMap[p.user_id] = { healthScore: currentScore, initialScore: initScore, latestWeight: latestW, initialWeight: initialW, latestGlucose: latestG, initialGlucose: initialG };
-        });
-        setPatientStatuses(statusMap);
-        setPatientMetrics(metricsMap);
+    // Pick most-recent active sub per user
+    const subByUser = new Map<string, { plan_name: string | null; expires_at: string | null }>();
+    ((subs as any[]) ?? []).forEach((s) => {
+      const prev = subByUser.get(s.user_id);
+      if (!prev || (s.started_at ?? "") > ((prev as any).started_at ?? "")) {
+        subByUser.set(s.user_id, { plan_name: s.plan_name ?? null, expires_at: s.expires_at ?? null, ...(s as any) });
       }
-    }
+    });
+
+    const merged = (assignments as any[]).flatMap((a) => {
+      const p = (profiles as any[])?.find((pr) => pr.user_id === a.user_id);
+      // Never surface purged or incomplete placeholder accounts as coach patients.
+      if (!p || (!p.name?.trim() && !p.phone?.trim())) return [];
+      const s = subByUser.get(a.user_id);
+      return [{ ...a, ...p, plan_name: s?.plan_name ?? null, plan_expires_at: s?.expires_at ?? null }];
+    });
+    setPatients(merged);
+    // Paint the list immediately — logs and risk are heavier reads that hydrate after.
     setLoading(false);
+
+    fetchRiskSnapshots(patientIds).then(setRisk).catch(() => {});
+
+    const { data: allLogs } = await supabase
+      .from("health_logs" as any)
+      .select("user_id, logged_at, glucose_morning, glucose_evening, bp_systolic, bp_diastolic, weight_kg, log_type")
+      .in("user_id", patientIds)
+      .order("logged_at", { ascending: false })
+      .limit(1000);
+
+    if (allLogs) {
+      const statusMap: Record<string, PatientHealthStatus> = {};
+      const metricsMap: Record<string, { healthScore: number | null; initialScore: number | null; latestWeight: number | null; initialWeight: number | null; latestGlucose: number | null; initialGlucose: number | null }> = {};
+      merged.forEach((p: Patient) => {
+        const pLogs = (allLogs as any[]).filter(l => l.user_id === p.user_id);
+        statusMap[p.user_id] = getHealthStatus(pLogs, p);
+
+        // Extract health score from profile
+        const profile = (profiles as any[])?.find((pr: any) => pr.user_id === p.user_id);
+        const currentScore = profile?.assessment?.healthScore ?? null;
+        const initScore = profile?.initial_health_score ?? null;
+
+        // Latest & initial weight
+        const wLogs = pLogs.filter((l: any) => l.log_type === "weight" && l.weight_kg != null).sort((a: any, b: any) => b.logged_at.localeCompare(a.logged_at));
+        const latestW = wLogs[0]?.weight_kg ?? p.weight ?? null;
+        const initialW = wLogs.length > 0 ? wLogs[wLogs.length - 1].weight_kg : p.weight ?? null;
+
+        // Latest & initial glucose
+        const gLogs = pLogs.filter((l: any) => l.log_type === "diabetes" && l.glucose_morning != null).sort((a: any, b: any) => b.logged_at.localeCompare(a.logged_at));
+        const latestG = gLogs[0]?.glucose_morning ?? null;
+        const initialG = gLogs.length > 0 ? gLogs[gLogs.length - 1].glucose_morning : null;
+
+        metricsMap[p.user_id] = { healthScore: currentScore, initialScore: initScore, latestWeight: latestW, initialWeight: initialW, latestGlucose: latestG, initialGlucose: initialG };
+      });
+      setPatientStatuses(statusMap);
+      setPatientMetrics(metricsMap);
+    }
   };
+
 
   const openPatient = async (patient: Patient) => {
     setSelectedPatient(patient);
