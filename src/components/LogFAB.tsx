@@ -443,7 +443,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
                 className="w-11 h-11 rounded-xl flex items-center justify-center"
                 style={{
                   background:
-                    exerciseDone ? "#10B981" : "var(--bbdo-blue)",
+                    exerciseDone ? "var(--ring-movement)" : "var(--ring-exercise)",
                 }}
               >
                 <Dumbbell className="w-5 h-5 text-white" strokeWidth={1.7} />
@@ -455,12 +455,12 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
                   style={{
                     background:
                       exerciseDone
-                        ? "#10B98122"
-                        : "var(--bbdo-blue-soft)",
+                        ? "var(--ring-movement-soft)"
+                        : "var(--ring-exercise-soft)",
                     color:
                       exerciseDone
-                        ? "#10B981"
-                        : "var(--bbdo-blue)",
+                        ? "var(--ring-movement)"
+                        : "var(--ring-exercise)",
                   }}
                 >
                   {exerciseBadgeValue}
@@ -479,7 +479,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
             >
               <span
                 className="w-11 h-11 rounded-xl flex items-center justify-center"
-                style={{ background: breathDone ? "#10B981" : "var(--bbdo-red, #EA6A5E)" }}
+                style={{ background: breathDone ? "var(--ring-movement)" : "var(--ring-breath)" }}
               >
                 <Wind className="w-5 h-5 text-white" strokeWidth={1.7} />
               </span>
@@ -488,8 +488,8 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
                 <span
                   className="text-[9px] font-black px-1.5 py-0.5 rounded-md whitespace-nowrap"
                   style={{
-                    background: breathDone ? "#10B98122" : "rgba(234,106,94,0.14)",
-                    color: breathDone ? "#10B981" : "var(--bbdo-red, #EA6A5E)",
+                    background: breathDone ? "var(--ring-movement-soft)" : "var(--ring-breath-soft)",
+                    color: breathDone ? "var(--ring-movement)" : "var(--ring-breath)",
                   }}
                 >
                   {breathCount}/{breathGoal}
@@ -508,7 +508,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
             >
               <span
                 className="w-11 h-11 rounded-xl flex items-center justify-center"
-                style={{ background: soleusDone ? "#10B981" : "var(--bbdo-blue)" }}
+                style={{ background: soleusDone ? "var(--ring-movement)" : "var(--ring-soleus)" }}
               >
                 <Dumbbell className="w-5 h-5 text-white" strokeWidth={1.7} />
               </span>
@@ -517,8 +517,8 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
                 <span
                   className="text-[9px] font-black px-1.5 py-0.5 rounded-md whitespace-nowrap"
                   style={{
-                    background: soleusDone ? "#10B98122" : "rgba(36,140,203,0.14)",
-                    color: soleusDone ? "#10B981" : "var(--bbdo-blue)",
+                    background: soleusDone ? "var(--ring-movement-soft)" : "var(--ring-soleus-soft)",
+                    color: soleusDone ? "var(--ring-movement)" : "var(--ring-soleus)",
                   }}
                 >
                   {soleusCount}/{soleusGoal}
@@ -537,7 +537,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
             >
               <span
                 className="w-11 h-11 rounded-xl flex items-center justify-center"
-                style={{ background: "var(--bbdo-red, #EA6A5E)" }}
+                style={{ background: "var(--ring-fasting)" }}
               >
                 <Timer className="w-5 h-5 text-white" strokeWidth={1.7} />
               </span>
@@ -557,7 +557,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
             >
               <span
                 className="w-11 h-11 rounded-xl flex items-center justify-center"
-                style={{ background: "var(--bbdo-blue)" }}
+                style={{ background: "var(--ring-supplements)" }}
               >
                 <Pill className="w-5 h-5 text-white" strokeWidth={1.7} />
               </span>
@@ -603,7 +603,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
                     key={k}
                     onClick={() => setGlucoseTimeOfDay(k)}
                     className="no-pill min-w-0 min-h-11 rounded-lg flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 px-1 text-[10px] sm:text-[12px] font-bold transition-colors"
-                    style={active ? { background: "#fff", color: "var(--bbdo-ink)", boxShadow: "0 2px 8px -2px rgba(15,26,61,0.12)" } : { color: "var(--bbdo-ink-soft)" }}
+                    style={active ? { background: "var(--pure-white)", color: "var(--bbdo-ink)", boxShadow: "var(--shadow-card)" } : { color: "var(--bbdo-ink-soft)" }}
                   >
                     <Icon className="w-4 h-4" strokeWidth={1.7} />
                     {label}
