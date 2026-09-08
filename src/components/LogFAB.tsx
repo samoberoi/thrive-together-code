@@ -275,12 +275,14 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
       toast.error("Please enter a glucose reading");
       return;
     }
+    const loggedAt = resolveLoggedAt();
+    if (!loggedAt) return;
     setSaving(true);
     const isMorning = glucoseTimeOfDay === "morning";
     const result = await insertHealthLog({
       user_id: user.id,
       log_type: "diabetes",
-      logged_at: new Date().toISOString(),
+      logged_at: loggedAt,
       glucose_morning: isMorning ? val : null,
       glucose_evening: !isMorning ? val : null,
       bp_systolic: null,
@@ -305,11 +307,13 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
       toast.error("Please enter both systolic and diastolic values");
       return;
     }
+    const loggedAt = resolveLoggedAt();
+    if (!loggedAt) return;
     setSaving(true);
     const result = await insertHealthLog({
       user_id: user.id,
       log_type: "bp",
-      logged_at: new Date().toISOString(),
+      logged_at: loggedAt,
       glucose_morning: null,
       glucose_evening: null,
       bp_systolic: sys,
@@ -333,11 +337,13 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
       toast.error("Please enter your weight");
       return;
     }
+    const loggedAt = resolveLoggedAt();
+    if (!loggedAt) return;
     setSaving(true);
     const result = await insertHealthLog({
       user_id: user.id,
       log_type: "weight",
-      logged_at: new Date().toISOString(),
+      logged_at: loggedAt,
       glucose_morning: null,
       glucose_evening: null,
       bp_systolic: null,
@@ -582,7 +588,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
             </DrawerTitle>
           </DrawerHeader>
           <div className="flex flex-col gap-4">
-            <DateTimeBadge />
+            {whenField}
 
             {/* Time-of-day segmented control */}
             <div className="grid grid-cols-3 gap-1.5 p-1.5 rounded-2xl bg-muted">
@@ -647,7 +653,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
             </DrawerTitle>
           </DrawerHeader>
           <div className="flex flex-col gap-4">
-            <DateTimeBadge />
+            {whenField}
 
             <div className="grid grid-cols-2 gap-2">
               <label className="block rounded-2xl bg-card border border-border p-4 cursor-text focus-within:border-[var(--bbdo-red)]/50 focus-within:ring-2 focus-within:ring-[var(--bbdo-red)]/15 transition-colors">
@@ -707,7 +713,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
             </DrawerTitle>
           </DrawerHeader>
           <div className="flex flex-col gap-4">
-            <DateTimeBadge />
+            {whenField}
 
             {lastWeight && (
               <div className="rounded-xl bg-muted px-4 py-2.5 flex items-center justify-between">
