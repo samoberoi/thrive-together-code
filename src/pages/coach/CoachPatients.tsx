@@ -936,73 +936,143 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
   const daysUntil = (iso: string) => Math.ceil((Date.parse(iso) - now) / (24 * 60 * 60 * 1000));
 
   return (
-    <div className="flex flex-col gap-4 px-5 pt-3 pb-4">
+    <div className="flex flex-col gap-4 px-4 sm:px-5 pt-3 pb-4">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-2xl font-black text-foreground leading-tight">My Clients</h1>
+        <p className="text-muted-foreground text-sm">
+          {filteredPatients.length === patients.length
+            ? `${patients.length} ${patients.length === 1 ? "client" : "clients"}`
+            : `${filteredPatients.length} of ${patients.length} clients`}
+        </p>
       </motion.div>
 
-      {/* KPI: Patients / On Track / Off Track — one row, clickable */}
+      {/* Filter bar — search, country, package, sort */}
       {patients.length > 0 && (
-        <motion.div className="grid grid-cols-3 gap-2" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }}>
-          <button
-            onClick={() => setStatusFilter("all")}
-            className={`liquid-glass rounded-2xl p-3 text-left transition ${statusFilter === "all" ? "ring-2 ring-primary" : ""}`}
-          >
-            <p className="text-muted-foreground text-[9px] font-semibold uppercase tracking-wide">Clients</p>
-            <p className="stat-number text-2xl text-foreground mt-1 leading-none">{patients.length}</p>
-            <p className="text-muted-foreground text-[10px] mt-1">Active</p>
-          </button>
-          <button
-            onClick={() => setStatusFilter("green")}
-            className={`rounded-2xl p-3 text-left transition bg-emerald-500/10 border border-emerald-500/30 ${statusFilter === "green" ? "ring-2 ring-emerald-400" : ""}`}
-          >
-            <p className="text-emerald-500 text-[9px] font-semibold uppercase tracking-wide">On Track</p>
-            <p className="stat-number text-2xl text-emerald-500 mt-1 leading-none">{statusCounts.green}</p>
-            <p className="text-muted-foreground text-[10px] mt-1">Healthy</p>
-          </button>
-          <button
-            onClick={() => setStatusFilter("red")}
-            className={`rounded-2xl p-3 text-left transition bg-red-500/10 border border-red-500/30 ${statusFilter === "red" ? "ring-2 ring-red-400" : ""}`}
-          >
-            <p className="text-red-500 text-[9px] font-semibold uppercase tracking-wide">Off Track</p>
-            <p className="stat-number text-2xl text-red-500 mt-1 leading-none">{statusCounts.red}</p>
-            <p className="text-muted-foreground text-[10px] mt-1">Needs care</p>
-          </button>
+        <motion.div className="liquid-glass rounded-2xl p-3 space-y-3" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.02 }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search name, phone, city…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+
+            <FilterSelect
+              icon={<Globe className="w-4 h-4 text-muted-foreground shrink-0" />}
+              value={countryFilter}
+              onChange={setCountryFilter}
+              options={countryOptions}
+              placeholder="All countries"
+            />
+
+            <FilterSelect
+              icon={<PackageIcon className="w-4 h-4 text-muted-foreground shrink-0" />}
+              value={packageFilter ?? "all"}
+              onChange={(v) => setPackageFilter(v === "all" ? null : v)}
+              options={[
+                { value: "all", label: `All packages (${riskScoped.length})` },
+                ...packageEntries.map(([name, count]) => ({ value: name, label: `${name} (${count})` })),
+              ]}
+              placeholder="All packages"
+            />
+
+            <FilterSelect
+              icon={<ArrowUpDown className="w-4 h-4 text-muted-foreground shrink-0" />}
+              value={sortKey}
+              onChange={(v) => setSortKey(v as ClientSortKey)}
+              options={[
+                { value: "recent", label: "Newest first" },
+                { value: "least_active", label: "Least active first" },
+                { value: "expiring", label: "Expiring soonest" },
+                { value: "name", label: "Name A–Z" },
+              ]}
+              placeholder="Sort"
+            />
+          </div>
+
+          {/* Attention chips */}
+          <div className="flex flex-wrap gap-2">
+            {(Object.keys(CLIENT_RISK_META) as Exclude<ClientRiskKey, "all">[]).map((key) => (
+              <RiskChip
+                key={key}
+                meta={CLIENT_RISK_META[key]}
+                count={riskCounts[key] ?? 0}
+                active={riskFilter === key}
+                onClick={() => setRiskFilter(riskFilter === key ? "all" : key)}
+              />
+            ))}
+          </div>
+
+          {activeChips.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border/60">
+              <span className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Filters</span>
+              {activeChips.map((c, i) => (
+                <button
+                  key={i}
+                  onClick={c.clear}
+                  className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/20"
+                >
+                  {c.label}
+                  <X className="w-3 h-3" />
+                </button>
+              ))}
+              <button
+                onClick={() => {
+                  setPackageFilter(null);
+                  setCountryFilter("all");
+                  setRiskFilter("all");
+                  setStatusFilter("all");
+                  setSearch("");
+                }}
+                className="text-[11px] font-semibold text-muted-foreground hover:text-foreground underline"
+              >
+                Clear all
+              </button>
+            </div>
+          )}
         </motion.div>
       )}
 
-      {/* Patients by package — clickable to filter */}
-      {packageEntries.length > 0 && (
-        <motion.div className="liquid-glass rounded-2xl p-4" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.04 }}>
-          <p className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wide mb-2">Clients by package</p>
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setPackageFilter(null)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold no-break transition ${
-                packageFilter === null ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-              }`}
-            >
-              All
-              <span className="text-[10px] font-black bg-black/10 rounded-full px-1.5 py-0.5">{patients.length}</span>
-            </button>
-            {packageEntries.map(([name, count]) => {
-              const active = packageFilter === name;
-              return (
-                <button
-                  key={name}
-                  onClick={() => setPackageFilter(active ? null : name)}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold no-break transition ${
-                    active ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary"
-                  }`}
-                >
-                  {name}
-                  <span className={`text-[10px] font-black rounded-full px-1.5 py-0.5 ${active ? "bg-black/10" : "bg-primary/20"}`}>{count}</span>
-                </button>
-              );
-            })}
-          </div>
-        </motion.div>
+      {/* Stat cards — clickable, reflect the current filters */}
+      {patients.length > 0 && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <StatCard
+            label="Total clients"
+            value={riskScoped.length}
+            icon={<Users className="w-5 h-5" />}
+            tone="primary"
+            isActive={riskFilter === "all" && statusFilter === "all"}
+            onClick={() => { setRiskFilter("all"); setStatusFilter("all"); setPackageFilter(null); }}
+          />
+          <StatCard
+            label="On track today"
+            value={onTrackCount}
+            icon={<CheckCircle2 className="w-5 h-5" />}
+            tone="emerald"
+            onClick={() => setRiskFilter("all")}
+          />
+          <StatCard
+            label="Off track today"
+            value={offTrackCount}
+            icon={<Activity className="w-5 h-5" />}
+            tone="amber"
+            isActive={riskFilter === "offtrack"}
+            onClick={() => setRiskFilter(riskFilter === "offtrack" ? "all" : "offtrack")}
+          />
+          <StatCard
+            label="Needs attention"
+            value={statusCounts.red}
+            icon={<UserX className="w-5 h-5" />}
+            tone="purple"
+            isActive={statusFilter === "red"}
+            onClick={() => setStatusFilter(statusFilter === "red" ? "all" : "red")}
+          />
+        </div>
       )}
+
 
       {/* Upcoming renewals detail (only when there are any) */}
       {upcomingRenewals.length > 0 && (
