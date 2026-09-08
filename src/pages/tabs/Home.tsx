@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { App as CapApp } from "@capacitor/app";
 import { createPost, generateAchievementContent } from "@/lib/communityService";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -1144,6 +1145,35 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
       console.error("Couldn't refresh supplement plan", error);
     }
   };
+
+  // Capacitor does not reliably emit document.visibilitychange after every
+  // Android/iOS background cycle. Refresh plan-backed rings explicitly so a
+  // suspended request can never leave fasting or supplements stale on resume.
+  useEffect(() => {
+    if (!authUser?.id) return;
+    let lastRefreshAt = 0;
+    const refreshAfterResume = () => {
+      const now = Date.now();
+      if (now - lastRefreshAt < 5_000) return;
+      lastRefreshAt = now;
+      void Promise.all([
+        loadFastingData(authUser.id),
+        loadSupplementData(authUser.id),
+      ]);
+      window.dispatchEvent(new CustomEvent("health-log-saved"));
+    };
+    const listener = CapApp.addListener("appStateChange", ({ isActive }) => {
+      if (isActive) refreshAfterResume();
+    });
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refreshAfterResume();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      void listener.then((handle) => handle.remove());
+    };
+  }, [authUser?.id, todayStr]);
 
   const loadTodayMeals = async (userId: string) => {
     const today = getLocalDateKey();
