@@ -99,6 +99,11 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
 
   const { minutes: exerciseMinutesToday, goal: EXERCISE_GOAL, done: exerciseDone } = useTodayExerciseProgress(5);
   const exerciseBadgeValue = `${Math.min(exerciseMinutesToday, EXERCISE_GOAL).toLocaleString("en-IN", { maximumFractionDigits: 1 })}/${EXERCISE_GOAL}`;
+  const YOGA_GOAL = useDailyYogaMinutes();
+  const [yogaMinutesToday, setYogaMinutesToday] = useState(0);
+  const yogaDone = YOGA_GOAL > 0 && yogaMinutesToday >= YOGA_GOAL;
+  const yogaBadgeValue = `${Math.min(yogaMinutesToday, YOGA_GOAL).toLocaleString("en-IN", { maximumFractionDigits: 1 })}/${YOGA_GOAL}`;
+
   const visibleActions = actions.filter((a) => {
     // Coaches/admins have no patient clinical profile — never hide their own log tiles.
     if (props.showAllLogs || isStaff) return true;
