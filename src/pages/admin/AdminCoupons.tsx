@@ -452,6 +452,17 @@ export default function AdminCoupons() {
     if (error) toast.error("Could not update code");
   };
 
+  const assignCoach = async (c: Coupon, coachId: string | null) => {
+    setCoupons((p) => p.map((x) => (x.id === c.id ? { ...x, assigned_coach_id: coachId } : x)));
+    try {
+      await assignCouponToCoach(c.id, coachId);
+      toast.success(coachId ? "Coupon given to coach" : "Coach removed from coupon");
+    } catch {
+      toast.error("Could not assign coupon");
+    }
+  };
+
+
   if (loading) {
     return (
       <div className="p-6 flex items-center justify-center min-h-[40vh]">
