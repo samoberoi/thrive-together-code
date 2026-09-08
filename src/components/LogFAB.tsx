@@ -513,6 +513,32 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
               </span>
             </motion.button>
             <motion.button
+              key="yoga-shortcut"
+              onClick={() => goPath("/dashboard?tab=videos")}
+              whileTap={{ scale: 0.97 }}
+              transition={{ duration: 0.12, ease: [0.22, 1, 0.36, 1] }}
+              className="no-pill relative flex flex-col items-center justify-center gap-2 rounded-2xl py-4 px-2 bg-card border border-border"
+            >
+              <span
+                className="w-11 h-11 rounded-xl flex items-center justify-center"
+                style={{ background: yogaDone ? "var(--ring-movement)" : "var(--ring-yoga)" }}
+              >
+                <Flower2 className="w-5 h-5 text-white" strokeWidth={1.7} />
+              </span>
+              <span className="no-break text-[11px] font-semibold text-foreground text-center leading-tight flex flex-col items-center gap-1">
+                Yoga &amp; Stress
+                <span
+                  className="text-[9px] font-black px-1.5 py-0.5 rounded-md whitespace-nowrap"
+                  style={{
+                    background: yogaDone ? "var(--ring-movement-soft)" : "var(--ring-yoga-soft)",
+                    color: yogaDone ? "var(--ring-movement)" : "var(--ring-yoga)",
+                  }}
+                >
+                  {yogaBadgeValue}
+                </span>
+              </span>
+            </motion.button>
+            <motion.button
               key="breath-shortcut"
               onClick={() => {
                 setOpen(false);
