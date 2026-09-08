@@ -37,6 +37,23 @@ async function syncReportToProfile(orderId: string) {
   }
 }
 
+/**
+ * Our own permanent report link. The lab's signed URLs expire within hours, so
+ * we store this instead and resolve a fresh file at the moment it is opened.
+ */
+async function permanentReportLink(thyrocareOrderId: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`lab-report:${thyrocareOrderId}`));
+  const tok = Array.from(new Uint8Array(sig)).map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 24);
+  return `${Deno.env.get("SUPABASE_URL")!}/functions/v1/lab-report-open?o=${encodeURIComponent(thyrocareOrderId)}&t=${tok}`;
+}
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
