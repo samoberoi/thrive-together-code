@@ -18,11 +18,14 @@ import {
   fetchCoupons,
   fetchRedemptions,
   fetchUserLabels,
+  fetchCoachOptions,
+  assignCouponToCoach,
   type CouponCampaign,
   type Coupon,
   type CouponRedemption,
   type DiscountType,
 } from "@/lib/couponService";
+
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 const toDateInput = (iso: string | null | undefined) => (iso ? new Date(iso).toISOString().slice(0, 10) : "");
