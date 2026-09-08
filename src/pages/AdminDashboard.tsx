@@ -97,6 +97,9 @@ const UserSupplements = lazy(() => import("@/components/UserSupplements"));
 const UserFasting = lazy(() => import("@/components/UserFasting"));
 const PatientLabTests = lazy(() => import("@/components/PatientLabTests"));
 const UserDiet = lazy(() => import("./tabs/Diet"));
+const UserVideos = lazy(() => import("./tabs/Videos"));
+const UserExercise = lazy(() => import("./tabs/Exercise"));
+const AdminMyMovement = lazy(() => import("@/components/admin/AdminMyMovement"));
 
 
 import NotificationsPanel from "@/components/NotificationsPanel";
