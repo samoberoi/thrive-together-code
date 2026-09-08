@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Users, ArrowLeft, Clock, Activity, Droplets, Heart, Phone,
   Weight, FileText, Loader2, ChevronRight, Flame, Trophy,
   Shield, ShieldAlert, ShieldCheck, TrendingDown, TrendingUp, Minus,
-  Pill, Timer, MessageCircle, CheckCircle2, Pencil
+  Pill, Timer, MessageCircle, CheckCircle2, Pencil,
+  Search, Globe, Package as PackageIcon, ArrowUpDown, X, Droplet, HeartPulse, CalendarClock, UserX,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +16,26 @@ import PatientProfileEditor from "@/components/coach/PatientProfileEditor";
 import PatientDietSymptomsSummary from "@/components/coach/PatientDietSymptomsSummary";
 import PatientPlatesLog from "@/components/coach/PatientPlatesLog";
 import PatientActionGrid from "@/components/coach/PatientActionGrid";
+import { Input } from "@/components/ui/input";
+import { RiskChip, FilterSelect, StatCard, FlagTag, type RiskMeta } from "@/components/admin/UserFilterUI";
+import AdherencePill from "@/components/admin/AdherencePill";
+import AdherenceNudgeDialog from "@/components/admin/AdherenceNudgeDialog";
+import { useAdherence } from "@/hooks/useAdherence";
+import {
+  fetchRiskSnapshots, isSevereSugar, isHighSugar, isSevereBp, isHighBp, type RiskSnapshot,
+} from "@/components/admin/UserRiskFilters";
+
+type ClientRiskKey = "all" | "offtrack" | "inactive" | "severe_sugar" | "severe_bp" | "expiring";
+type ClientSortKey = "recent" | "least_active" | "expiring" | "name";
+
+const CLIENT_RISK_META: Record<Exclude<ClientRiskKey, "all">, RiskMeta> = {
+  offtrack: { label: "Off track today", icon: <Activity className="w-3.5 h-3.5" />, tone: "amber" },
+  inactive: { label: "Least active", icon: <Activity className="w-3.5 h-3.5" />, tone: "red" },
+  severe_sugar: { label: "High blood sugar", icon: <Droplet className="w-3.5 h-3.5" />, tone: "red" },
+  severe_bp: { label: "High BP", icon: <HeartPulse className="w-3.5 h-3.5" />, tone: "red" },
+  expiring: { label: "Expiring in 30 days", icon: <CalendarClock className="w-3.5 h-3.5" />, tone: "blue" },
+};
+
 
 
 
