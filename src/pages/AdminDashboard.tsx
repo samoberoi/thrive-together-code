@@ -223,7 +223,9 @@ const tabContentMap: Record<AdminTab, React.ReactNode> = {
   fasting: (
     <AdminSelfTabs manageLabel="Protocols" mineLabel="My Fasting" mineIcon={Timer} manage={<AdminFasting />} mine={<UserFasting packageKey="intensive" selfServe />} />
   ),
-  movement: <AdminMovement />,
+  movement: (
+    <AdminSelfTabs manageLabel="Config" mineLabel="My Movement" mineIcon={Footprints} manage={<AdminMovement />} mine={<AdminMyMovement />} />
+  ),
   labtests: (
     <AdminSelfTabs manageLabel="Catalog" mineLabel="My Tests" mineIcon={FlaskConical} manage={<AdminLabTests />} mine={<PatientLabTests alwaysShow foundationMode />} />
   ),
