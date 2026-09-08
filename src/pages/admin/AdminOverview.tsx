@@ -30,15 +30,11 @@ interface AssignmentRow { coach_id: string; user_id: string; }
 const inr = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
 
 export default function AdminOverview() {
-  const [range, setRange] = useState<DateRange>(defaultRange());
   const [loading, setLoading] = useState(true);
 
   const [packages, setPackages] = useState<Package[]>([]);
   const [allActiveSubs, setAllActiveSubs] = useState<Subscription[]>([]);
-  const [rangeSubs, setRangeSubs] = useState<Subscription[]>([]);
   const [profileMap, setProfileMap] = useState<Map<string, Profile>>(new Map());
-  const [usersInRange, setUsersInRange] = useState<number>(0);
-  const [totalUsers, setTotalUsers] = useState<number>(0);
   const [coaches, setCoaches] = useState<CoachRow[]>([]);
   const [assignments, setAssignments] = useState<AssignmentRow[]>([]);
   const [activeLoggerIds, setActiveLoggerIds] = useState<Set<string>>(new Set());
