@@ -1141,14 +1141,18 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
             const glucoseDelta = m?.latestGlucose != null && m?.initialGlucose != null ? Math.round(m.latestGlucose - m.initialGlucose) : null;
 
             return (
-              <motion.button
+              <motion.div
                 key={p.user_id}
+                role="button"
+                tabIndex={0}
                 onClick={() => openPatient(p)}
-                className="liquid-glass rounded-2xl p-3 text-left w-full hover:bg-primary/5 transition-colors min-w-0"
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openPatient(p); } }}
+                className="liquid-glass rounded-2xl p-3 text-left w-full hover:bg-primary/5 transition-colors min-w-0 cursor-pointer"
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.05 * i }}
+                transition={{ delay: Math.min(0.03 * i, 0.3) }}
               >
+
                 {/* Row 1: avatar + name + status + actions — always single line */}
                 <div className="flex items-center gap-2 mb-2 min-w-0">
                   <div className="relative w-10 h-10 flex-shrink-0">
