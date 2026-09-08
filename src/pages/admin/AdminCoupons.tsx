@@ -651,14 +651,27 @@ export default function AdminCoupons() {
                       </div>
                     )}
                     <select
-                      value={c.assigned_coach_id ?? ""}
-                      onChange={(e) => assignCoach(c, e.target.value || null)}
+                      value={
+                        c.assigned_coach_id
+                          ? `coach:${c.assigned_coach_id}`
+                          : c.assigned_admin_user_id
+                            ? `admin:${c.assigned_admin_user_id}`
+                            : ""
+                      }
+                      onChange={(e) => assignOwner(c, e.target.value)}
                       className="mt-2 w-full h-8 rounded-md border bg-background px-2 text-[11px]"
                     >
-                      <option value="">Not given to a coach</option>
-                      {coachOptions.map((co) => (
-                        <option key={co.id} value={co.id}>{co.name}</option>
-                      ))}
+                      <option value="">Not assigned to anyone</option>
+                      <optgroup label="Coaches">
+                        {coachOptions.map((co) => (
+                          <option key={co.id} value={`coach:${co.id}`}>{co.name}</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Super admins">
+                        {adminOptions.map((ad) => (
+                          <option key={ad.id} value={`admin:${ad.id}`}>{ad.name}</option>
+                        ))}
+                      </optgroup>
                     </select>
                     <span className="block font-sans text-[10px] text-muted-foreground mt-1">
                       used {c.redeemed_count}
