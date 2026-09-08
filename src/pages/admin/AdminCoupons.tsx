@@ -288,6 +288,7 @@ export default function AdminCoupons() {
   const [codeEditId, setCodeEditId] = useState<string | null>(null);
   const [codeDraft, setCodeDraft] = useState("");
   const [coachOptions, setCoachOptions] = useState<{ id: string; name: string }[]>([]);
+  const [adminOptions, setAdminOptions] = useState<{ id: string; name: string }[]>([]);
 
   const load = async () => {
     setLoading(true);
@@ -297,6 +298,7 @@ export default function AdminCoupons() {
   useEffect(() => {
     load();
     fetchCoachOptions().then(setCoachOptions).catch(() => setCoachOptions([]));
+    fetchAdminOptions().then(setAdminOptions).catch(() => setAdminOptions([]));
   }, []);
 
 
