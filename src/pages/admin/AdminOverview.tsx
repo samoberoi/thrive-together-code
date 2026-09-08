@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { normalizePlanKey as aliasPlanKey } from "@/lib/subscriptionService";
 import {
-  CalendarClock, ChevronDown, ChevronUp, Phone,
+  UserCheck, CalendarClock, ChevronDown, ChevronUp, Phone,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
