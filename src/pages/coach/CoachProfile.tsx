@@ -10,6 +10,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { coachTypeLabel, type Coach } from "@/lib/coachService";
 import { useToast } from "@/hooks/use-toast";
 import CoachReviewsDialog from "@/components/coach/CoachReviewsDialog";
+import CoachCouponsSection from "@/components/coach/CoachCouponsSection";
+
 
 
 /* ── Reusable sub-components ─────────────────────────────────────────── */
@@ -472,7 +474,11 @@ export default function CoachProfile({ onSignOut, onReplayTour }: { onSignOut: (
         <InfoRow icon={CreditCard} label="IFSC Code" value={coach.bank_ifsc} />
       </SectionCard>
 
+      {/* Coupons */}
+      <CoachCouponsSection delay={0.32} />
+
       {/* Take the tour again */}
+
       {onReplayTour && (
         <motion.button
           onClick={onReplayTour}
