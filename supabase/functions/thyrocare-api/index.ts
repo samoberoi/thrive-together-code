@@ -766,6 +766,8 @@ Deno.serve(async (req) => {
       (!!sweepKey && internalHeader === sweepKey);
 
     if (internal && action === "sweep") return await sweep();
+    if (internal && action === "confirm_order") return await confirmOrder(String(body?.order_id || ""));
+
 
     // Public action: sync_catalog can be called by admins only
     const user = await getUser(req);
