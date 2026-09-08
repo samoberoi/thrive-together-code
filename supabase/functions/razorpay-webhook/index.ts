@@ -55,7 +55,21 @@ Deno.serve(async (req) => {
           await supabase.from("thyrocare_orders")
             .update({ payment_status: "paid" })
             .eq("id", notes.ref_id);
+          // Booking is placed with the lab only after the money is in.
+          try {
+            await fetch(`${Deno.env.get("SUPABASE_URL")!}/functions/v1/thyrocare-api`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "x-bbdo-internal": Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+              },
+              body: JSON.stringify({ action: "confirm_order", order_id: notes.ref_id }),
+            });
+          } catch (e) {
+            console.error("lab booking confirm failed", e);
+          }
         }
+
       }
     }
 

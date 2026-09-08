@@ -137,6 +137,7 @@ export default function LabBookingDialog({ open, onClose, productCodes, recommen
     }
     setSubmitting(true);
     try {
+      // Step 1 — stage the booking. Nothing is sent to the lab yet.
       const { data, error } = await supabase.functions.invoke("thyrocare-api", {
         body: {
           action: "create_order",
@@ -153,22 +154,21 @@ export default function LabBookingDialog({ open, onClose, productCodes, recommen
       });
       if (error) throw error;
       if (!data?.ok) throw new Error(data?.error || data?.thyrocare?.message || "Booking failed");
-      const orderId = data?.order?.thyrocare_order_id || data?.thyrocare?.orderId || data?.thyrocare?.data?.orderId;
 
-      // Collect payment for the booking before closing. If the member abandons
-      // checkout, the backend has already sent them a payment link.
+      // Step 2 — collect payment. The lab slot is booked only once this succeeds.
       const bookingRowId = data?.order?.id as string | undefined;
-      if (bookingRowId) {
-        try {
-          await payForService("lab", bookingRowId);
-        } catch (payErr: any) {
-          toast.error(`${payErr?.message || "Payment not completed"} — we've sent you a payment link.`);
-          onBooked?.();
-          onClose();
-          return;
-        }
+      if (!bookingRowId) throw new Error("Booking could not be started. Please try again.");
+      try {
+        await payForService("lab", bookingRowId);
+      } catch (payErr: any) {
+        toast.error(
+          `${payErr?.message || "Payment not completed"} — your test is NOT booked. We've sent you a payment link.`,
+        );
+        onBooked?.();
+        onClose();
+        return;
       }
-      toast.success(orderId ? `Paid & booked! Order ID: ${orderId}` : "Order placed! You'll get updates here.");
+      toast.success("Payment received — your test is confirmed. Order details will appear shortly.");
       onBooked?.();
       onClose();
     } catch (e: any) {
@@ -177,6 +177,7 @@ export default function LabBookingDialog({ open, onClose, productCodes, recommen
       setSubmitting(false);
     }
   };
+
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
