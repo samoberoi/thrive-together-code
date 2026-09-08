@@ -2,12 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { normalizePlanKey as aliasPlanKey } from "@/lib/subscriptionService";
 import {
-  Users, UserCheck, Package as PackageIcon, IndianRupee,
-  CalendarClock, TrendingUp, ChevronDown, ChevronUp, Phone,
+  UserCheck, CalendarClock, ChevronDown, ChevronUp, Phone,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import DateRangeFilter, { defaultRange, DateRange } from "@/components/admin/DateRangeFilter";
-import ExportCsvButton from "@/components/admin/ExportCsvButton";
 import { useNavigate } from "react-router-dom";
 import { format, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -18,7 +15,7 @@ import TodayStepsCard from "@/components/TodayStepsCard";
 import MetricTrendsSection from "@/components/MetricTrendsSection";
 import CoachSelfCheckins from "@/components/coach/CoachSelfCheckins";
 import AdminStreakBoard, { type AdminStreakClient } from "@/components/admin/AdminStreakBoard";
-import { fetchRegionFxMap, regionOf, formatMoneyIn, toInr, type RegionFx } from "@/lib/currencyDisplay";
+import { fetchRegionFxMap, regionOf, formatMoneyIn, type RegionFx } from "@/lib/currencyDisplay";
 
 interface Profile { user_id: string; name: string | null; phone: string | null; region_code?: string | null; }
 interface Subscription {
@@ -30,18 +27,12 @@ interface Package { plan_key: string; name: string; }
 interface CoachRow { id: string; user_id: string | null; name: string | null; phone: string | null; is_active: boolean | null; }
 interface AssignmentRow { coach_id: string; user_id: string; }
 
-const inr = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
-
 export default function AdminOverview() {
-  const [range, setRange] = useState<DateRange>(defaultRange());
   const [loading, setLoading] = useState(true);
 
   const [packages, setPackages] = useState<Package[]>([]);
   const [allActiveSubs, setAllActiveSubs] = useState<Subscription[]>([]);
-  const [rangeSubs, setRangeSubs] = useState<Subscription[]>([]);
   const [profileMap, setProfileMap] = useState<Map<string, Profile>>(new Map());
-  const [usersInRange, setUsersInRange] = useState<number>(0);
-  const [totalUsers, setTotalUsers] = useState<number>(0);
   const [coaches, setCoaches] = useState<CoachRow[]>([]);
   const [assignments, setAssignments] = useState<AssignmentRow[]>([]);
   const [activeLoggerIds, setActiveLoggerIds] = useState<Set<string>>(new Set());
@@ -72,25 +63,17 @@ export default function AdminOverview() {
     })();
   }, []);
 
-  useEffect(() => { load(); }, [range]);
+  useEffect(() => { load(); }, []);
 
   const load = async () => {
     setLoading(true);
 
-    const fromIso = range.from.toISOString();
-    const toIso = range.to.toISOString();
     const since7 = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-    const [pkgRes, activeSubsRes, rangeSubsRes, profilesAllRes, profilesRangeRes, coachesRes, assignRes, logsRes] = await Promise.all([
+    const [pkgRes, activeSubsRes, profilesAllRes, coachesRes, assignRes, logsRes] = await Promise.all([
       supabase.from("packages").select("plan_key, name"),
       supabase.from("subscriptions").select("*").eq("status", "active"),
-      supabase.from("subscriptions").select("*").gte("started_at", fromIso).lte("started_at", toIso),
       (supabase as any).from("profiles").select("user_id, name, phone, region_code"),
-      supabase
-        .from("profiles")
-        .select("user_id", { count: "exact", head: true })
-        .gte("created_at", fromIso)
-        .lte("created_at", toIso),
       supabase.from("coaches").select("id, user_id, name, phone, is_active").eq("is_active", true),
       supabase.from("coach_assignments").select("coach_id, user_id").eq("is_active", true),
       supabase.from("health_logs").select("user_id").gte("logged_at", since7).limit(5000),
@@ -98,8 +81,6 @@ export default function AdminOverview() {
 
     setPackages((pkgRes.data ?? []) as Package[]);
     setAllActiveSubs((activeSubsRes.data ?? []) as Subscription[]);
-    setRangeSubs((rangeSubsRes.data ?? []) as Subscription[]);
-    setUsersInRange(profilesRangeRes.count ?? 0);
     setCoaches((coachesRes.data ?? []) as CoachRow[]);
     setAssignments((assignRes.data ?? []) as AssignmentRow[]);
     setActiveLoggerIds(new Set(((logsRes.data ?? []) as { user_id: string }[]).map((l) => l.user_id)));
@@ -108,56 +89,16 @@ export default function AdminOverview() {
     const allProfiles = (profilesAllRes.data ?? []) as unknown as Profile[];
     for (const p of allProfiles) pmap.set(p.user_id, p);
     setProfileMap(pmap);
-    setTotalUsers(allProfiles.length);
 
     setLoading(false);
   };
 
-  // --- KPI calculations ---
-  // Members pay in their own currency (USD, CAD, GBP...). Totals are consolidated
-  // back to INR using the FX rates configured in pricing_regions.
-  const inrOf = useMemo(
-    () => (s: Subscription) =>
-      toInr(s.plan_price || 0, regionOf(regionFx, profileMap.get(s.user_id)?.region_code)),
-    [regionFx, profileMap]
-  );
+  // Currency helpers for renewal rows.
   const nativeMoney = useMemo(
     () => (s: Subscription) =>
       formatMoneyIn(s.plan_price || 0, regionOf(regionFx, profileMap.get(s.user_id)?.region_code)),
     [regionFx, profileMap]
   );
-  const revenueInRange = useMemo(
-    () => rangeSubs.reduce((sum, x) => sum + inrOf(x), 0),
-    [rangeSubs, inrOf]
-  );
-  const activeRevenueRunRate = useMemo(
-    () => allActiveSubs.reduce((sum, x) => sum + inrOf(x), 0),
-    [allActiveSubs, inrOf]
-  );
-  const activeSubsCount = allActiveSubs.length;
-  const activeAssignments = assignments.filter((a) => profileMap.has(a.user_id)).length;
-  const coachCount = coaches.length;
-
-  const packageBreakdown = useMemo(() => {
-    const counts = new Map<string, { name: string; active: number; sold: number; revenue: number }>();
-    for (const p of packages) counts.set(p.plan_key, { name: p.name, active: 0, sold: 0, revenue: 0 });
-    for (const s of allActiveSubs) {
-      const k = aliasPlanKey(s.plan_id);
-      if (!k) continue;
-      const row = counts.get(k);
-      if (row) row.active += 1;
-    }
-    for (const s of rangeSubs) {
-      const k = aliasPlanKey(s.plan_id);
-      if (!k) continue;
-      const row = counts.get(k);
-      if (row) {
-        row.sold += 1;
-        row.revenue += inrOf(s);
-      }
-    }
-    return Array.from(counts.entries()).map(([key, v]) => ({ key, ...v }));
-  }, [packages, allActiveSubs, rangeSubs, inrOf]);
 
   const upcomingRenewals = useMemo(() => {
     const now = Date.now();
@@ -169,15 +110,6 @@ export default function AdminOverview() {
       })
       .sort((a, b) => new Date(a.expires_at).getTime() - new Date(b.expires_at).getTime())
       .slice(0, 8);
-  }, [allActiveSubs]);
-
-  const expiredRecently = useMemo(() => {
-    const now = Date.now();
-    const back = now - 30 * 24 * 60 * 60 * 1000;
-    return allActiveSubs.filter((s) => {
-      const t = new Date(s.expires_at).getTime();
-      return t < now && t >= back;
-    }).length;
   }, [allActiveSubs]);
 
   // --- Coach roster: load + on-track split + patient list ---
@@ -240,52 +172,6 @@ export default function AdminOverview() {
     return Array.from(byUser.values());
   }, [allActiveSubs, profileMap, coaches]);
 
-  // ----- KPI cards -----
-  const kpis = [
-    {
-      label: "Revenue (range, INR)",
-      value: inr(revenueInRange),
-      sub: `${rangeSubs.length} new sales`,
-      icon: IndianRupee, tone: "text-emerald-600", bg: "bg-emerald-500/10",
-      onClick: () => navigate("/admin-dashboard?tab=subscriptions&metric=range_revenue"),
-    },
-    {
-      label: "Run-rate (INR)",
-      value: inr(activeRevenueRunRate),
-      sub: `${activeSubsCount} active subs`,
-      icon: TrendingUp, tone: "text-secondary", bg: "bg-secondary/10",
-      onClick: () => navigate("/admin-dashboard?tab=subscriptions&metric=active_revenue"),
-    },
-    {
-      label: "Renewals (30d)",
-      value: upcomingRenewals.length,
-      sub: `${expiredRecently} expired 30d`,
-      icon: CalendarClock, tone: "text-amber-600", bg: "bg-amber-500/10",
-      onClick: () => navigate("/admin-dashboard?tab=subscriptions&metric=renewals"),
-    },
-    {
-      label: "Total Users",
-      value: totalUsers.toLocaleString("en-IN"),
-      sub: "View by package",
-      icon: Users, tone: "text-primary", bg: "bg-primary/10",
-      onClick: () => navigate("/admin/users-insights"),
-    },
-    {
-      label: "New Users (range)",
-      value: usersInRange,
-      sub: `${activeAssignments} assignments`,
-      icon: Users, tone: "text-primary", bg: "bg-primary/10",
-      onClick: () => navigate("/admin-dashboard?tab=users"),
-    },
-    {
-      label: "Active Coaches",
-      value: coachCount,
-      sub: `Avg ${coachCount ? (activeAssignments / coachCount).toFixed(1) : "0"}/coach`,
-      icon: UserCheck, tone: "text-cyan-600", bg: "bg-cyan-500/10",
-      onClick: () => navigate("/admin-dashboard?tab=coaches"),
-    },
-  ];
-
   if (loading) {
     return (
       <div className="p-6 flex items-center justify-center min-h-[60vh]">
@@ -296,22 +182,13 @@ export default function AdminOverview() {
 
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-[clamp(20px,5.5vw,30px)] leading-[1.15] font-semibold tracking-[-0.03em] text-foreground break-words">
-            {greeting || "Good morning"}, {adminName || "Admin"} <span className="inline-block">👋</span>
-          </h1>
-          <p className="text-muted-foreground text-xs sm:text-sm mt-1">
-            Revenue, renewals & coaches · <span className="font-semibold text-foreground">{range.label}</span>
-          </p>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <DateRangeFilter value={range} onChange={setRange} />
-          <ExportCsvButton
-            filename="overview-kpis"
-            rows={() => kpis.map((c) => ({ label: c.label, value: c.value, sub: c.sub }))}
-          />
-        </div>
+      <div className="min-w-0">
+        <h1 className="text-[clamp(20px,5.5vw,30px)] leading-[1.15] font-semibold tracking-[-0.03em] text-foreground break-words">
+          {greeting || "Good morning"}, {adminName || "Admin"} <span className="inline-block">👋</span>
+        </h1>
+        <p className="text-muted-foreground text-xs sm:text-sm mt-1">
+          Rings, health & coaches
+        </p>
       </div>
 
       {/* The admin's own daily habit rings + check-ins — same engine as coaches. */}
@@ -324,72 +201,6 @@ export default function AdminOverview() {
 
       {/* Admin's own long-run trends — same component the end user sees. */}
       <MetricTrendsSection userId={adminUserId} heightCm={adminHeightCm} weightKg={adminWeightKg} />
-
-
-      <div className="grid grid-cols-2 min-[430px]:grid-cols-3 xl:grid-cols-6 gap-2 sm:gap-3">
-        {kpis.map((card, i) => {
-          const Icon = card.icon;
-          return (
-            <motion.button
-              key={card.label}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.03, duration: 0.2 }}
-              onClick={card.onClick}
-              className="liquid-glass rounded-xl sm:rounded-2xl p-2.5 sm:p-3 text-left min-w-0 hover:-translate-y-px transition-transform"
-            >
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg ${card.bg} flex items-center justify-center shrink-0`}>
-                  <Icon className={`w-3.5 h-3.5 ${card.tone}`} strokeWidth={1.9} />
-                </span>
-                <p className="text-[15px] sm:text-lg font-black text-foreground truncate min-w-0">{card.value}</p>
-              </div>
-              <p className="text-[11px] font-medium text-muted-foreground leading-tight mt-1.5 truncate">{card.label}</p>
-              <p className="text-[10px] text-muted-foreground/80 leading-tight truncate">{card.sub}</p>
-            </motion.button>
-          );
-        })}
-      </div>
-
-
-      {/* Active package cards stack on phones for readable names and values. */}
-      <div className="liquid-glass rounded-2xl p-3 sm:p-5">
-        <div className="flex items-center justify-between mb-3 gap-2">
-          <h3 className="font-bold text-foreground flex items-center gap-2 text-sm sm:text-base min-w-0">
-            <PackageIcon className="w-4 h-4 text-primary shrink-0" /> <span className="truncate">Active Packages</span>
-          </h3>
-          <p className="text-[11px] sm:text-xs text-muted-foreground shrink-0">{activeSubsCount} active</p>
-        </div>
-        <div className="grid grid-cols-2 min-[520px]:grid-cols-3 gap-2 sm:gap-3">
-          {packageBreakdown.map((p) => {
-            const share = activeSubsCount > 0 ? (p.active / activeSubsCount) * 100 : 0;
-            return (
-              <button
-                key={p.key}
-                onClick={() => navigate(`/admin-dashboard?tab=subscriptions&subscriptionTab=bbdo&view=bbdo-plan&plan=${encodeURIComponent(p.key)}`)}
-                className="rounded-xl border border-border p-3 sm:p-4 space-y-2 text-left hover:bg-accent/40 hover:-translate-y-px transition-all min-w-0"
-              >
-                <div className="flex items-start justify-between gap-1">
-                  <p className="text-sm font-semibold text-foreground leading-tight">{p.name}</p>
-                  <span className="text-[10px] sm:text-xs px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-semibold shrink-0">
-                    {p.active}
-                  </span>
-                </div>
-                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                  <div className="h-full bg-primary" style={{ width: `${share}%` }} />
-                </div>
-                <div className="flex items-center justify-between text-[11px] text-muted-foreground leading-tight">
-                  <span>{p.sold} sold</span>
-                  <span className="font-semibold text-foreground">{inr(p.revenue)}</span>
-                </div>
-              </button>
-            );
-          })}
-          {packageBreakdown.length === 0 && (
-            <p className="text-sm text-muted-foreground min-[520px]:col-span-3">No packages defined</p>
-          )}
-        </div>
-      </div>
 
       {/* BBDO streaks for every paying user, filterable by package. */}
       <AdminStreakBoard clients={streakClients} packages={packages.map((p) => ({ key: p.plan_key, name: p.name }))} />
