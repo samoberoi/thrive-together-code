@@ -98,16 +98,17 @@ Deno.serve(async (req) => {
           payload?.reports || payload?.data?.reports ||
           (payload?.reportUrl ? [{ url: payload.reportUrl }] : []);
         let hasReportUrl = false;
+        const stableUrl = thyOrderId ? await permanentReportLink(String(thyOrderId)) : null;
         for (const r of reports) {
           const reportUrl = r.url || r.reportUrl || null;
           if (reportUrl) hasReportUrl = true;
           await sbAdmin.from("thyrocare_reports").insert({
             order_id: order.id,
             user_id: order.user_id,
-            report_url: reportUrl,
+            report_url: reportUrl ? (stableUrl || reportUrl) : null,
             report_type: r.type || r.reportType || null,
             parameters: r.parameters || null,
-            raw_data: r,
+            raw_data: reportUrl ? { ...r, vendor_url: reportUrl } : r,
           });
         }
         if (hasReportUrl) await syncReportToProfile(order.id);
