@@ -165,20 +165,21 @@ export default function BottomNav({
     <>
       {/* Expanded overflow drawer — slides up full-width from bottom, matches quick-log style */}
       <Drawer open={expanded} onOpenChange={setExpanded}>
-        <DrawerContent className="md:hidden max-h-[85vh]">
-          <DrawerHeader className="pb-2">
-            <DrawerTitle className="text-left text-base font-black text-[var(--bbdo-ink)]">
+        <DrawerContent className="md:hidden mx-auto w-full max-w-[430px] max-h-[82dvh] overflow-hidden rounded-t-3xl border-t border-border bg-background">
+          <DrawerHeader className="px-5 pt-1 pb-3">
+            <DrawerTitle className="text-left text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
               All sections
             </DrawerTitle>
           </DrawerHeader>
-          <div className="px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-            <div className="grid grid-cols-3 gap-2">
+          <div className="overflow-y-auto overscroll-contain px-5 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <div className="grid grid-cols-3 gap-2.5">
               {allowed.map((id) => renderTab(id, { inSheet: true }))}
             </div>
-            <ExpertConnectBar className="mt-3" packageKey={packageKey} context="the app" />
+            <ExpertConnectBar className="mt-4" packageKey={packageKey} context="the app" />
           </div>
         </DrawerContent>
       </Drawer>
+
 
       {/* Flat full-width dock — publishes its own height into --nav-h via AppBottomBar,
           auto-hides when the on-screen keyboard is open. */}
