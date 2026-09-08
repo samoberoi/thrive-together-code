@@ -38,8 +38,6 @@
 	<true/>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
-	<key>NSFaceIDUsageDescription</key>
-	<string>Use Face ID to securely unlock BBDO.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>BBDO uses the camera so you can take a profile photo and share photos with the community.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
