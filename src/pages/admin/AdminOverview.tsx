@@ -95,51 +95,12 @@ export default function AdminOverview() {
     setLoading(false);
   };
 
-  // --- KPI calculations ---
-  // Members pay in their own currency (USD, CAD, GBP...). Totals are consolidated
-  // back to INR using the FX rates configured in pricing_regions.
-  const inrOf = useMemo(
-    () => (s: Subscription) =>
-      toInr(s.plan_price || 0, regionOf(regionFx, profileMap.get(s.user_id)?.region_code)),
-    [regionFx, profileMap]
-  );
+  // Currency helpers for renewal rows.
   const nativeMoney = useMemo(
     () => (s: Subscription) =>
       formatMoneyIn(s.plan_price || 0, regionOf(regionFx, profileMap.get(s.user_id)?.region_code)),
     [regionFx, profileMap]
   );
-  const revenueInRange = useMemo(
-    () => rangeSubs.reduce((sum, x) => sum + inrOf(x), 0),
-    [rangeSubs, inrOf]
-  );
-  const activeRevenueRunRate = useMemo(
-    () => allActiveSubs.reduce((sum, x) => sum + inrOf(x), 0),
-    [allActiveSubs, inrOf]
-  );
-  const activeSubsCount = allActiveSubs.length;
-  const activeAssignments = assignments.filter((a) => profileMap.has(a.user_id)).length;
-  const coachCount = coaches.length;
-
-  const packageBreakdown = useMemo(() => {
-    const counts = new Map<string, { name: string; active: number; sold: number; revenue: number }>();
-    for (const p of packages) counts.set(p.plan_key, { name: p.name, active: 0, sold: 0, revenue: 0 });
-    for (const s of allActiveSubs) {
-      const k = aliasPlanKey(s.plan_id);
-      if (!k) continue;
-      const row = counts.get(k);
-      if (row) row.active += 1;
-    }
-    for (const s of rangeSubs) {
-      const k = aliasPlanKey(s.plan_id);
-      if (!k) continue;
-      const row = counts.get(k);
-      if (row) {
-        row.sold += 1;
-        row.revenue += inrOf(s);
-      }
-    }
-    return Array.from(counts.entries()).map(([key, v]) => ({ key, ...v }));
-  }, [packages, allActiveSubs, rangeSubs, inrOf]);
 
   const upcomingRenewals = useMemo(() => {
     const now = Date.now();
@@ -151,15 +112,6 @@ export default function AdminOverview() {
       })
       .sort((a, b) => new Date(a.expires_at).getTime() - new Date(b.expires_at).getTime())
       .slice(0, 8);
-  }, [allActiveSubs]);
-
-  const expiredRecently = useMemo(() => {
-    const now = Date.now();
-    const back = now - 30 * 24 * 60 * 60 * 1000;
-    return allActiveSubs.filter((s) => {
-      const t = new Date(s.expires_at).getTime();
-      return t < now && t >= back;
-    }).length;
   }, [allActiveSubs]);
 
   // --- Coach roster: load + on-track split + patient list ---
@@ -221,52 +173,6 @@ export default function AdminOverview() {
     }
     return Array.from(byUser.values());
   }, [allActiveSubs, profileMap, coaches]);
-
-  // ----- KPI cards -----
-  const kpis = [
-    {
-      label: "Revenue (range, INR)",
-      value: inr(revenueInRange),
-      sub: `${rangeSubs.length} new sales`,
-      icon: IndianRupee, tone: "text-emerald-600", bg: "bg-emerald-500/10",
-      onClick: () => navigate("/admin-dashboard?tab=subscriptions&metric=range_revenue"),
-    },
-    {
-      label: "Run-rate (INR)",
-      value: inr(activeRevenueRunRate),
-      sub: `${activeSubsCount} active subs`,
-      icon: TrendingUp, tone: "text-secondary", bg: "bg-secondary/10",
-      onClick: () => navigate("/admin-dashboard?tab=subscriptions&metric=active_revenue"),
-    },
-    {
-      label: "Renewals (30d)",
-      value: upcomingRenewals.length,
-      sub: `${expiredRecently} expired 30d`,
-      icon: CalendarClock, tone: "text-amber-600", bg: "bg-amber-500/10",
-      onClick: () => navigate("/admin-dashboard?tab=subscriptions&metric=renewals"),
-    },
-    {
-      label: "Total Users",
-      value: totalUsers.toLocaleString("en-IN"),
-      sub: "View by package",
-      icon: Users, tone: "text-primary", bg: "bg-primary/10",
-      onClick: () => navigate("/admin/users-insights"),
-    },
-    {
-      label: "New Users (range)",
-      value: usersInRange,
-      sub: `${activeAssignments} assignments`,
-      icon: Users, tone: "text-primary", bg: "bg-primary/10",
-      onClick: () => navigate("/admin-dashboard?tab=users"),
-    },
-    {
-      label: "Active Coaches",
-      value: coachCount,
-      sub: `Avg ${coachCount ? (activeAssignments / coachCount).toFixed(1) : "0"}/coach`,
-      icon: UserCheck, tone: "text-cyan-600", bg: "bg-cyan-500/10",
-      onClick: () => navigate("/admin-dashboard?tab=coaches"),
-    },
-  ];
 
   if (loading) {
     return (
