@@ -97,6 +97,9 @@ const UserSupplements = lazy(() => import("@/components/UserSupplements"));
 const UserFasting = lazy(() => import("@/components/UserFasting"));
 const PatientLabTests = lazy(() => import("@/components/PatientLabTests"));
 const UserDiet = lazy(() => import("./tabs/Diet"));
+const UserVideos = lazy(() => import("./tabs/Videos"));
+const UserExercise = lazy(() => import("./tabs/Exercise"));
+const AdminMyMovement = lazy(() => import("@/components/admin/AdminMyMovement"));
 
 
 import NotificationsPanel from "@/components/NotificationsPanel";
@@ -220,13 +223,19 @@ const tabContentMap: Record<AdminTab, React.ReactNode> = {
   fasting: (
     <AdminSelfTabs manageLabel="Protocols" mineLabel="My Fasting" mineIcon={Timer} manage={<AdminFasting />} mine={<UserFasting packageKey="intensive" selfServe />} />
   ),
-  movement: <AdminMovement />,
+  movement: (
+    <AdminSelfTabs manageLabel="Config" mineLabel="My Movement" mineIcon={Footprints} manage={<AdminMovement />} mine={<AdminMyMovement />} />
+  ),
   labtests: (
     <AdminSelfTabs manageLabel="Catalog" mineLabel="My Tests" mineIcon={FlaskConical} manage={<AdminLabTests />} mine={<PatientLabTests alwaysShow foundationMode />} />
   ),
 
-  videos: <AdminVideos />,
-  exercises: <AdminExercises />,
+  videos: (
+    <AdminSelfTabs manageLabel="Library" mineLabel="My Yoga & Stress" mineIcon={Video} manage={<AdminVideos />} mine={<UserVideos packageKey="intensive" />} />
+  ),
+  exercises: (
+    <AdminSelfTabs manageLabel="Library" mineLabel="My Exercise" mineIcon={Dumbbell} manage={<AdminExercises />} mine={<UserExercise packageKey="intensive" />} />
+  ),
   rbac: <AdminRBAC />,
   subscriptions: <AdminSubscriptions />,
   packages: <AdminPackages />,
