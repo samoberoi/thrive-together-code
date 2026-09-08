@@ -223,6 +223,22 @@ async function createOrder(kind: Kind, refId: string, userId: string) {
   });
 }
 
+/** Place the actual lab booking with Thyrocare, only after money is received. */
+async function confirmLabBooking(refId: string) {
+  try {
+    await fetch(`${Deno.env.get("SUPABASE_URL")!}/functions/v1/thyrocare-api`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-bbdo-internal": Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      },
+      body: JSON.stringify({ action: "confirm_order", order_id: refId }),
+    });
+  } catch (e) {
+    console.error("lab booking confirm failed", String((e as Error).message || e));
+  }
+}
+
 async function settle(kind: Kind, refId: string, paymentId: string) {
   if (kind === "yoga") {
     await admin
@@ -234,8 +250,10 @@ async function settle(kind: Kind, refId: string, paymentId: string) {
       .from("thyrocare_orders")
       .update({ payment_status: "paid" })
       .eq("id", refId);
+    await confirmLabBooking(refId);
   }
 }
+
 
 async function verify(body: any, userId: string | null) {
   const orderId = String(body.razorpay_order_id || "");
