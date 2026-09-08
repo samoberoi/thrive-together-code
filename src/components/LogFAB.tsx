@@ -631,7 +631,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
             <button
               onClick={saveDiabetes}
               disabled={saving}
-              className="w-full h-13 rounded-xl text-primary-foreground font-bold text-[15px] disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+              className="w-full h-14 rounded-xl text-primary-foreground font-bold text-[15px] disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
               style={{ background: "var(--ring-diabetes)" }}
             >
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -691,7 +691,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
             <button
               onClick={saveBP}
               disabled={saving}
-              className="w-full h-13 rounded-xl text-primary-foreground font-bold text-[15px] disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+              className="w-full h-14 rounded-xl text-primary-foreground font-bold text-[15px] disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
               style={{ background: "var(--ring-bp)" }}
             >
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -744,7 +744,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
             <button
               onClick={saveWeight}
               disabled={saving}
-              className="w-full h-13 rounded-xl text-primary-foreground font-bold text-[15px] disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+              className="w-full h-14 rounded-xl text-primary-foreground font-bold text-[15px] disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
               style={{ background: "var(--ring-weight)" }}
             >
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -806,7 +806,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
             <button
               onClick={saveWater}
               disabled={saving}
-              className="w-full h-13 rounded-xl text-primary-foreground font-bold text-[15px] disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+              className="w-full h-14 rounded-xl text-primary-foreground font-bold text-[15px] disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
               style={{ background: "var(--ring-water)" }}
             >
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
