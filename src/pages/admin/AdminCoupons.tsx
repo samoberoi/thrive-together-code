@@ -455,11 +455,22 @@ export default function AdminCoupons() {
     if (error) toast.error("Could not update code");
   };
 
-  const assignCoach = async (c: Coupon, coachId: string | null) => {
-    setCoupons((p) => p.map((x) => (x.id === c.id ? { ...x, assigned_coach_id: coachId } : x)));
+  const assignOwner = async (c: Coupon, value: string) => {
+    const [type, id] = value ? (value.split(":") as ["coach" | "admin", string]) : [null, null];
+    setCoupons((p) =>
+      p.map((x) =>
+        x.id === c.id
+          ? {
+              ...x,
+              assigned_coach_id: type === "coach" ? id : null,
+              assigned_admin_user_id: type === "admin" ? id : null,
+            }
+          : x,
+      ),
+    );
     try {
-      await assignCouponToCoach(c.id, coachId);
-      toast.success(coachId ? "Coupon given to coach" : "Coach removed from coupon");
+      await assignCouponOwner(c.id, type ? { type, id: id as string } : null);
+      toast.success(type ? "Coupon assigned" : "Assignment removed");
     } catch {
       toast.error("Could not assign coupon");
     }
