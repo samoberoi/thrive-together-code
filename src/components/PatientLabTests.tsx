@@ -576,7 +576,7 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
 
   if (recs.length === 0 && reports.length === 0 && orphanOrders.length === 0 && !foundationMode) {
 
-    if (!alwaysShow) return null;
+    if (!alwaysShow && unpaidOrders.length === 0) return null;
     return (
       <div className="space-y-4">
         {PendingPaymentCard}
