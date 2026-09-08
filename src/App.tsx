@@ -8,7 +8,6 @@ import { useNavigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import PageTransition from "@/components/PageTransition";
 import AppErrorBoundary from "@/components/AppErrorBoundary";
-import BiometricGate from "@/components/BiometricGate";
 import AndroidBackHandler from "@/components/AndroidBackHandler";
 import { isNative } from "@/lib/biometric";
 import { isNativeVideoTransitionActive } from "@/lib/nativeVideoSession";
@@ -366,7 +365,7 @@ function AnimatedRoutes() {
     window.scrollTo({ top: 0, left: 0 });
   }, [location.pathname]);
   return (
-    <AnimatePresence mode="wait" initial={false}>
+    <AnimatePresence mode="sync" initial={false}>
       <Suspense fallback={<RouteFallback />}>
       <Routes location={location} key={location.pathname}>
 
@@ -459,13 +458,11 @@ const App = () => (
               <ConfirmProvider>
                 <AppErrorBoundary>
                   <SubscriptionGate>
-                    <BiometricGate>
-                      <NativeAuthStartupGate>
-                        <NativeSessionRedirect />
-                        <GlobalRealtimeAlerts />
-                        <AnimatedRoutes />
-                      </NativeAuthStartupGate>
-                    </BiometricGate>
+                    <NativeAuthStartupGate>
+                      <NativeSessionRedirect />
+                      <GlobalRealtimeAlerts />
+                      <AnimatedRoutes />
+                    </NativeAuthStartupGate>
                   </SubscriptionGate>
                 </AppErrorBoundary>
               </ConfirmProvider>

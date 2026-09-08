@@ -188,6 +188,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    let restoreSettled = false;
+    const restoreTimeout = window.setTimeout(() => {
+      if (restoreSettled) return;
+      reportStartupError("Initial auth restore timed out", "Continuing with locally available session state");
+      setLoading(false);
+      setReady(true);
+    }, 3500);
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         // If the user just explicitly logged out, ignore any auto-restored
@@ -266,9 +273,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       applySession(null);
       setLoading(false);
       setReady(true);
+    }).finally(() => {
+      restoreSettled = true;
+      window.clearTimeout(restoreTimeout);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      restoreSettled = true;
+      window.clearTimeout(restoreTimeout);
+      subscription.unsubscribe();
+    };
   }, [applySession]);
 
   const signOut = async () => {

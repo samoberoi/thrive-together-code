@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Activity, Heart, Scale, Droplets, Camera, Loader2, Clock, Dumbbell, Sunrise, Sun, Moon, Wind, Timer, Pill, Flower2 } from "lucide-react";
+import { Activity, Heart, Scale, Droplets, Loader2, Clock, Dumbbell, Sunrise, Sun, Moon, Wind, Timer, Pill, Flower2, Check } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
@@ -122,6 +122,41 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
   const [saving, setSaving] = useState(false);
   const [currentDateTime, setCurrentDateTime] = useState(formatCurrentDateTime());
   const [logWhen, setLogWhen] = useState(() => toLocalInputValue(new Date()));
+  const [dailyDone, setDailyDone] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (!open || !user?.id) return;
+    let alive = true;
+    const today = toLocalInputValue(new Date()).slice(0, 10);
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    void Promise.all([
+      supabase.from("health_logs").select("log_type, weight_kg").eq("user_id", user.id).gte("logged_at", todayStart.toISOString()),
+      supabase.from("fasting_tracking").select("compliance_status, fasting_hours_completed, fmod_actual_time, lmod_actual_time").eq("user_id", user.id).eq("date", today).maybeSingle(),
+      supabase.from("user_supplement_tracking").select("taken").eq("user_id", user.id).eq("date", today),
+    ]).then(([health, fasting, supplements]) => {
+      if (!alive) return;
+      const logs = (health.data ?? []) as Array<{ log_type: string; weight_kg: number | null }>;
+      const water = logs.filter((row) => row.log_type === "water").reduce((sum, row) => sum + Number(row.weight_kg ?? 0), 0);
+      const fast = fasting.data as { compliance_status?: string | null; fasting_hours_completed?: number | null; fmod_actual_time?: string | null; lmod_actual_time?: string | null } | null;
+      const supp = (supplements.data ?? []) as Array<{ taken: boolean | null }>;
+      setDailyDone({
+        diabetes: logs.some((row) => row.log_type === "diabetes"),
+        bp: logs.some((row) => row.log_type === "bp"),
+        weight: logs.some((row) => row.log_type === "weight"),
+        water: water >= WATER_GOAL,
+        fasting: Boolean(fast?.compliance_status === "completed" || Number(fast?.fasting_hours_completed ?? 0) > 0 || (fast?.fmod_actual_time && fast?.lmod_actual_time)),
+        supplements: supp.length > 0 && supp.every((row) => row.taken),
+      });
+    }).catch(() => {});
+    return () => { alive = false; };
+  }, [open, user?.id]);
+
+  const DoneBadge = () => (
+    <span className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm" aria-label="Completed today">
+      <Check className="h-3.5 w-3.5" strokeWidth={3} />
+    </span>
+  );
 
   // Today's yoga minutes for the Yoga shortcut badge.
   useEffect(() => {
@@ -467,6 +502,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
                   transition={{ duration: 0.12, ease: [0.22, 1, 0.36, 1] }}
                   className="no-pill relative flex flex-col items-center justify-center gap-2 rounded-xl py-4 px-2 bg-card border border-border"
                 >
+                  {dailyDone[action.id] && <DoneBadge />}
                   <span className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: action.soft }}>
                     <Icon className="w-5 h-5" style={{ color: action.color }} strokeWidth={1.8} />
                   </span>
@@ -485,6 +521,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
               transition={{ duration: 0.12, ease: [0.22, 1, 0.36, 1] }}
               className="no-pill relative flex flex-col items-center justify-center gap-2 rounded-2xl py-4 px-2 bg-card border border-border"
             >
+              {exerciseDone && <DoneBadge />}
               <span
                 className="w-11 h-11 rounded-xl flex items-center justify-center"
                 style={{
@@ -520,6 +557,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
               transition={{ duration: 0.12, ease: [0.22, 1, 0.36, 1] }}
               className="no-pill relative flex flex-col items-center justify-center gap-2 rounded-2xl py-4 px-2 bg-card border border-border"
             >
+              {yogaDone && <DoneBadge />}
               <span
                 className="w-11 h-11 rounded-xl flex items-center justify-center"
                 style={{ background: yogaDone ? "var(--ring-movement)" : "var(--ring-yoga)" }}
@@ -549,6 +587,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
               transition={{ duration: 0.12, ease: [0.22, 1, 0.36, 1] }}
               className="no-pill relative flex flex-col items-center justify-center gap-2 rounded-2xl py-4 px-2 bg-card border border-border"
             >
+              {breathDone && <DoneBadge />}
               <span
                 className="w-11 h-11 rounded-xl flex items-center justify-center"
                 style={{ background: breathDone ? "var(--ring-movement)" : "var(--ring-breath)" }}
@@ -578,6 +617,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
               transition={{ duration: 0.12, ease: [0.22, 1, 0.36, 1] }}
               className="no-pill relative flex flex-col items-center justify-center gap-2 rounded-2xl py-4 px-2 bg-card border border-border"
             >
+              {soleusDone && <DoneBadge />}
               <span
                 className="w-11 h-11 rounded-xl flex items-center justify-center"
                 style={{ background: soleusDone ? "var(--ring-movement)" : "var(--ring-soleus)" }}
@@ -606,6 +646,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
               transition={{ duration: 0.12, ease: [0.22, 1, 0.36, 1] }}
               className="no-pill relative flex flex-col items-center justify-center gap-2 rounded-2xl py-4 px-2 bg-card border border-border"
             >
+              {dailyDone.fasting && <DoneBadge />}
               <span
                 className="w-11 h-11 rounded-xl flex items-center justify-center"
                 style={{ background: "var(--ring-fasting)" }}
@@ -625,6 +666,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
               transition={{ duration: 0.12, ease: [0.22, 1, 0.36, 1] }}
               className="no-pill relative flex flex-col items-center justify-center gap-2 rounded-2xl py-4 px-2 bg-card border border-border"
             >
+              {dailyDone.supplements && <DoneBadge />}
               <span
                 className="w-11 h-11 rounded-xl flex items-center justify-center"
                 style={{ background: "var(--ring-supplements)" }}
@@ -648,7 +690,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
 
       {/* Diabetes Log Drawer */}
       <Drawer open={activeLog === "diabetes"} onOpenChange={(v) => !v && closeLog()}>
-        <DrawerContent className="mx-auto w-full max-w-[430px] bg-background border-t border-border px-4 pb-[max(1rem,env(safe-area-inset-bottom))] max-h-[92dvh] overflow-x-hidden overflow-y-auto overscroll-contain sm:px-5" style={logDrawerStyle}>
+        <DrawerContent className="health-log-sheet mx-auto w-full max-w-[430px] bg-background border-t border-border px-4 pb-[max(1rem,env(safe-area-inset-bottom))] max-h-[92dvh] overflow-x-hidden overflow-y-auto overscroll-contain sm:px-5" style={logDrawerStyle}>
           <DrawerHeader className="px-0 pb-3">
             <DrawerTitle className="text-foreground text-lg font-black flex items-center gap-2">
               <span className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "var(--ring-diabetes-soft)" }}>
@@ -713,7 +755,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
 
       {/* BP Log Drawer */}
       <Drawer open={activeLog === "bp"} onOpenChange={(v) => !v && closeLog()}>
-        <DrawerContent className="mx-auto w-full max-w-[430px] bg-background border-t border-border px-4 pb-[max(1rem,env(safe-area-inset-bottom))] max-h-[92dvh] overflow-x-hidden overflow-y-auto overscroll-contain sm:px-5" style={logDrawerStyle}>
+        <DrawerContent className="health-log-sheet mx-auto w-full max-w-[430px] bg-background border-t border-border px-4 pb-[max(1rem,env(safe-area-inset-bottom))] max-h-[92dvh] overflow-x-hidden overflow-y-auto overscroll-contain sm:px-5" style={logDrawerStyle}>
           <DrawerHeader className="px-0 pb-3">
             <DrawerTitle className="text-foreground text-lg font-black flex items-center gap-2">
               <span className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "var(--ring-bp-soft)" }}>
@@ -773,7 +815,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
 
       {/* Weight Log Drawer */}
       <Drawer open={activeLog === "weight"} onOpenChange={(v) => !v && closeLog()}>
-        <DrawerContent className="mx-auto w-full max-w-[430px] bg-background border-t border-border px-4 pb-[max(1rem,env(safe-area-inset-bottom))] max-h-[92dvh] overflow-x-hidden overflow-y-auto overscroll-contain sm:px-5" style={logDrawerStyle}>
+        <DrawerContent className="health-log-sheet mx-auto w-full max-w-[430px] bg-background border-t border-border px-4 pb-[max(1rem,env(safe-area-inset-bottom))] max-h-[92dvh] overflow-x-hidden overflow-y-auto overscroll-contain sm:px-5" style={logDrawerStyle}>
           <DrawerHeader className="px-0 pb-3">
             <DrawerTitle className="text-foreground text-lg font-black flex items-center gap-2">
               <span className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "var(--ring-weight-soft)" }}>
@@ -826,7 +868,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
 
       {/* Water Log Drawer */}
       <Drawer open={activeLog === "water"} onOpenChange={(v) => !v && closeLog()}>
-        <DrawerContent className="mx-auto w-full max-w-[430px] bg-background border-t border-border px-4 pb-[max(1rem,env(safe-area-inset-bottom))] max-h-[92dvh] overflow-x-hidden overflow-y-auto overscroll-contain sm:px-5" style={logDrawerStyle}>
+        <DrawerContent className="health-log-sheet mx-auto w-full max-w-[430px] bg-background border-t border-border px-4 pb-[max(1rem,env(safe-area-inset-bottom))] max-h-[92dvh] overflow-x-hidden overflow-y-auto overscroll-contain sm:px-5" style={logDrawerStyle}>
           <DrawerHeader className="px-0 pb-3">
             <DrawerTitle className="text-foreground text-lg font-black flex items-center gap-2">
               <span className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "var(--ring-water-soft)" }}>

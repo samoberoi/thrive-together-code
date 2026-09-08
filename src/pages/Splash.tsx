@@ -32,8 +32,8 @@ export default function Splash() {
     } catch {
       /* ignore */
     }
-    const tExit = window.setTimeout(() => setGone(true), 2600);
-    const tReady = window.setTimeout(() => setMinimumSplashDone(true), 3000);
+    const tExit = window.setTimeout(() => setGone(true), 900);
+    const tReady = window.setTimeout(() => setMinimumSplashDone(true), 1100);
 
     return () => {
       window.clearTimeout(tExit);
@@ -63,7 +63,7 @@ export default function Splash() {
       } catch {
         /* ignore */
       }
-    }, 4000);
+    }, 1500);
     return () => {
       window.clearTimeout(failSafe);
     };

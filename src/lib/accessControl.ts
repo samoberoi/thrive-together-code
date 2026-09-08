@@ -8,6 +8,14 @@ export type ProtectedAccessDecision = {
   redirectTo?: string;
 };
 
+const ACCESS_CACHE_MS = 60_000;
+const protectedAccessCache = new Map<string, { at: number; decision: ProtectedAccessDecision }>();
+
+export function clearAccessDecisionCache(userId?: string) {
+  if (userId) protectedAccessCache.delete(userId);
+  else protectedAccessCache.clear();
+}
+
 async function resolvePrivilegedRoute(userId: string): Promise<string | null> {
   const [isAdmin, isCoach, isPartner] = await Promise.all([
     isAdminUser(userId),
@@ -25,9 +33,10 @@ export async function resolvePostAuthRoute(
   userId: string,
   options: { missingProfileRoute?: string | null } = {},
 ): Promise<string | null> {
-  // A scheduled downgrade becomes the live plan the moment the previous one ends.
-  await activateDueSubscriptions(userId);
-  const [isAdmin, isCoach, isPartner, profile, activeSubscription] = await Promise.all([
+  // Keep scheduled plan activation in the same parallel batch instead of making
+  // every launch wait for an extra network round-trip first.
+  const [, isAdmin, isCoach, isPartner, profile, activeSubscription] = await Promise.all([
+    activateDueSubscriptions(userId),
     isAdminUser(userId),
     isCoachUser(userId),
     isChannelPartner(userId),
@@ -46,8 +55,11 @@ export async function resolvePostAuthRoute(
 }
 
 export async function resolveProtectedAccess(userId: string): Promise<ProtectedAccessDecision> {
-  await activateDueSubscriptions(userId);
-  const [isAdmin, isCoach, isPartner, profile, activeSubscription] = await Promise.all([
+  const cached = protectedAccessCache.get(userId);
+  if (cached && Date.now() - cached.at < ACCESS_CACHE_MS) return cached.decision;
+
+  const [, isAdmin, isCoach, isPartner, profile, activeSubscription] = await Promise.all([
+    activateDueSubscriptions(userId),
     isAdminUser(userId),
     isCoachUser(userId),
     isChannelPartner(userId),
@@ -55,10 +67,11 @@ export async function resolveProtectedAccess(userId: string): Promise<ProtectedA
     fetchActiveSubscription(userId),
   ]);
 
-  if (isAdmin || isCoach || isPartner) return { allowed: true };
-
-  if (activeSubscription) return { allowed: true };
-  if (profile?.onboarding_completed) return { allowed: false, redirectTo: "/plans" };
-  if (profile?.name) return { allowed: false, redirectTo: "/setup/purpose" };
-  return { allowed: false, redirectTo: "/auth" };
+  let decision: ProtectedAccessDecision;
+  if (isAdmin || isCoach || isPartner || activeSubscription) decision = { allowed: true };
+  else if (profile?.onboarding_completed) decision = { allowed: false, redirectTo: "/plans" };
+  else if (profile?.name) decision = { allowed: false, redirectTo: "/setup/purpose" };
+  else decision = { allowed: false, redirectTo: "/auth" };
+  protectedAccessCache.set(userId, { at: Date.now(), decision });
+  return decision;
 }
