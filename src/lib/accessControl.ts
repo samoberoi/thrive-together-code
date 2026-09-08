@@ -70,7 +70,7 @@ export async function resolvePostAuthRoute(
     fetchActiveSubscription(userId),
   ]), null);
 
-  if (!result) return cached?.route ?? "/home";
+  if (!result) return cached?.route ?? "/plans";
   const [, isAdmin, isCoach, isPartner, profile, activeSubscription] = result;
 
   let route: string | null;
@@ -99,9 +99,9 @@ export async function resolveProtectedAccess(userId: string): Promise<ProtectedA
     fetchActiveSubscription(userId),
   ]), null);
 
-  // A stalled mobile resume request must never replace an already-rendered app
-  // with an endless gate. Data remains protected by backend row policies.
-  if (!result) return cached?.decision ?? { allowed: true };
+  // A stalled mobile resume request must never leave an endless gate. Reuse a
+  // recent decision when possible; otherwise fall back to the safe plan screen.
+  if (!result) return cached?.decision ?? { allowed: false, redirectTo: "/plans" };
   const [, isAdmin, isCoach, isPartner, profile, activeSubscription] = result;
 
   let decision: ProtectedAccessDecision;
