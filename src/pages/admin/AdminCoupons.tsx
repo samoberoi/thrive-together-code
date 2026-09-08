@@ -636,10 +636,21 @@ export default function AdminCoupons() {
                         </Button>
                       </div>
                     )}
+                    <select
+                      value={c.assigned_coach_id ?? ""}
+                      onChange={(e) => assignCoach(c, e.target.value || null)}
+                      className="mt-2 w-full h-8 rounded-md border bg-background px-2 text-[11px]"
+                    >
+                      <option value="">Not given to a coach</option>
+                      {coachOptions.map((co) => (
+                        <option key={co.id} value={co.id}>{co.name}</option>
+                      ))}
+                    </select>
                     <span className="block font-sans text-[10px] text-muted-foreground mt-1">
                       used {c.redeemed_count}
                       {c.max_redemptions !== null ? `/${c.max_redemptions}` : ""}
                     </span>
+
                   </div>
                 ))}
                 {coupons.length === 0 && <p className="text-xs text-muted-foreground">No codes yet.</p>}
