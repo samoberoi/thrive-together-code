@@ -10,6 +10,7 @@ const AUTH_SESSION_BACKUP_KEY = "bb_native_auth_session_backup";
 const AUTH_TOKENS_BACKUP_KEY = "bb_native_auth_tokens_backup";
 const pendingWrites = new Set<Promise<unknown>>();
 let nativePersistenceQueue: Promise<unknown> = Promise.resolve();
+let hydrationPromise: Promise<void> | null = null;
 
 type NativeAuthStorePlugin = {
   getTokens(): Promise<{ access_token?: string; refresh_token?: string; hasTokens?: boolean }>;
@@ -193,7 +194,8 @@ export async function flushNativePersistenceWrites() {
 
 export async function hydrateNativePersistence() {
   if (!isNativeApp()) return;
-  return serializeNativePersistence(async () => {
+  if (hydrationPromise) return hydrationPromise;
+  hydrationPromise = serializeNativePersistence(async () => {
   try {
     logStartupEvent("native persistence hydrate started");
     const authBackup = await readAuthSessionBackup();
@@ -208,9 +210,9 @@ export async function hydrateNativePersistence() {
     const keys = new Set([
       ...listedKeys,
       ...allPreferenceKeys.filter((key) => shouldPersistKey(key)),
-    ]);
+    ].filter(isAuthStorageKey));
 
-    for (const key of keys) {
+    await Promise.all([...keys].map(async (key) => {
       if (key === AUTH_SESSION_BACKUP_KEY || key === AUTH_TOKENS_BACKUP_KEY) continue;
       const { value } = await Preferences.get({ key });
       if (value == null) {
@@ -222,15 +224,15 @@ export async function hydrateNativePersistence() {
         }
       } else {
         localStorage.setItem(key, value);
-        await saveAuthSessionBackup(key, value);
       }
-    }
+    }));
     localStorage.setItem(LAST_HYDRATED_KEY, String(Date.now()));
     logStartupEvent("native persistence hydrate finished", `keys=${keys.size}`);
   } catch (error) {
     reportStartupError("native persistence hydration failed", error);
   }
-  });
+  }) as Promise<void>;
+  return hydrationPromise;
 }
 
 export async function hasNativePersistedAuthSession(): Promise<boolean> {

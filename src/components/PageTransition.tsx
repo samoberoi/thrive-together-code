@@ -1,6 +1,6 @@
-import { ReactNode, useRef } from "react";
+import { ReactNode } from "react";
 import { motion } from "framer-motion";
-import { useLocation, useNavigationType } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -18,42 +18,21 @@ const EASE = [0.22, 1, 0.36, 1] as const;
  */
 export default function PageTransition({ children }: { children: ReactNode }) {
   const location = useLocation();
-  const navType = useNavigationType();
-  const isBack = navType === "POP";
-  // Full-width slide-in feel — new screen slides across from the right on
-  // forward nav, from the left on back. Combined with AnimatePresence
-  // mode="wait", the outgoing screen slides off first, giving a clear
-  // native-app style transition.
-  const enterFrom = isBack ? "-100%" : "100%";
-  const exitTo = isBack ? "100%" : "-100%";
-  const ref = useRef<HTMLDivElement>(null);
 
   return (
     <motion.div
-      ref={ref}
       key={location.pathname}
-      initial={{ opacity: 0, x: enterFrom }}
+      initial={{ opacity: 0, x: 10 }}
       animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: exitTo }}
+      exit={{ opacity: 0 }}
       transition={{
-        opacity: { duration: 0.22, ease: EASE },
-        x: { duration: 0.36, ease: EASE },
-      }}
-      onAnimationComplete={(def) => {
-        // Only clear after the enter animation (not exit)
-        if (typeof def === "object" && def && "opacity" in (def as any)) {
-          const el = ref.current;
-          if (el) {
-            el.style.transform = "";
-            el.style.willChange = "";
-          }
-        }
+        opacity: { duration: 0.12, ease: EASE },
+        x: { duration: 0.16, ease: EASE },
       }}
       style={{
         width: "100%",
         minHeight: "100dvh",
         overflowX: "hidden",
-        willChange: "opacity, transform",
       }}
     >
       {children}

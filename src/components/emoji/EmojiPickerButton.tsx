@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { Smile, X } from "lucide-react";
 import { createPortal } from "react-dom";
+import { Theme } from "emoji-picker-react";
 
 const EmojiPicker = lazy(() => import("emoji-picker-react"));
 
@@ -52,7 +53,7 @@ export default function EmojiPickerButton({
             <div
               id="bbdo-emoji-panel"
               onMouseDown={(e) => e.stopPropagation()}
-              className="bbdo-emoji-sheet w-full max-w-[430px] bg-background border-t border-border rounded-t-2xl overflow-hidden shadow-2xl"
+              className="bbdo-emoji-sheet w-[min(100%,430px)] max-w-full bg-background border-t border-border rounded-t-2xl overflow-hidden shadow-2xl"
               style={{ marginBottom: "var(--kb-h, 0px)" }}
             >
               <div className="flex items-center justify-between px-4 py-2.5 border-b border-border">
@@ -77,7 +78,8 @@ export default function EmojiPickerButton({
               >
                 <EmojiPicker
                   width="100%"
-                  height={340}
+                   height="min(420px, 52dvh)"
+                   theme={Theme.LIGHT}
                   lazyLoadEmojis
                   skinTonesDisabled={false}
                   previewConfig={{ showPreview: false }}
