@@ -1,5 +1,5 @@
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import { Smile } from "lucide-react";
+import { lazy, Suspense, useEffect, useState } from "react";
+import { Smile, X } from "lucide-react";
 import { createPortal } from "react-dom";
 
 const EmojiPicker = lazy(() => import("emoji-picker-react"));
@@ -12,8 +12,8 @@ interface Props {
 }
 
 /**
- * WhatsApp-style emoji button. Opens a full industry-standard emoji keyboard
- * (all Unicode groups + search + skin tones) anchored above the composer.
+ * WhatsApp-style emoji button. Opens a clean bottom sheet (never a floating
+ * full-bleed panel) constrained to the app column, lifted above the keyboard.
  */
 export default function EmojiPickerButton({
   onSelect,
@@ -22,43 +22,19 @@ export default function EmojiPickerButton({
   ariaLabel = "Insert emoji",
 }: Props) {
   const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState<{ left: number; bottom: number } | null>(null);
-  const btnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!open) return;
-    const close = (e: MouseEvent) => {
-      const t = e.target as Node;
-      if (btnRef.current?.contains(t)) return;
-      const panel = document.getElementById("bbdo-emoji-panel");
-      if (panel?.contains(t)) return;
-      setOpen(false);
-    };
     const onEsc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
-    document.addEventListener("mousedown", close);
     document.addEventListener("keydown", onEsc);
-    return () => {
-      document.removeEventListener("mousedown", close);
-      document.removeEventListener("keydown", onEsc);
-    };
+    return () => document.removeEventListener("keydown", onEsc);
   }, [open]);
-
-  const toggle = () => {
-    if (!open && btnRef.current) {
-      const r = btnRef.current.getBoundingClientRect();
-      const width = Math.min(340, window.innerWidth - 16);
-      const left = Math.max(8, Math.min(r.left, window.innerWidth - width - 8));
-      setPos({ left, bottom: Math.max(8, window.innerHeight - r.top + 8) });
-    }
-    setOpen((v) => !v);
-  };
 
   return (
     <>
       <button
-        ref={btnRef}
         type="button"
-        onClick={toggle}
+        onClick={() => setOpen((v) => !v)}
         aria-label={ariaLabel}
         className={
           className ||
@@ -68,33 +44,48 @@ export default function EmojiPickerButton({
         <Smile className={iconClassName} strokeWidth={2.2} />
       </button>
       {open &&
-        pos &&
         createPortal(
           <div
-            id="bbdo-emoji-panel"
-            style={{ left: pos.left, bottom: pos.bottom, position: "fixed", zIndex: 10000 }}
-            className="shadow-2xl rounded-2xl overflow-hidden"
+            className="fixed inset-0 z-[10000] flex items-end justify-center bg-black/40"
+            onMouseDown={() => setOpen(false)}
           >
-            <Suspense
-              fallback={
-                <div className="w-[320px] h-[280px] bg-background border border-border rounded-2xl flex items-center justify-center text-xs text-muted-foreground">
-                  Loading emoji…
-                </div>
-              }
+            <div
+              id="bbdo-emoji-panel"
+              onMouseDown={(e) => e.stopPropagation()}
+              className="bbdo-emoji-sheet w-full max-w-[430px] bg-background border-t border-border rounded-t-2xl overflow-hidden shadow-2xl"
+              style={{ marginBottom: "var(--kb-h, 0px)" }}
             >
-              <EmojiPicker
-                width={Math.min(340, window.innerWidth - 16)}
-                height={340}
-                lazyLoadEmojis
-                skinTonesDisabled={false}
-                previewConfig={{ showPreview: false }}
-                searchPlaceholder="Search emoji"
-                onEmojiClick={(e: { emoji: string }) => {
-                  onSelect(e.emoji);
-                  setOpen(false);
-                }}
-              />
-            </Suspense>
+              <div className="flex items-center justify-between px-4 py-2.5 border-b border-border">
+                <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                  Emoji
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  aria-label="Close emoji keyboard"
+                  className="w-8 h-8 rounded-full bg-muted/70 flex items-center justify-center text-muted-foreground"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <Suspense
+                fallback={
+                  <div className="h-[320px] flex items-center justify-center text-xs text-muted-foreground">
+                    Loading emoji…
+                  </div>
+                }
+              >
+                <EmojiPicker
+                  width="100%"
+                  height={340}
+                  lazyLoadEmojis
+                  skinTonesDisabled={false}
+                  previewConfig={{ showPreview: false }}
+                  searchPlaceholder="Search emoji"
+                  onEmojiClick={(e: { emoji: string }) => onSelect(e.emoji)}
+                />
+              </Suspense>
+            </div>
           </div>,
           document.body,
         )}

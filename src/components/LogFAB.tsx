@@ -403,7 +403,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
 
       {/* Quick-log bottom sheet — matches the All-sections expanded dock look */}
       <Drawer open={open} onOpenChange={setOpen}>
-        <DrawerContent className="bg-background border-t border-border px-4 pb-[max(1rem,env(safe-area-inset-bottom))] max-h-[85dvh] overflow-y-auto overscroll-contain">
+        <DrawerContent className="mx-auto w-full max-w-[430px] bg-background border-t border-border px-4 pb-[max(1rem,env(safe-area-inset-bottom))] max-h-[85dvh] overflow-y-auto overscroll-contain">
           <DrawerHeader className="px-1 pb-2">
             <DrawerTitle className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
               Quick log
@@ -578,7 +578,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
 
       {/* Diabetes Log Drawer */}
       <Drawer open={activeLog === "diabetes"} onOpenChange={(v) => !v && closeLog()}>
-        <DrawerContent className="bg-background border-t border-border px-4 pb-[max(1rem,env(safe-area-inset-bottom))] max-h-[92dvh] overflow-x-hidden overflow-y-auto overscroll-contain sm:px-5" style={logDrawerStyle}>
+        <DrawerContent className="mx-auto w-full max-w-[430px] bg-background border-t border-border px-4 pb-[max(1rem,env(safe-area-inset-bottom))] max-h-[92dvh] overflow-x-hidden overflow-y-auto overscroll-contain sm:px-5" style={logDrawerStyle}>
           <DrawerHeader className="px-0 pb-3">
             <DrawerTitle className="text-foreground text-lg font-black flex items-center gap-2">
               <span className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "var(--ring-diabetes-soft)" }}>
@@ -643,7 +643,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
 
       {/* BP Log Drawer */}
       <Drawer open={activeLog === "bp"} onOpenChange={(v) => !v && closeLog()}>
-        <DrawerContent className="bg-background border-t border-border px-4 pb-[max(1rem,env(safe-area-inset-bottom))] max-h-[92dvh] overflow-x-hidden overflow-y-auto overscroll-contain sm:px-5" style={logDrawerStyle}>
+        <DrawerContent className="mx-auto w-full max-w-[430px] bg-background border-t border-border px-4 pb-[max(1rem,env(safe-area-inset-bottom))] max-h-[92dvh] overflow-x-hidden overflow-y-auto overscroll-contain sm:px-5" style={logDrawerStyle}>
           <DrawerHeader className="px-0 pb-3">
             <DrawerTitle className="text-foreground text-lg font-black flex items-center gap-2">
               <span className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "var(--ring-bp-soft)" }}>
@@ -703,7 +703,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
 
       {/* Weight Log Drawer */}
       <Drawer open={activeLog === "weight"} onOpenChange={(v) => !v && closeLog()}>
-        <DrawerContent className="bg-background border-t border-border px-4 pb-[max(1rem,env(safe-area-inset-bottom))] max-h-[92dvh] overflow-x-hidden overflow-y-auto overscroll-contain sm:px-5" style={logDrawerStyle}>
+        <DrawerContent className="mx-auto w-full max-w-[430px] bg-background border-t border-border px-4 pb-[max(1rem,env(safe-area-inset-bottom))] max-h-[92dvh] overflow-x-hidden overflow-y-auto overscroll-contain sm:px-5" style={logDrawerStyle}>
           <DrawerHeader className="px-0 pb-3">
             <DrawerTitle className="text-foreground text-lg font-black flex items-center gap-2">
               <span className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "var(--ring-weight-soft)" }}>
@@ -756,7 +756,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
 
       {/* Water Log Drawer */}
       <Drawer open={activeLog === "water"} onOpenChange={(v) => !v && closeLog()}>
-        <DrawerContent className="bg-background border-t border-border px-4 pb-[max(1rem,env(safe-area-inset-bottom))] max-h-[92dvh] overflow-x-hidden overflow-y-auto overscroll-contain sm:px-5" style={logDrawerStyle}>
+        <DrawerContent className="mx-auto w-full max-w-[430px] bg-background border-t border-border px-4 pb-[max(1rem,env(safe-area-inset-bottom))] max-h-[92dvh] overflow-x-hidden overflow-y-auto overscroll-contain sm:px-5" style={logDrawerStyle}>
           <DrawerHeader className="px-0 pb-3">
             <DrawerTitle className="text-foreground text-lg font-black flex items-center gap-2">
               <span className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "var(--ring-water-soft)" }}>
