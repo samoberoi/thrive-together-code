@@ -18,7 +18,9 @@
         "@capawesome/capacitor-badge": "^8.0.2",
         "@capgo/capacitor-health": "^8.10.2",
         "@fontsource/epilogue": "^5.2.8",
+        "@fontsource/manrope": "^5.3.0",
         "@fontsource/montserrat": "^5.2.8",
+        "@fontsource/sora": "^5.3.0",
         "@fontsource/urbanist": "^5.2.7",
         "@hookform/resolvers": "^3.10.0",
         "@lovable.dev/mcp-js": "^0.26.1",
@@ -231,7 +233,11 @@
 
     "@fontsource/epilogue": ["@fontsource/epilogue@5.2.8", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@fontsource/epilogue/-/epilogue-5.2.8.tgz", {}, "sha512-+V1T+G9RXtLiImA1khsXG6jd5Io/UMJ6LJgYyAYShU9nzZJtI3G/4Hof9Zi6KUMmmH+oTxVN0rXdZc6AOK8Sqg=="],
 
+    "@fontsource/manrope": ["@fontsource/manrope@5.3.0", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@fontsource/manrope/-/manrope-5.3.0.tgz", {}, "sha512-obJ1Dv3+uCA6HlHgW8u4BGYxJR9In2HW7gjJhlflEvkrj1X1iSEwu0fToL+JYGC/FEKFfIz1sBuPduvcL2gIAA=="],
+
     "@fontsource/montserrat": ["@fontsource/montserrat@5.2.8", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@fontsource/montserrat/-/montserrat-5.2.8.tgz", {}, "sha512-xTjLxSbSfCycDB0pwmNsfNvdfWPaDaRQ2LC6yt/ZI7SdvXG52zHnzNYC/09mzuAuWNJyShkteutfCoDgym56hQ=="],
+
+    "@fontsource/sora": ["@fontsource/sora@5.3.0", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@fontsource/sora/-/sora-5.3.0.tgz", {}, "sha512-SqW3OpKxxfKvxDLPlbdrWf2KooPfbd+W3jaYn483o+Y/JrmU87vjFPNptDqwP428c3vY+gnranLhjcbRaXB0Jw=="],
 
     "@fontsource/urbanist": ["@fontsource/urbanist@5.2.7", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@fontsource/urbanist/-/urbanist-5.2.7.tgz", {}, "sha512-tZE4qBBu+VBpfw8yMeLl6fzbY1sb4dnACXZLzlInp1KNONks47G/OYPY8yZajpeFQudLZlpVJu3xfS1Ph/QaFg=="],
 

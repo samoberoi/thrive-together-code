@@ -23,10 +23,10 @@ type LogType = "diabetes" | "bp" | "weight" | "water" | null;
 type TimeOfDay = "morning" | "afternoon" | "evening";
 
 const actions = [
-  { id: "diabetes" as const, icon: Activity, label: "Diabetes", color: "bg-primary", textColor: "text-primary" },
-  { id: "bp" as const, icon: Heart, label: "Blood Pressure", color: "bg-secondary", textColor: "text-secondary" },
-  { id: "weight" as const, icon: Scale, label: "Weight", color: "bg-primary", textColor: "text-primary" },
-  { id: "water" as const, icon: Droplets, label: "Water", color: "bg-secondary", textColor: "text-secondary" },
+  { id: "diabetes" as const, icon: Activity, label: "Diabetes", color: "var(--ring-diabetes)", soft: "var(--ring-diabetes-soft)" },
+  { id: "bp" as const, icon: Heart, label: "Blood Pressure", color: "var(--ring-bp)", soft: "var(--ring-bp-soft)" },
+  { id: "weight" as const, icon: Scale, label: "Weight", color: "var(--ring-weight)", soft: "var(--ring-weight-soft)" },
+  { id: "water" as const, icon: Droplets, label: "Water", color: "var(--ring-water)", soft: "var(--ring-water-soft)" },
 ];
 
 function detectTimeOfDay(): TimeOfDay {
@@ -243,7 +243,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
   };
 
   const whenField = (
-    <div className="rounded-xl bg-surface-2 px-3 py-2.5 mb-1">
+    <div className="min-w-0 rounded-xl bg-muted px-3 py-2.5 mb-1">
       <div className="flex items-center gap-1.5 mb-1.5">
         <Clock className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.8} />
         <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
@@ -255,7 +255,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
         value={logWhen}
         max={toLocalInputValue(new Date())}
         onChange={(e) => setLogWhen(e.target.value)}
-        className="w-full h-11 rounded-xl bg-card border border-border px-3 text-sm font-semibold text-foreground outline-none"
+        className="health-datetime h-11 rounded-lg bg-card border border-border px-3 text-sm font-semibold text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
       />
     </div>
   );
@@ -409,7 +409,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
               Quick log
             </DrawerTitle>
           </DrawerHeader>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {visibleActions.map((action) => {
               const Icon = action.icon;
               return (
@@ -418,10 +418,10 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
                   onClick={() => openLog(action.id)}
                   whileTap={{ scale: 0.97 }}
                   transition={{ duration: 0.12, ease: [0.22, 1, 0.36, 1] }}
-                  className="no-pill relative flex flex-col items-center justify-center gap-2 rounded-2xl py-4 px-2 bg-card border border-border"
+                  className="no-pill relative flex flex-col items-center justify-center gap-2 rounded-xl py-4 px-2 bg-card border border-border"
                 >
-                  <span className={`w-11 h-11 rounded-xl ${action.color} flex items-center justify-center`}>
-                    <Icon className="w-5 h-5 text-white" strokeWidth={1.7} />
+                  <span className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: action.soft }}>
+                    <Icon className="w-5 h-5" style={{ color: action.color }} strokeWidth={1.8} />
                   </span>
                   <span className="no-break text-[11px] font-semibold text-foreground text-center leading-tight">
                     {action.label}
@@ -443,7 +443,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
                 className="w-11 h-11 rounded-xl flex items-center justify-center"
                 style={{
                   background:
-                    exerciseDone ? "#10B981" : "var(--bbdo-blue)",
+                    exerciseDone ? "var(--ring-movement)" : "var(--ring-exercise)",
                 }}
               >
                 <Dumbbell className="w-5 h-5 text-white" strokeWidth={1.7} />
@@ -455,12 +455,12 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
                   style={{
                     background:
                       exerciseDone
-                        ? "#10B98122"
-                        : "var(--bbdo-blue-soft)",
+                        ? "var(--ring-movement-soft)"
+                        : "var(--ring-exercise-soft)",
                     color:
                       exerciseDone
-                        ? "#10B981"
-                        : "var(--bbdo-blue)",
+                        ? "var(--ring-movement)"
+                        : "var(--ring-exercise)",
                   }}
                 >
                   {exerciseBadgeValue}
@@ -479,7 +479,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
             >
               <span
                 className="w-11 h-11 rounded-xl flex items-center justify-center"
-                style={{ background: breathDone ? "#10B981" : "var(--bbdo-red, #EA6A5E)" }}
+                style={{ background: breathDone ? "var(--ring-movement)" : "var(--ring-breath)" }}
               >
                 <Wind className="w-5 h-5 text-white" strokeWidth={1.7} />
               </span>
@@ -488,8 +488,8 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
                 <span
                   className="text-[9px] font-black px-1.5 py-0.5 rounded-md whitespace-nowrap"
                   style={{
-                    background: breathDone ? "#10B98122" : "rgba(234,106,94,0.14)",
-                    color: breathDone ? "#10B981" : "var(--bbdo-red, #EA6A5E)",
+                    background: breathDone ? "var(--ring-movement-soft)" : "var(--ring-breath-soft)",
+                    color: breathDone ? "var(--ring-movement)" : "var(--ring-breath)",
                   }}
                 >
                   {breathCount}/{breathGoal}
@@ -508,7 +508,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
             >
               <span
                 className="w-11 h-11 rounded-xl flex items-center justify-center"
-                style={{ background: soleusDone ? "#10B981" : "var(--bbdo-blue)" }}
+                style={{ background: soleusDone ? "var(--ring-movement)" : "var(--ring-soleus)" }}
               >
                 <Dumbbell className="w-5 h-5 text-white" strokeWidth={1.7} />
               </span>
@@ -517,8 +517,8 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
                 <span
                   className="text-[9px] font-black px-1.5 py-0.5 rounded-md whitespace-nowrap"
                   style={{
-                    background: soleusDone ? "#10B98122" : "rgba(36,140,203,0.14)",
-                    color: soleusDone ? "#10B981" : "var(--bbdo-blue)",
+                    background: soleusDone ? "var(--ring-movement-soft)" : "var(--ring-soleus-soft)",
+                    color: soleusDone ? "var(--ring-movement)" : "var(--ring-soleus)",
                   }}
                 >
                   {soleusCount}/{soleusGoal}
@@ -537,7 +537,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
             >
               <span
                 className="w-11 h-11 rounded-xl flex items-center justify-center"
-                style={{ background: "var(--bbdo-red, #EA6A5E)" }}
+                style={{ background: "var(--ring-fasting)" }}
               >
                 <Timer className="w-5 h-5 text-white" strokeWidth={1.7} />
               </span>
@@ -557,7 +557,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
             >
               <span
                 className="w-11 h-11 rounded-xl flex items-center justify-center"
-                style={{ background: "var(--bbdo-blue)" }}
+                style={{ background: "var(--ring-supplements)" }}
               >
                 <Pill className="w-5 h-5 text-white" strokeWidth={1.7} />
               </span>
@@ -578,11 +578,11 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
 
       {/* Diabetes Log Drawer */}
       <Drawer open={activeLog === "diabetes"} onOpenChange={(v) => !v && closeLog()}>
-        <DrawerContent className="bg-background border-t border-border px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] max-h-[92dvh] overflow-y-auto overscroll-contain" style={logDrawerStyle}>
+        <DrawerContent className="bg-background border-t border-border px-4 pb-[max(1rem,env(safe-area-inset-bottom))] max-h-[92dvh] overflow-x-hidden overflow-y-auto overscroll-contain sm:px-5" style={logDrawerStyle}>
           <DrawerHeader className="px-0 pb-3">
             <DrawerTitle className="text-foreground text-lg font-black flex items-center gap-2">
-              <span className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "var(--bbdo-blue)" }}>
-                <Activity className="w-[18px] h-[18px] text-white" strokeWidth={1.8} />
+              <span className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "var(--ring-diabetes-soft)" }}>
+                <Activity className="w-[18px] h-[18px]" style={{ color: "var(--ring-diabetes)" }} strokeWidth={1.8} />
               </span>
               Log Blood Glucose
             </DrawerTitle>
@@ -591,7 +591,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
             {whenField}
 
             {/* Time-of-day segmented control */}
-            <div className="grid grid-cols-3 gap-1.5 p-1.5 rounded-2xl bg-muted">
+            <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-muted">
               {([
                 { k: "morning" as const, Icon: Sunrise, label: "Morning" },
                 { k: "afternoon" as const, Icon: Sun, label: "Afternoon" },
@@ -602,8 +602,8 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
                   <button
                     key={k}
                     onClick={() => setGlucoseTimeOfDay(k)}
-                    className="no-pill min-h-11 rounded-xl flex items-center justify-center gap-1.5 text-[12px] font-bold transition-colors"
-                    style={active ? { background: "#fff", color: "var(--bbdo-ink)", boxShadow: "0 2px 8px -2px rgba(15,26,61,0.12)" } : { color: "var(--bbdo-ink-soft)" }}
+                    className="no-pill min-w-0 min-h-11 rounded-lg flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 px-1 text-[10px] sm:text-[12px] font-bold transition-colors"
+                    style={active ? { background: "var(--pure-white)", color: "var(--bbdo-ink)", boxShadow: "var(--shadow-card)" } : { color: "var(--bbdo-ink-soft)" }}
                   >
                     <Icon className="w-4 h-4" strokeWidth={1.7} />
                     {label}
@@ -612,7 +612,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
               })}
             </div>
 
-            <label className="block rounded-2xl bg-card border border-border p-5 cursor-text focus-within:border-[var(--bbdo-blue)]/50 focus-within:ring-2 focus-within:ring-[var(--bbdo-blue)]/15 transition-colors">
+            <label className="block rounded-xl bg-card border border-border p-4 cursor-text focus-within:ring-2 focus-within:ring-primary/10 transition-colors">
               <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground text-center">Glucose</p>
               <div className="mt-3 min-h-[88px] flex flex-col items-center justify-center gap-1">
                 <input
@@ -622,7 +622,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
                   placeholder="112"
                   value={glucoseValue}
                   onChange={(e) => setGlucoseValue(e.target.value)}
-                  className="no-number-spinner w-full bg-transparent text-center text-5xl font-black tabular-nums text-foreground outline-none placeholder:text-muted-foreground/30"
+                  className="no-number-spinner w-full min-w-0 bg-transparent text-center text-4xl font-black tabular-nums text-foreground outline-none placeholder:text-muted-foreground/30"
                 />
                 <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">mg/dL</span>
               </div>
@@ -631,8 +631,8 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
             <button
               onClick={saveDiabetes}
               disabled={saving}
-              className="w-full h-14 rounded-2xl text-white font-bold text-[15px] disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
-              style={{ background: "var(--bbdo-blue)" }}
+              className="w-full h-14 rounded-xl text-primary-foreground font-bold text-[15px] disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+              style={{ background: "var(--ring-diabetes)" }}
             >
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
               Save reading
@@ -643,11 +643,11 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
 
       {/* BP Log Drawer */}
       <Drawer open={activeLog === "bp"} onOpenChange={(v) => !v && closeLog()}>
-        <DrawerContent className="bg-background border-t border-border px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] max-h-[92dvh] overflow-y-auto overscroll-contain" style={logDrawerStyle}>
+        <DrawerContent className="bg-background border-t border-border px-4 pb-[max(1rem,env(safe-area-inset-bottom))] max-h-[92dvh] overflow-x-hidden overflow-y-auto overscroll-contain sm:px-5" style={logDrawerStyle}>
           <DrawerHeader className="px-0 pb-3">
             <DrawerTitle className="text-foreground text-lg font-black flex items-center gap-2">
-              <span className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "var(--bbdo-red)" }}>
-                <Heart className="w-[18px] h-[18px] text-white" strokeWidth={1.8} />
+              <span className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "var(--ring-bp-soft)" }}>
+                <Heart className="w-[18px] h-[18px]" style={{ color: "var(--ring-bp)" }} strokeWidth={1.8} />
               </span>
               Log Blood Pressure
             </DrawerTitle>
@@ -655,8 +655,8 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
           <div className="flex flex-col gap-4">
             {whenField}
 
-            <div className="grid grid-cols-2 gap-2">
-              <label className="block rounded-2xl bg-card border border-border p-4 cursor-text focus-within:border-[var(--bbdo-red)]/50 focus-within:ring-2 focus-within:ring-[var(--bbdo-red)]/15 transition-colors">
+            <div className="grid grid-cols-2 gap-2 min-w-0">
+              <label className="block min-w-0 rounded-xl bg-card border border-border p-3 sm:p-4 cursor-text focus-within:ring-2 focus-within:ring-primary/10 transition-colors">
                 <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground text-center">Systolic</p>
                 <div className="mt-3 min-h-[88px] flex flex-col items-center justify-center gap-1">
                   <input
@@ -666,12 +666,12 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
                     placeholder="125"
                     value={bpSys}
                     onChange={(e) => setBpSys(e.target.value)}
-                    className="no-number-spinner w-full bg-transparent text-center text-5xl font-black tabular-nums text-foreground outline-none placeholder:text-muted-foreground/30"
+                    className="no-number-spinner w-full min-w-0 bg-transparent text-center text-4xl font-black tabular-nums text-foreground outline-none placeholder:text-muted-foreground/30"
                   />
                   <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">mmHg</span>
                 </div>
               </label>
-              <label className="block rounded-2xl bg-card border border-border p-4 cursor-text focus-within:border-[var(--bbdo-red)]/50 focus-within:ring-2 focus-within:ring-[var(--bbdo-red)]/15 transition-colors">
+              <label className="block min-w-0 rounded-xl bg-card border border-border p-3 sm:p-4 cursor-text focus-within:ring-2 focus-within:ring-primary/10 transition-colors">
                 <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground text-center">Diastolic</p>
                 <div className="mt-3 min-h-[88px] flex flex-col items-center justify-center gap-1">
                   <input
@@ -681,7 +681,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
                     placeholder="82"
                     value={bpDia}
                     onChange={(e) => setBpDia(e.target.value)}
-                    className="no-number-spinner w-full bg-transparent text-center text-5xl font-black tabular-nums text-foreground outline-none placeholder:text-muted-foreground/30"
+                    className="no-number-spinner w-full min-w-0 bg-transparent text-center text-4xl font-black tabular-nums text-foreground outline-none placeholder:text-muted-foreground/30"
                   />
                   <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">mmHg</span>
                 </div>
@@ -691,8 +691,8 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
             <button
               onClick={saveBP}
               disabled={saving}
-              className="w-full h-14 rounded-2xl text-white font-bold text-[15px] disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
-              style={{ background: "var(--bbdo-red)" }}
+              className="w-full h-14 rounded-xl text-primary-foreground font-bold text-[15px] disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+              style={{ background: "var(--ring-bp)" }}
             >
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
               Save reading
@@ -703,11 +703,11 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
 
       {/* Weight Log Drawer */}
       <Drawer open={activeLog === "weight"} onOpenChange={(v) => !v && closeLog()}>
-        <DrawerContent className="bg-background border-t border-border px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] max-h-[92dvh] overflow-y-auto overscroll-contain" style={logDrawerStyle}>
+        <DrawerContent className="bg-background border-t border-border px-4 pb-[max(1rem,env(safe-area-inset-bottom))] max-h-[92dvh] overflow-x-hidden overflow-y-auto overscroll-contain sm:px-5" style={logDrawerStyle}>
           <DrawerHeader className="px-0 pb-3">
             <DrawerTitle className="text-foreground text-lg font-black flex items-center gap-2">
-              <span className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "var(--bbdo-mint, #10B981)" }}>
-                <Scale className="w-[18px] h-[18px] text-white" strokeWidth={1.8} />
+              <span className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "var(--ring-weight-soft)" }}>
+                <Scale className="w-[18px] h-[18px]" style={{ color: "var(--ring-weight)" }} strokeWidth={1.8} />
               </span>
               Log Weight
             </DrawerTitle>
@@ -724,7 +724,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
               </div>
             )}
 
-            <label className="block rounded-2xl bg-card border border-border p-5 cursor-text focus-within:border-[var(--bbdo-mint,#10B981)]/50 focus-within:ring-2 focus-within:ring-[var(--bbdo-mint,#10B981)]/15 transition-colors">
+            <label className="block rounded-xl bg-card border border-border p-4 cursor-text focus-within:ring-2 focus-within:ring-primary/10 transition-colors">
               <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground text-center">Current weight</p>
               <div className="mt-3 min-h-[88px] flex flex-col items-center justify-center gap-1">
                 <input
@@ -735,7 +735,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
                   placeholder="82.5"
                   value={weight}
                   onChange={(e) => setWeight(e.target.value)}
-                  className="no-number-spinner w-full bg-transparent text-center text-5xl font-black tabular-nums text-foreground outline-none placeholder:text-muted-foreground/30"
+                  className="no-number-spinner w-full min-w-0 bg-transparent text-center text-4xl font-black tabular-nums text-foreground outline-none placeholder:text-muted-foreground/30"
                 />
                 <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">kg</span>
               </div>
@@ -744,8 +744,8 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
             <button
               onClick={saveWeight}
               disabled={saving}
-              className="w-full h-14 rounded-2xl text-white font-bold text-[15px] disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
-              style={{ background: "var(--bbdo-mint, #10B981)" }}
+              className="w-full h-14 rounded-xl text-primary-foreground font-bold text-[15px] disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+              style={{ background: "var(--ring-weight)" }}
             >
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
               Save weight
@@ -756,11 +756,11 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
 
       {/* Water Log Drawer */}
       <Drawer open={activeLog === "water"} onOpenChange={(v) => !v && closeLog()}>
-        <DrawerContent className="bg-background border-t border-border px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] max-h-[92dvh] overflow-y-auto overscroll-contain" style={logDrawerStyle}>
+        <DrawerContent className="bg-background border-t border-border px-4 pb-[max(1rem,env(safe-area-inset-bottom))] max-h-[92dvh] overflow-x-hidden overflow-y-auto overscroll-contain sm:px-5" style={logDrawerStyle}>
           <DrawerHeader className="px-0 pb-3">
             <DrawerTitle className="text-foreground text-lg font-black flex items-center gap-2">
-              <span className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "var(--bbdo-blue)" }}>
-                <Droplets className="w-[18px] h-[18px] text-white" strokeWidth={1.8} />
+              <span className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "var(--ring-water-soft)" }}>
+                <Droplets className="w-[18px] h-[18px]" style={{ color: "var(--ring-water)" }} strokeWidth={1.8} />
               </span>
               Log Water
             </DrawerTitle>
@@ -768,7 +768,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
           <div className="flex flex-col gap-4">
             <DateTimeBadge />
 
-            <div className="rounded-2xl bg-card border border-border p-5 flex flex-col items-center gap-4">
+            <div className="rounded-xl bg-card border border-border p-4 flex flex-col items-center gap-4">
               <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground text-center">Glasses today</p>
               <div className="min-h-[88px] flex items-center justify-center gap-4 w-full">
                 <button
@@ -784,7 +784,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
                 <button
                   onClick={() => setWaterGlasses((v) => v + 1)}
                   className="no-pill w-12 h-12 rounded-2xl text-white text-2xl font-black flex items-center justify-center active:scale-95 transition-transform"
-                  style={{ background: "var(--bbdo-blue)" }}
+                  style={{ background: "var(--ring-water)" }}
                   aria-label="Add one glass"
                 >+</button>
               </div>
@@ -794,10 +794,10 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
                     key={i}
                     onClick={() => setWaterGlasses(i + 1)}
                     className="w-7 h-9 rounded-md flex items-center justify-center transition-colors"
-                    style={{ background: i < waterGlasses ? "var(--bbdo-blue)" : "hsl(var(--muted))" }}
+                    style={{ background: i < waterGlasses ? "var(--ring-water)" : "hsl(var(--muted))" }}
                     aria-label={`Set to ${i + 1} glasses`}
                   >
-                    <Droplets className="w-3.5 h-3.5" strokeWidth={1.8} style={{ color: i < waterGlasses ? "#fff" : "hsl(var(--muted-foreground))" }} />
+                    <Droplets className="w-3.5 h-3.5" strokeWidth={1.8} style={{ color: i < waterGlasses ? "var(--pure-white)" : "hsl(var(--muted-foreground))" }} />
                   </button>
                 ))}
               </div>
@@ -806,8 +806,8 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
             <button
               onClick={saveWater}
               disabled={saving}
-              className="w-full h-14 rounded-2xl text-white font-bold text-[15px] disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
-              style={{ background: "var(--bbdo-blue)" }}
+              className="w-full h-14 rounded-xl text-primary-foreground font-bold text-[15px] disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+              style={{ background: "var(--ring-water)" }}
             >
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
               Save water

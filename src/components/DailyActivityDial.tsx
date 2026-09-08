@@ -13,7 +13,6 @@ import {
   ChevronsUp,
   Scale,
   ChevronRight,
-  Sparkles,
   CheckCircle2,
   type LucideIcon,
 } from "lucide-react";
@@ -51,20 +50,33 @@ const ICONS: Record<string, LucideIcon> = {
   weight: Scale,
 };
 
-/** Google Fit-inspired system palette: activity uses teal/blue, recovery uses
- * purple, and clinical tracking stays calm and highly legible. */
+/** Muted mineral palette: every pillar is recognisable without neon saturation. */
 const RING_PALETTE: Record<string, string> = {
-  fasting: "var(--sleep-purple)",
-  supplements: "var(--fit-teal)",
-  movement: "var(--google-blue)",
-  exercise: "var(--fit-teal)",
-  yoga: "var(--sleep-purple)",
-  water: "var(--google-blue)",
-  breath: "var(--fit-teal)",
-  soleus: "var(--google-blue)",
-  diabetes: "var(--sleep-purple)",
-  bp: "var(--fit-teal)",
-  weight: "var(--google-blue)",
+  fasting: "var(--ring-fasting)",
+  supplements: "var(--ring-supplements)",
+  movement: "var(--ring-movement)",
+  exercise: "var(--ring-exercise)",
+  yoga: "var(--ring-yoga)",
+  water: "var(--ring-water)",
+  breath: "var(--ring-breath)",
+  soleus: "var(--ring-soleus)",
+  diabetes: "var(--ring-diabetes)",
+  bp: "var(--ring-bp)",
+  weight: "var(--ring-weight)",
+};
+
+const RING_SOFT_PALETTE: Record<string, string> = {
+  fasting: "var(--ring-fasting-soft)",
+  supplements: "var(--ring-supplements-soft)",
+  movement: "var(--ring-movement-soft)",
+  exercise: "var(--ring-exercise-soft)",
+  yoga: "var(--ring-yoga-soft)",
+  water: "var(--ring-water-soft)",
+  breath: "var(--ring-breath-soft)",
+  soleus: "var(--ring-soleus-soft)",
+  diabetes: "var(--ring-diabetes-soft)",
+  bp: "var(--ring-bp-soft)",
+  weight: "var(--ring-weight-soft)",
 };
 
 function ringColor(item: DialRingItem): string {
@@ -72,9 +84,7 @@ function ringColor(item: DialRingItem): string {
 }
 
 function ringSoftColor(item: DialRingItem): string {
-  if (["fasting", "yoga", "diabetes"].includes(item.key)) return "var(--sleep-purple-soft)";
-  if (["supplements", "exercise", "breath", "bp"].includes(item.key)) return "var(--fit-teal-soft)";
-  return "var(--google-blue-soft)";
+  return RING_SOFT_PALETTE[item.key] ?? "hsl(var(--muted))";
 }
 
 // SVG viewBox: 240x240, centered at (120, 120).
@@ -130,8 +140,8 @@ export default function DailyActivityDial({
 
   return (
     <motion.div
-      className={`liquid-glass rounded-3xl relative overflow-hidden ${
-        size === "lg" ? "p-6 md:p-7" : "p-5"
+      className={`bg-card border border-border rounded-2xl shadow-card relative overflow-hidden ${
+        size === "lg" ? "p-5 md:p-6" : "p-4"
       }`}
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
@@ -161,8 +171,8 @@ export default function DailyActivityDial({
         <div
           className={`relative shrink-0 mx-auto lg:mx-0 ${
             size === "lg"
-              ? "w-[min(78vw,280px)] h-[min(78vw,280px)] lg:w-[300px] lg:h-[300px]"
-              : "w-[min(72vw,230px)] h-[min(72vw,230px)]"
+              ? "w-[min(68vw,248px)] h-[min(68vw,248px)] lg:w-[260px] lg:h-[260px]"
+              : "w-[min(64vw,220px)] h-[min(64vw,220px)]"
           }`}
         >
           <svg
@@ -243,7 +253,7 @@ export default function DailyActivityDial({
                       ease: [0.22, 1, 0.36, 1],
                     }}
                     transform={`rotate(-90 ${CENTER} ${CENTER})`}
-                    style={{ filter: pct > 0 ? "drop-shadow(0 1px 1px rgba(60, 64, 67, 0.14))" : undefined }}
+                    
                   />
                 </g>
               );
@@ -262,7 +272,7 @@ export default function DailyActivityDial({
                   fontSize: 22,
                   fontWeight: 900,
                   fontVariantNumeric: "tabular-nums",
-                  letterSpacing: "-0.02em",
+                  letterSpacing: "0",
                 }}
               >
                 <tspan>{done}</tspan>
