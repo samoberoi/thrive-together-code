@@ -478,8 +478,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
             <motion.button
               key="exercise-shortcut"
               onClick={() => {
-                setOpen(false);
-                navigate(exercisePath);
+                goPath(exercisePath);
               }}
               whileTap={{ scale: 0.97 }}
               transition={{ duration: 0.12, ease: [0.22, 1, 0.36, 1] }}
@@ -574,8 +573,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
             <motion.button
               key="fasting-shortcut"
               onClick={() => {
-                setOpen(false);
-                navigate("/dashboard?tab=fasting");
+                goPath("/dashboard?tab=fasting");
               }}
               whileTap={{ scale: 0.97 }}
               transition={{ duration: 0.12, ease: [0.22, 1, 0.36, 1] }}
@@ -594,8 +592,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
             <motion.button
               key="supplements-shortcut"
               onClick={() => {
-                setOpen(false);
-                navigate("/dashboard?tab=supplements");
+                goPath("/dashboard?tab=supplements");
               }}
               whileTap={{ scale: 0.97 }}
               transition={{ duration: 0.12, ease: [0.22, 1, 0.36, 1] }}
