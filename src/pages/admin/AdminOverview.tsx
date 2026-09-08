@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { normalizePlanKey as aliasPlanKey } from "@/lib/subscriptionService";
 import {
-  UserCheck, CalendarClock, ChevronDown, ChevronUp, Phone,
+  CalendarClock, ChevronDown, ChevronUp, Phone,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -15,7 +15,7 @@ import TodayStepsCard from "@/components/TodayStepsCard";
 import MetricTrendsSection from "@/components/MetricTrendsSection";
 import CoachSelfCheckins from "@/components/coach/CoachSelfCheckins";
 import AdminStreakBoard, { type AdminStreakClient } from "@/components/admin/AdminStreakBoard";
-import { fetchRegionFxMap, regionOf, formatMoneyIn, toInr, type RegionFx } from "@/lib/currencyDisplay";
+import { fetchRegionFxMap, regionOf, formatMoneyIn, type RegionFx } from "@/lib/currencyDisplay";
 
 interface Profile { user_id: string; name: string | null; phone: string | null; region_code?: string | null; }
 interface Subscription {
@@ -26,8 +26,6 @@ interface Subscription {
 interface Package { plan_key: string; name: string; }
 interface CoachRow { id: string; user_id: string | null; name: string | null; phone: string | null; is_active: boolean | null; }
 interface AssignmentRow { coach_id: string; user_id: string; }
-
-const inr = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
 
 export default function AdminOverview() {
   const [loading, setLoading] = useState(true);
