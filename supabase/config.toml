@@ -30,3 +30,6 @@ verify_jwt = false
 
 [functions.thyrocare-api]
 verify_jwt = false
+
+[functions.lab-report-open]
+verify_jwt = false
