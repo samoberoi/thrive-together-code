@@ -28,6 +28,20 @@ async function syncReportToProfile(orderId: string) {
   }
 }
 
+/** Our permanent report link — the lab's own URLs expire within hours. */
+async function permanentReportLink(thyrocareOrderId: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`lab-report:${thyrocareOrderId}`));
+  const tok = Array.from(new Uint8Array(sig)).map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 24);
+  return `${Deno.env.get("SUPABASE_URL")!}/functions/v1/lab-report-open?o=${encodeURIComponent(thyrocareOrderId)}&t=${tok}`;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
