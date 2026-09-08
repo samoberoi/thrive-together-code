@@ -12,6 +12,12 @@ import { fetchProfile } from "@/lib/profileService";
 import StepsShareCard from "@/components/StepsShareCard";
 import MinutesShareCard from "@/components/MinutesShareCard";
 import { fetchUserProtocol, fetchTrackingForUser } from "@/lib/fastingService";
+import {
+  fetchMetricPrefs,
+  isMetricVisibleToday,
+  type MetricPref,
+  type TrackedMetric,
+} from "@/lib/metricTrackingService";
 
 const todayKey = () => {
   const d = new Date();
@@ -35,6 +41,10 @@ export default function CoachActivityRings() {
   const [water, setWater] = useState(0);
   const [hasDiabetes, setHasDiabetes] = useState(false);
   const [diabetesLoggedToday, setDiabetesLoggedToday] = useState(false);
+  const [bpLoggedToday, setBpLoggedToday] = useState(false);
+  const [weightLoggedToday, setWeightLoggedToday] = useState(false);
+  const [metricPrefs, setMetricPrefs] = useState<Record<TrackedMetric, MetricPref> | null>(null);
+  const [clinical, setClinical] = useState<Record<string, any> | null>(null);
   const [supps, setSupps] = useState({ taken: 0, total: 0 });
   const [fasting, setFasting] = useState<{ active: boolean; ratio: number; hint: string }>({
     active: false, ratio: 0, hint: "",
@@ -63,23 +73,27 @@ export default function CoachActivityRings() {
       });
       setBody({ heightCm: (p as any)?.height ?? null, weightKg: (p as any)?.weight ?? null });
       const clin = (p as any)?.clinical ?? {};
+      setClinical(clin);
       setHasDiabetes(!!(clin.hasDiabetes || clin.has_diabetes || (p as any)?.has_diabetes));
     } catch { /* ignore */ }
 
-    // Blood sugar log today
+    fetchMetricPrefs(user.id).then(setMetricPrefs).catch(() => {});
+
+    // Blood sugar / BP / weight logs today
     try {
       const { data } = await supabase
         .from("health_logs" as any)
         .select("logged_at, log_type")
         .eq("user_id", user.id)
-        .eq("log_type", "diabetes")
+        .in("log_type", ["diabetes", "bp", "weight"])
         .order("logged_at", { ascending: false })
-        .limit(10);
-      setDiabetesLoggedToday(
-        ((data as any[]) ?? []).some(
-          (l) => new Date(l.logged_at).toDateString() === new Date().toDateString(),
-        ),
+        .limit(60);
+      const rows = ((data as any[]) ?? []).filter(
+        (l) => new Date(l.logged_at).toDateString() === new Date().toDateString(),
       );
+      setDiabetesLoggedToday(rows.some((l) => l.log_type === "diabetes"));
+      setBpLoggedToday(rows.some((l) => l.log_type === "bp"));
+      setWeightLoggedToday(rows.some((l) => l.log_type === "weight"));
     } catch { /* ignore */ }
 
     // Water (glasses stored in weight_kg on water logs)
@@ -160,22 +174,21 @@ export default function CoachActivityRings() {
 
   if (!user) return null;
 
-  // All nine pillars always render. Ones not set up yet stay in place but are
-  // greyed out and labelled "Not unlocked" instead of showing 0%.
+  // Same ring set, order and behaviour as the member Home screen.
   const rings: DialRingItem[] = [
     {
       key: "fasting", label: "Fasting",
       ratio: fasting.active ? fasting.ratio : 0,
       color: "#0F1A3D",
-      disabled: !fasting.active,
-      hint: fasting.active ? fasting.hint : undefined,
+      disabled: false,
+      hint: fasting.active ? fasting.hint : "No fast logged yet today",
     },
     {
       key: "supplements", label: "Supplements",
       ratio: supps.total > 0 ? supps.taken / supps.total : 0,
       color: "#F59E0B",
-      disabled: supps.total === 0,
-      hint: supps.total > 0 ? `${supps.taken} / ${supps.total} taken` : undefined,
+      disabled: false,
+      hint: supps.total > 0 ? `${supps.taken} / ${supps.total} taken` : "No supplements due today",
     },
     {
       key: "movement", label: "Movement", ratio: movement.ratio, color: "#10B981",
@@ -187,7 +200,9 @@ export default function CoachActivityRings() {
       ratio: exerciseGoal > 0 ? Math.min(1, exerciseMin / exerciseGoal) : 0,
       color: "#248CCB",
       disabled: exerciseGoal <= 0,
-      hint: exerciseGoal > 0 ? `${Math.min(exerciseMin, exerciseGoal)} / ${exerciseGoal} min` : undefined,
+      hint: exerciseGoal > 0
+        ? `${Math.min(exerciseMin, exerciseGoal).toLocaleString("en-IN", { maximumFractionDigits: 1 })} / ${exerciseGoal} min`
+        : undefined,
       expanded: (
         <MinutesShareCard kind="exercise" minutes={exerciseMin} goalMinutes={exerciseGoal} weightKg={body.weightKg} />
       ),
@@ -197,7 +212,9 @@ export default function CoachActivityRings() {
       ratio: yogaGoal > 0 ? Math.min(1, yogaMin / yogaGoal) : 0,
       color: "#8B5CF6",
       disabled: yogaGoal <= 0,
-      hint: yogaGoal > 0 ? `${Math.min(yogaMin, yogaGoal)} / ${yogaGoal} min` : undefined,
+      hint: yogaGoal > 0
+        ? `${Math.min(yogaMin, yogaGoal).toLocaleString("en-IN", { maximumFractionDigits: 1 })} / ${yogaGoal} min`
+        : undefined,
       expanded: (
         <MinutesShareCard
           kind="yoga"
@@ -208,8 +225,6 @@ export default function CoachActivityRings() {
         />
       ),
     },
-
-    { key: "water", label: "Water", ratio: Math.min(1, water / 8), color: "#38BDF8", hint: `${water} / 8 glasses` },
     {
       key: "breath", label: "Breath Protocol",
       ratio: breathGoal > 0 ? Math.min(1, breathCount / breathGoal) : 0,
@@ -224,16 +239,42 @@ export default function CoachActivityRings() {
       disabled: soleusGoal <= 0,
       hint: soleusGoal > 0 ? `${Math.min(soleusCount, soleusGoal)} / ${soleusGoal} rounds` : undefined,
     },
-    {
-      key: "diabetes", label: "Blood sugar log",
-      ratio: hasDiabetes && diabetesLoggedToday ? 1 : 0,
-      color: "#E00101",
-      disabled: !hasDiabetes,
-      hint: hasDiabetes ? (diabetesLoggedToday ? "Logged today" : "Not logged yet") : undefined,
-    },
   ];
 
+  const tracksToday = (m: TrackedMetric) => isMetricVisibleToday(m, metricPrefs, clinical);
+
+  if (tracksToday("water")) {
+    rings.push({
+      key: "water", label: "Water", ratio: Math.min(1, water / 8), color: "#38BDF8",
+      hint: `${water} / 8 glasses`,
+    });
+  }
+  if (tracksToday("diabetes")) {
+    rings.push({
+      key: "diabetes", label: "Blood sugar log",
+      ratio: diabetesLoggedToday ? 1 : 0,
+      color: "#E00101",
+      hint: diabetesLoggedToday ? "Logged today" : "Not logged yet",
+    });
+  }
+  if (tracksToday("bp")) {
+    rings.push({
+      key: "bp", label: "Blood pressure log",
+      ratio: bpLoggedToday ? 1 : 0,
+      color: "#F26D6D",
+      hint: bpLoggedToday ? "Logged today" : "Not logged yet",
+    });
+  }
+  if (tracksToday("weight")) {
+    rings.push({
+      key: "weight", label: "Weight log",
+      ratio: weightLoggedToday ? 1 : 0,
+      color: "#7C6BF0",
+      hint: weightLoggedToday ? "Logged today" : "Not logged yet",
+    });
+  }
+
   return (
-    <DailyActivityDial items={rings} title="My rings" size="lg" />
+    <DailyActivityDial items={rings} title="Close your rings" size="lg" />
   );
 }

@@ -42,6 +42,9 @@ import {
   Camera,
   Loader2,
   UserCog,
+  CircleDashed,
+  LifeBuoy,
+  ArrowLeft,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -60,6 +63,8 @@ import logoImg from "@/assets/logo.png";
 // paint) don't download every screen up front.
 const AdminOverview = lazy(() => import("./admin/AdminOverview"));
 const EditProfile = lazy(() => import("@/components/EditProfile"));
+const RingManagement = lazy(() => import("@/components/RingManagement"));
+const HelpSupport = lazy(() => import("@/components/HelpSupport"));
 const AdminUsers = lazy(() => import("./admin/AdminUsers"));
 const AdminCoaches = lazy(() => import("./admin/AdminCoaches"));
 const AdminSubscriptions = lazy(() => import("./admin/AdminSubscriptions"));
@@ -347,6 +352,8 @@ function AdminProfileView({
   onOpenRBAC,
   onOpenNotifications,
   onOpenEditProfile,
+  onOpenRings,
+  onOpenHelp,
 }: {
   email: string | null | undefined;
   initial: string;
@@ -358,6 +365,8 @@ function AdminProfileView({
   onOpenRBAC: () => void;
   onOpenNotifications: () => void;
   onOpenEditProfile: () => void;
+  onOpenRings: () => void;
+  onOpenHelp: () => void;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   // Phone-auth uses shadow emails like `{phone}@bbd.app`; show the phone if we can extract it.
@@ -462,6 +471,29 @@ function AdminProfileView({
           <span className="flex-1 text-sm font-semibold text-foreground">Notification Manager</span>
           <ChevronDown className="w-4 h-4 -rotate-90 text-muted-foreground" />
         </button>
+        <div className="h-px bg-border mx-4" />
+        <button
+          onClick={onOpenRings}
+          className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-accent transition-colors"
+        >
+          <CircleDashed className="w-5 h-5 text-primary" strokeWidth={1.8} />
+          <span className="flex-1 text-sm font-semibold text-foreground">
+            Ring Management
+            <span className="block text-[11px] font-normal text-muted-foreground">
+              Choose which rings you track and on which days
+            </span>
+          </span>
+          <ChevronDown className="w-4 h-4 -rotate-90 text-muted-foreground" />
+        </button>
+        <div className="h-px bg-border mx-4" />
+        <button
+          onClick={onOpenHelp}
+          className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-accent transition-colors"
+        >
+          <LifeBuoy className="w-5 h-5 text-primary" strokeWidth={1.8} />
+          <span className="flex-1 text-sm font-semibold text-foreground">Help &amp; Support</span>
+          <ChevronDown className="w-4 h-4 -rotate-90 text-muted-foreground" />
+        </button>
       </div>
 
       <button
@@ -496,6 +528,7 @@ export default function AdminDashboard() {
   const [adminAllowed, setAdminAllowed] = useState<boolean | null>(null);
   const [adminAvatar, setAdminAvatar] = useState<string | null>(null);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
+  const [profileSub, setProfileSub] = useState<"rings" | "help" | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
 
   useEffect(() => {
@@ -803,7 +836,20 @@ export default function AdminDashboard() {
                     <div className="p-8 text-sm text-muted-foreground">Loading…</div>
                   }
                 >
-                  {editProfileOpen ? (
+                  {profileSub ? (
+                    <div className="p-4 sm:p-6 space-y-4">
+                      <button
+                        onClick={() => setProfileSub(null)}
+                        className="inline-flex items-center gap-2 text-sm font-semibold text-primary"
+                      >
+                        <ArrowLeft className="w-4 h-4" /> Back to profile
+                      </button>
+                      <h2 className="text-lg font-black text-foreground">
+                        {profileSub === "rings" ? "Ring Management" : "Help & Support"}
+                      </h2>
+                      {profileSub === "rings" ? <RingManagement /> : <HelpSupport />}
+                    </div>
+                  ) : editProfileOpen ? (
                     <EditProfile
                       onBack={() => setEditProfileOpen(false)}
                       onSaved={() => {
@@ -829,6 +875,8 @@ export default function AdminDashboard() {
                       onOpenRBAC={() => selectTab("rbac")}
                       onOpenNotifications={() => selectTab("notifications")}
                       onOpenEditProfile={() => setEditProfileOpen(true)}
+                      onOpenRings={() => setProfileSub("rings")}
+                      onOpenHelp={() => setProfileSub("help")}
                     />
                   ) : isMobile && desktopOnlyTabs.has(activeTab) ? (
                     <div className="p-8 flex flex-col items-center text-center gap-3">

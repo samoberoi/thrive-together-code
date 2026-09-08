@@ -2,7 +2,13 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { whatsappCallUrl } from "@/lib/coachAvailability";
-import { Phone, Mail, MessageCircle, MapPin, Activity, CreditCard, UserCheck } from "lucide-react";
+import {
+  Phone, Mail, MessageCircle, MapPin, Activity, CreditCard, UserCheck,
+  HeartPulse, Droplets, Scale, Footprints, ClipboardList, AlertTriangle,
+} from "lucide-react";
+import {
+  isSevereBp, isSevereSugar, isHighBp, isHighSugar, type RiskSnapshot,
+} from "@/components/admin/UserRiskFilters";
 
 interface Props {
   userId: string | null;
@@ -11,25 +17,78 @@ interface Props {
 
 const fmtDate = (iso: string | null | undefined) =>
   iso ? new Date(iso).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+const fmtDateTime = (iso: string | null | undefined) =>
+  iso
+    ? new Date(iso).toLocaleString("en-IN", {
+        day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
+      })
+    : "—";
 const inr = (n: number | null | undefined) => (n || n === 0 ? `₹${Math.round(n).toLocaleString("en-IN")}` : "—");
+
+interface LogRow {
+  id: string;
+  log_type: string;
+  logged_at: string;
+  weight_kg: number | null;
+  steps_count: number | null;
+  glucose_morning: number | null;
+  glucose_evening: number | null;
+  bp_systolic: number | null;
+  bp_diastolic: number | null;
+  notes?: string | null;
+}
+
+const LOG_META: Record<string, { label: string; icon: React.ElementType }> = {
+  diabetes: { label: "Blood sugar", icon: Droplets },
+  bp: { label: "Blood pressure", icon: HeartPulse },
+  weight: { label: "Weight", icon: Scale },
+  water: { label: "Water", icon: Droplets },
+  steps: { label: "Steps", icon: Footprints },
+};
+
+function logSummary(l: LogRow): string {
+  switch (l.log_type) {
+    case "diabetes": {
+      const parts = [
+        l.glucose_morning ? `Fasting ${l.glucose_morning} mg/dL` : null,
+        l.glucose_evening ? `Post-meal ${l.glucose_evening} mg/dL` : null,
+      ].filter(Boolean);
+      return parts.join(" · ") || "Logged";
+    }
+    case "bp":
+      return l.bp_systolic && l.bp_diastolic ? `${l.bp_systolic}/${l.bp_diastolic} mmHg` : "Logged";
+    case "weight":
+      return l.weight_kg ? `${l.weight_kg} kg` : "Logged";
+    case "water":
+      return l.weight_kg ? `${l.weight_kg} glasses` : "Logged";
+    case "steps":
+      return l.steps_count ? `${Number(l.steps_count).toLocaleString("en-IN")} steps` : "Logged";
+    default:
+      return "Logged";
+  }
+}
 
 export default function AdminUserProfileSheet({ userId, onOpenChange }: Props) {
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<any>(null);
   const [subs, setSubs] = useState<any[]>([]);
   const [coachName, setCoachName] = useState<string | null>(null);
+  const [logs, setLogs] = useState<LogRow[]>([]);
+  const [diet, setDiet] = useState<any>(null);
 
   useEffect(() => {
     if (!userId) {
       setProfile(null);
       setSubs([]);
       setCoachName(null);
+      setLogs([]);
+      setDiet(null);
       return;
     }
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const [{ data: p }, { data: s }, { data: a }] = await Promise.all([
+      const [{ data: p }, { data: s }, { data: a }, { data: l }, { data: d }] = await Promise.all([
         supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle(),
         supabase
           .from("subscriptions")
@@ -42,11 +101,20 @@ export default function AdminUserProfileSheet({ userId, onOpenChange }: Props) {
           .eq("user_id", userId)
           .eq("is_active", true)
           .maybeSingle(),
+        (supabase as any)
+          .from("health_logs")
+          .select("id, log_type, logged_at, weight_kg, steps_count, glucose_morning, glucose_evening, bp_systolic, bp_diastolic")
+          .eq("user_id", userId)
+          .order("logged_at", { ascending: false })
+          .limit(40),
+        (supabase as any).from("user_diet_profiles").select("*").eq("user_id", userId).maybeSingle(),
       ]);
       if (cancelled) return;
       setProfile(p ?? null);
       setSubs((s as any[]) ?? []);
       setCoachName((a as any)?.coaches?.name ?? null);
+      setLogs(((l as any[]) ?? []) as LogRow[]);
+      setDiet(d ?? null);
       setLoading(false);
     })();
     return () => {
@@ -55,6 +123,24 @@ export default function AdminUserProfileSheet({ userId, onOpenChange }: Props) {
   }, [userId]);
 
   const active = subs.find((s) => s.status === "active");
+
+  // 7-day risk picture derived from the same logs we already fetched.
+  const cutoff = Date.now() - 7 * 24 * 3600 * 1000;
+  const recent = logs.filter((l) => new Date(l.logged_at).getTime() >= cutoff);
+  const riskSnap: RiskSnapshot = {
+    maxGlucose: recent.reduce(
+      (m, l) => Math.max(m, Number(l.glucose_morning) || 0, Number(l.glucose_evening) || 0), 0) || null,
+    maxSystolic: recent.reduce((m, l) => Math.max(m, Number(l.bp_systolic) || 0), 0) || null,
+    maxDiastolic: recent.reduce((m, l) => Math.max(m, Number(l.bp_diastolic) || 0), 0) || null,
+    lastLoggedAt: logs[0]?.logged_at ?? null,
+  };
+  const flags: { label: string; severe: boolean }[] = [];
+  if (isSevereSugar(riskSnap)) flags.push({ label: `Severe blood sugar · ${riskSnap.maxGlucose}`, severe: true });
+  else if (isHighSugar(riskSnap)) flags.push({ label: `High blood sugar · ${riskSnap.maxGlucose}`, severe: false });
+  if (isSevereBp(riskSnap)) flags.push({ label: `Severe BP · ${riskSnap.maxSystolic}/${riskSnap.maxDiastolic}`, severe: true });
+  else if (isHighBp(riskSnap)) flags.push({ label: `High BP · ${riskSnap.maxSystolic}/${riskSnap.maxDiastolic}`, severe: false });
+
+  const allergies: string[] = Array.isArray(diet?.allergies) ? diet.allergies : [];
 
   return (
     <Sheet open={!!userId} onOpenChange={onOpenChange}>
@@ -107,6 +193,24 @@ export default function AdminUserProfileSheet({ userId, onOpenChange }: Props) {
               )}
             </div>
 
+            {flags.length > 0 && (
+              <div className="space-y-1.5">
+                {flags.map((f) => (
+                  <div
+                    key={f.label}
+                    className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold ${
+                      f.severe
+                        ? "bg-destructive/10 text-destructive"
+                        : "bg-amber-500/10 text-amber-600"
+                    }`}
+                  >
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                    {f.label} <span className="font-normal opacity-70">· last 7 days</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <Section icon={CreditCard} title="Subscription">
               {active ? (
                 <div className="grid grid-cols-2 gap-2">
@@ -145,9 +249,44 @@ export default function AdminUserProfileSheet({ userId, onOpenChange }: Props) {
                 <Cell label="BMI" value={profile.bmi ? Number(profile.bmi).toFixed(1) : "—"} />
                 <Cell label="BMI Category" value={profile.bmi_category || "—"} />
                 <Cell label="Waist" value={profile.waist ? `${profile.waist} cm` : "—"} />
+                <Cell label="Health score" value={profile.initial_health_score ? String(profile.initial_health_score) : "—"} />
+                <Cell label="Country" value={profile.country || profile.region_code || "—"} />
                 <Cell label="Joined" value={fmtDate(profile.created_at)} />
               </div>
             </Section>
+
+            <Section icon={ClipboardList} title="Recent logs">
+              {logs.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nothing logged yet.</p>
+              ) : (
+                <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
+                  {logs.map((l) => {
+                    const meta = LOG_META[l.log_type] ?? { label: l.log_type, icon: ClipboardList };
+                    const Icon = meta.icon;
+                    return (
+                      <div key={l.id} className="flex items-center gap-2 rounded-lg bg-muted/40 px-2.5 py-2">
+                        <Icon className="w-3.5 h-3.5 text-primary shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-semibold text-foreground truncate">
+                            {meta.label} · {logSummary(l)}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground">{fmtDateTime(l.logged_at)}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </Section>
+
+            {(diet?.diet_preference || allergies.length > 0) && (
+              <Section title="Diet & allergies">
+                <div className="grid grid-cols-2 gap-2">
+                  <Cell label="Diet type" value={diet?.diet_preference || "—"} />
+                  <Cell label="Allergies" value={allergies.length ? allergies.join(", ") : "None"} />
+                </div>
+              </Section>
+            )}
 
             {Array.isArray(profile.goals) && profile.goals.length > 0 && (
               <Section title="Goals">
@@ -165,6 +304,16 @@ export default function AdminUserProfileSheet({ userId, onOpenChange }: Props) {
               <Section title="Clinical data">
                 <div className="grid grid-cols-2 gap-2">
                   {Object.entries(profile.clinical as Record<string, any>).map(([k, v]) => (
+                    <Cell key={k} label={k.replace(/_/g, " ")} value={String(v)} />
+                  ))}
+                </div>
+              </Section>
+            )}
+
+            {profile.lifestyle && typeof profile.lifestyle === "object" && Object.keys(profile.lifestyle).length > 0 && (
+              <Section title="Lifestyle">
+                <div className="grid grid-cols-2 gap-2">
+                  {Object.entries(profile.lifestyle as Record<string, any>).map(([k, v]) => (
                     <Cell key={k} label={k.replace(/_/g, " ")} value={String(v)} />
                   ))}
                 </div>

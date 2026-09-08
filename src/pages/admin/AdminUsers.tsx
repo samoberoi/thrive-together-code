@@ -214,11 +214,29 @@ export default function AdminUsers() {
     }
   };
 
+  /** Scope after country/date + risk + search, but before the package filter,
+   *  so the package tiles always add up to what the current filters return. */
+  const riskScoped = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    return scoped.filter((u) => {
+      if (!matchesRisk(u, riskFilter)) return false;
+      if (!q) return true;
+      return (
+        u.name?.toLowerCase().includes(q) ||
+        u.phone?.includes(q) ||
+        u.city?.toLowerCase().includes(q) ||
+        regionLabel(regionOf(u)).toLowerCase().includes(q) ||
+        packageLabel(u.user_id).toLowerCase().includes(q) ||
+        u.coach_name?.toLowerCase().includes(q)
+      );
+    });
+  }, [scoped, riskFilter, search, adherence, risk, subsByUser, pkgNames, regionNames]);
+
   const stats = useMemo(() => {
     const counts = { none: 0, foundation: 0, active: 0, intensive: 0 };
-    for (const u of scoped) counts[userCategory(u.user_id)]++;
-    return { total: scoped.length, ...counts };
-  }, [scoped, subsByUser]);
+    for (const u of riskScoped) counts[userCategory(u.user_id)]++;
+    return { total: riskScoped.length, ...counts };
+  }, [riskScoped, subsByUser]);
 
   const riskCounts = useMemo(() => {
     const keys: RiskKey[] = ["offtrack", "inactive", "severe_sugar", "severe_bp", "no_coach", "onboarding", "expiring"];
@@ -253,20 +271,10 @@ export default function AdminUsers() {
   }, [inRangeUsers, regionNames]);
 
   const filtered = useMemo(() => {
-    const q = search.toLowerCase().trim();
-    const rows = scoped.filter((u) => {
-      if (packageFilter !== "all" && userCategory(u.user_id) !== packageFilter) return false;
-      if (!matchesRisk(u, riskFilter)) return false;
-      if (!q) return true;
-      return (
-        u.name?.toLowerCase().includes(q) ||
-        u.phone?.includes(q) ||
-        u.city?.toLowerCase().includes(q) ||
-        regionLabel(regionOf(u)).toLowerCase().includes(q) ||
-        packageLabel(u.user_id).toLowerCase().includes(q) ||
-        u.coach_name?.toLowerCase().includes(q)
-      );
-    });
+    const rows = riskScoped.filter(
+      (u) => packageFilter === "all" || userCategory(u.user_id) === packageFilter
+    );
+
 
     const sorted = [...rows];
     if (sortKey === "name") {
@@ -283,7 +291,7 @@ export default function AdminUsers() {
       sorted.sort((a, b) => d(a) - d(b));
     }
     return sorted;
-  }, [scoped, search, packageFilter, riskFilter, sortKey, adherence, risk, subsByUser, pkgNames, regionNames]);
+  }, [riskScoped, packageFilter, sortKey, adherence, subsByUser]);
 
   const activeChips = [
     packageFilter !== "all"
@@ -458,7 +466,7 @@ export default function AdminUsers() {
 
       {/* Table */}
       <div className="liquid-glass rounded-xl sm:rounded-2xl overflow-hidden">
-        <div className="hidden md:grid grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)_minmax(0,1.2fr)_minmax(0,1.5fr)_minmax(0,1.3fr)_110px_24px] gap-4 items-center px-4 py-3 bg-muted/40 border-b border-border text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+        <div className="hidden xl:grid grid-cols-[minmax(200px,2.2fr)_minmax(90px,0.9fr)_minmax(110px,1.1fr)_minmax(170px,1.5fr)_minmax(130px,1.3fr)_100px_28px] gap-4 items-center px-4 py-3 bg-muted/40 border-b border-border text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
           <div>Name / Phone</div>
           <div>Country</div>
           <div>Package</div>
@@ -488,7 +496,7 @@ export default function AdminUsers() {
                       setProfileUserId(user.user_id);
                     }
                   }}
-                  className="w-full grid grid-cols-[minmax(0,1fr)_auto] md:grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)_minmax(0,1.2fr)_minmax(0,1.5fr)_minmax(0,1.3fr)_110px_24px] gap-3 md:gap-4 items-center px-3 sm:px-4 py-3 text-left hover:bg-muted/30 transition-colors cursor-pointer"
+                  className="w-full grid grid-cols-[minmax(0,1fr)_auto] xl:grid-cols-[minmax(200px,2.2fr)_minmax(90px,0.9fr)_minmax(110px,1.1fr)_minmax(170px,1.5fr)_minmax(130px,1.3fr)_100px_28px] gap-3 xl:gap-3 items-center px-3 sm:px-4 py-3 text-left hover:bg-muted/30 transition-colors cursor-pointer"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -519,28 +527,28 @@ export default function AdminUsers() {
                     </div>
                   </div>
 
-                  <div className="hidden md:block min-w-0">
+                  <div className="hidden xl:block min-w-0">
                     <span className="inline-flex items-center gap-1 text-xs text-muted-foreground truncate">
                       <Globe className="w-3 h-3 shrink-0" />
                       <span className="truncate">{regionLabel(regionOf(user))}</span>
                     </span>
                   </div>
 
-                  <div className="hidden md:block min-w-0">
+                  <div className="hidden xl:block min-w-0">
                     <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary truncate">
                       <PackageIcon className="w-3 h-3 shrink-0" />
                       <span className="truncate">{pkg}</span>
                     </span>
                   </div>
 
-                  <div className="hidden md:block text-xs text-foreground tabular-nums">
+                  <div className="hidden xl:block text-xs text-foreground tabular-nums">
                     {fmtDate(sub?.started_at)} <span className="text-muted-foreground">→</span> {fmtDate(sub?.expires_at)}
                     {left !== null && left >= 0 && left <= 30 && (
                       <span className="block text-[11px] font-semibold text-amber-600">Expires in {left}d</span>
                     )}
                   </div>
 
-                  <div className="hidden md:block min-w-0">
+                  <div className="hidden xl:block min-w-0">
                     <span
                       className={`inline-flex items-center gap-1 text-xs truncate ${
                         user.coach_name ? "text-emerald-600 font-medium" : "text-muted-foreground"
@@ -565,7 +573,7 @@ export default function AdminUsers() {
                     )}
                   </div>
 
-                  <div className="hidden md:block">
+                  <div className="hidden xl:block">
                     <span
                       className={`text-[11px] px-2 py-1 rounded-full font-semibold ${
                         user.onboarding_completed
@@ -597,7 +605,7 @@ export default function AdminUsers() {
                 </div>
 
                 {/* Mobile pills */}
-                <div className="md:hidden px-3 sm:px-4 pb-3 grid grid-cols-1 min-[430px]:grid-cols-2 gap-1.5">
+                <div className="xl:hidden px-3 sm:px-4 pb-3 grid grid-cols-1 min-[430px]:grid-cols-2 gap-1.5">
                   <Pill icon={<PackageIcon className="w-3 h-3" />} label={pkg} tone="blue" />
                   <Pill icon={<Globe className="w-3 h-3" />} label={regionLabel(regionOf(user))} tone="muted" />
                   <Pill label={`${fmtDate(sub?.started_at)} → ${fmtDate(sub?.expires_at)}`} tone="muted" />
