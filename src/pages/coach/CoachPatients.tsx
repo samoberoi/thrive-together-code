@@ -1210,6 +1210,22 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
                   );
                 })()}
 
+                {/* Row 3: today's activity + risk flags + country */}
+                <div className="flex flex-wrap items-center gap-1.5 mb-2">
+                  <AdherencePill
+                    summary={adherence.get(p.user_id)}
+                    loading={adherenceLoading}
+                    onNudge={() => setNudgeTarget({ userId: p.user_id, name: p.name ?? "Client" })}
+                  />
+                  {isSevereSugar(risk.get(p.user_id)) && <FlagTag label="Severe sugar" tone="red" />}
+                  {!isSevereSugar(risk.get(p.user_id)) && isHighSugar(risk.get(p.user_id)) && <FlagTag label="High sugar" tone="amber" />}
+                  {isSevereBp(risk.get(p.user_id)) && <FlagTag label="Severe BP" tone="red" />}
+                  {!isSevereBp(risk.get(p.user_id)) && isHighBp(risk.get(p.user_id)) && <FlagTag label="High BP" tone="amber" />}
+                  <span className="text-[10px] text-muted-foreground inline-flex items-center gap-1">
+                    <Globe className="w-3 h-3" />{regionLabel(regionOf(p))}
+                  </span>
+                </div>
+
 
                 {/* 3 Key Metrics */}
                 {(() => {
