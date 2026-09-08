@@ -64,17 +64,19 @@
     --bbdo-red-deep: #C24A42;
     --bbdo-red-soft: #FCE8E4;
     --bbdo-red-gradient: linear-gradient(135deg, #F49185 0%, #EA6A5E 50%, #C24A42 100%);
-    --bbdo-mint: var(--fit-teal);
-    --bbdo-mint-soft: var(--fit-teal-soft);
-    --bbdo-mint-gradient: var(--fit-teal);
-    --bbdo-lime: var(--fit-teal-soft);
-    --bbdo-amber: var(--sleep-purple);
-    --bbdo-amber-soft: var(--sleep-purple-soft);
-    --bbdo-amber-gradient: var(--sleep-purple);
-    --bbdo-violet: var(--sleep-purple);
-    --bbdo-violet-soft: var(--sleep-purple-soft);
-    --bbdo-teal: var(--fit-teal);
-    --bbdo-teal-soft: var(--fit-teal-soft);
+    /* Brand accents all resolve to the blue family so the app reads
+       blue-and-white everywhere (rings keep their own palette). */
+    --bbdo-mint: var(--google-blue);
+    --bbdo-mint-soft: var(--google-blue-soft);
+    --bbdo-mint-gradient: var(--google-blue);
+    --bbdo-lime: var(--google-blue-soft);
+    --bbdo-amber: var(--google-blue);
+    --bbdo-amber-soft: var(--google-blue-soft);
+    --bbdo-amber-gradient: var(--google-blue);
+    --bbdo-violet: var(--google-blue);
+    --bbdo-violet-soft: var(--google-blue-soft);
+    --bbdo-teal: var(--google-blue);
+    --bbdo-teal-soft: var(--google-blue-soft);
     --bbdo-gradient: var(--google-blue);
 
     /* Modern Mineral ring system — intentionally muted and individually distinct. */
