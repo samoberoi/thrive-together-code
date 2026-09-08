@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Activity, Heart, Scale, Droplets, Camera, Loader2, Clock, Dumbbell, Sunrise, Sun, Moon, Wind, Timer, Pill } from "lucide-react";
+import { Activity, Heart, Scale, Droplets, Camera, Loader2, Clock, Dumbbell, Sunrise, Sun, Moon, Wind, Timer, Pill, Flower2 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
@@ -18,6 +18,8 @@ import { useRbac } from "@/hooks/useRbac";
 import { fetchProfile } from "@/lib/profileService";
 import { fetchMetricPrefs, isMetricVisibleToday, type MetricPref, type TrackedMetric } from "@/lib/metricTrackingService";
 import { getUser } from "@/lib/userStore";
+import { useDailyYogaMinutes } from "@/hooks/useAppSettings";
+import { getTodayYogaMinutes } from "@/lib/yogaProgressService";
 
 type LogType = "diabetes" | "bp" | "weight" | "water" | null;
 type TimeOfDay = "morning" | "afternoon" | "evening";
@@ -97,6 +99,11 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
 
   const { minutes: exerciseMinutesToday, goal: EXERCISE_GOAL, done: exerciseDone } = useTodayExerciseProgress(5);
   const exerciseBadgeValue = `${Math.min(exerciseMinutesToday, EXERCISE_GOAL).toLocaleString("en-IN", { maximumFractionDigits: 1 })}/${EXERCISE_GOAL}`;
+  const YOGA_GOAL = useDailyYogaMinutes();
+  const [yogaMinutesToday, setYogaMinutesToday] = useState(0);
+  const yogaDone = YOGA_GOAL > 0 && yogaMinutesToday >= YOGA_GOAL;
+  const yogaBadgeValue = `${Math.min(yogaMinutesToday, YOGA_GOAL).toLocaleString("en-IN", { maximumFractionDigits: 1 })}/${YOGA_GOAL}`;
+
   const visibleActions = actions.filter((a) => {
     // Coaches/admins have no patient clinical profile — never hide their own log tiles.
     if (props.showAllLogs || isStaff) return true;
@@ -115,6 +122,45 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
   const [saving, setSaving] = useState(false);
   const [currentDateTime, setCurrentDateTime] = useState(formatCurrentDateTime());
   const [logWhen, setLogWhen] = useState(() => toLocalInputValue(new Date()));
+
+  // Today's yoga minutes for the Yoga shortcut badge.
+  useEffect(() => {
+    if (!user?.id || !open) return;
+    let alive = true;
+    getTodayYogaMinutes(user.id)
+      .then((m) => { if (alive) setYogaMinutesToday(m); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [user?.id, open]);
+
+  // Closing a bottom sheet can leave the body scroll/pointer lock behind, which
+  // makes the next screen feel frozen for several seconds. Clear it explicitly.
+  useEffect(() => {
+    if (open) return;
+    const clear = () => {
+      document.body.style.pointerEvents = "";
+      document.body.style.removeProperty("overflow");
+    };
+    clear();
+    const t = window.setTimeout(clear, 400);
+    return () => window.clearTimeout(t);
+  }, [open]);
+
+  /** Switch dashboard tabs in place when possible — far faster than a route change. */
+  const goPath = (path: string) => {
+    setOpen(false);
+    const url = new URL(path, window.location.origin);
+    const tab = url.searchParams.get("tab");
+    requestAnimationFrame(() => {
+      document.body.style.pointerEvents = "";
+      if (tab && url.pathname === window.location.pathname) {
+        window.dispatchEvent(new CustomEvent("nav:set-tab", { detail: tab }));
+      } else {
+        navigate(path);
+      }
+    });
+  };
+
 
   const [keyboardInset, setKeyboardInset] = useState(0);
   const [keyboardViewportHeight, setKeyboardViewportHeight] = useState(0);
@@ -432,8 +478,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
             <motion.button
               key="exercise-shortcut"
               onClick={() => {
-                setOpen(false);
-                navigate(exercisePath);
+                goPath(exercisePath);
               }}
               whileTap={{ scale: 0.97 }}
               transition={{ duration: 0.12, ease: [0.22, 1, 0.36, 1] }}
@@ -464,6 +509,32 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
                   }}
                 >
                   {exerciseBadgeValue}
+                </span>
+              </span>
+            </motion.button>
+            <motion.button
+              key="yoga-shortcut"
+              onClick={() => goPath("/dashboard?tab=videos")}
+              whileTap={{ scale: 0.97 }}
+              transition={{ duration: 0.12, ease: [0.22, 1, 0.36, 1] }}
+              className="no-pill relative flex flex-col items-center justify-center gap-2 rounded-2xl py-4 px-2 bg-card border border-border"
+            >
+              <span
+                className="w-11 h-11 rounded-xl flex items-center justify-center"
+                style={{ background: yogaDone ? "var(--ring-movement)" : "var(--ring-yoga)" }}
+              >
+                <Flower2 className="w-5 h-5 text-white" strokeWidth={1.7} />
+              </span>
+              <span className="no-break text-[11px] font-semibold text-foreground text-center leading-tight flex flex-col items-center gap-1">
+                Yoga &amp; Stress
+                <span
+                  className="text-[9px] font-black px-1.5 py-0.5 rounded-md whitespace-nowrap"
+                  style={{
+                    background: yogaDone ? "var(--ring-movement-soft)" : "var(--ring-yoga-soft)",
+                    color: yogaDone ? "var(--ring-movement)" : "var(--ring-yoga)",
+                  }}
+                >
+                  {yogaBadgeValue}
                 </span>
               </span>
             </motion.button>
@@ -528,8 +599,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
             <motion.button
               key="fasting-shortcut"
               onClick={() => {
-                setOpen(false);
-                navigate("/dashboard?tab=fasting");
+                goPath("/dashboard?tab=fasting");
               }}
               whileTap={{ scale: 0.97 }}
               transition={{ duration: 0.12, ease: [0.22, 1, 0.36, 1] }}
@@ -548,8 +618,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
             <motion.button
               key="supplements-shortcut"
               onClick={() => {
-                setOpen(false);
-                navigate("/dashboard?tab=supplements");
+                goPath("/dashboard?tab=supplements");
               }}
               whileTap={{ scale: 0.97 }}
               transition={{ duration: 0.12, ease: [0.22, 1, 0.36, 1] }}
