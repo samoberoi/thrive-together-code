@@ -2,12 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { normalizePlanKey as aliasPlanKey } from "@/lib/subscriptionService";
 import {
-  Users, UserCheck, Package as PackageIcon, IndianRupee,
-  CalendarClock, TrendingUp, ChevronDown, ChevronUp, Phone,
+  UserCheck, CalendarClock, ChevronDown, ChevronUp, Phone,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import DateRangeFilter, { defaultRange, DateRange } from "@/components/admin/DateRangeFilter";
-import ExportCsvButton from "@/components/admin/ExportCsvButton";
 import { useNavigate } from "react-router-dom";
 import { format, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
