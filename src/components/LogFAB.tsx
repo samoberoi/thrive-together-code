@@ -449,13 +449,14 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
 
       {/* Quick-log bottom sheet — matches the All-sections expanded dock look */}
       <Drawer open={open} onOpenChange={setOpen}>
-        <DrawerContent className="mx-auto w-full max-w-[430px] bg-background border-t border-border px-4 pb-[max(1rem,env(safe-area-inset-bottom))] max-h-[85dvh] overflow-y-auto overscroll-contain">
-          <DrawerHeader className="px-1 pb-2">
+        <DrawerContent className="mx-auto w-full max-w-[430px] bg-background border-t border-border rounded-t-3xl max-h-[85dvh] overflow-hidden">
+          <DrawerHeader className="px-5 pt-1 pb-2">
             <DrawerTitle className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
               Quick log
             </DrawerTitle>
           </DrawerHeader>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] overflow-y-auto overscroll-contain">
+
             {visibleActions.map((action) => {
               const Icon = action.icon;
               return (

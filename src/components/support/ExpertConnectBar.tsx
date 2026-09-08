@@ -62,13 +62,14 @@ export default function ExpertConnectBar({
       type="button"
       onClick={() => openWhatsApp(isIntensive ? EXPERT_CONNECT_MESSAGE_INTENSIVE : EXPERT_CONNECT_MESSAGE)}
       aria-label="Expert Connect on WhatsApp"
-      className={`no-pill w-full flex items-center justify-center gap-2 rounded-2xl h-12 px-4 text-white font-black tracking-tight shadow-card active:scale-[0.99] transition-transform ${className}`}
-      style={{ background: "#25D366" }}
+      className={`no-pill w-full flex items-center justify-center gap-2 rounded-2xl h-12 px-4 text-primary-foreground font-black tracking-tight shadow-card active:scale-[0.99] transition-transform ${className}`}
+      style={{ background: "var(--bbdo-blue, #1A73E8)" }}
     >
-      <span className="w-7 h-7 rounded-full bg-white/25 flex items-center justify-center shrink-0">
+      <span className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center shrink-0">
         <MessageCircle className="w-4 h-4" strokeWidth={2.2} />
       </span>
       <span className="text-[15px]">Expert Connect</span>
     </button>
   );
 }
+

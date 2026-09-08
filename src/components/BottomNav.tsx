@@ -106,6 +106,7 @@ export default function BottomNav({
     const { inSheet } = opts;
 
     if (inSheet) {
+      const accentColor = TAB_COLOR[id] || "var(--bbdo-ink)";
       return (
         <motion.button
           key={id}
@@ -113,29 +114,40 @@ export default function BottomNav({
             setActiveTab(id);
             setExpanded(false);
           }}
-          whileTap={{ scale: 0.97 }}
+          whileTap={{ scale: 0.96 }}
           transition={{ duration: 0.12, ease: [0.22, 1, 0.36, 1] }}
-          className="no-pill relative flex flex-col items-center justify-center gap-2 rounded-2xl py-4 px-2 border"
+          className="no-pill relative flex flex-col items-center justify-center gap-2 rounded-2xl py-4 px-2 border transition-colors"
           style={
             isActive
               ? {
-                  background: "var(--bbdo-ink)",
+                  background: "var(--bbdo-blue, #1A73E8)",
                   color: "#fff",
-                  borderColor: "var(--bbdo-ink)",
+                  borderColor: "var(--bbdo-blue, #1A73E8)",
+                  boxShadow: "0 10px 22px -14px rgba(26,115,232,0.75)",
                 }
               : {
-                  background: "#ffffff",
+                  background: "hsl(var(--card))",
                   color: "var(--bbdo-ink)",
-                  borderColor: "var(--bbdo-line)",
+                  borderColor: "hsl(var(--border))",
                 }
           }
         >
-          <AppIcon name={ICON_FOR[id]} size={22} strokeWidth={1.7} />
+          <span
+            className="w-11 h-11 rounded-2xl flex items-center justify-center"
+            style={
+              isActive
+                ? { background: "rgba(255,255,255,0.18)", color: "#fff" }
+                : { background: "hsl(var(--muted))", color: accentColor }
+            }
+          >
+            <AppIcon name={ICON_FOR[id]} size={21} strokeWidth={1.7} />
+          </span>
           <span className="text-[11px] font-semibold leading-none text-center">{label}</span>
           <AttentionBadge count={attentionCounts?.[id] ?? 0} className="absolute right-1.5 top-1.5" />
         </motion.button>
       );
     }
+
 
     const accent = TAB_COLOR[id] || "var(--bbdo-ink)";
     return (
@@ -165,20 +177,21 @@ export default function BottomNav({
     <>
       {/* Expanded overflow drawer — slides up full-width from bottom, matches quick-log style */}
       <Drawer open={expanded} onOpenChange={setExpanded}>
-        <DrawerContent className="md:hidden max-h-[85vh]">
-          <DrawerHeader className="pb-2">
-            <DrawerTitle className="text-left text-base font-black text-[var(--bbdo-ink)]">
+        <DrawerContent className="md:hidden mx-auto w-full max-w-[430px] max-h-[82dvh] overflow-hidden rounded-t-3xl border-t border-border bg-background">
+          <DrawerHeader className="px-5 pt-1 pb-3">
+            <DrawerTitle className="text-left text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
               All sections
             </DrawerTitle>
           </DrawerHeader>
-          <div className="px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-            <div className="grid grid-cols-3 gap-2">
+          <div className="overflow-y-auto overscroll-contain px-5 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <div className="grid grid-cols-3 gap-2.5">
               {allowed.map((id) => renderTab(id, { inSheet: true }))}
             </div>
-            <ExpertConnectBar className="mt-3" packageKey={packageKey} context="the app" />
+            <ExpertConnectBar className="mt-4" packageKey={packageKey} context="the app" />
           </div>
         </DrawerContent>
       </Drawer>
+
 
       {/* Flat full-width dock — publishes its own height into --nav-h via AppBottomBar,
           auto-hides when the on-screen keyboard is open. */}
