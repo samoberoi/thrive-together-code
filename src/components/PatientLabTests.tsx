@@ -18,6 +18,8 @@ import ExternalTestDialog from "@/components/lab/ExternalTestDialog";
 import LabHistorySection from "@/components/lab/LabHistorySection";
 import { payForService } from "@/lib/servicePayment";
 import PastReportsCard from "@/components/lab/PastReportsCard";
+import { openLabReport } from "@/lib/thyrocareReport";
+
 
 import {
   fetchExternalReportsForUser,
