@@ -37,6 +37,7 @@ export async function fetchRiskSnapshots(userIds: string[]): Promise<Map<string,
   const { data } = await (supabase as any)
     .from("health_logs")
     .select("user_id, log_type, logged_at, glucose_morning, glucose_evening, bp_systolic, bp_diastolic")
+    .in("user_id", ids)
     .in("log_type", ["diabetes", "bp"])
     .gte("logged_at", since.toISOString())
     .order("logged_at", { ascending: false })
