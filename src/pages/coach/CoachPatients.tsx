@@ -58,6 +58,9 @@ interface Patient {
   assessment: any;
   plan_name: string | null;
   plan_expires_at: string | null;
+  region_code?: string | null;
+  city?: string | null;
+
 }
 
 interface HealthLogEntry {
