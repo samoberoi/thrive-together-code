@@ -104,8 +104,8 @@
     --ring-weight-soft: #EEF0F2;
 
     /* ── PUNCH pillar colors (one per lifestyle pillar) ── */
-    --pillar-diet: var(--fit-teal);
-    --pillar-diet-soft: var(--fit-teal-soft);
+    --pillar-diet: var(--google-blue);
+    --pillar-diet-soft: var(--google-blue-soft);
     --pillar-move: var(--google-blue);
     --pillar-move-soft: var(--google-blue-soft);
     --pillar-exercise: var(--google-blue);
