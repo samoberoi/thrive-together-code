@@ -230,8 +230,12 @@ const tabContentMap: Record<AdminTab, React.ReactNode> = {
     <AdminSelfTabs manageLabel="Catalog" mineLabel="My Tests" mineIcon={FlaskConical} manage={<AdminLabTests />} mine={<PatientLabTests alwaysShow foundationMode />} />
   ),
 
-  videos: <AdminVideos />,
-  exercises: <AdminExercises />,
+  videos: (
+    <AdminSelfTabs manageLabel="Library" mineLabel="My Yoga & Stress" mineIcon={Video} manage={<AdminVideos />} mine={<UserVideos packageKey="intensive" />} />
+  ),
+  exercises: (
+    <AdminSelfTabs manageLabel="Library" mineLabel="My Exercise" mineIcon={Dumbbell} manage={<AdminExercises />} mine={<UserExercise packageKey="intensive" />} />
+  ),
   rbac: <AdminRBAC />,
   subscriptions: <AdminSubscriptions />,
   packages: <AdminPackages />,
