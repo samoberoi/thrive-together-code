@@ -10,32 +10,32 @@
 @layer base {
   :root {
     /* ── Semantic shadcn tokens (HSL triples) ── */
-    --background: 200 18% 97%;
-    --foreground: 198 18% 22%;
+    --background: 220 33% 98%;
+    --foreground: 210 6% 25%;
 
     --card: 0 0% 100%;
-    --card-foreground: 206 6% 25%;
+    --card-foreground: 210 6% 25%;
     --popover: 0 0% 100%;
-    --popover-foreground: 206 6% 25%;
+    --popover-foreground: 210 6% 25%;
 
-    --primary: 198 18% 39%;
+    --primary: 214 82% 51%;               /* Google blue — the brand colour */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 174 20% 46%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 218 92% 95%;             /* soft blue chip / box */
+    --secondary-foreground: 214 76% 42%;
 
-    --muted: 195 14% 94%;
-    --muted-foreground: 198 11% 45%;
+    --muted: 216 30% 95%;
+    --muted-foreground: 213 10% 45%;
 
-    --accent: 259 18% 58%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 218 92% 95%;
+    --accent-foreground: 214 76% 42%;
 
     --destructive: 355 78% 56%;           /* true red — reserved for real danger only */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 195 12% 87%;
-    --input: 195 12% 87%;
-    --ring: 198 18% 39%;
+    --border: 214 20% 89%;
+    --input: 214 20% 89%;
+    --ring: 214 82% 51%;
 
     --radius: 0.75rem;                    /* 12px — consistent card scale */
 
