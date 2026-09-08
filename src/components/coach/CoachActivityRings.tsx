@@ -12,6 +12,12 @@ import { fetchProfile } from "@/lib/profileService";
 import StepsShareCard from "@/components/StepsShareCard";
 import MinutesShareCard from "@/components/MinutesShareCard";
 import { fetchUserProtocol, fetchTrackingForUser } from "@/lib/fastingService";
+import {
+  fetchMetricPrefs,
+  isMetricVisibleToday,
+  type MetricPref,
+  type TrackedMetric,
+} from "@/lib/metricTrackingService";
 
 const todayKey = () => {
   const d = new Date();
