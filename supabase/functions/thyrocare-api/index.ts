@@ -44,7 +44,7 @@ async function syncReportToProfile(orderId: string) {
 async function permanentReportLink(thyrocareOrderId: string): Promise<string> {
   const key = await crypto.subtle.importKey(
     "raw",
-    new TextEncoder().encode(Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!),
+    new TextEncoder().encode(Deno.env.get("LAB_REPORT_LINK_SECRET") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!),
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign"],
