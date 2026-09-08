@@ -123,6 +123,45 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
   const [currentDateTime, setCurrentDateTime] = useState(formatCurrentDateTime());
   const [logWhen, setLogWhen] = useState(() => toLocalInputValue(new Date()));
 
+  // Today's yoga minutes for the Yoga shortcut badge.
+  useEffect(() => {
+    if (!user?.id || !open) return;
+    let alive = true;
+    getTodayYogaMinutes(user.id)
+      .then((m) => { if (alive) setYogaMinutesToday(m); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [user?.id, open]);
+
+  // Closing a bottom sheet can leave the body scroll/pointer lock behind, which
+  // makes the next screen feel frozen for several seconds. Clear it explicitly.
+  useEffect(() => {
+    if (open) return;
+    const clear = () => {
+      document.body.style.pointerEvents = "";
+      document.body.style.removeProperty("overflow");
+    };
+    clear();
+    const t = window.setTimeout(clear, 400);
+    return () => window.clearTimeout(t);
+  }, [open]);
+
+  /** Switch dashboard tabs in place when possible — far faster than a route change. */
+  const goPath = (path: string) => {
+    setOpen(false);
+    const url = new URL(path, window.location.origin);
+    const tab = url.searchParams.get("tab");
+    requestAnimationFrame(() => {
+      document.body.style.pointerEvents = "";
+      if (tab && url.pathname === window.location.pathname) {
+        window.dispatchEvent(new CustomEvent("nav:set-tab", { detail: tab }));
+      } else {
+        navigate(path);
+      }
+    });
+  };
+
+
   const [keyboardInset, setKeyboardInset] = useState(0);
   const [keyboardViewportHeight, setKeyboardViewportHeight] = useState(0);
 
