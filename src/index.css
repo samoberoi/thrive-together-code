@@ -110,10 +110,10 @@
     --pillar-move-soft: var(--google-blue-soft);
     --pillar-exercise: var(--google-blue);
     --pillar-exercise-soft: var(--google-blue-soft);
-    --pillar-supplements: var(--fit-teal);
-    --pillar-supplements-soft: var(--fit-teal-soft);
-    --pillar-fasting: var(--sleep-purple);
-    --pillar-fasting-soft: var(--sleep-purple-soft);
+    --pillar-supplements: var(--google-blue);
+    --pillar-supplements-soft: var(--google-blue-soft);
+    --pillar-fasting: var(--google-blue);
+    --pillar-fasting-soft: var(--google-blue-soft);
 
     /* ── Elevation ── */
     --shadow-card: 0 1px 2px rgba(15,26,61,0.05), 0 8px 24px -12px rgba(15,26,61,0.10);
