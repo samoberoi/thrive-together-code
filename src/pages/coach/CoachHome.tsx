@@ -24,6 +24,10 @@ import CoachReviewsDialog from "@/components/coach/CoachReviewsDialog";
 import CoachActivityRings from "@/components/coach/CoachActivityRings";
 import CoachSelfCheckins from "@/components/coach/CoachSelfCheckins";
 import CoachStreakBoard from "@/components/coach/CoachStreakBoard";
+import FitnessGainsBoard from "@/components/shared/FitnessGainsBoard";
+import TodayStepsCard from "@/components/TodayStepsCard";
+import MetricTrendsSection from "@/components/MetricTrendsSection";
+
 import { buildActivityProgress, splitVideoMinutes, fetchActivityGoals, DEFAULT_ACTIVITY_GOALS, type ActivityCounters } from "@/lib/adherenceService";
 
 
@@ -231,7 +235,27 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
   const [commissionInfo, setCommissionInfo] = useState<CommissionSummary | null>(null);
   const [reviewsOpen, setReviewsOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [selfStats, setSelfStats] = useState<{ heightCm: number | null; weightKg: number | null }>({ heightCm: null, weightKg: null });
   const loadSequence = useRef(0);
+
+  // Coach's own body stats — powers their personal trend graphs.
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("profiles")
+        .select("height, weight")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!cancelled && data) {
+        setSelfStats({ heightCm: (data as any).height ?? null, weightKg: (data as any).weight ?? null });
+      }
+
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id]);
+
 
 
   useEffect(() => {
@@ -754,26 +778,27 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
   const offTrackPatients = patients.filter((p) => !p.onTrack);
 
   const activityStats = useMemo(() => {
-    const map = new Map<ActivityKey, { done: number; applicable: number; pending: PendingPatient[] }>();
-    for (const k of ALL_ACTIVITIES) map.set(k, { done: 0, applicable: 0, pending: [] });
+    const map = new Map<ActivityKey, { done: number; applicable: number; pending: PendingPatient[]; completed: PendingPatient[] }>();
+    for (const k of ALL_ACTIVITIES) map.set(k, { done: 0, applicable: 0, pending: [], completed: [] });
     for (const p of patients) {
       for (const k of ALL_ACTIVITIES) {
         if (!p.applicable[k]) continue;
         const s = map.get(k)!;
         s.applicable++;
-        if (p.activities[k]) s.done++;
-        else s.pending.push({
+        const entry: PendingPatient = {
           user_id: p.user_id,
           name: p.name,
           avatar_url: p.avatar_url,
           progress: p.progress?.[k]?.text ?? null,
           ratio: p.progress?.[k]?.ratio ?? 0,
-        });
-
+        };
+        if (p.activities[k]) { s.done++; s.completed.push(entry); }
+        else s.pending.push(entry);
       }
     }
     return map;
   }, [patients]);
+
 
   const filteredPatients = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -836,6 +861,13 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
 
       {/* Coach's own daily rings — walk the talk */}
       <CoachActivityRings />
+
+      {/* Coach's own step ring — same card clients get. */}
+      <TodayStepsCard />
+
+      {/* Coach's own long-run trends: week / fortnight / month / quarter. */}
+      <MetricTrendsSection userId={user?.id} heightCm={selfStats.heightCm} weightKg={selfStats.weightKg} />
+
 
 
 
@@ -1116,11 +1148,15 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
                     {s.done}<span className="text-xs text-muted-foreground font-medium">/{s.applicable || 0}</span>
                   </p>
                   <p className="text-muted-foreground text-[10px] font-medium mt-1 truncate">{meta.label}</p>
-                  {!noneApplicable && s.pending.length > 0 && (
-                    <p className="text-[10px] font-semibold text-primary mt-0.5">
-                      {s.pending.length} pending →
+                  {!noneApplicable && (
+                    <p className="text-[10px] font-semibold mt-0.5 truncate">
+                      <span className="text-success">{s.done} done</span>
+                      {s.pending.length > 0 && (
+                        <span className="text-primary"> · {s.pending.length} pending →</span>
+                      )}
                     </p>
                   )}
+
                 </button>
               );
             })}
@@ -1212,6 +1248,10 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
 
       <CoachStreakBoard clients={patients.map((p) => ({ user_id: p.user_id, name: p.name, avatar_url: p.avatar_url }))} />
 
+      {/* Who is getting fitter — sugar, BP, weight and health score gains. */}
+      <FitnessGainsBoard clients={patients.map((p) => ({ user_id: p.user_id, name: p.name }))} />
+
+
       {/* My own check-ins — supplements + fasting (only when they exist) */}
       <CoachSelfCheckins />
 
@@ -1271,6 +1311,8 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
           onClose={() => setActivityDialog(null)}
           activity={activityDialog}
           pending={activeActivityStats.pending}
+          completed={activeActivityStats.completed}
+
           doneCount={activeActivityStats.done}
           totalApplicable={activeActivityStats.applicable}
           coachName={coach?.name ?? null}

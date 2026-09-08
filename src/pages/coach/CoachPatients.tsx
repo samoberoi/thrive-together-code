@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Users, ArrowLeft, Clock, Activity, Droplets, Heart, Phone,
   Weight, FileText, Loader2, ChevronRight, Flame, Trophy,
   Shield, ShieldAlert, ShieldCheck, TrendingDown, TrendingUp, Minus,
-  Pill, Timer, MessageCircle, CheckCircle2, Pencil
+  Pill, Timer, MessageCircle, CheckCircle2, Pencil,
+  Search, Globe, Package as PackageIcon, ArrowUpDown, X, Droplet, HeartPulse, CalendarClock, UserX,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +16,26 @@ import PatientProfileEditor from "@/components/coach/PatientProfileEditor";
 import PatientDietSymptomsSummary from "@/components/coach/PatientDietSymptomsSummary";
 import PatientPlatesLog from "@/components/coach/PatientPlatesLog";
 import PatientActionGrid from "@/components/coach/PatientActionGrid";
+import { Input } from "@/components/ui/input";
+import { RiskChip, FilterSelect, StatCard, FlagTag, type RiskMeta } from "@/components/admin/UserFilterUI";
+import AdherencePill from "@/components/admin/AdherencePill";
+import AdherenceNudgeDialog from "@/components/admin/AdherenceNudgeDialog";
+import { useAdherence } from "@/hooks/useAdherence";
+import {
+  fetchRiskSnapshots, isSevereSugar, isHighSugar, isSevereBp, isHighBp, type RiskSnapshot,
+} from "@/components/admin/UserRiskFilters";
+
+type ClientRiskKey = "all" | "offtrack" | "inactive" | "severe_sugar" | "severe_bp" | "expiring";
+type ClientSortKey = "recent" | "least_active" | "expiring" | "name";
+
+const CLIENT_RISK_META: Record<Exclude<ClientRiskKey, "all">, RiskMeta> = {
+  offtrack: { label: "Off track today", icon: <Activity className="w-3.5 h-3.5" />, tone: "amber" },
+  inactive: { label: "Least active", icon: <Activity className="w-3.5 h-3.5" />, tone: "red" },
+  severe_sugar: { label: "High blood sugar", icon: <Droplet className="w-3.5 h-3.5" />, tone: "red" },
+  severe_bp: { label: "High BP", icon: <HeartPulse className="w-3.5 h-3.5" />, tone: "red" },
+  expiring: { label: "Expiring in 30 days", icon: <CalendarClock className="w-3.5 h-3.5" />, tone: "blue" },
+};
+
 
 
 
@@ -37,6 +58,9 @@ interface Patient {
   assessment: any;
   plan_name: string | null;
   plan_expires_at: string | null;
+  region_code?: string | null;
+  city?: string | null;
+
 }
 
 interface HealthLogEntry {
@@ -152,6 +176,17 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
   const [coachId, setCoachId] = useState<string | null>(null);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [summaryRefresh, setSummaryRefresh] = useState(0);
+  const [search, setSearch] = useState("");
+  const [countryFilter, setCountryFilter] = useState<string>("all");
+  const [riskFilter, setRiskFilter] = useState<ClientRiskKey>("all");
+  const [sortKey, setSortKey] = useState<ClientSortKey>("recent");
+  const [regionNames, setRegionNames] = useState<Record<string, string>>({ IN: "India" });
+  const [risk, setRisk] = useState<Map<string, RiskSnapshot>>(new Map());
+  const [nudgeTarget, setNudgeTarget] = useState<{ userId: string; name: string } | null>(null);
+
+  const adherenceIds = useMemo(() => patients.map((p) => p.user_id), [patients]);
+  const { map: adherence, loading: adherenceLoading } = useAdherence(adherenceIds);
+
 
 
   useEffect(() => {
@@ -163,7 +198,15 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
     if (!user) return;
     setLoading(true);
 
-    const coachData = await resolveCurrentCoach(user, "id");
+    // Country names are tiny and independent — fetch alongside the coach lookup.
+    const [coachData, regionsRes] = await Promise.all([
+      resolveCurrentCoach(user, "id"),
+      (supabase as any).from("pricing_regions").select("code, name"),
+    ]);
+    const regions: Record<string, string> = { IN: "India" };
+    for (const r of ((regionsRes as any)?.data ?? []) as any[]) regions[r.code] = r.name || r.code;
+    setRegionNames(regions);
+
     if (!coachData) { setLoading(false); return; }
     setCoachId((coachData as any).id);
 
@@ -173,76 +216,79 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
       .eq("coach_id", (coachData as any).id)
       .eq("is_active", true);
 
-    if (assignments && assignments.length > 0) {
-      const patientIds = (assignments as any[]).map((a) => a.user_id);
-      const [{ data: profiles }, { data: subs }] = await Promise.all([
-        supabase
-          .from("profiles" as any)
-          .select("user_id, name, phone, avatar_url, age, gender, weight, bmi, bmi_category, height, clinical, deep_profiling, assessment, initial_health_score")
-          .in("user_id", patientIds),
-        supabase
-          .from("subscriptions" as any)
-          .select("user_id, plan_name, expires_at, started_at, status")
-          .in("user_id", patientIds)
-          .eq("status", "active"),
-      ]);
+    if (!assignments || assignments.length === 0) { setLoading(false); return; }
 
-      // Pick most-recent active sub per user
-      const subByUser = new Map<string, { plan_name: string | null; expires_at: string | null }>();
-      ((subs as any[]) ?? []).forEach((s) => {
-        const prev = subByUser.get(s.user_id);
-        if (!prev || (s.started_at ?? "") > ((prev as any).started_at ?? "")) {
-          subByUser.set(s.user_id, { plan_name: s.plan_name ?? null, expires_at: s.expires_at ?? null, ...(s as any) });
-        }
-      });
-
-      const merged = (assignments as any[]).flatMap((a) => {
-        const p = (profiles as any[])?.find((pr) => pr.user_id === a.user_id);
-        // Never surface purged or incomplete placeholder accounts as coach patients.
-        if (!p || (!p.name?.trim() && !p.phone?.trim())) return [];
-        const s = subByUser.get(a.user_id);
-        return [{ ...a, ...p, plan_name: s?.plan_name ?? null, plan_expires_at: s?.expires_at ?? null }];
-      });
-      setPatients(merged);
-
-      // Fetch latest logs per patient for status indicators
-      const { data: allLogs } = await supabase
-        .from("health_logs" as any)
-        .select("user_id, logged_at, glucose_morning, glucose_evening, bp_systolic, bp_diastolic, weight_kg, log_type")
+    const patientIds = (assignments as any[]).map((a) => a.user_id);
+    const [{ data: profiles }, { data: subs }] = await Promise.all([
+      supabase
+        .from("profiles" as any)
+        .select("user_id, name, phone, avatar_url, age, gender, weight, bmi, bmi_category, height, city, region_code, clinical, deep_profiling, assessment, initial_health_score")
+        .in("user_id", patientIds),
+      supabase
+        .from("subscriptions" as any)
+        .select("user_id, plan_name, expires_at, started_at, status")
         .in("user_id", patientIds)
-        .order("logged_at", { ascending: false })
-        .limit(200);
+        .eq("status", "active"),
+    ]);
 
-      if (allLogs) {
-        const statusMap: Record<string, PatientHealthStatus> = {};
-        const metricsMap: Record<string, { healthScore: number | null; initialScore: number | null; latestWeight: number | null; initialWeight: number | null; latestGlucose: number | null; initialGlucose: number | null }> = {};
-        merged.forEach((p: Patient) => {
-          const pLogs = (allLogs as any[]).filter(l => l.user_id === p.user_id);
-          statusMap[p.user_id] = getHealthStatus(pLogs, p);
-          
-          // Extract health score from profile
-          const profile = (profiles as any[])?.find((pr: any) => pr.user_id === p.user_id);
-          const currentScore = profile?.assessment?.healthScore ?? null;
-          const initScore = profile?.initial_health_score ?? null;
-          
-          // Latest & initial weight
-          const wLogs = pLogs.filter((l: any) => l.log_type === "weight" && l.weight_kg != null).sort((a: any, b: any) => b.logged_at.localeCompare(a.logged_at));
-          const latestW = wLogs[0]?.weight_kg ?? p.weight ?? null;
-          const initialW = wLogs.length > 0 ? wLogs[wLogs.length - 1].weight_kg : p.weight ?? null;
-          
-          // Latest & initial glucose
-          const gLogs = pLogs.filter((l: any) => l.log_type === "diabetes" && l.glucose_morning != null).sort((a: any, b: any) => b.logged_at.localeCompare(a.logged_at));
-          const latestG = gLogs[0]?.glucose_morning ?? null;
-          const initialG = gLogs.length > 0 ? gLogs[gLogs.length - 1].glucose_morning : null;
-          
-          metricsMap[p.user_id] = { healthScore: currentScore, initialScore: initScore, latestWeight: latestW, initialWeight: initialW, latestGlucose: latestG, initialGlucose: initialG };
-        });
-        setPatientStatuses(statusMap);
-        setPatientMetrics(metricsMap);
+    // Pick most-recent active sub per user
+    const subByUser = new Map<string, { plan_name: string | null; expires_at: string | null }>();
+    ((subs as any[]) ?? []).forEach((s) => {
+      const prev = subByUser.get(s.user_id);
+      if (!prev || (s.started_at ?? "") > ((prev as any).started_at ?? "")) {
+        subByUser.set(s.user_id, { plan_name: s.plan_name ?? null, expires_at: s.expires_at ?? null, ...(s as any) });
       }
-    }
+    });
+
+    const merged = (assignments as any[]).flatMap((a) => {
+      const p = (profiles as any[])?.find((pr) => pr.user_id === a.user_id);
+      // Never surface purged or incomplete placeholder accounts as coach patients.
+      if (!p || (!p.name?.trim() && !p.phone?.trim())) return [];
+      const s = subByUser.get(a.user_id);
+      return [{ ...a, ...p, plan_name: s?.plan_name ?? null, plan_expires_at: s?.expires_at ?? null }];
+    });
+    setPatients(merged);
+    // Paint the list immediately — logs and risk are heavier reads that hydrate after.
     setLoading(false);
+
+    fetchRiskSnapshots(patientIds).then(setRisk).catch(() => {});
+
+    const { data: allLogs } = await supabase
+      .from("health_logs" as any)
+      .select("user_id, logged_at, glucose_morning, glucose_evening, bp_systolic, bp_diastolic, weight_kg, log_type")
+      .in("user_id", patientIds)
+      .order("logged_at", { ascending: false })
+      .limit(1000);
+
+    if (allLogs) {
+      const statusMap: Record<string, PatientHealthStatus> = {};
+      const metricsMap: Record<string, { healthScore: number | null; initialScore: number | null; latestWeight: number | null; initialWeight: number | null; latestGlucose: number | null; initialGlucose: number | null }> = {};
+      merged.forEach((p: Patient) => {
+        const pLogs = (allLogs as any[]).filter(l => l.user_id === p.user_id);
+        statusMap[p.user_id] = getHealthStatus(pLogs, p);
+
+        // Extract health score from profile
+        const profile = (profiles as any[])?.find((pr: any) => pr.user_id === p.user_id);
+        const currentScore = profile?.assessment?.healthScore ?? null;
+        const initScore = profile?.initial_health_score ?? null;
+
+        // Latest & initial weight
+        const wLogs = pLogs.filter((l: any) => l.log_type === "weight" && l.weight_kg != null).sort((a: any, b: any) => b.logged_at.localeCompare(a.logged_at));
+        const latestW = wLogs[0]?.weight_kg ?? p.weight ?? null;
+        const initialW = wLogs.length > 0 ? wLogs[wLogs.length - 1].weight_kg : p.weight ?? null;
+
+        // Latest & initial glucose
+        const gLogs = pLogs.filter((l: any) => l.log_type === "diabetes" && l.glucose_morning != null).sort((a: any, b: any) => b.logged_at.localeCompare(a.logged_at));
+        const latestG = gLogs[0]?.glucose_morning ?? null;
+        const initialG = gLogs.length > 0 ? gLogs[gLogs.length - 1].glucose_morning : null;
+
+        metricsMap[p.user_id] = { healthScore: currentScore, initialScore: initScore, latestWeight: latestW, initialWeight: initialW, latestGlucose: latestG, initialGlucose: initialG };
+      });
+      setPatientStatuses(statusMap);
+      setPatientMetrics(metricsMap);
+    }
   };
+
 
   const openPatient = async (patient: Patient) => {
     setSelectedPatient(patient);
@@ -762,11 +808,67 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
   }
 
   // Patient list view
-  const filteredPatients = patients.filter((p) => {
+  const now = Date.now();
+  const daysLeftOf = (iso: string | null | undefined) =>
+    iso ? Math.ceil((Date.parse(iso) - now) / 86_400_000) : null;
+
+  const regionOf = (p: Patient) => p.region_code || "IN";
+  const regionLabel = (code: string) => regionNames[code] || code;
+
+  const matchesRisk = (p: Patient, key: ClientRiskKey): boolean => {
+    if (key === "all") return true;
+    const a = adherence.get(p.user_id);
+    const r = risk.get(p.user_id);
+    switch (key) {
+      case "offtrack": return !!a && !a.onTrack;
+      case "inactive": return !!a && a.doneCount === 0;
+      case "severe_sugar": return isSevereSugar(r) || isHighSugar(r);
+      case "severe_bp": return isSevereBp(r) || isHighBp(r);
+      case "expiring": {
+        const d = daysLeftOf(p.plan_expires_at);
+        return d !== null && d >= 0 && d <= 30;
+      }
+    }
+  };
+
+  /** Country + status scope — package tiles keep live counts against this set. */
+  const scoped = patients.filter((p) => {
+    if (countryFilter !== "all" && regionOf(p) !== countryFilter) return false;
     if (statusFilter !== "all" && patientStatuses[p.user_id]?.status !== statusFilter) return false;
-    if (packageFilter && p.plan_name !== packageFilter) return false;
     return true;
   });
+
+  const q = search.trim().toLowerCase();
+  const riskScoped = scoped.filter((p) => {
+    if (!matchesRisk(p, riskFilter)) return false;
+    if (!q) return true;
+    return (
+      (p.name ?? "").toLowerCase().includes(q) ||
+      (p.phone ?? "").includes(q) ||
+      (p.city ?? "").toLowerCase().includes(q) ||
+      (p.plan_name ?? "").toLowerCase().includes(q) ||
+      regionLabel(regionOf(p)).toLowerCase().includes(q)
+    );
+  });
+
+  const filteredPatients = (() => {
+    const rows = riskScoped.filter((p) => !packageFilter || p.plan_name === packageFilter);
+    const sorted = [...rows];
+    if (sortKey === "name") {
+      sorted.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    } else if (sortKey === "least_active") {
+      const score = (p: Patient) => {
+        const a = adherence.get(p.user_id);
+        if (!a || !a.applicableCount) return -1;
+        return a.doneCount / a.applicableCount;
+      };
+      sorted.sort((a, b) => score(a) - score(b));
+    } else if (sortKey === "expiring") {
+      const d = (p: Patient) => daysLeftOf(p.plan_expires_at) ?? 99999;
+      sorted.sort((a, b) => d(a) - d(b));
+    }
+    return sorted;
+  })();
 
   const statusCounts = {
     all: patients.length,
@@ -775,8 +877,40 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
     red: patients.filter(p => patientStatuses[p.user_id]?.status === "red").length,
   };
 
+  const riskCounts: Record<string, number> = {};
+  for (const k of Object.keys(CLIENT_RISK_META) as Exclude<ClientRiskKey, "all">[]) {
+    riskCounts[k] = scoped.filter((p) => matchesRisk(p, k)).length;
+  }
+
+  const countryOptions = (() => {
+    const counts = new Map<string, number>();
+    for (const p of patients) {
+      const c = regionOf(p);
+      counts.set(c, (counts.get(c) ?? 0) + 1);
+    }
+    return [
+      { value: "all", label: `All countries (${patients.length})` },
+      ...Array.from(counts.entries())
+        .sort((a, b) => b[1] - a[1])
+        .map(([code, n]) => ({ value: code, label: `${regionLabel(code)} (${n})` })),
+    ];
+  })();
+
+  const onTrackCount = riskScoped.filter((p) => adherence.get(p.user_id)?.onTrack).length;
+  const offTrackCount = riskScoped.filter((p) => {
+    const a = adherence.get(p.user_id);
+    return !!a && !a.onTrack;
+  }).length;
+
+  const activeChips = [
+    packageFilter ? { label: packageFilter, clear: () => setPackageFilter(null) } : null,
+    countryFilter !== "all" ? { label: regionLabel(countryFilter), clear: () => setCountryFilter("all") } : null,
+    riskFilter !== "all" ? { label: CLIENT_RISK_META[riskFilter].label, clear: () => setRiskFilter("all") } : null,
+    statusFilter !== "all" ? { label: statusFilter === "red" ? "Needs attention" : statusFilter === "yellow" ? "Monitor" : "On track", clear: () => setStatusFilter("all") } : null,
+    q ? { label: `"${search.trim()}"`, clear: () => setSearch("") } : null,
+  ].filter(Boolean) as { label: string; clear: () => void }[];
+
   // Renewals due in next 30 days
-  const now = Date.now();
   const in30d = now + 30 * 24 * 60 * 60 * 1000;
   const upcomingRenewals = patients.filter((p) => {
     if (!p.plan_expires_at) return false;
@@ -786,11 +920,12 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
 
   // Patients by package
   const byPackage = new Map<string, number>();
-  patients.forEach((p) => {
+  riskScoped.forEach((p) => {
     if (!p.plan_name) return;
     byPackage.set(p.plan_name, (byPackage.get(p.plan_name) ?? 0) + 1);
   });
   const packageEntries = Array.from(byPackage.entries()).sort((a, b) => b[1] - a[1]);
+
 
   const fmtDate = (iso: string | null) => {
     if (!iso) return null;
@@ -801,73 +936,143 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
   const daysUntil = (iso: string) => Math.ceil((Date.parse(iso) - now) / (24 * 60 * 60 * 1000));
 
   return (
-    <div className="flex flex-col gap-4 px-5 pt-3 pb-4">
+    <div className="flex flex-col gap-4 px-4 sm:px-5 pt-3 pb-4">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-2xl font-black text-foreground leading-tight">My Clients</h1>
+        <p className="text-muted-foreground text-sm">
+          {filteredPatients.length === patients.length
+            ? `${patients.length} ${patients.length === 1 ? "client" : "clients"}`
+            : `${filteredPatients.length} of ${patients.length} clients`}
+        </p>
       </motion.div>
 
-      {/* KPI: Patients / On Track / Off Track — one row, clickable */}
+      {/* Filter bar — search, country, package, sort */}
       {patients.length > 0 && (
-        <motion.div className="grid grid-cols-3 gap-2" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }}>
-          <button
-            onClick={() => setStatusFilter("all")}
-            className={`liquid-glass rounded-2xl p-3 text-left transition ${statusFilter === "all" ? "ring-2 ring-primary" : ""}`}
-          >
-            <p className="text-muted-foreground text-[9px] font-semibold uppercase tracking-wide">Clients</p>
-            <p className="stat-number text-2xl text-foreground mt-1 leading-none">{patients.length}</p>
-            <p className="text-muted-foreground text-[10px] mt-1">Active</p>
-          </button>
-          <button
-            onClick={() => setStatusFilter("green")}
-            className={`rounded-2xl p-3 text-left transition bg-emerald-500/10 border border-emerald-500/30 ${statusFilter === "green" ? "ring-2 ring-emerald-400" : ""}`}
-          >
-            <p className="text-emerald-500 text-[9px] font-semibold uppercase tracking-wide">On Track</p>
-            <p className="stat-number text-2xl text-emerald-500 mt-1 leading-none">{statusCounts.green}</p>
-            <p className="text-muted-foreground text-[10px] mt-1">Healthy</p>
-          </button>
-          <button
-            onClick={() => setStatusFilter("red")}
-            className={`rounded-2xl p-3 text-left transition bg-red-500/10 border border-red-500/30 ${statusFilter === "red" ? "ring-2 ring-red-400" : ""}`}
-          >
-            <p className="text-red-500 text-[9px] font-semibold uppercase tracking-wide">Off Track</p>
-            <p className="stat-number text-2xl text-red-500 mt-1 leading-none">{statusCounts.red}</p>
-            <p className="text-muted-foreground text-[10px] mt-1">Needs care</p>
-          </button>
+        <motion.div className="liquid-glass rounded-2xl p-3 space-y-3" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.02 }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search name, phone, city…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+
+            <FilterSelect
+              icon={<Globe className="w-4 h-4 text-muted-foreground shrink-0" />}
+              value={countryFilter}
+              onChange={setCountryFilter}
+              options={countryOptions}
+              placeholder="All countries"
+            />
+
+            <FilterSelect
+              icon={<PackageIcon className="w-4 h-4 text-muted-foreground shrink-0" />}
+              value={packageFilter ?? "all"}
+              onChange={(v) => setPackageFilter(v === "all" ? null : v)}
+              options={[
+                { value: "all", label: `All packages (${riskScoped.length})` },
+                ...packageEntries.map(([name, count]) => ({ value: name, label: `${name} (${count})` })),
+              ]}
+              placeholder="All packages"
+            />
+
+            <FilterSelect
+              icon={<ArrowUpDown className="w-4 h-4 text-muted-foreground shrink-0" />}
+              value={sortKey}
+              onChange={(v) => setSortKey(v as ClientSortKey)}
+              options={[
+                { value: "recent", label: "Newest first" },
+                { value: "least_active", label: "Least active first" },
+                { value: "expiring", label: "Expiring soonest" },
+                { value: "name", label: "Name A–Z" },
+              ]}
+              placeholder="Sort"
+            />
+          </div>
+
+          {/* Attention chips */}
+          <div className="flex flex-wrap gap-2">
+            {(Object.keys(CLIENT_RISK_META) as Exclude<ClientRiskKey, "all">[]).map((key) => (
+              <RiskChip
+                key={key}
+                meta={CLIENT_RISK_META[key]}
+                count={riskCounts[key] ?? 0}
+                active={riskFilter === key}
+                onClick={() => setRiskFilter(riskFilter === key ? "all" : key)}
+              />
+            ))}
+          </div>
+
+          {activeChips.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border/60">
+              <span className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Filters</span>
+              {activeChips.map((c, i) => (
+                <button
+                  key={i}
+                  onClick={c.clear}
+                  className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/20"
+                >
+                  {c.label}
+                  <X className="w-3 h-3" />
+                </button>
+              ))}
+              <button
+                onClick={() => {
+                  setPackageFilter(null);
+                  setCountryFilter("all");
+                  setRiskFilter("all");
+                  setStatusFilter("all");
+                  setSearch("");
+                }}
+                className="text-[11px] font-semibold text-muted-foreground hover:text-foreground underline"
+              >
+                Clear all
+              </button>
+            </div>
+          )}
         </motion.div>
       )}
 
-      {/* Patients by package — clickable to filter */}
-      {packageEntries.length > 0 && (
-        <motion.div className="liquid-glass rounded-2xl p-4" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.04 }}>
-          <p className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wide mb-2">Clients by package</p>
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setPackageFilter(null)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold no-break transition ${
-                packageFilter === null ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-              }`}
-            >
-              All
-              <span className="text-[10px] font-black bg-black/10 rounded-full px-1.5 py-0.5">{patients.length}</span>
-            </button>
-            {packageEntries.map(([name, count]) => {
-              const active = packageFilter === name;
-              return (
-                <button
-                  key={name}
-                  onClick={() => setPackageFilter(active ? null : name)}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold no-break transition ${
-                    active ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary"
-                  }`}
-                >
-                  {name}
-                  <span className={`text-[10px] font-black rounded-full px-1.5 py-0.5 ${active ? "bg-black/10" : "bg-primary/20"}`}>{count}</span>
-                </button>
-              );
-            })}
-          </div>
-        </motion.div>
+      {/* Stat cards — clickable, reflect the current filters */}
+      {patients.length > 0 && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <StatCard
+            label="Total clients"
+            value={riskScoped.length}
+            icon={<Users className="w-5 h-5" />}
+            tone="primary"
+            isActive={riskFilter === "all" && statusFilter === "all"}
+            onClick={() => { setRiskFilter("all"); setStatusFilter("all"); setPackageFilter(null); }}
+          />
+          <StatCard
+            label="On track today"
+            value={onTrackCount}
+            icon={<CheckCircle2 className="w-5 h-5" />}
+            tone="emerald"
+            onClick={() => setRiskFilter("all")}
+          />
+          <StatCard
+            label="Off track today"
+            value={offTrackCount}
+            icon={<Activity className="w-5 h-5" />}
+            tone="amber"
+            isActive={riskFilter === "offtrack"}
+            onClick={() => setRiskFilter(riskFilter === "offtrack" ? "all" : "offtrack")}
+          />
+          <StatCard
+            label="Needs attention"
+            value={statusCounts.red}
+            icon={<UserX className="w-5 h-5" />}
+            tone="purple"
+            isActive={statusFilter === "red"}
+            onClick={() => setStatusFilter(statusFilter === "red" ? "all" : "red")}
+          />
+        </div>
       )}
+
 
       {/* Upcoming renewals detail (only when there are any) */}
       {upcomingRenewals.length > 0 && (
@@ -936,14 +1141,18 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
             const glucoseDelta = m?.latestGlucose != null && m?.initialGlucose != null ? Math.round(m.latestGlucose - m.initialGlucose) : null;
 
             return (
-              <motion.button
+              <motion.div
                 key={p.user_id}
+                role="button"
+                tabIndex={0}
                 onClick={() => openPatient(p)}
-                className="liquid-glass rounded-2xl p-3 text-left w-full hover:bg-primary/5 transition-colors min-w-0"
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openPatient(p); } }}
+                className="liquid-glass rounded-2xl p-3 text-left w-full hover:bg-primary/5 transition-colors min-w-0 cursor-pointer"
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.05 * i }}
+                transition={{ delay: Math.min(0.03 * i, 0.3) }}
               >
+
                 {/* Row 1: avatar + name + status + actions — always single line */}
                 <div className="flex items-center gap-2 mb-2 min-w-0">
                   <div className="relative w-10 h-10 flex-shrink-0">
@@ -1001,6 +1210,22 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
                   );
                 })()}
 
+                {/* Row 3: today's activity + risk flags + country */}
+                <div className="flex flex-wrap items-center gap-1.5 mb-2">
+                  <AdherencePill
+                    summary={adherence.get(p.user_id)}
+                    loading={adherenceLoading}
+                    onNudge={() => setNudgeTarget({ userId: p.user_id, name: p.name ?? "Client" })}
+                  />
+                  {isSevereSugar(risk.get(p.user_id)) && <FlagTag label="Severe sugar" tone="red" />}
+                  {!isSevereSugar(risk.get(p.user_id)) && isHighSugar(risk.get(p.user_id)) && <FlagTag label="High sugar" tone="amber" />}
+                  {isSevereBp(risk.get(p.user_id)) && <FlagTag label="Severe BP" tone="red" />}
+                  {!isSevereBp(risk.get(p.user_id)) && isHighBp(risk.get(p.user_id)) && <FlagTag label="High BP" tone="amber" />}
+                  <span className="text-[10px] text-muted-foreground inline-flex items-center gap-1">
+                    <Globe className="w-3 h-3" />{regionLabel(regionOf(p))}
+                  </span>
+                </div>
+
 
                 {/* 3 Key Metrics */}
                 {(() => {
@@ -1046,11 +1271,19 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
                   );
                 })()}
 
-              </motion.button>
+              </motion.div>
             );
           })}
         </div>
       )}
+
+      <AdherenceNudgeDialog
+        open={!!nudgeTarget}
+        onClose={() => setNudgeTarget(null)}
+        userName={nudgeTarget?.name ?? ""}
+        summary={nudgeTarget ? adherence.get(nudgeTarget.userId) ?? null : null}
+      />
     </div>
   );
 }
+
