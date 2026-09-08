@@ -271,20 +271,10 @@ export default function AdminUsers() {
   }, [inRangeUsers, regionNames]);
 
   const filtered = useMemo(() => {
-    const q = search.toLowerCase().trim();
-    const rows = scoped.filter((u) => {
-      if (packageFilter !== "all" && userCategory(u.user_id) !== packageFilter) return false;
-      if (!matchesRisk(u, riskFilter)) return false;
-      if (!q) return true;
-      return (
-        u.name?.toLowerCase().includes(q) ||
-        u.phone?.includes(q) ||
-        u.city?.toLowerCase().includes(q) ||
-        regionLabel(regionOf(u)).toLowerCase().includes(q) ||
-        packageLabel(u.user_id).toLowerCase().includes(q) ||
-        u.coach_name?.toLowerCase().includes(q)
-      );
-    });
+    const rows = riskScoped.filter(
+      (u) => packageFilter === "all" || userCategory(u.user_id) === packageFilter
+    );
+
 
     const sorted = [...rows];
     if (sortKey === "name") {
