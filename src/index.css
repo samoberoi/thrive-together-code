@@ -728,22 +728,64 @@
   /* Emoji keyboard — sits inside the app column, never full-bleed/ugly */
   .bbdo-emoji-sheet .EmojiPickerReact {
     --epr-emoji-size: 30px;
+    --epr-emoji-gap: 6px;
+    --epr-header-padding: 10px 12px;
+    --epr-category-navigation-button-size: 24px;
+    --epr-preview-height: 0px;
     width: 100% !important;
+    max-width: 100% !important;
     border: 0 !important;
     background: hsl(var(--background)) !important;
     font-family: inherit !important;
+    overflow: hidden;
   }
   .bbdo-emoji-sheet .EmojiPickerReact .epr-search-container input.epr-search {
     height: 40px;
     font-size: 16px;
     border-radius: 12px;
   }
+  /* Skin-tone bubble was rendering as a giant circle over the search box */
+  .bbdo-emoji-sheet .EmojiPickerReact .epr-skin-tones {
+    display: none !important;
+  }
+  /* Category row: fixed height, evenly spaced, never wraps or overlaps the grid */
+  .bbdo-emoji-sheet .EmojiPickerReact .epr-category-nav {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2px;
+    height: 40px;
+    padding: 0 10px !important;
+    border-bottom: 1px solid hsl(var(--border));
+  }
+  .bbdo-emoji-sheet .EmojiPickerReact .epr-category-nav > button.epr-cat-btn {
+    flex: 0 0 auto;
+    width: 24px !important;
+    height: 24px !important;
+    background-size: 24px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .bbdo-emoji-sheet .EmojiPickerReact .epr-category-nav > button.epr-cat-btn:after,
+  .bbdo-emoji-sheet .EmojiPickerReact .epr-category-nav > button.epr-cat-btn:before {
+    bottom: -6px !important;
+    height: 2px !important;
+  }
+  .bbdo-emoji-sheet .EmojiPickerReact .epr-body {
+    overflow-x: hidden !important;
+    padding-top: 4px;
+  }
   .bbdo-emoji-sheet .EmojiPickerReact .epr-emoji-category-label {
     font-size: 11px;
     letter-spacing: 0.08em;
     text-transform: uppercase;
+    height: 26px;
+    line-height: 26px;
+    padding: 0 12px;
     background: hsl(var(--background)) !important;
   }
+
 
   /* ── Mobile-safety layer — applied across the entire app ── */
   @media (max-width: 767px) {
