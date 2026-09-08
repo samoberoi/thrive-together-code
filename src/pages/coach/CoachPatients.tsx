@@ -808,11 +808,67 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
   }
 
   // Patient list view
-  const filteredPatients = patients.filter((p) => {
+  const now = Date.now();
+  const daysLeftOf = (iso: string | null | undefined) =>
+    iso ? Math.ceil((Date.parse(iso) - now) / 86_400_000) : null;
+
+  const regionOf = (p: Patient) => p.region_code || "IN";
+  const regionLabel = (code: string) => regionNames[code] || code;
+
+  const matchesRisk = (p: Patient, key: ClientRiskKey): boolean => {
+    if (key === "all") return true;
+    const a = adherence.get(p.user_id);
+    const r = risk.get(p.user_id);
+    switch (key) {
+      case "offtrack": return !!a && !a.onTrack;
+      case "inactive": return !!a && a.doneCount === 0;
+      case "severe_sugar": return isSevereSugar(r) || isHighSugar(r);
+      case "severe_bp": return isSevereBp(r) || isHighBp(r);
+      case "expiring": {
+        const d = daysLeftOf(p.plan_expires_at);
+        return d !== null && d >= 0 && d <= 30;
+      }
+    }
+  };
+
+  /** Country + status scope — package tiles keep live counts against this set. */
+  const scoped = patients.filter((p) => {
+    if (countryFilter !== "all" && regionOf(p) !== countryFilter) return false;
     if (statusFilter !== "all" && patientStatuses[p.user_id]?.status !== statusFilter) return false;
-    if (packageFilter && p.plan_name !== packageFilter) return false;
     return true;
   });
+
+  const q = search.trim().toLowerCase();
+  const riskScoped = scoped.filter((p) => {
+    if (!matchesRisk(p, riskFilter)) return false;
+    if (!q) return true;
+    return (
+      (p.name ?? "").toLowerCase().includes(q) ||
+      (p.phone ?? "").includes(q) ||
+      (p.city ?? "").toLowerCase().includes(q) ||
+      (p.plan_name ?? "").toLowerCase().includes(q) ||
+      regionLabel(regionOf(p)).toLowerCase().includes(q)
+    );
+  });
+
+  const filteredPatients = (() => {
+    const rows = riskScoped.filter((p) => !packageFilter || p.plan_name === packageFilter);
+    const sorted = [...rows];
+    if (sortKey === "name") {
+      sorted.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    } else if (sortKey === "least_active") {
+      const score = (p: Patient) => {
+        const a = adherence.get(p.user_id);
+        if (!a || !a.applicableCount) return -1;
+        return a.doneCount / a.applicableCount;
+      };
+      sorted.sort((a, b) => score(a) - score(b));
+    } else if (sortKey === "expiring") {
+      const d = (p: Patient) => daysLeftOf(p.plan_expires_at) ?? 99999;
+      sorted.sort((a, b) => d(a) - d(b));
+    }
+    return sorted;
+  })();
 
   const statusCounts = {
     all: patients.length,
@@ -821,8 +877,40 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
     red: patients.filter(p => patientStatuses[p.user_id]?.status === "red").length,
   };
 
+  const riskCounts: Record<string, number> = {};
+  for (const k of Object.keys(CLIENT_RISK_META) as Exclude<ClientRiskKey, "all">[]) {
+    riskCounts[k] = scoped.filter((p) => matchesRisk(p, k)).length;
+  }
+
+  const countryOptions = (() => {
+    const counts = new Map<string, number>();
+    for (const p of patients) {
+      const c = regionOf(p);
+      counts.set(c, (counts.get(c) ?? 0) + 1);
+    }
+    return [
+      { value: "all", label: `All countries (${patients.length})` },
+      ...Array.from(counts.entries())
+        .sort((a, b) => b[1] - a[1])
+        .map(([code, n]) => ({ value: code, label: `${regionLabel(code)} (${n})` })),
+    ];
+  })();
+
+  const onTrackCount = riskScoped.filter((p) => adherence.get(p.user_id)?.onTrack).length;
+  const offTrackCount = riskScoped.filter((p) => {
+    const a = adherence.get(p.user_id);
+    return !!a && !a.onTrack;
+  }).length;
+
+  const activeChips = [
+    packageFilter ? { label: packageFilter, clear: () => setPackageFilter(null) } : null,
+    countryFilter !== "all" ? { label: regionLabel(countryFilter), clear: () => setCountryFilter("all") } : null,
+    riskFilter !== "all" ? { label: CLIENT_RISK_META[riskFilter].label, clear: () => setRiskFilter("all") } : null,
+    statusFilter !== "all" ? { label: statusFilter === "red" ? "Needs attention" : statusFilter === "yellow" ? "Monitor" : "On track", clear: () => setStatusFilter("all") } : null,
+    q ? { label: `"${search.trim()}"`, clear: () => setSearch("") } : null,
+  ].filter(Boolean) as { label: string; clear: () => void }[];
+
   // Renewals due in next 30 days
-  const now = Date.now();
   const in30d = now + 30 * 24 * 60 * 60 * 1000;
   const upcomingRenewals = patients.filter((p) => {
     if (!p.plan_expires_at) return false;
@@ -832,11 +920,12 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
 
   // Patients by package
   const byPackage = new Map<string, number>();
-  patients.forEach((p) => {
+  riskScoped.forEach((p) => {
     if (!p.plan_name) return;
     byPackage.set(p.plan_name, (byPackage.get(p.plan_name) ?? 0) + 1);
   });
   const packageEntries = Array.from(byPackage.entries()).sort((a, b) => b[1] - a[1]);
+
 
   const fmtDate = (iso: string | null) => {
     if (!iso) return null;
