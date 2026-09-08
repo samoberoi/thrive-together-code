@@ -36,12 +36,18 @@ function detectTimeOfDay(): TimeOfDay {
   return "evening";
 }
 
+function toLocalInputValue(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 function formatCurrentDateTime(): string {
   return new Date().toLocaleString("en-IN", {
     day: "numeric", month: "short", year: "numeric",
     hour: "2-digit", minute: "2-digit", hour12: true,
   });
 }
+
 
 export default function LogFAB(props: { packageKey?: string | null; exercisePath?: string; showAllLogs?: boolean }) {
   const exercisePath = props.exercisePath ?? "/dashboard?tab=exercise";
@@ -108,6 +114,8 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
   const { count: soleusCount, goal: soleusGoal, completed: soleusDone } = useSoleusSessionsToday();
   const [saving, setSaving] = useState(false);
   const [currentDateTime, setCurrentDateTime] = useState(formatCurrentDateTime());
+  const [logWhen, setLogWhen] = useState(() => toLocalInputValue(new Date()));
+
   const [keyboardInset, setKeyboardInset] = useState(0);
   const [keyboardViewportHeight, setKeyboardViewportHeight] = useState(0);
 
@@ -205,8 +213,8 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
   const openLog = (type: LogType) => {
     if (!type) return;
     setOpen(false);
-    const slug = type === "diabetes" ? "sugar" : type;
-    setTimeout(() => navigate(`/log/${slug}`), 160);
+    setLogWhen(toLocalInputValue(new Date()));
+    setTimeout(() => setActiveLog(type), 160);
   };
 
   const closeLog = () => {
@@ -220,12 +228,45 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
     setWaterBaseline(0);
   };
 
+  /** Resolves the chosen date/time; null when invalid or in the future. */
+  const resolveLoggedAt = (): string | null => {
+    const d = new Date(logWhen);
+    if (Number.isNaN(d.getTime())) {
+      toast.error("Please pick the date and time of this reading");
+      return null;
+    }
+    if (d.getTime() > Date.now() + 60_000) {
+      toast.error("The time can't be in the future");
+      return null;
+    }
+    return d.toISOString();
+  };
+
+  const whenField = (
+    <div className="rounded-xl bg-surface-2 px-3 py-2.5 mb-1">
+      <div className="flex items-center gap-1.5 mb-1.5">
+        <Clock className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.8} />
+        <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+          When was this taken?
+        </span>
+      </div>
+      <input
+        type="datetime-local"
+        value={logWhen}
+        max={toLocalInputValue(new Date())}
+        onChange={(e) => setLogWhen(e.target.value)}
+        className="w-full h-11 rounded-xl bg-card border border-border px-3 text-sm font-semibold text-foreground outline-none"
+      />
+    </div>
+  );
+
   const DateTimeBadge = () => (
     <div className="flex items-center gap-1.5 bg-surface-2 rounded-xl px-3 py-2 mb-1">
       <Clock className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.8} />
       <span className="text-muted-foreground text-xs font-medium">{currentDateTime}</span>
     </div>
   );
+
 
   const saveDiabetes = async () => {
     if (!user) return;
@@ -234,12 +275,14 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
       toast.error("Please enter a glucose reading");
       return;
     }
+    const loggedAt = resolveLoggedAt();
+    if (!loggedAt) return;
     setSaving(true);
     const isMorning = glucoseTimeOfDay === "morning";
     const result = await insertHealthLog({
       user_id: user.id,
       log_type: "diabetes",
-      logged_at: new Date().toISOString(),
+      logged_at: loggedAt,
       glucose_morning: isMorning ? val : null,
       glucose_evening: !isMorning ? val : null,
       bp_systolic: null,
@@ -264,11 +307,13 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
       toast.error("Please enter both systolic and diastolic values");
       return;
     }
+    const loggedAt = resolveLoggedAt();
+    if (!loggedAt) return;
     setSaving(true);
     const result = await insertHealthLog({
       user_id: user.id,
       log_type: "bp",
-      logged_at: new Date().toISOString(),
+      logged_at: loggedAt,
       glucose_morning: null,
       glucose_evening: null,
       bp_systolic: sys,
@@ -292,11 +337,13 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
       toast.error("Please enter your weight");
       return;
     }
+    const loggedAt = resolveLoggedAt();
+    if (!loggedAt) return;
     setSaving(true);
     const result = await insertHealthLog({
       user_id: user.id,
       log_type: "weight",
-      logged_at: new Date().toISOString(),
+      logged_at: loggedAt,
       glucose_morning: null,
       glucose_evening: null,
       bp_systolic: null,
@@ -541,7 +588,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
             </DrawerTitle>
           </DrawerHeader>
           <div className="flex flex-col gap-4">
-            <DateTimeBadge />
+            {whenField}
 
             {/* Time-of-day segmented control */}
             <div className="grid grid-cols-3 gap-1.5 p-1.5 rounded-2xl bg-muted">
@@ -606,7 +653,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
             </DrawerTitle>
           </DrawerHeader>
           <div className="flex flex-col gap-4">
-            <DateTimeBadge />
+            {whenField}
 
             <div className="grid grid-cols-2 gap-2">
               <label className="block rounded-2xl bg-card border border-border p-4 cursor-text focus-within:border-[var(--bbdo-red)]/50 focus-within:ring-2 focus-within:ring-[var(--bbdo-red)]/15 transition-colors">
@@ -666,7 +713,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
             </DrawerTitle>
           </DrawerHeader>
           <div className="flex flex-col gap-4">
-            <DateTimeBadge />
+            {whenField}
 
             {lastWeight && (
               <div className="rounded-xl bg-muted px-4 py-2.5 flex items-center justify-between">
