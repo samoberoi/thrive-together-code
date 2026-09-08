@@ -461,6 +461,8 @@ const App = () => (
                     <NativeAuthStartupGate>
                       <NativeSessionRedirect />
                       <GlobalRealtimeAlerts />
+                      <AppUpdateBanner />
+
                       <AnimatedRoutes />
                     </NativeAuthStartupGate>
                   </SubscriptionGate>
