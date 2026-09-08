@@ -242,7 +242,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
     return d.toISOString();
   };
 
-  const WhenField = () => (
+  const whenField = (
     <div className="rounded-xl bg-surface-2 px-3 py-2.5 mb-1">
       <div className="flex items-center gap-1.5 mb-1.5">
         <Clock className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.8} />
