@@ -683,16 +683,19 @@ async function fetchReport(payload: any, userId: string) {
   }
   await sbAdmin.from("thyrocare_reports").delete().eq("order_id", order.id);
   let hasReportUrl = false;
+  const stableUrl = await permanentReportLink(orderId);
   for (const r of reports) {
     const url = r.url || r.reportUrl || r.pdfUrl || r.downloadUrl || null;
     if (url) hasReportUrl = true;
     await sbAdmin.from("thyrocare_reports").insert({
       order_id: order.id,
       user_id: order.user_id,
-      report_url: url,
+      // Store OUR permanent link, never the lab's short-lived signed URL —
+      // apps already installed on phones open whatever is saved here.
+      report_url: url ? stableUrl : null,
       report_type: r.type || r.reportType || r.name || "Lab Report",
       parameters: r.parameters || r.tests || null,
-      raw_data: r,
+      raw_data: url ? { ...r, vendor_url: url } : r,
     });
   }
   if (hasReportUrl) await syncReportToProfile(order.id);
