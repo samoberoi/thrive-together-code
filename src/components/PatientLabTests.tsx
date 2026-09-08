@@ -538,11 +538,48 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
       : orphanOrdersAll;
 
 
+  const payNow = async (o: Order) => {
+    setPayingId(o.id);
+    try {
+      await payForService("lab", o.id);
+      toast.success("Payment received — your test is being confirmed with the lab.");
+      setUnpaidOrders((list) => list.filter((x) => x.id !== o.id));
+      setTimeout(() => window.location.reload(), 1200);
+    } catch (e: any) {
+      toast.error(e?.message || "Payment not completed — your test is not booked yet.");
+    } finally {
+      setPayingId(null);
+    }
+  };
+
+  const PendingPaymentCard = unpaidOrders.length > 0 ? (
+    <div className="space-y-3">
+      {unpaidOrders.map((o) => (
+        <div key={o.id} className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 space-y-2">
+          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wide text-amber-700 dark:text-amber-300">
+            <Clock className="w-3.5 h-3.5" /> Payment pending — test not booked
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {(o.product_codes || []).map((c) => testsByCode[c]?.product_name || c).join(", ")}
+            {o.collection_date ? ` · requested for ${o.collection_date}` : ""}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Your slot with the lab is confirmed only after payment succeeds.
+          </p>
+          <Button size="sm" className="rounded-full" disabled={payingId === o.id} onClick={() => payNow(o)}>
+            {payingId === o.id ? "Opening payment…" : o.amount ? `Pay ₹${Math.round(Number(o.amount))} & confirm` : "Pay & confirm"}
+          </Button>
+        </div>
+      ))}
+    </div>
+  ) : null;
+
   if (recs.length === 0 && reports.length === 0 && orphanOrders.length === 0 && !foundationMode) {
 
     if (!alwaysShow) return null;
     return (
       <div className="space-y-4">
+        {PendingPaymentCard}
         <div className="liquid-glass rounded-2xl p-6 text-center space-y-2">
           <FlaskConical className="w-8 h-8 text-primary mx-auto" />
           <h3 className="text-base font-black">Awaiting your coach</h3>
@@ -572,6 +609,7 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
 
   return (
     <div className="space-y-4">
+      {PendingPaymentCard}
       {FoundationStrip}
       {recs.length > 0 && !foundationMode && (
         <div className="flex items-center gap-2 px-1">
