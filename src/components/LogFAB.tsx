@@ -114,6 +114,8 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
   const { count: soleusCount, goal: soleusGoal, completed: soleusDone } = useSoleusSessionsToday();
   const [saving, setSaving] = useState(false);
   const [currentDateTime, setCurrentDateTime] = useState(formatCurrentDateTime());
+  const [logWhen, setLogWhen] = useState(() => toLocalInputValue(new Date()));
+
   const [keyboardInset, setKeyboardInset] = useState(0);
   const [keyboardViewportHeight, setKeyboardViewportHeight] = useState(0);
 
