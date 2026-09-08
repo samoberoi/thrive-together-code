@@ -73,23 +73,27 @@ export default function CoachActivityRings() {
       });
       setBody({ heightCm: (p as any)?.height ?? null, weightKg: (p as any)?.weight ?? null });
       const clin = (p as any)?.clinical ?? {};
+      setClinical(clin);
       setHasDiabetes(!!(clin.hasDiabetes || clin.has_diabetes || (p as any)?.has_diabetes));
     } catch { /* ignore */ }
 
-    // Blood sugar log today
+    fetchMetricPrefs(user.id).then(setMetricPrefs).catch(() => {});
+
+    // Blood sugar / BP / weight logs today
     try {
       const { data } = await supabase
         .from("health_logs" as any)
         .select("logged_at, log_type")
         .eq("user_id", user.id)
-        .eq("log_type", "diabetes")
+        .in("log_type", ["diabetes", "bp", "weight"])
         .order("logged_at", { ascending: false })
-        .limit(10);
-      setDiabetesLoggedToday(
-        ((data as any[]) ?? []).some(
-          (l) => new Date(l.logged_at).toDateString() === new Date().toDateString(),
-        ),
+        .limit(60);
+      const rows = ((data as any[]) ?? []).filter(
+        (l) => new Date(l.logged_at).toDateString() === new Date().toDateString(),
       );
+      setDiabetesLoggedToday(rows.some((l) => l.log_type === "diabetes"));
+      setBpLoggedToday(rows.some((l) => l.log_type === "bp"));
+      setWeightLoggedToday(rows.some((l) => l.log_type === "weight"));
     } catch { /* ignore */ }
 
     // Water (glasses stored in weight_kg on water logs)
