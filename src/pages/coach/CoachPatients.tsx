@@ -1271,11 +1271,19 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
                   );
                 })()}
 
-              </motion.button>
+              </motion.div>
             );
           })}
         </div>
       )}
+
+      <AdherenceNudgeDialog
+        open={!!nudgeTarget}
+        onClose={() => setNudgeTarget(null)}
+        userName={nudgeTarget?.name ?? ""}
+        summary={nudgeTarget ? adherence.get(nudgeTarget.userId) ?? null : null}
+      />
     </div>
   );
 }
+
