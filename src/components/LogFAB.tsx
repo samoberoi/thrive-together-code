@@ -205,8 +205,8 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
   const openLog = (type: LogType) => {
     if (!type) return;
     setOpen(false);
-    const slug = type === "diabetes" ? "sugar" : type;
-    setTimeout(() => navigate(`/log/${slug}`), 160);
+    setLogWhen(toLocalInputValue(new Date()));
+    setTimeout(() => setActiveLog(type), 160);
   };
 
   const closeLog = () => {
@@ -220,12 +220,45 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
     setWaterBaseline(0);
   };
 
+  /** Resolves the chosen date/time; null when invalid or in the future. */
+  const resolveLoggedAt = (): string | null => {
+    const d = new Date(logWhen);
+    if (Number.isNaN(d.getTime())) {
+      toast.error("Please pick the date and time of this reading");
+      return null;
+    }
+    if (d.getTime() > Date.now() + 60_000) {
+      toast.error("The time can't be in the future");
+      return null;
+    }
+    return d.toISOString();
+  };
+
+  const WhenField = () => (
+    <div className="rounded-xl bg-surface-2 px-3 py-2.5 mb-1">
+      <div className="flex items-center gap-1.5 mb-1.5">
+        <Clock className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.8} />
+        <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+          When was this taken?
+        </span>
+      </div>
+      <input
+        type="datetime-local"
+        value={logWhen}
+        max={toLocalInputValue(new Date())}
+        onChange={(e) => setLogWhen(e.target.value)}
+        className="w-full h-11 rounded-xl bg-card border border-border px-3 text-sm font-semibold text-foreground outline-none"
+      />
+    </div>
+  );
+
   const DateTimeBadge = () => (
     <div className="flex items-center gap-1.5 bg-surface-2 rounded-xl px-3 py-2 mb-1">
       <Clock className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.8} />
       <span className="text-muted-foreground text-xs font-medium">{currentDateTime}</span>
     </div>
   );
+
 
   const saveDiabetes = async () => {
     if (!user) return;
