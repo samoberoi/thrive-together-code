@@ -324,8 +324,8 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
   };
 
   const whenField = (
-    <div className="min-w-0 rounded-xl bg-muted px-3 py-2.5 mb-1">
-      <div className="flex items-center gap-1.5 mb-1.5">
+    <div className="min-w-0 max-w-full overflow-hidden rounded-xl bg-muted px-3 py-2.5 mb-1">
+      <div className="flex items-center justify-center gap-1.5 mb-1.5 text-center">
         <Clock className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.8} />
         <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
           When was this taken?
@@ -336,15 +336,15 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
         value={logWhen}
         max={toLocalInputValue(new Date())}
         onChange={(e) => setLogWhen(e.target.value)}
-        className="health-datetime h-11 rounded-lg bg-card border border-border px-3 text-sm font-semibold text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
+        className="health-datetime h-11 rounded-lg bg-card border border-border px-3 text-center text-sm font-semibold text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
       />
     </div>
   );
 
   const DateTimeBadge = () => (
-    <div className="flex items-center gap-1.5 bg-surface-2 rounded-xl px-3 py-2 mb-1">
+    <div className="flex min-h-11 min-w-0 max-w-full items-center justify-center gap-1.5 overflow-hidden rounded-xl bg-surface-2 px-3 py-2 text-center mb-1">
       <Clock className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.8} />
-      <span className="text-muted-foreground text-xs font-medium">{currentDateTime}</span>
+      <span className="min-w-0 break-words text-muted-foreground text-xs font-medium leading-5">{currentDateTime}</span>
     </div>
   );
 
