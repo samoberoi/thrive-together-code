@@ -79,29 +79,29 @@
     --bbdo-teal-soft: var(--google-blue-soft);
     --bbdo-gradient: var(--google-blue);
 
-    /* Royal jewel-tone ring system — drawn from the uploaded luxury palettes. */
-    --ring-fasting: #A6824A;           /* antique gold */
-    --ring-fasting-soft: #F5EFE6;
-    --ring-supplements: #5D1E21;      /* deep burgundy */
-    --ring-supplements-soft: #F2E8E9;
-    --ring-movement: #154230;          /* emerald green */
-    --ring-movement-soft: #E6EEEA;
-    --ring-exercise: #101111;          /* charcoal black */
-    --ring-exercise-soft: #E8E8E8;
-    --ring-yoga: #D0C6AF;              /* quicksand */
-    --ring-yoga-soft: #F5F2EA;
-    --ring-water: #112260;             /* royal blue */
-    --ring-water-soft: #E8EBF2;
-    --ring-breath: #305070;            /* sapphire */
-    --ring-breath-soft: #E9EEF3;
-    --ring-soleus: #A6BCC9;            /* powder blue */
-    --ring-soleus-soft: #EDF3F6;
-    --ring-diabetes: #F6E0B6;          /* wheat */
-    --ring-diabetes-soft: #FDF6EA;
-    --ring-bp: #3E4B8E;                /* french blue */
-    --ring-bp-soft: #EAEAF2;
-    --ring-weight: #3D1534;            /* midnight violet */
-    --ring-weight-soft: #F0E8EE;
+    /* Soft mineral ring system — airy, pleasant pastels that stay readable on white. */
+    --ring-fasting: #E8DED4;           /* warm cream */
+    --ring-fasting-soft: #F7F3EE;
+    --ring-supplements: #CA99AB;      /* dusty rose */
+    --ring-supplements-soft: #F8EDF1;
+    --ring-movement: #5EB0C8;          /* soft teal */
+    --ring-movement-soft: #EAF6F9;
+    --ring-exercise: #8387C3;          /* periwinkle */
+    --ring-exercise-soft: #EEEEF7;
+    --ring-yoga: #CEB5D4;              /* pink lavender */
+    --ring-yoga-soft: #F7F0F7;
+    --ring-water: #4E7AB1;             /* royal blue */
+    --ring-water-soft: #EAF1F8;
+    --ring-breath: #8BA3C5;            /* steel blue */
+    --ring-breath-soft: #EEF3F8;
+    --ring-soleus: #B8D4E8;            /* powder sky */
+    --ring-soleus-soft: #EDF5FA;
+    --ring-diabetes: #8A8CAC;          /* muted lavender */
+    --ring-diabetes-soft: #EFEFF5;
+    --ring-bp: #BAB0C8;                /* light mauve */
+    --ring-bp-soft: #F3F0F5;
+    --ring-weight: #DAD4D4;            /* warm pearl */
+    --ring-weight-soft: #F5F3F2;
 
     /* ── PUNCH pillar colors (one per lifestyle pillar) ── */
     --pillar-diet: var(--google-blue);
