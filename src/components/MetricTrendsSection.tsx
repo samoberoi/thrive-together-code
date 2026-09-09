@@ -14,6 +14,7 @@ import {
 } from "recharts";
 import { fetchJoinDate, fetchTrendSeries, todayKey, type TrendMetric, type TrendPoint } from "@/lib/trendsService";
 import StepsShareCard from "@/components/StepsShareCard";
+import MetricTrendShareCard from "@/components/MetricTrendShareCard";
 
 interface MetricDef {
   key: TrendMetric;
@@ -280,25 +281,84 @@ export default function MetricTrendsSection({
                       />
                     )}
 
-                    {windowed.length > 0 && (
-                      <div className="grid grid-cols-3 gap-2 mt-3">
-                        {[
-                          { label: "Start", value: fmt(windowed[0].value, m.unit) },
-                          { label: "Latest", value: fmt(windowed[windowed.length - 1].value, m.unit) },
-                          {
-                            label: "Change",
-                            value: `${delta != null && delta > 0 ? "+" : ""}${fmt(delta ?? 0, m.unit)}`,
-                          },
-                        ].map((s) => (
-                          <div key={s.label} className="rounded-2xl border border-border bg-background/60 px-3 py-2">
-                            <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                              {s.label}
-                            </p>
-                            <p className="text-[14px] font-black text-foreground leading-tight mt-0.5">{s.value}</p>
+                    {windowed.length > 0 && (() => {
+                      const total = windowed.reduce((sum, p) => sum + p.value, 0);
+                      const avg = total / windowed.length;
+                      const startV = windowed[0].value;
+                      const lastV = windowed[windowed.length - 1].value;
+                      const rangeLabel = RANGES.find((r) => r.key === range)!.label;
+                      const tiles = [
+                        { label: "Start", value: fmt(startV, m.unit) },
+                        { label: "Latest", value: fmt(lastV, m.unit) },
+                        {
+                          label: "Change",
+                          value: `${delta != null && delta > 0 ? "+" : ""}${fmt(delta ?? 0, m.unit)}`,
+                        },
+                        ...(m.key === "steps" ? [{ label: `Total (${rangeLabel})`, value: fmt(total, m.unit) }] : []),
+                      ];
+                      const headline =
+                        m.key === "steps"
+                          ? { label: `Total steps · ${rangeLabel}`, value: fmt(total, ""), unit: "steps" }
+                          : m.key === "weight"
+                          ? { label: "Current weight", value: fmt(lastV, ""), unit: "kg" }
+                          : m.key === "glucose"
+                          ? { label: "Current reading", value: fmt(lastV, ""), unit: "mg/dL" }
+                          : { label: "Health score", value: fmt(lastV, ""), unit: "" };
+                      const shareStats =
+                        m.key === "steps"
+                          ? [
+                              { label: "Daily avg", value: fmt(avg, m.unit) },
+                              { label: "Best day", value: fmt(Math.max(...windowed.map((p) => p.value)), m.unit) },
+                              { label: "Days", value: String(windowed.length) },
+                            ]
+                          : [
+                              { label: "Start", value: fmt(startV, m.unit) },
+                              { label: "Latest", value: fmt(lastV, m.unit) },
+                              {
+                                label: "Change",
+                                value: `${delta != null && delta > 0 ? "+" : ""}${fmt(delta ?? 0, m.unit)}`,
+                              },
+                            ];
+                      const caption =
+                        m.key === "steps"
+                          ? "Every step is a step toward better metabolic health."
+                          : m.key === "glucose"
+                          ? "Steady sugars, stronger days."
+                          : m.key === "weight"
+                          ? "Consistency beats intensity, every single week."
+                          : "Small daily wins build a better health score.";
+
+                      return (
+                        <>
+                          <div className={`grid gap-2 mt-3 ${tiles.length === 4 ? "grid-cols-2" : "grid-cols-3"}`}>
+                            {tiles.map((s) => (
+                              <div key={s.label} className="rounded-2xl border border-border bg-background/60 px-3 py-2">
+                                <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                                  {s.label}
+                                </p>
+                                <p className="text-[14px] font-black text-foreground leading-tight mt-0.5">{s.value}</p>
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
-                    )}
+
+                          <MetricTrendShareCard
+                            title={m.title}
+                            rangeLabel={`${prettyDate(windowStart)} – ${prettyDate(today)}`}
+                            headlineLabel={headline.label}
+                            headlineValue={headline.value}
+                            headlineUnit={headline.unit}
+                            color={m.color}
+                            icon={m.icon}
+                            stats={shareStats}
+                            series={windowed.map((p) => p.value)}
+                            celebrate={improving}
+                            caption={caption}
+                            fileSlug={m.key}
+                          />
+                        </>
+                      );
+                    })()}
+
                   </div>
                 </motion.div>
               )}
