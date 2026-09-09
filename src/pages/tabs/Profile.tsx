@@ -589,6 +589,10 @@ export default function Profile({ onClose, isDark = true, onToggleTheme }: Profi
           </div>
         )}
 
+        {!logsLoading && (logsTab === "diabetes" || logsTab === "bp" || logsTab === "weight") && healthLogs.length > 0 && (
+          <LogTrendChart kind={logsTab} logs={healthLogs} />
+        )}
+
         <div className="flex flex-col gap-3">
           {logsLoading ? (
             <LoadingState variant="card" />
