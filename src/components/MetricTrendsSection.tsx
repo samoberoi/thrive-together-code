@@ -14,6 +14,7 @@ import {
 } from "recharts";
 import { fetchJoinDate, fetchTrendSeries, todayKey, type TrendMetric, type TrendPoint } from "@/lib/trendsService";
 import StepsShareCard from "@/components/StepsShareCard";
+import MetricTrendShareCard from "@/components/MetricTrendShareCard";
 
 interface MetricDef {
   key: TrendMetric;
