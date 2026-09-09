@@ -144,8 +144,8 @@ export default function FoundationLabCard({ userId }: Props) {
         <motion.button
           type="button"
           onClick={() => setOpen(true)}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
           className="w-full text-left rounded-2xl p-4 text-white shadow-card relative overflow-hidden active:scale-[0.99] transition-transform"
           style={{ background: "var(--bbdo-gradient)" }}
@@ -199,8 +199,8 @@ export default function FoundationLabCard({ userId }: Props) {
         <motion.button
           type="button"
           onClick={() => setOpen(true)}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
           className="w-full text-left rounded-2xl p-4 text-white shadow-card relative overflow-hidden active:scale-[0.99] transition-transform"
           style={{ background: "var(--bbdo-gradient)" }}
@@ -232,8 +232,8 @@ export default function FoundationLabCard({ userId }: Props) {
         </motion.button>
       ) : (
         <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
           className="liquid-glass rounded-3xl p-5 ring-1 ring-[var(--bbdo-red)]/30"
         >
