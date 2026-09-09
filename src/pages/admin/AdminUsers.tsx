@@ -38,6 +38,18 @@ import {
   isHighBp,
   type RiskSnapshot,
 } from "@/components/admin/UserRiskFilters";
+import {
+  GENDER_OPTIONS,
+  CONDITION_OPTIONS,
+  AGE_OPTIONS,
+  BMI_OPTIONS,
+  matchesAttributes,
+  labelOf,
+  type GenderFilter,
+  type ConditionFilter,
+  type AgeFilter,
+  type BmiFilter,
+} from "@/lib/clientAttributeFilters";
 
 interface UserProfile {
   id: string;
@@ -56,6 +68,7 @@ interface UserProfile {
   onboarding_completed: boolean | null;
   created_at: string | null;
   clinical: any;
+  deep_profiling: any;
   lifestyle: any;
   goals: any;
   height: number | null;
@@ -104,6 +117,10 @@ export default function AdminUsers() {
   const [packageFilter, setPackageFilter] = useState<string>("all");
   const [countryFilter, setCountryFilter] = useState<string>("all");
   const [riskFilter, setRiskFilter] = useState<RiskKey>("all");
+  const [genderFilter, setGenderFilter] = useState<GenderFilter>("all");
+  const [conditionFilter, setConditionFilter] = useState<ConditionFilter>("all");
+  const [ageFilter, setAgeFilter] = useState<AgeFilter>("all");
+  const [bmiFilter, setBmiFilter] = useState<BmiFilter>("all");
   const [sortKey, setSortKey] = useState<SortKey>("recent");
   const [range, setRange] = useState<DateRange>(allTimeRange());
 
@@ -184,9 +201,17 @@ export default function AdminUsers() {
     () =>
       inRangeUsers.filter((u) => {
         if (countryFilter !== "all" && regionOf(u) !== countryFilter) return false;
+        if (!matchesAttributes(u, { gender: genderFilter, condition: conditionFilter, age: ageFilter, bmi: bmiFilter }))
+          return false;
         return true;
       }),
-    [inRangeUsers, countryFilter]
+    [inRangeUsers, countryFilter, genderFilter, conditionFilter, ageFilter, bmiFilter]
+  );
+
+  /** PMOS/PCOS only applies to women, so hide it when the list is men-only. */
+  const conditionOptions = useMemo(
+    () => CONDITION_OPTIONS.filter((o) => o.value !== "pcos" || genderFilter !== "male"),
+    [genderFilter]
   );
 
   const matchesRisk = (u: UserProfile, key: RiskKey): boolean => {
@@ -301,6 +326,12 @@ export default function AdminUsers() {
     riskFilter !== "all"
       ? { label: RISK_META[riskFilter as Exclude<RiskKey, "all">].label, clear: () => setRiskFilter("all") }
       : null,
+    genderFilter !== "all" ? { label: labelOf(GENDER_OPTIONS, genderFilter), clear: () => setGenderFilter("all") } : null,
+    conditionFilter !== "all"
+      ? { label: labelOf(CONDITION_OPTIONS, conditionFilter), clear: () => setConditionFilter("all") }
+      : null,
+    ageFilter !== "all" ? { label: labelOf(AGE_OPTIONS, ageFilter), clear: () => setAgeFilter("all") } : null,
+    bmiFilter !== "all" ? { label: labelOf(BMI_OPTIONS, bmiFilter), clear: () => setBmiFilter("all") } : null,
     search.trim() ? { label: `"${search.trim()}"`, clear: () => setSearch("") } : null,
   ].filter(Boolean) as { label: string; clear: () => void }[];
 
@@ -376,6 +407,41 @@ export default function AdminUsers() {
               { value: "name", label: "Name A–Z" },
             ]}
             placeholder="Sort"
+          />
+        </div>
+
+        {/* Who they are — gender, health condition, age and BMI */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+          <FilterSelect
+            icon={<Users className="w-4 h-4 text-muted-foreground shrink-0" />}
+            value={genderFilter}
+            onChange={(v) => {
+              setGenderFilter(v as GenderFilter);
+              if (v === "male" && conditionFilter === "pcos") setConditionFilter("all");
+            }}
+            options={GENDER_OPTIONS}
+            placeholder="All genders"
+          />
+          <FilterSelect
+            icon={<HeartPulse className="w-4 h-4 text-muted-foreground shrink-0" />}
+            value={conditionFilter}
+            onChange={(v) => setConditionFilter(v as ConditionFilter)}
+            options={conditionOptions}
+            placeholder="All conditions"
+          />
+          <FilterSelect
+            icon={<CalendarClock className="w-4 h-4 text-muted-foreground shrink-0" />}
+            value={ageFilter}
+            onChange={(v) => setAgeFilter(v as AgeFilter)}
+            options={AGE_OPTIONS}
+            placeholder="All ages"
+          />
+          <FilterSelect
+            icon={<Activity className="w-4 h-4 text-muted-foreground shrink-0" />}
+            value={bmiFilter}
+            onChange={(v) => setBmiFilter(v as BmiFilter)}
+            options={BMI_OPTIONS}
+            placeholder="All BMI"
           />
         </div>
 
