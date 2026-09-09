@@ -121,7 +121,7 @@ export default function NotificationsPanel({ onClose, embedded = false }: Notifi
       params.set("tab", "community");
       if (!params.get("share")) params.set("share", "generic");
       onClose?.();
-      navigate(`/home?${params.toString()}`);
+      navigate(resolveNotificationRoute({ type: n.type, action_url: `/home?${params.toString()}` }, role));
       return;
     }
 
