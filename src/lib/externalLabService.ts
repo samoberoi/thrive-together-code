@@ -20,13 +20,15 @@ export type ExternalLabReport = {
   created_at: string;
 };
 
-export async function parseExternalReport(externalReportId: string): Promise<number> {
+export type ExternalReportParseResult = { count: number; queued: boolean };
+
+export async function parseExternalReport(externalReportId: string): Promise<ExternalReportParseResult> {
   const { data, error } = await supabase.functions.invoke("external-lab-report-parse", {
     body: { externalReportId },
   });
   if (error) throw error;
   if (!data?.ok) throw new Error(data?.error || "The report could not be read");
-  return Number(data.count || 0);
+  return { count: Number(data.count || 0), queued: data.queued === true };
 }
 
 /** Mark a coach recommendation as "client will get this done outside". */
@@ -92,7 +94,8 @@ export async function uploadExternalReport(opts: {
   // slow or fail (large PDFs, flaky network on mobile) — never let that discard
   // the uploaded report: keep the row and surface it as still processing.
   try {
-    await parseExternalReport(report.id);
+    const extraction = await parseExternalReport(report.id);
+    if (extraction.queued) return { ...report, status: "processing" };
     return { ...report, status: "reviewed", reviewed_at: new Date().toISOString() };
   } catch {
     return { ...report, status: "processing" };
