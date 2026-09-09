@@ -63,8 +63,8 @@ export default function PastReportsCard({ userId, uploadedBy, onChanged, compact
   const retry = async (r: ExternalLabReport) => {
     setBusyId(r.id);
     try {
-      const count = await parseExternalReport(r.id);
-      toast.success(`${count} markers read from this report`);
+      const result = await parseExternalReport(r.id);
+      toast.success(result.queued ? "Report queued for automatic processing" : `${result.count} markers read from this report`);
       await load();
       onChanged?.();
     } catch (e: any) {
