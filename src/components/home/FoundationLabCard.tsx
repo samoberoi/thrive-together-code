@@ -119,7 +119,23 @@ export default function FoundationLabCard({ userId }: Props) {
     setBooking(true);
   };
 
-  if (hasResults === null) return null;
+  // Reserve the card's footprint while the first fetch resolves so the Home
+  // feed doesn't reflow / "pop in" a second or two after the streak card.
+  if (hasResults === null) {
+    return (
+      <div className="w-full rounded-2xl p-4 bg-muted/40 animate-pulse" aria-hidden="true">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-muted-foreground/15" />
+          <div className="flex-1 space-y-2">
+            <div className="h-3 w-24 rounded bg-muted-foreground/15" />
+            <div className="h-4 w-40 rounded bg-muted-foreground/15" />
+          </div>
+        </div>
+        <div className="mt-4 h-9 w-full rounded-xl bg-muted-foreground/10" />
+      </div>
+    );
+  }
+
 
 
   return (
@@ -128,8 +144,8 @@ export default function FoundationLabCard({ userId }: Props) {
         <motion.button
           type="button"
           onClick={() => setOpen(true)}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
           className="w-full text-left rounded-2xl p-4 text-white shadow-card relative overflow-hidden active:scale-[0.99] transition-transform"
           style={{ background: "var(--bbdo-gradient)" }}
@@ -183,8 +199,8 @@ export default function FoundationLabCard({ userId }: Props) {
         <motion.button
           type="button"
           onClick={() => setOpen(true)}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
           className="w-full text-left rounded-2xl p-4 text-white shadow-card relative overflow-hidden active:scale-[0.99] transition-transform"
           style={{ background: "var(--bbdo-gradient)" }}
@@ -216,8 +232,8 @@ export default function FoundationLabCard({ userId }: Props) {
         </motion.button>
       ) : (
         <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
           className="liquid-glass rounded-3xl p-5 ring-1 ring-[var(--bbdo-red)]/30"
         >
