@@ -196,7 +196,7 @@ async function getFcmAccessToken(): Promise<{ token: string; projectId: string }
   return { token: cachedFcm.token, projectId: cachedFcm.projectId };
 }
 
-async function sendFcm(deviceToken: string, title: string, body: string, actionUrl: string, notificationId?: string | null): Promise<{ ok: boolean; status: number; response: unknown }> {
+async function sendFcm(deviceToken: string, title: string, body: string, actionUrl: string, notificationId?: string | null, notificationType?: string | null): Promise<{ ok: boolean; status: number; response: unknown }> {
   const creds = await getFcmAccessToken();
   if (!creds) return { ok: false, status: 0, response: { error: "FCM not configured" } };
   const res = await fetch(`https://fcm.googleapis.com/v1/projects/${creds.projectId}/messages:send`, {
@@ -212,6 +212,7 @@ async function sendFcm(deviceToken: string, title: string, body: string, actionU
         data: {
           action_url: actionUrl,
           type: "app_notification",
+          ...(notificationType ? { notification_type: notificationType } : {}),
           ...(notificationId ? { notificationId } : {}),
         },
         android: {
@@ -258,6 +259,7 @@ Deno.serve(async (req) => {
     let body: string;
     let actionUrl = "/home?tab=profile";
     let dispatchNotificationId: string | null = null;
+    let notificationType = "system";
     const delaySeconds = validDelaySeconds(raw?.delaySeconds);
 
     if (raw?.backendDispatch === true) {
@@ -300,6 +302,7 @@ Deno.serve(async (req) => {
       title = validText((notification as any).title, 120) ?? "BBDO notification";
       body = validText((notification as any).body, 500) ?? "You have a new app notification.";
       actionUrl = typeof (notification as any).action_url === "string" ? (notification as any).action_url.slice(0, 240) : "/home?tab=profile";
+      notificationType = typeof (notification as any).type === "string" ? (notification as any).type.slice(0, 60) : "system";
     } else {
       const userClient = createClient(SUPABASE_URL, ANON_KEY, {
         global: { headers: { Authorization: `Bearer ${bearer}` } },
@@ -371,6 +374,7 @@ Deno.serve(async (req) => {
       },
       action_url: actionUrl,
       type: "app_notification",
+      notification_type: notificationType,
     };
 
     const iosResults = await Promise.all((apnsConfigured ? iosTokens : []).map(async (row) => {
@@ -394,7 +398,7 @@ Deno.serve(async (req) => {
     }));
 
     const androidResults = await Promise.all(androidTokens.map(async (row) => {
-      const result = await sendFcm(row.token, title, body, actionUrl, dispatchNotificationId);
+      const result = await sendFcm(row.token, title, body, actionUrl, dispatchNotificationId, notificationType);
       const resp = result.response as any;
       const errStatus = resp?.error?.status ?? resp?.error?.details?.[0]?.errorCode ?? "";
       if (!result.ok && (result.status === 404 || errStatus === "UNREGISTERED" || errStatus === "INVALID_ARGUMENT" || errStatus === "NOT_FOUND")) {
