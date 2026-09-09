@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { Smile, X } from "lucide-react";
 import { createPortal } from "react-dom";
-import { Theme } from "emoji-picker-react";
+import { Categories, EmojiStyle, Theme } from "emoji-picker-react";
 
 const EmojiPicker = lazy(() => import("emoji-picker-react"));
 
@@ -78,8 +78,20 @@ export default function EmojiPickerButton({
               >
                 <EmojiPicker
                   width="100%"
-                   height="min(420px, 52dvh)"
+                   height="min(440px, 56dvh)"
                    theme={Theme.LIGHT}
+                   emojiStyle={EmojiStyle.NATIVE}
+                   categories={[
+                     { category: Categories.SUGGESTED, name: "Recent" },
+                     { category: Categories.SMILEYS_PEOPLE, name: "Smileys & people" },
+                     { category: Categories.ANIMALS_NATURE, name: "Animals & nature" },
+                     { category: Categories.FOOD_DRINK, name: "Food & drink" },
+                     { category: Categories.TRAVEL_PLACES, name: "Travel & places" },
+                     { category: Categories.ACTIVITIES, name: "Activities" },
+                     { category: Categories.OBJECTS, name: "Objects" },
+                     { category: Categories.SYMBOLS, name: "Symbols" },
+                     { category: Categories.FLAGS, name: "Flags" },
+                   ]}
                   lazyLoadEmojis
                   skinTonesDisabled={false}
                   previewConfig={{ showPreview: false }}
