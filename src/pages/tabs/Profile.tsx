@@ -10,7 +10,7 @@ import {
   AlertTriangle, Plus, Footprints, Star, Compass, CircleDashed, LifeBuoy, type LucideIcon
 } from "lucide-react";
 import RingManagement from "@/components/RingManagement";
-import LogTrendChart from "@/components/logs/LogTrendChart";
+import LogTrendChart from "@/components/log-trends/LogTrendChart";
 import HelpSupport from "@/components/HelpSupport";
 import { Switch } from "@/components/ui/switch";
 import EditProfile from "@/components/EditProfile";
