@@ -156,19 +156,25 @@ function typeFallback(type: string | null | undefined, role: NotificationRole): 
 
 const PENDING_KEY = "bb_pending_notification_route";
 
-/** Remember a tap that arrived before the app UI was ready to navigate. */
-export function setPendingNotificationRoute(url: string) {
-  try { sessionStorage.setItem(PENDING_KEY, url); } catch { /* ignore */ }
+/**
+ * Remember a notification tap that arrived before the app UI was ready to
+ * navigate (cold start from a native push). The role is unknown at that point,
+ * so we keep the raw notification and resolve the route on navigation.
+ */
+export function setPendingNotificationTap(n: RoutableNotification) {
+  try { sessionStorage.setItem(PENDING_KEY, JSON.stringify(n)); } catch { /* ignore */ }
   try {
-    window.dispatchEvent(new CustomEvent("notification:navigate", { detail: url }));
+    window.dispatchEvent(new CustomEvent("notification:navigate", { detail: n }));
   } catch { /* ignore */ }
 }
 
-export function takePendingNotificationRoute(): string | null {
+export function takePendingNotificationTap(): RoutableNotification | null {
   try {
     const v = sessionStorage.getItem(PENDING_KEY);
-    if (v) sessionStorage.removeItem(PENDING_KEY);
-    return v;
+    if (!v) return null;
+    sessionStorage.removeItem(PENDING_KEY);
+    const parsed = JSON.parse(v);
+    return parsed && typeof parsed === "object" ? (parsed as RoutableNotification) : null;
   } catch {
     return null;
   }
