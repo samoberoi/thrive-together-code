@@ -11,6 +11,7 @@
 import { Capacitor, registerPlugin } from "@capacitor/core";
 import { PushNotifications } from "@capacitor/push-notifications";
 import { claimNotification, notificationKey } from "@/lib/notificationDedupe";
+import { setPendingNotificationTap } from "@/lib/notificationRouting";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -254,7 +255,23 @@ async function attachPushListenersOnce() {
     await PushNotifications.addListener(
       "pushNotificationActionPerformed",
       (a) => {
-        console.log("[push] tapped:", a);
+        const data = (a.notification?.data ?? {}) as Record<string, unknown>;
+        setPendingNotificationTap({
+          action_url: typeof data.action_url === "string" ? data.action_url : null,
+          type: typeof data.notification_type === "string" ? data.notification_type : null,
+        });
+      },
+    );
+
+    // Foreground pushes are mirrored as local notifications — handle their taps too.
+    await LocalNotifications.addListener(
+      "localNotificationActionPerformed",
+      (a) => {
+        const extra = (a.notification?.extra ?? {}) as Record<string, unknown>;
+        setPendingNotificationTap({
+          action_url: typeof extra.action_url === "string" ? extra.action_url : null,
+          type: typeof extra.notification_type === "string" ? extra.notification_type : null,
+        });
       },
     );
 

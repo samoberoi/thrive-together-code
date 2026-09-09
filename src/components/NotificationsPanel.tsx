@@ -16,6 +16,8 @@ import { playNotificationSound, setMasterVolume } from "@/lib/soundEngine";
 import { fireRealtimeHealthNotificationAlert } from "@/lib/healthAlerts";
 import { claimNotification, notificationKey } from "@/lib/notificationDedupe";
 import { isNativePushSupported } from "@/lib/nativePush";
+import { resolveNotificationRoute, type NotificationRole } from "@/lib/notificationRouting";
+import { useRbac } from "@/hooks/useRbac";
 
 const TYPE_CONFIG: Record<string, { icon: React.ElementType; color: string; bg: string }> = {
   supplement_reminder: { icon: Pill, color: "text-purple-500", bg: "bg-purple-500/10" },
@@ -55,6 +57,8 @@ interface NotificationsPanelProps {
 export default function NotificationsPanel({ onClose, embedded = false }: NotificationsPanelProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { isAdmin, isCoach, isChannelPartner } = useRbac();
+  const role: NotificationRole = isAdmin ? "admin" : isCoach ? "coach" : isChannelPartner ? "partner" : "user";
   const [items, setItems] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<Filter>("all");
@@ -100,11 +104,8 @@ export default function NotificationsPanel({ onClose, embedded = false }: Notifi
     window.dispatchEvent(new CustomEvent("notifications:changed"));
 
   const onItemClick = async (n: AppNotification) => {
-    // Notifications in the panel are read-only: tapping only marks them read,
-    // it does NOT navigate anywhere. (Previously action_url could route users
-    // to unintended pages like the profile.)
-    // Exception: "share your win" notifications open the community composer
-    // pre-filled with the win, ready to send.
+    // Tapping marks the notification read and takes the user straight to the
+    // part of the app it is about (chat, community, labs, plans, …).
     if (!n.is_read) {
       await markRead(n.id);
       setItems((prev) => prev.map((x) => (x.id === n.id ? { ...x, is_read: true } : x)));
@@ -112,16 +113,22 @@ export default function NotificationsPanel({ onClose, embedded = false }: Notifi
     }
 
     const url = n.action_url || "";
+
+    // "Share your win" notifications open the community composer pre-filled.
     if (n.type === "achievement_share" || url.includes("share=")) {
       const query = url.includes("?") ? url.slice(url.indexOf("?") + 1) : "";
       const params = new URLSearchParams(query);
       params.set("tab", "community");
       if (!params.get("share")) params.set("share", "generic");
       onClose?.();
-      navigate(`/home?${params.toString()}`);
+      navigate(resolveNotificationRoute({ type: n.type, action_url: `/home?${params.toString()}` }, role));
+      return;
     }
-  };
 
+    const target = resolveNotificationRoute(n, role);
+    onClose?.();
+    navigate(target);
+  };
 
   const onMarkAllRead = async () => {
     setItems((prev) => prev.map((n) => ({ ...n, is_read: true })));

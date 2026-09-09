@@ -24,6 +24,18 @@ import { useAdherence } from "@/hooks/useAdherence";
 import {
   fetchRiskSnapshots, isSevereSugar, isHighSugar, isSevereBp, isHighBp, type RiskSnapshot,
 } from "@/components/admin/UserRiskFilters";
+import {
+  GENDER_OPTIONS,
+  CONDITION_OPTIONS,
+  AGE_OPTIONS,
+  BMI_OPTIONS,
+  matchesAttributes,
+  labelOf,
+  type GenderFilter,
+  type ConditionFilter,
+  type AgeFilter,
+  type BmiFilter,
+} from "@/lib/clientAttributeFilters";
 
 type ClientRiskKey = "all" | "offtrack" | "inactive" | "severe_sugar" | "severe_bp" | "expiring";
 type ClientSortKey = "recent" | "least_active" | "expiring" | "name";
@@ -179,6 +191,10 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
   const [search, setSearch] = useState("");
   const [countryFilter, setCountryFilter] = useState<string>("all");
   const [riskFilter, setRiskFilter] = useState<ClientRiskKey>("all");
+  const [genderFilter, setGenderFilter] = useState<GenderFilter>("all");
+  const [conditionFilter, setConditionFilter] = useState<ConditionFilter>("all");
+  const [ageFilter, setAgeFilter] = useState<AgeFilter>("all");
+  const [bmiFilter, setBmiFilter] = useState<BmiFilter>("all");
   const [sortKey, setSortKey] = useState<ClientSortKey>("recent");
   const [regionNames, setRegionNames] = useState<Record<string, string>>({ IN: "India" });
   const [risk, setRisk] = useState<Map<string, RiskSnapshot>>(new Map());
@@ -835,8 +851,13 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
   const scoped = patients.filter((p) => {
     if (countryFilter !== "all" && regionOf(p) !== countryFilter) return false;
     if (statusFilter !== "all" && patientStatuses[p.user_id]?.status !== statusFilter) return false;
+    if (!matchesAttributes(p, { gender: genderFilter, condition: conditionFilter, age: ageFilter, bmi: bmiFilter }))
+      return false;
     return true;
   });
+
+  /** PMOS/PCOS only applies to women, so hide it when the list is men-only. */
+  const conditionOptions = CONDITION_OPTIONS.filter((o) => o.value !== "pcos" || genderFilter !== "male");
 
   const q = search.trim().toLowerCase();
   const riskScoped = scoped.filter((p) => {
@@ -907,6 +928,10 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
     countryFilter !== "all" ? { label: regionLabel(countryFilter), clear: () => setCountryFilter("all") } : null,
     riskFilter !== "all" ? { label: CLIENT_RISK_META[riskFilter].label, clear: () => setRiskFilter("all") } : null,
     statusFilter !== "all" ? { label: statusFilter === "red" ? "Needs attention" : statusFilter === "yellow" ? "Monitor" : "On track", clear: () => setStatusFilter("all") } : null,
+    genderFilter !== "all" ? { label: labelOf(GENDER_OPTIONS, genderFilter), clear: () => setGenderFilter("all") } : null,
+    conditionFilter !== "all" ? { label: labelOf(CONDITION_OPTIONS, conditionFilter), clear: () => setConditionFilter("all") } : null,
+    ageFilter !== "all" ? { label: labelOf(AGE_OPTIONS, ageFilter), clear: () => setAgeFilter("all") } : null,
+    bmiFilter !== "all" ? { label: labelOf(BMI_OPTIONS, bmiFilter), clear: () => setBmiFilter("all") } : null,
     q ? { label: `"${search.trim()}"`, clear: () => setSearch("") } : null,
   ].filter(Boolean) as { label: string; clear: () => void }[];
 
@@ -990,6 +1015,41 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
                 { value: "name", label: "Name A–Z" },
               ]}
               placeholder="Sort"
+            />
+          </div>
+
+          {/* Who they are — gender, health condition, age and BMI */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+            <FilterSelect
+              icon={<Users className="w-4 h-4 text-muted-foreground shrink-0" />}
+              value={genderFilter}
+              onChange={(v) => {
+                setGenderFilter(v as GenderFilter);
+                if (v === "male" && conditionFilter === "pcos") setConditionFilter("all");
+              }}
+              options={GENDER_OPTIONS}
+              placeholder="All genders"
+            />
+            <FilterSelect
+              icon={<HeartPulse className="w-4 h-4 text-muted-foreground shrink-0" />}
+              value={conditionFilter}
+              onChange={(v) => setConditionFilter(v as ConditionFilter)}
+              options={conditionOptions}
+              placeholder="All conditions"
+            />
+            <FilterSelect
+              icon={<CalendarClock className="w-4 h-4 text-muted-foreground shrink-0" />}
+              value={ageFilter}
+              onChange={(v) => setAgeFilter(v as AgeFilter)}
+              options={AGE_OPTIONS}
+              placeholder="All ages"
+            />
+            <FilterSelect
+              icon={<Activity className="w-4 h-4 text-muted-foreground shrink-0" />}
+              value={bmiFilter}
+              onChange={(v) => setBmiFilter(v as BmiFilter)}
+              options={BMI_OPTIONS}
+              placeholder="All BMI"
             />
           </div>
 
