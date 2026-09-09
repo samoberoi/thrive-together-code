@@ -10,6 +10,7 @@ import {
   AlertTriangle, Plus, Footprints, Star, Compass, CircleDashed, LifeBuoy, type LucideIcon
 } from "lucide-react";
 import RingManagement from "@/components/RingManagement";
+import LogTrendChart from "@/components/logs/LogTrendChart";
 import HelpSupport from "@/components/HelpSupport";
 import { Switch } from "@/components/ui/switch";
 import EditProfile from "@/components/EditProfile";
@@ -334,7 +335,7 @@ export default function Profile({ onClose, isDark = true, onToggleTheme }: Profi
           Promise.resolve(supabase.from("user_plates" as any).select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(60)).then(({ data }) => data ?? [])
         );
       } else {
-        promises.push(fetchHealthLogs(logsTab, user.id));
+        promises.push(fetchHealthLogs(logsTab, user.id, 365));
       }
       Promise.all(promises).then(([summaries, logs, mealPhotos]) => {
         setProgressSummaries(summaries);
@@ -586,6 +587,10 @@ export default function Profile({ onClose, isDark = true, onToggleTheme }: Profi
               </motion.div>
             )}
           </div>
+        )}
+
+        {!logsLoading && (logsTab === "diabetes" || logsTab === "bp" || logsTab === "weight") && healthLogs.length > 0 && (
+          <LogTrendChart kind={logsTab} logs={healthLogs} />
         )}
 
         <div className="flex flex-col gap-3">
