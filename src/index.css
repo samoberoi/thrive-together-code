@@ -79,29 +79,29 @@
     --bbdo-teal-soft: var(--google-blue-soft);
     --bbdo-gradient: var(--google-blue);
 
-    /* Modern Mineral ring system — intentionally muted and individually distinct. */
-    --ring-fasting: #6F7894;
-    --ring-fasting-soft: #EDF0F5;
-    --ring-supplements: #A88755;
-    --ring-supplements-soft: #F6F0E7;
-    --ring-movement: #5E8F89;
-    --ring-movement-soft: #E9F2F0;
-    --ring-exercise: #526B76;
-    --ring-exercise-soft: #EAF0F2;
-    --ring-yoga: #8B7FA8;
-    --ring-yoga-soft: #F0EDF4;
-    --ring-water: #6192A4;
-    --ring-water-soft: #EAF3F6;
-    --ring-breath: #A27373;
-    --ring-breath-soft: #F6ECEC;
-    --ring-soleus: #70896B;
-    --ring-soleus-soft: #EDF3EB;
-    --ring-diabetes: #9B6D7D;
-    --ring-diabetes-soft: #F6ECEF;
-    --ring-bp: #A66F65;
-    --ring-bp-soft: #F8EEEB;
-    --ring-weight: #727D88;
-    --ring-weight-soft: #EEF0F2;
+    /* Royal jewel-tone ring system — drawn from the uploaded luxury palettes. */
+    --ring-fasting: #A6824A;           /* antique gold */
+    --ring-fasting-soft: #F5EFE6;
+    --ring-supplements: #5D1E21;      /* deep burgundy */
+    --ring-supplements-soft: #F2E8E9;
+    --ring-movement: #154230;          /* emerald green */
+    --ring-movement-soft: #E6EEEA;
+    --ring-exercise: #101111;          /* charcoal black */
+    --ring-exercise-soft: #E8E8E8;
+    --ring-yoga: #D0C6AF;              /* quicksand */
+    --ring-yoga-soft: #F5F2EA;
+    --ring-water: #112260;             /* royal blue */
+    --ring-water-soft: #E8EBF2;
+    --ring-breath: #305070;            /* sapphire */
+    --ring-breath-soft: #E9EEF3;
+    --ring-soleus: #A6BCC9;            /* powder blue */
+    --ring-soleus-soft: #EDF3F6;
+    --ring-diabetes: #F6E0B6;          /* wheat */
+    --ring-diabetes-soft: #FDF6EA;
+    --ring-bp: #3E4B8E;                /* french blue */
+    --ring-bp-soft: #EAEAF2;
+    --ring-weight: #3D1534;            /* midnight violet */
+    --ring-weight-soft: #F0E8EE;
 
     /* ── PUNCH pillar colors (one per lifestyle pillar) ── */
     --pillar-diet: var(--google-blue);
