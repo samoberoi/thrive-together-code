@@ -14,13 +14,13 @@ export interface HealthLog {
   created_at: string;
 }
 
-export async function fetchHealthLogs(logType: string, userId?: string): Promise<HealthLog[]> {
+export async function fetchHealthLogs(logType: string, userId?: string, limit = 30): Promise<HealthLog[]> {
   let query = supabase
     .from("health_logs" as any)
     .select("*")
     .eq("log_type", logType)
     .order("logged_at", { ascending: false })
-    .limit(30);
+    .limit(limit);
 
   if (userId) query = query.eq("user_id", userId);
 
