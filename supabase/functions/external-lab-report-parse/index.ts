@@ -183,7 +183,7 @@ Rules:
     const observedAt = report.collected_on
       ? new Date(`${report.collected_on}T08:00:00`).toISOString()
       : new Date().toISOString();
-    const rows = extracted.flatMap((item: any) => {
+    const extractedRows = extracted.flatMap((item: any) => {
       const rawName = String(item?.name || "").trim();
       const rawCode = String(item?.code || "").trim();
       if (!rawName && !rawCode) return [];
@@ -209,6 +209,15 @@ Rules:
         source: "external_upload_auto",
       }];
     });
+
+    // Reports often repeat abnormal values in a summary before the full panel.
+    // Keep one result per canonical marker so charts and counts never duplicate.
+    const uniqueRows = new Map<string, (typeof extractedRows)[number]>();
+    for (const row of extractedRows) {
+      const key = normalize(String(row.parameter_code || row.parameter_name || ""));
+      if (key && !uniqueRows.has(key)) uniqueRows.set(key, row);
+    }
+    const rows = [...uniqueRows.values()];
 
     if (!rows.length) throw new Error("No marker values could be read from this report");
 
