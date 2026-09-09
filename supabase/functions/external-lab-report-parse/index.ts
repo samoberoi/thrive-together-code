@@ -1,5 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
+declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void };
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -47,10 +49,41 @@ Deno.serve(async (req) => {
     const reportClient = internal ? admin : client;
     const { data: report, error: reportError } = await reportClient
       .from("external_lab_reports")
-      .select("id,user_id,file_path,file_name,mime_type,product_codes,collected_on")
+      .select("id,user_id,file_path,file_name,mime_type,product_codes,collected_on,status,updated_at,parse_attempts")
       .eq("id", reportId)
       .maybeSingle();
     if (reportError || !report) return json({ error: "report not found or forbidden" }, 404);
+
+    // PDF extraction can outlive a mobile request and pg_net's five-second
+    // timeout. Queue the work, acknowledge immediately, and process it in the
+    // background so valid uploads never surface a transport error to clients.
+    const synchronousWorker = req.headers.get("x-bbdo-process-sync") === "1";
+    if (!synchronousWorker) {
+      const functionUrl = `${Deno.env.get("SUPABASE_URL") ?? ""}/functions/v1/external-lab-report-parse`;
+      await admin.from("external_lab_reports").update({
+        status: "processing",
+        last_parse_error: null,
+        parse_attempts: Number(report.parse_attempts || 0) + 1,
+      }).eq("id", report.id);
+
+      EdgeRuntime.waitUntil(
+        fetch(functionUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-bbdo-internal": serviceKey,
+            "x-bbdo-process-sync": "1",
+          },
+          body: JSON.stringify({ externalReportId: report.id }),
+        }).then(async (response) => {
+          if (!response.ok) {
+            console.error("external-lab-report-parse background", response.status, (await response.text()).slice(0, 500));
+          }
+        }).catch((error) => console.error("external-lab-report-parse enqueue", error)),
+      );
+
+      return json({ ok: true, queued: true, status: "processing", count: 0 }, 202);
+    }
 
     await admin.from("external_lab_reports").update({ status: "processing" }).eq("id", report.id);
 
@@ -211,13 +244,17 @@ Rules:
     await admin.from("external_lab_reports").update({
       status: "reviewed",
       reviewed_at: new Date().toISOString(),
+      last_parse_error: null,
     }).eq("id", report.id);
 
     return json({ ok: true, count: rows.length });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("external-lab-report-parse", message);
-    if (reportId) await admin.from("external_lab_reports").update({ status: "parse_failed" }).eq("id", reportId);
+    if (reportId) await admin.from("external_lab_reports").update({
+      status: "parse_failed",
+      last_parse_error: message.slice(0, 1000),
+    }).eq("id", reportId);
     return json({ error: message }, 500);
   }
 });

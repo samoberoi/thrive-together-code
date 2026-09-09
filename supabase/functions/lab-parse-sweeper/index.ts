@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
     .from("external_lab_reports")
     .select("id,status,created_at,updated_at")
     .in("status", ["uploaded", "processing", "parse_failed"])
-    .lt("created_at", staleBefore)
+    .lt("updated_at", staleBefore)
     .gt("created_at", new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString())
     .order("created_at", { ascending: false })
     .limit(10);
