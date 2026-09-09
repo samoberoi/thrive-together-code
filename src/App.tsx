@@ -10,6 +10,7 @@ import PageTransition from "@/components/PageTransition";
 import AppErrorBoundary from "@/components/AppErrorBoundary";
 import AndroidBackHandler from "@/components/AndroidBackHandler";
 import AppUpdateBanner from "@/components/AppUpdateBanner";
+import NotificationRouteHandler from "@/components/NotificationRouteHandler";
 
 import { isNative } from "@/lib/biometric";
 import { isNativeVideoTransitionActive } from "@/lib/nativeVideoSession";
@@ -464,6 +465,7 @@ const App = () => (
                       <NativeSessionRedirect />
                       <GlobalRealtimeAlerts />
                       <AppUpdateBanner />
+                      <NotificationRouteHandler />
 
                       <AnimatedRoutes />
                     </NativeAuthStartupGate>
