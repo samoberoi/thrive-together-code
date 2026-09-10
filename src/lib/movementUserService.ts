@@ -173,7 +173,8 @@ export async function fetchStepsHistory(userId: string, days = 14): Promise<{ da
   const byDate: Record<string, number> = {};
   for (const r of ((data as any) || [])) {
     const d = localDateString(new Date(String(r.logged_at)));
-    byDate[d] = Math.max(byDate[d] || 0, sanitizeDailySteps(Number(r.steps_count || 0)));
+    // rows come back ascending, so the most recent write for a day wins
+    byDate[d] = sanitizeDailySteps(Number(r.steps_count || 0));
   }
   const out: { date: string; steps: number }[] = [];
   for (let i = 0; i < days; i++) {
