@@ -350,7 +350,11 @@ export default function MetricTrendsSection({
 
                       return (
                         <>
-                          <div className={`grid gap-2 mt-3 ${tiles.length === 4 ? "grid-cols-2" : "grid-cols-3"}`}>
+                           <div
+                             className={`grid gap-2 mt-3 ${
+                               tiles.length === 1 ? "grid-cols-1" : tiles.length === 4 ? "grid-cols-2" : "grid-cols-3"
+                             }`}
+                           >
                             {tiles.map((s) => (
                               <div key={s.label} className="rounded-2xl border border-border bg-background/60 px-3 py-2">
                                 <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
