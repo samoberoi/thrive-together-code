@@ -49,6 +49,15 @@ function fmt(value: number, unit: string) {
   return unit && unit !== "steps" ? `${v} ${unit}` : v;
 }
 
+/** Compact Y-axis labels so 5-digit values never get clipped on small screens. */
+function axisTick(v: any) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return "";
+  if (Math.abs(n) >= 10000) return `${Math.round(n / 1000)}k`;
+  if (Math.abs(n) >= 1000) return `${(n / 1000).toFixed(1)}k`;
+  return String(Math.round(n * 10) / 10);
+}
+
 function shiftDays(dateKeyStr: string, days: number) {
   const d = new Date(`${dateKeyStr}T00:00:00`);
   d.setDate(d.getDate() - days);
