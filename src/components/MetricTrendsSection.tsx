@@ -323,9 +323,10 @@ export default function MetricTrendsSection({
                           : m.key === "glucose"
                           ? { label: "Current reading", value: fmt(lastV, ""), unit: "mg/dL" }
                           : { label: "Health score", value: fmt(lastV, ""), unit: "" };
-                      const shareStats =
-                        m.key === "steps"
-                          ? [
+                       const shareStats = isToday
+                         ? [{ label: "Today", value: fmt(lastV, m.unit) }]
+                         : m.key === "steps"
+                           ? [
                               { label: "Daily avg", value: fmt(avg, m.unit) },
                               { label: "Best day", value: fmt(Math.max(...windowed.map((p) => p.value)), m.unit) },
                               { label: "Days", value: String(windowed.length) },
