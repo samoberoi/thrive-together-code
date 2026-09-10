@@ -16,6 +16,19 @@ const CACHE_PREFIX = "bb_tr_cache_v2::";
 // In-memory cache per language (also mirrored to localStorage for offline speed).
 const memoryCache: Record<string, Record<string, string>> = {};
 const primed: Record<string, boolean> = {};
+// Text changes made by this component are also reported by MutationObserver.
+// Ignore those records so translations containing Latin acronyms/numbers do not
+// get mistaken for new English copy and translated forever.
+const SELF_WRITTEN = new WeakSet<Text>();
+
+function writeText(node: Text, value: string) {
+  if (node.nodeValue === value) return;
+  SELF_WRITTEN.add(node);
+  node.nodeValue = value;
+  // MutationObserver runs before the next task. Keep the marker through all
+  // records in the current delivery, then release it for genuine React edits.
+  window.setTimeout(() => SELF_WRITTEN.delete(node), 0);
+}
 
 function loadCache(lang: string): Record<string, string> {
   if (memoryCache[lang]) return memoryCache[lang];
@@ -63,7 +76,7 @@ function applyToAll(lang: string) {
     if (!key) return;
     const hit = cache[key];
     if (hit && t.nodeValue !== original.replace(key, hit)) {
-      t.nodeValue = original.replace(key, hit);
+      writeText(t, original.replace(key, hit));
     }
   });
 }
@@ -84,7 +97,7 @@ export default function AutoTranslator() {
       while (n) {
         const t = n as Text;
         const orig = ORIGINAL.get(t);
-        if (orig != null && t.nodeValue !== orig) t.nodeValue = orig;
+        if (orig != null && t.nodeValue !== orig) writeText(t, orig);
         n = walker.nextNode();
       }
       return;
@@ -123,7 +136,7 @@ export default function AutoTranslator() {
         const hit = cache[key];
         if (hit) {
           const next = original.replace(key, hit);
-          if (t.nodeValue !== next) t.nodeValue = next;
+          if (t.nodeValue !== next) writeText(t, next);
         } else {
           missing.push(t);
         }
@@ -174,7 +187,7 @@ export default function AutoTranslator() {
         const original = ORIGINAL.get(t) ?? t.nodeValue ?? "";
         const key = original.trim();
         const hit = nextCache[key];
-        if (hit && t.isConnected) t.nodeValue = original.replace(key, hit);
+        if (hit && t.isConnected) writeText(t, original.replace(key, hit));
       });
     };
 
@@ -207,6 +220,7 @@ export default function AutoTranslator() {
         });
         if (m.type === "characterData" && m.target.nodeType === Node.TEXT_NODE) {
           const t = m.target as Text;
+          if (SELF_WRITTEN.has(t)) return;
           if (shouldTranslate(t)) {
             // Only reset the "original" if the current value truly differs from
             // any translation we already know about — this prevents the flash
