@@ -79,29 +79,42 @@
     --bbdo-teal-soft: var(--google-blue-soft);
     --bbdo-gradient: var(--google-blue);
 
-    /* Soft mineral ring system — airy, pleasant pastels that stay readable on white. */
-    --ring-fasting: #E8DED4;           /* warm cream */
-    --ring-fasting-soft: #F7F3EE;
-    --ring-supplements: #CA99AB;      /* dusty rose */
-    --ring-supplements-soft: #F8EDF1;
-    --ring-movement: #5EB0C8;          /* soft teal */
-    --ring-movement-soft: #EAF6F9;
-    --ring-exercise: #8387C3;          /* periwinkle */
-    --ring-exercise-soft: #EEEEF7;
-    --ring-yoga: #CEB5D4;              /* pink lavender */
-    --ring-yoga-soft: #F7F0F7;
-    --ring-water: #4E7AB1;             /* royal blue */
-    --ring-water-soft: #EAF1F8;
-    --ring-breath: #8BA3C5;            /* steel blue */
-    --ring-breath-soft: #EEF3F8;
-    --ring-soleus: #B8D4E8;            /* powder sky */
-    --ring-soleus-soft: #EDF5FA;
-    --ring-diabetes: #8A8CAC;          /* muted lavender */
-    --ring-diabetes-soft: #EFEFF5;
-    --ring-bp: #BAB0C8;                /* light mauve */
-    --ring-bp-soft: #F3F0F5;
-    --ring-weight: #DAD4D4;            /* warm pearl */
-    --ring-weight-soft: #F5F3F2;
+    /* BBDO Premium Pastel Palette — light shade = not yet achieved,
+       deep shade = achieved / active. `-soft` stays the tint background. */
+    --ring-fasting: #FFE7B8;            /* Golden Sand */
+    --ring-fasting-deep: #C28A2E;
+    --ring-fasting-soft: #FFF6E6;
+    --ring-supplements: #FAD7D9;        /* Rose Pink */
+    --ring-supplements-deep: #B64D5A;
+    --ring-supplements-soft: #FDEDEE;
+    --ring-movement: #D9EEDB;           /* Sage Green */
+    --ring-movement-deep: #3E8F5B;
+    --ring-movement-soft: #EFF8F0;
+    --ring-exercise: #FFE0D1;           /* Coral Peach */
+    --ring-exercise-deep: #E2704E;
+    --ring-exercise-soft: #FFF1EA;
+    --ring-yoga: #E6DDF7;               /* Lavender */
+    --ring-yoga-deep: #6B56B3;
+    --ring-yoga-soft: #F3EFFB;
+    --ring-water: #D6E6F9;              /* Sky Blue */
+    --ring-water-deep: #3D73B9;
+    --ring-water-soft: #EBF2FC;
+    --ring-breath: #CDEDE9;             /* Teal */
+    --ring-breath-deep: #2F7F7B;
+    --ring-breath-soft: #E8F7F5;
+    --ring-soleus: #CFEAF4;             /* Aqua Mint */
+    --ring-soleus-deep: #278BA0;
+    --ring-soleus-soft: #E9F6FA;
+    --ring-diabetes: #F3DAE8;           /* Mauve */
+    --ring-diabetes-deep: #A4557F;
+    --ring-diabetes-soft: #FAEDF4;
+    --ring-bp: #D5DDEA;                 /* Steel Blue */
+    --ring-bp-deep: #445A7A;
+    --ring-bp-soft: #EBEFF5;
+    --ring-weight: #EFE6D9;             /* Stone Beige */
+    --ring-weight-deep: #8B6F50;
+    --ring-weight-soft: #F7F2EC;
+
 
     /* ── PUNCH pillar colors (one per lifestyle pillar) ── */
     --pillar-diet: var(--google-blue);

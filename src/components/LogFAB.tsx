@@ -694,7 +694,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
           <DrawerHeader className="px-0 pb-3">
             <DrawerTitle className="text-foreground text-lg font-black flex items-center gap-2">
               <span className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "var(--ring-diabetes-soft)" }}>
-                <Activity className="w-[18px] h-[18px]" style={{ color: "var(--ring-diabetes)" }} strokeWidth={1.8} />
+                <Activity className="w-[18px] h-[18px]" style={{ color: "var(--ring-diabetes-deep)" }} strokeWidth={1.8} />
               </span>
               Log Blood Glucose
             </DrawerTitle>
@@ -743,8 +743,12 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
             <button
               onClick={saveDiabetes}
               disabled={saving}
-              className="w-full h-14 rounded-xl text-primary-foreground font-bold text-[15px] disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
-              style={{ background: "var(--ring-diabetes)" }}
+              className="w-full h-14 rounded-xl font-bold text-[15px] disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+              style={
+                glucoseValue.trim()
+                  ? { background: "var(--ring-diabetes-deep)", color: "var(--pure-white)" }
+                  : { background: "var(--ring-diabetes)", color: "var(--bbdo-ink)" }
+              }
             >
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
               Save reading
@@ -759,7 +763,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
           <DrawerHeader className="px-0 pb-3">
             <DrawerTitle className="text-foreground text-lg font-black flex items-center gap-2">
               <span className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "var(--ring-bp-soft)" }}>
-                <Heart className="w-[18px] h-[18px]" style={{ color: "var(--ring-bp)" }} strokeWidth={1.8} />
+                <Heart className="w-[18px] h-[18px]" style={{ color: "var(--ring-bp-deep)" }} strokeWidth={1.8} />
               </span>
               Log Blood Pressure
             </DrawerTitle>
@@ -803,8 +807,12 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
             <button
               onClick={saveBP}
               disabled={saving}
-              className="w-full h-14 rounded-xl text-primary-foreground font-bold text-[15px] disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
-              style={{ background: "var(--ring-bp)" }}
+              className="w-full h-14 rounded-xl font-bold text-[15px] disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+              style={
+                bpSys.trim() && bpDia.trim()
+                  ? { background: "var(--ring-bp-deep)", color: "var(--pure-white)" }
+                  : { background: "var(--ring-bp)", color: "var(--bbdo-ink)" }
+              }
             >
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
               Save reading
@@ -819,7 +827,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
           <DrawerHeader className="px-0 pb-3">
             <DrawerTitle className="text-foreground text-lg font-black flex items-center gap-2">
               <span className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "var(--ring-weight-soft)" }}>
-                <Scale className="w-[18px] h-[18px]" style={{ color: "var(--ring-weight)" }} strokeWidth={1.8} />
+                <Scale className="w-[18px] h-[18px]" style={{ color: "var(--ring-weight-deep)" }} strokeWidth={1.8} />
               </span>
               Log Weight
             </DrawerTitle>
@@ -856,8 +864,12 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
             <button
               onClick={saveWeight}
               disabled={saving}
-              className="w-full h-14 rounded-xl text-primary-foreground font-bold text-[15px] disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
-              style={{ background: "var(--ring-weight)" }}
+              className="w-full h-14 rounded-xl font-bold text-[15px] disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+              style={
+                weight.trim()
+                  ? { background: "var(--ring-weight-deep)", color: "var(--pure-white)" }
+                  : { background: "var(--ring-weight)", color: "var(--bbdo-ink)" }
+              }
             >
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
               Save weight
@@ -872,7 +884,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
           <DrawerHeader className="px-0 pb-3">
             <DrawerTitle className="text-foreground text-lg font-black flex items-center gap-2">
               <span className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "var(--ring-water-soft)" }}>
-                <Droplets className="w-[18px] h-[18px]" style={{ color: "var(--ring-water)" }} strokeWidth={1.8} />
+                <Droplets className="w-[18px] h-[18px]" style={{ color: "var(--ring-water-deep)" }} strokeWidth={1.8} />
               </span>
               Log Water
             </DrawerTitle>
@@ -896,7 +908,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
                 <button
                   onClick={() => setWaterGlasses((v) => v + 1)}
                   className="no-pill w-12 h-12 rounded-2xl text-white text-2xl font-black flex items-center justify-center active:scale-95 transition-transform"
-                  style={{ background: "var(--ring-water)" }}
+                  style={{ background: "var(--ring-water-deep)" }}
                   aria-label="Add one glass"
                 >+</button>
               </div>
@@ -906,7 +918,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
                     key={i}
                     onClick={() => setWaterGlasses(i + 1)}
                     className="w-7 h-9 rounded-md flex items-center justify-center transition-colors"
-                    style={{ background: i < waterGlasses ? "var(--ring-water)" : "hsl(var(--muted))" }}
+                    style={{ background: i < waterGlasses ? "var(--ring-water-deep)" : "hsl(var(--muted))" }}
                     aria-label={`Set to ${i + 1} glasses`}
                   >
                     <Droplets className="w-3.5 h-3.5" strokeWidth={1.8} style={{ color: i < waterGlasses ? "var(--pure-white)" : "hsl(var(--muted-foreground))" }} />
@@ -918,8 +930,12 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
             <button
               onClick={saveWater}
               disabled={saving}
-              className="w-full h-14 rounded-xl text-primary-foreground font-bold text-[15px] disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
-              style={{ background: "var(--ring-water)" }}
+              className="w-full h-14 rounded-xl font-bold text-[15px] disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+              style={
+                waterGlasses > 0
+                  ? { background: "var(--ring-water-deep)", color: "var(--pure-white)" }
+                  : { background: "var(--ring-water)", color: "var(--bbdo-ink)" }
+              }
             >
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
               Save water

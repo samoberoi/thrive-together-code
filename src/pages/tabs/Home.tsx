@@ -1624,13 +1624,6 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
             ratio: movementRatio,
             color: "#10B981",
             hint: movementHint || undefined,
-            expanded: (
-              <StepsShareCard
-                steps={movementSteps}
-                heightCm={user.bodyMetrics?.height ?? userHeightCm ?? null}
-                weightKg={typeof latestWeight === "number" ? latestWeight : (user.bodyMetrics?.weight ?? null)}
-              />
-            ),
           },
           {
             key: "exercise",
@@ -1641,14 +1634,6 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
             hint: EXERCISE_DAILY_GOAL > 0
               ? `${Math.min(completedExercisesToday, EXERCISE_DAILY_GOAL).toLocaleString("en-IN", { maximumFractionDigits: 1 })} / ${EXERCISE_DAILY_GOAL} min`
               : undefined,
-            expanded: (
-              <MinutesShareCard
-                kind="exercise"
-                minutes={completedExercisesToday}
-                goalMinutes={EXERCISE_DAILY_GOAL}
-                weightKg={typeof latestWeight === "number" ? latestWeight : (user.bodyMetrics?.weight ?? null)}
-              />
-            ),
           },
           {
             key: "yoga",
@@ -1659,15 +1644,6 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
             hint: YOGA_DAILY_MINUTES > 0
               ? `${Math.min(yogaMinutesToday, YOGA_DAILY_MINUTES).toLocaleString("en-IN", { maximumFractionDigits: 1 })} / ${YOGA_DAILY_MINUTES} min`
               : undefined,
-            expanded: (
-              <MinutesShareCard
-                kind="yoga"
-                minutes={yogaMinutesToday}
-                goalMinutes={YOGA_DAILY_MINUTES}
-                sessions={yogaMinutesToday > 0 ? Math.max(1, Math.round(yogaMinutesToday / 15)) : 0}
-                weightKg={typeof latestWeight === "number" ? latestWeight : (user.bodyMetrics?.weight ?? null)}
-              />
-            ),
           },
 
           {

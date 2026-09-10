@@ -33,14 +33,16 @@ const METRICS: MetricDef[] = [
   { key: "steps", title: "Steps", unit: "steps", icon: Footprints, color: "#8B5CF6", goodDirection: "up" },
 ];
 
-type RangeKey = "W" | "F" | "M" | "Q";
+type RangeKey = "D" | "W" | "F" | "M" | "Q";
 
 const RANGES: { key: RangeKey; label: string; days: number }[] = [
+  { key: "D", label: "Today", days: 1 },
   { key: "W", label: "Week", days: 7 },
   { key: "F", label: "Fortnight", days: 14 },
   { key: "M", label: "Month", days: 30 },
   { key: "Q", label: "Quarter", days: 90 },
 ];
+
 
 function fmt(value: number, unit: string) {
   const v = unit === "steps" ? Math.round(value).toLocaleString("en-IN") : (Math.round(value * 10) / 10).toString();
@@ -72,7 +74,7 @@ export default function MetricTrendsSection({
 }) {
   const today = todayKey();
   const [open, setOpen] = useState<TrendMetric | null>(null);
-  const [range, setRange] = useState<RangeKey>("W");
+  const [range, setRange] = useState<RangeKey>("D");
   const [stepsDay, setStepsDay] = useState<string | null>(null);
   const [full, setFull] = useState<Record<TrendMetric, TrendPoint[]>>({
     health: [], weight: [], glucose: [], steps: [],
@@ -182,7 +184,7 @@ export default function MetricTrendsSection({
                             key={r.key}
                             type="button"
                             onClick={() => setRange(r.key)}
-                            className={`flex-1 rounded-full py-1.5 text-[11px] font-bold transition-colors ${
+                            className={`flex-1 min-w-0 rounded-full px-1 py-1.5 text-[10px] font-bold transition-colors ${
                               active ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
                             }`}
                           >
