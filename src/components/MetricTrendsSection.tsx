@@ -49,6 +49,15 @@ function fmt(value: number, unit: string) {
   return unit && unit !== "steps" ? `${v} ${unit}` : v;
 }
 
+/** Compact Y-axis labels so 5-digit values never get clipped on small screens. */
+function axisTick(v: any) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return "";
+  if (Math.abs(n) >= 10000) return `${Math.round(n / 1000)}k`;
+  if (Math.abs(n) >= 1000) return `${(n / 1000).toFixed(1)}k`;
+  return String(Math.round(n * 10) / 10);
+}
+
 function shiftDays(dateKeyStr: string, days: number) {
   const d = new Date(`${dateKeyStr}T00:00:00`);
   d.setDate(d.getDate() - days);
@@ -195,7 +204,7 @@ export default function MetricTrendsSection({
                     </div>
 
                     <p className="text-[10px] font-semibold text-muted-foreground mb-2">
-                      {prettyDate(windowStart)} – {prettyDate(today)}
+                      {range === "D" ? `Today · ${prettyDate(today)}` : `${prettyDate(windowStart)} – ${prettyDate(today)}`}
                     </p>
 
                     <div className="h-48 w-full">
@@ -203,7 +212,7 @@ export default function MetricTrendsSection({
                         <ResponsiveContainer width="100%" height="100%">
                           <ComposedChart
                             data={windowed}
-                            margin={{ top: 8, right: 6, bottom: 0, left: -12 }}
+                            margin={{ top: 8, right: 8, bottom: 0, left: 0 }}
                             barCategoryGap="22%"
                             onClick={(state: any) => {
                               if (m.key !== "steps") return;
@@ -232,7 +241,8 @@ export default function MetricTrendsSection({
                               tick={{ fontSize: 10 }}
                               tickLine={false}
                               axisLine={false}
-                              width={40}
+                              width={m.key === "steps" ? 34 : 42}
+                              tickFormatter={axisTick}
                               stroke="hsl(var(--muted-foreground))"
                               domain={[0, "auto"]}
                             />
@@ -289,26 +299,34 @@ export default function MetricTrendsSection({
                       const startV = windowed[0].value;
                       const lastV = windowed[windowed.length - 1].value;
                       const rangeLabel = RANGES.find((r) => r.key === range)!.label;
-                      const tiles = [
-                        { label: "Start", value: fmt(startV, m.unit) },
-                        { label: "Latest", value: fmt(lastV, m.unit) },
-                        {
-                          label: "Change",
-                          value: `${delta != null && delta > 0 ? "+" : ""}${fmt(delta ?? 0, m.unit)}`,
-                        },
-                        ...(m.key === "steps" ? [{ label: `Total (${rangeLabel})`, value: fmt(total, m.unit) }] : []),
-                      ];
+                      const isToday = range === "D";
+                      const tiles = isToday
+                        ? [{ label: "Today", value: fmt(lastV, m.unit) }]
+                        : [
+                            { label: "Start", value: fmt(startV, m.unit) },
+                            { label: "Latest", value: fmt(lastV, m.unit) },
+                            {
+                              label: "Change",
+                              value: `${delta != null && delta > 0 ? "+" : ""}${fmt(delta ?? 0, m.unit)}`,
+                            },
+                            ...(m.key === "steps"
+                              ? [{ label: `Total (${rangeLabel})`, value: fmt(total, m.unit) }]
+                              : []),
+                          ];
                       const headline =
                         m.key === "steps"
-                          ? { label: `Total steps · ${rangeLabel}`, value: fmt(total, ""), unit: "steps" }
+                          ? isToday
+                            ? { label: "Steps today", value: fmt(lastV, ""), unit: "steps" }
+                            : { label: `Total steps · ${rangeLabel}`, value: fmt(total, ""), unit: "steps" }
                           : m.key === "weight"
                           ? { label: "Current weight", value: fmt(lastV, ""), unit: "kg" }
                           : m.key === "glucose"
                           ? { label: "Current reading", value: fmt(lastV, ""), unit: "mg/dL" }
                           : { label: "Health score", value: fmt(lastV, ""), unit: "" };
-                      const shareStats =
-                        m.key === "steps"
-                          ? [
+                       const shareStats = isToday
+                         ? [{ label: "Today", value: fmt(lastV, m.unit) }]
+                         : m.key === "steps"
+                           ? [
                               { label: "Daily avg", value: fmt(avg, m.unit) },
                               { label: "Best day", value: fmt(Math.max(...windowed.map((p) => p.value)), m.unit) },
                               { label: "Days", value: String(windowed.length) },
@@ -332,7 +350,11 @@ export default function MetricTrendsSection({
 
                       return (
                         <>
-                          <div className={`grid gap-2 mt-3 ${tiles.length === 4 ? "grid-cols-2" : "grid-cols-3"}`}>
+                           <div
+                             className={`grid gap-2 mt-3 ${
+                               tiles.length === 1 ? "grid-cols-1" : tiles.length === 4 ? "grid-cols-2" : "grid-cols-3"
+                             }`}
+                           >
                             {tiles.map((s) => (
                               <div key={s.label} className="rounded-2xl border border-border bg-background/60 px-3 py-2">
                                 <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
@@ -345,7 +367,7 @@ export default function MetricTrendsSection({
 
                           <MetricTrendShareCard
                             title={m.title}
-                            rangeLabel={`${prettyDate(windowStart)} – ${prettyDate(today)}`}
+                            rangeLabel={isToday ? `Today · ${prettyDate(today)}` : `${prettyDate(windowStart)} – ${prettyDate(today)}`}
                             headlineLabel={headline.label}
                             headlineValue={headline.value}
                             headlineUnit={headline.unit}
