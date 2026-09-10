@@ -98,15 +98,19 @@ export async function fetchTrendSeries(
           .lte("logged_at", endExclusive)
           .order("logged_at", { ascending: true }),
       ]);
+      // For each day keep the MOST RECENT reading, never the max: a single bad
+      // provider sync (double-counted records) must not permanently inflate a
+      // day. This matches the "Today's steps" ring, which reads the latest log.
       const byDate = new Map<string, number>();
       for (const r of ((snaps as any[]) ?? [])) {
         if (r.steps == null) continue;
-        byDate.set(r.date, Math.max(byDate.get(r.date) ?? 0, Number(r.steps)));
+        byDate.set(r.date, sanitizeDailySteps(Number(r.steps)));
       }
+      // logs are ordered ascending, so the last write for a day wins
       for (const r of ((logs as any[]) ?? [])) {
         if (r.steps_count == null) continue;
         const d = dateKey(r.logged_at);
-        byDate.set(d, Math.max(byDate.get(d) ?? 0, Number(r.steps_count)));
+        byDate.set(d, sanitizeDailySteps(Number(r.steps_count)));
       }
       return dedupeByDate([...byDate.entries()].map(([date, value]) => ({ date, value })));
 
