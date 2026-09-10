@@ -82,6 +82,7 @@ function orderDisplayStatus(order?: Order, recStatus?: string) {
 }
 
 export default function PatientLabTests({ alwaysShow = false, foundationMode = false }: { alwaysShow?: boolean; foundationMode?: boolean } = {}) {
+  const care = useCareTerms();
   const { user } = useAuth();
   const markupPct = useLabTestMarkup();
   const [recs, setRecs] = useState<Rec[]>([]);

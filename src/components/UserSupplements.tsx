@@ -67,6 +67,7 @@ function resolveRx(
 }
 
 export default function UserSupplements({ simpleMode = false }: { simpleMode?: boolean } = {}) {
+  const care = useCareTerms();
   const { user } = useAuth();
   const [plan, setPlan] = useState<UserSupplementPlan | null>(null);
   const [items, setItems] = useState<PlanItem[]>([]);

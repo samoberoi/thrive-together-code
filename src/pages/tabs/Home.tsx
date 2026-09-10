@@ -325,6 +325,7 @@ function MetricCard({
 }
 
 export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: () => void; packageKey?: string | null }) {
+  const care = useCareTerms(packageKey);
   const getLocalDateKey = useCallback(() => {
     const now = new Date();
     const localMidnightSafe = new Date(now.getTime() - now.getTimezoneOffset() * 60_000);
