@@ -367,7 +367,7 @@ export default function MetricTrendsSection({
 
                           <MetricTrendShareCard
                             title={m.title}
-                            rangeLabel={`${prettyDate(windowStart)} – ${prettyDate(today)}`}
+                            rangeLabel={isToday ? `Today · ${prettyDate(today)}` : `${prettyDate(windowStart)} – ${prettyDate(today)}`}
                             headlineLabel={headline.label}
                             headlineValue={headline.value}
                             headlineUnit={headline.unit}
