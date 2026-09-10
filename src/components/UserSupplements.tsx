@@ -1,3 +1,4 @@
+import { useCareTerms } from "@/lib/careTerms";
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import {

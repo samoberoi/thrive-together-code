@@ -1,3 +1,4 @@
+import { useCareTerms } from "@/lib/careTerms";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { FlaskConical, Check, Home, Clock, Eye, Upload, FileText, ExternalLink } from "lucide-react";
