@@ -1882,7 +1882,7 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
             </div>
           ) : (
             <div className="mt-3 rounded-xl bg-primary/5 border border-primary/15 p-2.5 text-[11px] text-muted-foreground leading-relaxed">
-              Your coach will design a fasting protocol tailored to your health markers during your first 1:1 session.
+              {care.Carer} will design a fasting protocol tailored to your health markers during your first 1:1 session.
             </div>
           )}
         </motion.div>

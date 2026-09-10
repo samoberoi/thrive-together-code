@@ -594,9 +594,9 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
         {PendingPaymentCard}
         <div className="liquid-glass rounded-2xl p-6 text-center space-y-2">
           <FlaskConical className="w-8 h-8 text-primary mx-auto" />
-          <h3 className="text-base font-black">Awaiting your coach</h3>
+          <h3 className="text-base font-black">{care.pick("Awaiting your lab recommendations", "Awaiting your coach")}</h3>
           <p className="text-sm text-muted-foreground">
-            Your coach will review your health assessment and recommend the right lab panels for your plan. You'll see them here as soon as they're assigned.
+            {care.Carer} will review your health assessment and recommend the right lab panels for your plan. You'll see them here as soon as they're assigned.
           </p>
         </div>
         {user && (
@@ -704,7 +704,7 @@ export default function PatientLabTests({ alwaysShow = false, foundationMode = f
                   </div>
                   <p className="text-[11px] text-muted-foreground leading-snug">
                     {recExt.length === 0
-                      ? "Your coach knows you're using your own lab. Upload the report here once you have it and we'll turn it into your charts."
+                      ? `${care.Carer} knows you're using your own lab. Upload the report here once you have it and we'll turn it into your charts.`
                        : recExt.some((x) => x.status === "reviewed")
                         ? "Your report values are in — scroll down to your markers and body map to see the graphs."
                          : recExt.some((x) => x.status === "processing")
