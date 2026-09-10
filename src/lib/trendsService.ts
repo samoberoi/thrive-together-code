@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { sanitizeDailySteps } from "@/lib/healthStepsMath";
 
 export type TrendMetric = "health" | "weight" | "glucose" | "steps";
 
