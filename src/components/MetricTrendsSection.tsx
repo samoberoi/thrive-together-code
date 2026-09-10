@@ -195,7 +195,7 @@ export default function MetricTrendsSection({
                     </div>
 
                     <p className="text-[10px] font-semibold text-muted-foreground mb-2">
-                      {prettyDate(windowStart)} – {prettyDate(today)}
+                      {range === "D" ? `Today · ${prettyDate(today)}` : `${prettyDate(windowStart)} – ${prettyDate(today)}`}
                     </p>
 
                     <div className="h-48 w-full">
