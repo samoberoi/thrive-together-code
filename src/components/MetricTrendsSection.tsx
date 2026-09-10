@@ -232,7 +232,8 @@ export default function MetricTrendsSection({
                               tick={{ fontSize: 10 }}
                               tickLine={false}
                               axisLine={false}
-                              width={40}
+                              width={m.key === "steps" ? 34 : 42}
+                              tickFormatter={axisTick}
                               stroke="hsl(var(--muted-foreground))"
                               domain={[0, "auto"]}
                             />
