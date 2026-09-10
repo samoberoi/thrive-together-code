@@ -1,3 +1,4 @@
+import { useCareTerms } from "@/lib/careTerms";
 import { useState, useEffect, useCallback } from "react";
 import { App as CapApp } from "@capacitor/app";
 import { createPost, generateAchievementContent } from "@/lib/communityService";
