@@ -212,7 +212,7 @@ export default function MetricTrendsSection({
                         <ResponsiveContainer width="100%" height="100%">
                           <ComposedChart
                             data={windowed}
-                            margin={{ top: 8, right: 6, bottom: 0, left: -12 }}
+                            margin={{ top: 8, right: 8, bottom: 0, left: 0 }}
                             barCategoryGap="22%"
                             onClick={(state: any) => {
                               if (m.key !== "steps") return;
