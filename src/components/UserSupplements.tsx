@@ -67,6 +67,7 @@ function resolveRx(
 }
 
 export default function UserSupplements({ simpleMode = false }: { simpleMode?: boolean } = {}) {
+  const care = useCareTerms();
   const { user } = useAuth();
   const [plan, setPlan] = useState<UserSupplementPlan | null>(null);
   const [items, setItems] = useState<PlanItem[]>([]);
@@ -165,7 +166,7 @@ export default function UserSupplements({ simpleMode = false }: { simpleMode?: b
         <div className="liquid-glass rounded-3xl p-8 text-center space-y-3">
           <Pill className="w-12 h-12 text-muted-foreground mx-auto" />
           <h3 className="text-lg font-bold text-foreground">No Supplement Plan</h3>
-          <p className="text-sm text-muted-foreground">Your coach will assign supplements based on your health assessment.</p>
+          <p className="text-sm text-muted-foreground">{care.Carer} will assign supplements based on your health assessment.</p>
         </div>
       </div>
     );

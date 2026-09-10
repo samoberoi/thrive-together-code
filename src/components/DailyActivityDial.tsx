@@ -1,4 +1,3 @@
-import { useState, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import {
   Timer,
@@ -12,7 +11,6 @@ import {
   Wind,
   ChevronsUp,
   Scale,
-  ChevronRight,
   CheckCircle2,
   type LucideIcon,
 } from "lucide-react";
@@ -25,9 +23,8 @@ export interface DialRingItem {
   hint?: string;
   /** Pillar not unlocked for this user's plan — shown greyed out, not counted. */
   disabled?: boolean;
-  /** Optional panel revealed under this legend row when its arrow is tapped. */
-  expanded?: ReactNode;
 }
+
 
 
 interface Props {
@@ -50,7 +47,7 @@ const ICONS: Record<string, LucideIcon> = {
   weight: Scale,
 };
 
-/** Muted mineral palette: every pillar is recognisable without neon saturation. */
+/** BBDO premium pastel palette: light shade before the ring closes, deep shade after. */
 const RING_PALETTE: Record<string, string> = {
   fasting: "var(--ring-fasting)",
   supplements: "var(--ring-supplements)",
@@ -63,6 +60,20 @@ const RING_PALETTE: Record<string, string> = {
   diabetes: "var(--ring-diabetes)",
   bp: "var(--ring-bp)",
   weight: "var(--ring-weight)",
+};
+
+const RING_DEEP_PALETTE: Record<string, string> = {
+  fasting: "var(--ring-fasting-deep)",
+  supplements: "var(--ring-supplements-deep)",
+  movement: "var(--ring-movement-deep)",
+  exercise: "var(--ring-exercise-deep)",
+  yoga: "var(--ring-yoga-deep)",
+  water: "var(--ring-water-deep)",
+  breath: "var(--ring-breath-deep)",
+  soleus: "var(--ring-soleus-deep)",
+  diabetes: "var(--ring-diabetes-deep)",
+  bp: "var(--ring-bp-deep)",
+  weight: "var(--ring-weight-deep)",
 };
 
 const RING_SOFT_PALETTE: Record<string, string> = {
@@ -79,13 +90,16 @@ const RING_SOFT_PALETTE: Record<string, string> = {
   weight: "var(--ring-weight-soft)",
 };
 
-function ringColor(item: DialRingItem): string {
+/** Light shade while the ring is open, deep shade once it is achieved. */
+function ringColor(item: DialRingItem, achieved = false): string {
+  if (achieved) return RING_DEEP_PALETTE[item.key] ?? item.color;
   return RING_PALETTE[item.key] ?? item.color;
 }
 
 function ringSoftColor(item: DialRingItem): string {
   return RING_SOFT_PALETTE[item.key] ?? "hsl(var(--muted))";
 }
+
 
 // SVG viewBox: 240x240, centered at (120, 120).
 const VB = 240;
@@ -128,8 +142,8 @@ export default function DailyActivityDial({
   title = "Daily activity",
   size = "md",
 }: Props) {
-  const [openKey, setOpenKey] = useState<string | null>(null);
   const safe = items.filter((i) => Number.isFinite(i.ratio));
+
   const active = safe.filter((i) => !i.disabled);
   const n = active.length;
   const done = active.filter((i) => i.ratio >= 1).length;
@@ -207,7 +221,8 @@ export default function DailyActivityDial({
               if (r < geo.INNER_RESERVED - geo.stroke / 2) return null;
               const circ = 2 * Math.PI * r;
               const pct = Math.max(0, Math.min(1, it.ratio));
-              const c = ringColor(it);
+              const c = ringColor(it, pct >= 1);
+
               if (it.disabled) {
                 return (
                   <circle
@@ -315,10 +330,11 @@ export default function DailyActivityDial({
               const glyphColor = it.disabled
                 ? "#CBD5E1"
                 : complete
-                  ? ringColor(it)
+                  ? ringColor(it, true)
                   : inProgress
                     ? ringColor(it)
                     : "var(--bbdo-ink-soft)";
+
               return (
                 <g key={`chip-${it.key}`} opacity={it.disabled ? 0.55 : 1}>
                   <title>{`${it.label}${it.disabled ? " · Not unlocked" : it.hint ? ` · ${it.hint}` : ""}`}</title>
@@ -356,8 +372,7 @@ export default function DailyActivityDial({
             const inProgress = !disabled && it.ratio > 0 && it.ratio < 1;
             const pct = Math.round(Math.max(0, Math.min(1, it.ratio)) * 100);
             const Icon = ICONS[it.key] ?? Heart;
-            const accent = complete || inProgress ? ringColor(it) : undefined;
-            const open = openKey === it.key;
+            const accent = complete ? ringColor(it, true) : inProgress ? ringColor(it) : undefined;
             return (
               <div key={`leg-${it.key}`} className="min-w-0">
               <div
@@ -380,32 +395,17 @@ export default function DailyActivityDial({
                   />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_28px_66px] items-center gap-x-1">
+                  <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_66px] items-center gap-x-1">
                     <span
                       className="min-w-0 truncate text-[11px] font-bold"
                       style={{ color: disabled ? "hsl(var(--muted-foreground))" : (accent ?? "hsl(var(--foreground))") }}
                     >
                       {it.label}
                     </span>
-                    {/* Fixed trailing cluster: arrow sits 3px before a right-aligned status. */}
-                    <span className="inline-flex h-7 w-7 items-center justify-center">
-                      {!disabled && it.expanded && (
-                        <button
-                          type="button"
-                          onClick={() => setOpenKey(open ? null : it.key)}
-                          aria-expanded={open}
-                          aria-label={`${open ? "Hide" : "Show"} ${it.label} details`}
-                           className="no-touch-target inline-flex h-6 w-6 min-h-0 min-w-0 items-center justify-center rounded-full text-primary-foreground transition-transform"
-                          style={{ backgroundColor: ringColor(it), transform: open ? "rotate(90deg)" : undefined }}
-                        >
-                          <ChevronRight className="h-3.5 w-3.5" strokeWidth={3} />
-                        </button>
-                      )}
-                    </span>
                     <span
                       className="inline-flex w-[66px] shrink-0 items-center justify-end whitespace-nowrap text-right text-[10px] font-black tabular-nums"
                       style={{
-                        color: complete ? ringColor(it) : "hsl(var(--muted-foreground))",
+                        color: complete ? ringColor(it, true) : "hsl(var(--muted-foreground))",
                       }}
                     >
                       {disabled ? (
@@ -426,10 +426,10 @@ export default function DailyActivityDial({
                 </div>
 
               </div>
-              {open && it.expanded}
               </div>
             );
           })}
+
         </div>
       </div>
     </motion.div>

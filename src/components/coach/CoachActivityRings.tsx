@@ -193,7 +193,6 @@ export default function CoachActivityRings() {
     {
       key: "movement", label: "Movement", ratio: movement.ratio, color: "#10B981",
       hint: movement.hint || undefined,
-      expanded: <StepsShareCard steps={movement.steps} heightCm={body.heightCm} weightKg={body.weightKg} />,
     },
     {
       key: "exercise", label: "Exercise",
@@ -203,9 +202,6 @@ export default function CoachActivityRings() {
       hint: exerciseGoal > 0
         ? `${Math.min(exerciseMin, exerciseGoal).toLocaleString("en-IN", { maximumFractionDigits: 1 })} / ${exerciseGoal} min`
         : undefined,
-      expanded: (
-        <MinutesShareCard kind="exercise" minutes={exerciseMin} goalMinutes={exerciseGoal} weightKg={body.weightKg} />
-      ),
     },
     {
       key: "yoga", label: "Yoga & Stress",
@@ -215,15 +211,6 @@ export default function CoachActivityRings() {
       hint: yogaGoal > 0
         ? `${Math.min(yogaMin, yogaGoal).toLocaleString("en-IN", { maximumFractionDigits: 1 })} / ${yogaGoal} min`
         : undefined,
-      expanded: (
-        <MinutesShareCard
-          kind="yoga"
-          minutes={yogaMin}
-          goalMinutes={yogaGoal}
-          sessions={yogaMin > 0 ? Math.max(1, Math.round(yogaMin / 15)) : 0}
-          weightKg={body.weightKg}
-        />
-      ),
     },
     {
       key: "breath", label: "Breath Protocol",
