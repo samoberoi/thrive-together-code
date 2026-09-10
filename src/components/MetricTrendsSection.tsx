@@ -299,18 +299,25 @@ export default function MetricTrendsSection({
                       const startV = windowed[0].value;
                       const lastV = windowed[windowed.length - 1].value;
                       const rangeLabel = RANGES.find((r) => r.key === range)!.label;
-                      const tiles = [
-                        { label: "Start", value: fmt(startV, m.unit) },
-                        { label: "Latest", value: fmt(lastV, m.unit) },
-                        {
-                          label: "Change",
-                          value: `${delta != null && delta > 0 ? "+" : ""}${fmt(delta ?? 0, m.unit)}`,
-                        },
-                        ...(m.key === "steps" ? [{ label: `Total (${rangeLabel})`, value: fmt(total, m.unit) }] : []),
-                      ];
+                      const isToday = range === "D";
+                      const tiles = isToday
+                        ? [{ label: "Today", value: fmt(lastV, m.unit) }]
+                        : [
+                            { label: "Start", value: fmt(startV, m.unit) },
+                            { label: "Latest", value: fmt(lastV, m.unit) },
+                            {
+                              label: "Change",
+                              value: `${delta != null && delta > 0 ? "+" : ""}${fmt(delta ?? 0, m.unit)}`,
+                            },
+                            ...(m.key === "steps"
+                              ? [{ label: `Total (${rangeLabel})`, value: fmt(total, m.unit) }]
+                              : []),
+                          ];
                       const headline =
                         m.key === "steps"
-                          ? { label: `Total steps · ${rangeLabel}`, value: fmt(total, ""), unit: "steps" }
+                          ? isToday
+                            ? { label: "Steps today", value: fmt(lastV, ""), unit: "steps" }
+                            : { label: `Total steps · ${rangeLabel}`, value: fmt(total, ""), unit: "steps" }
                           : m.key === "weight"
                           ? { label: "Current weight", value: fmt(lastV, ""), unit: "kg" }
                           : m.key === "glucose"
