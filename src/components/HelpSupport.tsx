@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useCareTerms } from "@/lib/careTerms";
 import { ChevronDown, LifeBuoy, Mail, Send, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -74,10 +75,37 @@ const FAQS: Faq[] = [
   },
 ];
 
-const CATEGORIES = ["All", ...Array.from(new Set(FAQS.map((f) => f.category)))];
+/** Foundation Care has no assigned coach — those answers are replaced. */
+const FOUNDATION_FAQS: Faq[] = [
+  {
+    category: "Expert support",
+    q: "Who supports me on Foundation Care?",
+    a: "Foundation Care is a self-guided plan supported by the BBDO expert desk. Use the Expert Connect button on WhatsApp for guidance, or raise a query below — you don't have a personal coach on this plan.",
+  },
+  {
+    category: "Expert support",
+    q: "Can I get one-to-one sessions?",
+    a: "One-to-one sessions come with the higher plans. Go to Profile → My Plan to upgrade and get a personal coach with scheduled calls.",
+  },
+];
+
+function faqsFor(isFoundation: boolean): Faq[] {
+  if (!isFoundation) return FAQS;
+  return [
+    ...FAQS.filter((f) => f.category !== "Coach & meetings").map((f) =>
+      f.a.includes("your coach may not have assigned one yet")
+        ? { ...f, a: f.a.replace("your coach may not have assigned one yet", "one may not be assigned to you yet") }
+        : f,
+    ),
+    ...FOUNDATION_FAQS,
+  ];
+}
 
 export default function HelpSupport() {
   const { user } = useAuth();
+  const care = useCareTerms();
+  const allFaqs = faqsFor(care.isFoundation);
+  const CATEGORIES = ["All", ...Array.from(new Set(allFaqs.map((f) => f.category)))];
   const [category, setCategory] = useState("All");
   const [open, setOpen] = useState<number | null>(null);
   const [subject, setSubject] = useState("");
@@ -85,7 +113,7 @@ export default function HelpSupport() {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
 
-  const faqs = category === "All" ? FAQS : FAQS.filter((f) => f.category === category);
+  const faqs = category === "All" ? allFaqs : allFaqs.filter((f) => f.category === category);
 
   const submit = async () => {
     if (!subject.trim() || !message.trim()) {
