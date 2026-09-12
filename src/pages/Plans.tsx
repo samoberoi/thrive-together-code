@@ -267,14 +267,14 @@ export default function Plans() {
             const months = CYCLE_MONTHS[cycle];
             const { monthly, total } = computePrice(baseMonthlyFor(plan), row.discount_percent, months);
             const isCurrent = currentPlanKey != null && plan.plan_key === currentPlanKey;
-            const isSelected = !isCurrent && selectedId === plan.id;
+            const isRenewal = isRenewalPlan(plan);
+            const isSelected = selectedId === plan.id;
             const isPopular = plan.accent === "popular";
             const direction = directionFor(plan);
             return (
               <motion.button
                 key={plan.id}
-                onClick={() => { if (!isCurrent) setSelectedId(plan.id); }}
-                disabled={isCurrent}
+                onClick={() => setSelectedId(plan.id)}
                 initial={{ opacity: 0, y: 20, scale: 1 }}
                 animate={{
                   opacity: 1,
@@ -282,17 +282,16 @@ export default function Plans() {
                   scale: isSelected ? 1.04 : 1,
                 }}
                 transition={{ delay: i * 0.08, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                whileTap={isCurrent ? undefined : { scale: isSelected ? 1.02 : 0.98 }}
-                aria-disabled={isCurrent}
+                whileTap={{ scale: isSelected ? 1.02 : 0.98 }}
                 className={cn(
                   "relative p-5 rounded-2xl transition-colors text-left liquid-glass",
                   isSelected && "shadow-xl shadow-primary/25 ring-2 ring-primary/40 z-10",
-                  isPopular && !isSelected && !isCurrent && "ring-1 ring-primary/20",
-                  plan.accent === "premium" && !isCurrent && "ring-2 ring-amber-300/70 shadow-lg shadow-amber-300/20",
-                  isCurrent && "opacity-60 cursor-not-allowed ring-1 ring-success/40"
+                  isPopular && !isSelected && "ring-1 ring-primary/20",
+                  plan.accent === "premium" && "ring-2 ring-amber-300/70 shadow-lg shadow-amber-300/20",
+                  isCurrent && !isSelected && "ring-1 ring-success/40"
                 )}
                 style={
-                  plan.accent === "premium" && !isCurrent
+                  plan.accent === "premium"
                     ? { background: "linear-gradient(140deg, hsl(48 95% 88%) 0%, hsl(45 92% 80%) 55%, hsl(42 88% 72%) 100%)" }
                     : undefined
                 }
