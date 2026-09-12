@@ -90,9 +90,9 @@ const RING_SOFT_PALETTE: Record<string, string> = {
   weight: "var(--ring-weight-soft)",
 };
 
-/** Light shade while the ring is open, deep shade once it is achieved. */
-function ringColor(item: DialRingItem, achieved = false): string {
-  if (achieved) return RING_DEEP_PALETTE[item.key] ?? item.color;
+/** Light shade while untouched; the deep shade kicks in as soon as progress starts. */
+function ringColor(item: DialRingItem, started = false): string {
+  if (started) return RING_DEEP_PALETTE[item.key] ?? item.color;
   return RING_PALETTE[item.key] ?? item.color;
 }
 
@@ -221,7 +221,7 @@ export default function DailyActivityDial({
               if (r < geo.INNER_RESERVED - geo.stroke / 2) return null;
               const circ = 2 * Math.PI * r;
               const pct = Math.max(0, Math.min(1, it.ratio));
-              const c = ringColor(it, pct >= 1);
+              const c = ringColor(it, pct > 0);
 
               if (it.disabled) {
                 return (
