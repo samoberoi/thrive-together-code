@@ -82,7 +82,8 @@ export default function Payment() {
   const plan = getSelectedPlan();
   const duration = plan?.duration_months ?? 0;
   const changeMode = plan?.change_mode ?? "new";
-  const isPlanChange = changeMode === "upgrade" || changeMode === "downgrade";
+  // Renewals are previewed too, so the member sees the new term start date.
+  const isPlanChange = changeMode === "upgrade" || changeMode === "downgrade" || changeMode === "renewal";
   const [preview, setPreview] = useState<PlanChangePreview | null>(null);
   const [couponCode, setCouponCode] = useState("");
   const [couponStatus, setCouponStatus] = useState<"idle" | "applying" | "valid" | "invalid">("idle");
@@ -437,13 +438,13 @@ export default function Payment() {
                   )}
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">
-                      {changeMode === "downgrade" ? "Starts on" : "Active from"}
+                      {changeMode === "downgrade" || changeMode === "renewal" ? "Starts on" : "Active from"}
                     </span>
                     <span className="text-foreground font-semibold">
                       {new Date(preview.starts_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                     </span>
                   </div>
-                  {changeMode === "downgrade" && (
+                  {(changeMode === "downgrade" || changeMode === "renewal") && (
                     <p className="text-[11px] text-muted-foreground pt-1 leading-snug">
                       You keep your current plan and all its benefits until then.
                     </p>
