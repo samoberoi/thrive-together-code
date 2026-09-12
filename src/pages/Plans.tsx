@@ -111,12 +111,14 @@ export default function Plans() {
       setScheduledSub(scheduled);
       const expired = !active && isSubscriptionExpired(latestSub) ? latestSub : null;
       setExpiredSub(expired);
-      // Preselect: previously held plan if expired, else popular, else first non-current
+      // Preselect: the plan they are on (so renewing is one tap), else the
+      // previously held plan if expired, else popular, else the first package.
       const previousKey = normalizePlanKey(expired?.plan_id);
       const previous = previousKey ? visible.find((p) => p.plan_key === previousKey) : null;
+      const currentVisible = activeKey ? visible.find((p) => p.plan_key === activeKey) : null;
       const popular = visible.find((p) => p.accent === "popular" && p.plan_key !== activeKey);
       const firstOther = visible.find((p) => p.plan_key !== activeKey);
-      const pick = previous ?? popular ?? firstOther ?? null;
+      const pick = currentVisible ?? previous ?? popular ?? firstOther ?? null;
       if (pick) setSelectedId(pick.id);
       setLoading(false);
     })();
@@ -137,8 +139,13 @@ export default function Plans() {
     return plan.sort_order > currentSortOrder ? "upgrade" : "downgrade";
   };
 
+  // Staying on the same package is a renewal — it must stay selectable.
+  const isRenewalPlan = (plan: PackageWithPricing) =>
+    !!activeSub && currentPlanKey != null && plan.plan_key === currentPlanKey;
+
   const selectedPkg = pkgs.find((p) => p.id === selectedId) ?? null;
   const selectedDirection = selectedPkg ? directionFor(selectedPkg) : null;
+  const selectedIsRenewal = selectedPkg ? isRenewalPlan(selectedPkg) : false;
 
   const handleStart = () => {
     const pkg = selectedPkg;
@@ -161,7 +168,7 @@ export default function Plans() {
       region_code: selectedRegionCode,
       discount_percent: row.discount_percent,
       assigns_coach: pkg.assigns_coach !== false,
-      change_mode: direction ?? "new",
+      change_mode: isRenewalPlan(pkg) ? "renewal" : direction ?? "new",
     });
     navigate("/commitment");
   };
@@ -190,15 +197,16 @@ export default function Plans() {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col flex-1">
         <div className="mb-5 mt-10">
           <span className="text-xs font-medium text-primary uppercase tracking-widest">
-            {expiredSub ? "Renew Access" : currentPlanKey ? "Change Your Plan" : "Choose Your Path"}
+            {expiredSub ? "Renew Access" : currentPlanKey ? "Renew or Change Your Plan" : "Choose Your Path"}
           </span>
           <h1 className="text-3xl font-black text-foreground mt-1">
-            {expiredSub ? (<>Your plan<br />has expired</>) : currentPlanKey ? (<>Change<br />your plan</>) : (<>Pick your<br />reset plan</>)}
+            {expiredSub ? (<>Your plan<br />has expired</>) : currentPlanKey ? (<>Renew or change<br />your plan</>) : (<>Pick your<br />reset plan</>)}
           </h1>
           {!expiredSub && currentPlanKey && (
             <p className="text-muted-foreground text-xs mt-2 leading-snug">
-              Upgrades start today with credit for the unused part of your current plan. Downgrades start when your
-              current plan ends{activeSub ? ` on ${fmtDate(activeSub.expires_at)}` : ""}.
+              Your current plan is selected — renewing adds a fresh term from
+              {activeSub ? ` ${fmtDate(activeSub.expires_at)}` : " your expiry date"}, so no paid days are lost.
+              Upgrades start today with credit for the unused part. Downgrades start when your current plan ends.
             </p>
           )}
         </div>
@@ -260,14 +268,14 @@ export default function Plans() {
             const months = CYCLE_MONTHS[cycle];
             const { monthly, total } = computePrice(baseMonthlyFor(plan), row.discount_percent, months);
             const isCurrent = currentPlanKey != null && plan.plan_key === currentPlanKey;
-            const isSelected = !isCurrent && selectedId === plan.id;
+            const isRenewal = isRenewalPlan(plan);
+            const isSelected = selectedId === plan.id;
             const isPopular = plan.accent === "popular";
             const direction = directionFor(plan);
             return (
               <motion.button
                 key={plan.id}
-                onClick={() => { if (!isCurrent) setSelectedId(plan.id); }}
-                disabled={isCurrent}
+                onClick={() => setSelectedId(plan.id)}
                 initial={{ opacity: 0, y: 20, scale: 1 }}
                 animate={{
                   opacity: 1,
@@ -275,17 +283,16 @@ export default function Plans() {
                   scale: isSelected ? 1.04 : 1,
                 }}
                 transition={{ delay: i * 0.08, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                whileTap={isCurrent ? undefined : { scale: isSelected ? 1.02 : 0.98 }}
-                aria-disabled={isCurrent}
+                whileTap={{ scale: isSelected ? 1.02 : 0.98 }}
                 className={cn(
                   "relative p-5 rounded-2xl transition-colors text-left liquid-glass",
                   isSelected && "shadow-xl shadow-primary/25 ring-2 ring-primary/40 z-10",
-                  isPopular && !isSelected && !isCurrent && "ring-1 ring-primary/20",
-                  plan.accent === "premium" && !isCurrent && "ring-2 ring-amber-300/70 shadow-lg shadow-amber-300/20",
-                  isCurrent && "opacity-60 cursor-not-allowed ring-1 ring-success/40"
+                  isPopular && !isSelected && "ring-1 ring-primary/20",
+                  plan.accent === "premium" && "ring-2 ring-amber-300/70 shadow-lg shadow-amber-300/20",
+                  isCurrent && !isSelected && "ring-1 ring-success/40"
                 )}
                 style={
-                  plan.accent === "premium" && !isCurrent
+                  plan.accent === "premium"
                     ? { background: "linear-gradient(140deg, hsl(48 95% 88%) 0%, hsl(45 92% 80%) 55%, hsl(42 88% 72%) 100%)" }
                     : undefined
                 }
@@ -304,7 +311,7 @@ export default function Plans() {
                 {isCurrent ? (
                   <div className="absolute -top-3 left-5 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 bg-success text-success-foreground">
                     <ShieldCheck className="w-3 h-3" strokeWidth={2} />
-                    Your current plan
+                    {isRenewal ? "Your current plan · Renew" : "Your current plan"}
                   </div>
                 ) : plan.badge ? (
                   <div
@@ -337,11 +344,15 @@ export default function Plans() {
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground mb-3">
-                  {isCurrent
-                    ? "You're already enrolled on this plan."
-                    : `Billed ${formatMoney(total, priceCtx)} every ${months} month${months > 1 ? "s" : ""}`}
+                  {`Billed ${formatMoney(total, priceCtx)} every ${months} month${months > 1 ? "s" : ""}`}
                 </p>
-                {!isCurrent && direction && (
+                {isRenewal ? (
+                  <p className="text-[11px] font-semibold mb-3 text-success">
+                    {`Renewal · adds ${months} month${months > 1 ? "s" : ""} from ${
+                      activeSub ? fmtDate(activeSub.expires_at) : "your current expiry"
+                    }`}
+                  </p>
+                ) : direction ? (
                   <p
                     className={cn(
                       "text-[11px] font-semibold mb-3",
@@ -352,7 +363,7 @@ export default function Plans() {
                       ? "Upgrade · starts today, unused balance credited"
                       : `Downgrade · starts ${activeSub ? fmtDate(activeSub.expires_at) : "when your current plan ends"}`}
                   </p>
-                )}
+                ) : null}
                 <div className="flex flex-col gap-2">
                   {plan.features.map((feat) => (
                     <div key={feat} className="flex items-center gap-2">
@@ -379,14 +390,14 @@ export default function Plans() {
         <div className="ob-bottom">
           <motion.button
             onClick={handleStart}
-            disabled={!selectedId || !regionalPricingReady || (currentPlanKey != null && pkgs.find((p) => p.id === selectedId)?.plan_key === currentPlanKey)}
+            disabled={!selectedId || !regionalPricingReady}
             className="ob-cta gradient-blue glow-blue disabled:opacity-40"
             whileTap={{ scale: 0.98 }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
           >
-            {expiredSub
+            {expiredSub || selectedIsRenewal
               ? "Renew Plan"
               : selectedDirection === "downgrade"
               ? "Schedule Downgrade"

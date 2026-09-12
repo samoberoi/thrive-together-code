@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    if (mode === "upgrade" || mode === "downgrade") {
+    if (mode === "upgrade" || mode === "downgrade" || mode === "renewal") {
       const { error } = await asUser.rpc("change_subscription_plan", {
         _plan_id: existing.plan_key,
         _plan_name: planName,
