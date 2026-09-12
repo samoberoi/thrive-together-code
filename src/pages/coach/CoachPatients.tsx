@@ -16,6 +16,7 @@ import PatientProfileEditor from "@/components/coach/PatientProfileEditor";
 import PatientDietSymptomsSummary from "@/components/coach/PatientDietSymptomsSummary";
 import PatientPlatesLog from "@/components/coach/PatientPlatesLog";
 import PatientActionGrid from "@/components/coach/PatientActionGrid";
+import LogTrendChart from "@/components/log-trends/LogTrendChart";
 import { Input } from "@/components/ui/input";
 import { RiskChip, FilterSelect, StatCard, FlagTag, type RiskMeta } from "@/components/admin/UserFilterUI";
 import AdherencePill from "@/components/admin/AdherencePill";
