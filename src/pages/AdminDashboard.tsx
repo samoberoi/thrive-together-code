@@ -497,6 +497,8 @@ function AdminProfileView({
         </button>
       </div>
 
+      <PersonalSettingsSection heading="My Settings" />
+
       <CoachCouponsSection />
 
 
