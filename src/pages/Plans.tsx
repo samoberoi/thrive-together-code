@@ -310,7 +310,7 @@ export default function Plans() {
                 {isCurrent ? (
                   <div className="absolute -top-3 left-5 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 bg-success text-success-foreground">
                     <ShieldCheck className="w-3 h-3" strokeWidth={2} />
-                    Your current plan
+                    {isRenewal ? "Your current plan · Renew" : "Your current plan"}
                   </div>
                 ) : plan.badge ? (
                   <div
@@ -343,11 +343,15 @@ export default function Plans() {
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground mb-3">
-                  {isCurrent
-                    ? "You're already enrolled on this plan."
-                    : `Billed ${formatMoney(total, priceCtx)} every ${months} month${months > 1 ? "s" : ""}`}
+                  {`Billed ${formatMoney(total, priceCtx)} every ${months} month${months > 1 ? "s" : ""}`}
                 </p>
-                {!isCurrent && direction && (
+                {isRenewal ? (
+                  <p className="text-[11px] font-semibold mb-3 text-success">
+                    {`Renewal · adds ${months} month${months > 1 ? "s" : ""} from ${
+                      activeSub ? fmtDate(activeSub.expires_at) : "your current expiry"
+                    }`}
+                  </p>
+                ) : direction ? (
                   <p
                     className={cn(
                       "text-[11px] font-semibold mb-3",
@@ -358,7 +362,7 @@ export default function Plans() {
                       ? "Upgrade · starts today, unused balance credited"
                       : `Downgrade · starts ${activeSub ? fmtDate(activeSub.expires_at) : "when your current plan ends"}`}
                   </p>
-                )}
+                ) : null}
                 <div className="flex flex-col gap-2">
                   {plan.features.map((feat) => (
                     <div key={feat} className="flex items-center gap-2">
