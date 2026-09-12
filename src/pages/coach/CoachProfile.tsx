@@ -11,6 +11,7 @@ import { coachTypeLabel, type Coach } from "@/lib/coachService";
 import { useToast } from "@/hooks/use-toast";
 import CoachReviewsDialog from "@/components/coach/CoachReviewsDialog";
 import CoachCouponsSection from "@/components/coach/CoachCouponsSection";
+import PersonalSettingsSection from "@/components/profile/PersonalSettingsSection";
 
 
 
@@ -475,6 +476,9 @@ export default function CoachProfile({ onSignOut, onReplayTour }: { onSignOut: (
       </SectionCard>
 
       {/* Coupons */}
+      {/* Personal settings — same tools members get */}
+      <PersonalSettingsSection heading="My Settings" />
+
       <CoachCouponsSection delay={0.32} />
 
       {/* Take the tour again */}
