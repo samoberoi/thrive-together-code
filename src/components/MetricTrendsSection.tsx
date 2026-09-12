@@ -393,6 +393,8 @@ export default function MetricTrendsSection({
                         </>
                       );
                     })()}
+                    </>
+                    )}
 
                   </div>
                 </motion.div>
