@@ -197,15 +197,16 @@ export default function Plans() {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col flex-1">
         <div className="mb-5 mt-10">
           <span className="text-xs font-medium text-primary uppercase tracking-widest">
-            {expiredSub ? "Renew Access" : currentPlanKey ? "Change Your Plan" : "Choose Your Path"}
+            {expiredSub ? "Renew Access" : currentPlanKey ? "Renew or Change Your Plan" : "Choose Your Path"}
           </span>
           <h1 className="text-3xl font-black text-foreground mt-1">
-            {expiredSub ? (<>Your plan<br />has expired</>) : currentPlanKey ? (<>Change<br />your plan</>) : (<>Pick your<br />reset plan</>)}
+            {expiredSub ? (<>Your plan<br />has expired</>) : currentPlanKey ? (<>Renew or change<br />your plan</>) : (<>Pick your<br />reset plan</>)}
           </h1>
           {!expiredSub && currentPlanKey && (
             <p className="text-muted-foreground text-xs mt-2 leading-snug">
-              Upgrades start today with credit for the unused part of your current plan. Downgrades start when your
-              current plan ends{activeSub ? ` on ${fmtDate(activeSub.expires_at)}` : ""}.
+              Your current plan is selected — renewing adds a fresh term from
+              {activeSub ? ` ${fmtDate(activeSub.expires_at)}` : " your expiry date"}, so no paid days are lost.
+              Upgrades start today with credit for the unused part. Downgrades start when your current plan ends.
             </p>
           )}
         </div>
@@ -389,14 +390,14 @@ export default function Plans() {
         <div className="ob-bottom">
           <motion.button
             onClick={handleStart}
-            disabled={!selectedId || !regionalPricingReady || (currentPlanKey != null && pkgs.find((p) => p.id === selectedId)?.plan_key === currentPlanKey)}
+            disabled={!selectedId || !regionalPricingReady}
             className="ob-cta gradient-blue glow-blue disabled:opacity-40"
             whileTap={{ scale: 0.98 }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
           >
-            {expiredSub
+            {expiredSub || selectedIsRenewal
               ? "Renew Plan"
               : selectedDirection === "downgrade"
               ? "Schedule Downgrade"
