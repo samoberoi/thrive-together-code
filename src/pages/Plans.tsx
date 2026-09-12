@@ -139,8 +139,13 @@ export default function Plans() {
     return plan.sort_order > currentSortOrder ? "upgrade" : "downgrade";
   };
 
+  // Staying on the same package is a renewal — it must stay selectable.
+  const isRenewalPlan = (plan: PackageWithPricing) =>
+    !!activeSub && currentPlanKey != null && plan.plan_key === currentPlanKey;
+
   const selectedPkg = pkgs.find((p) => p.id === selectedId) ?? null;
   const selectedDirection = selectedPkg ? directionFor(selectedPkg) : null;
+  const selectedIsRenewal = selectedPkg ? isRenewalPlan(selectedPkg) : false;
 
   const handleStart = () => {
     const pkg = selectedPkg;
@@ -163,7 +168,7 @@ export default function Plans() {
       region_code: selectedRegionCode,
       discount_percent: row.discount_percent,
       assigns_coach: pkg.assigns_coach !== false,
-      change_mode: direction ?? "new",
+      change_mode: isRenewalPlan(pkg) ? "renewal" : direction ?? "new",
     });
     navigate("/commitment");
   };
