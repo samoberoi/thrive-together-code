@@ -203,6 +203,17 @@ export default function MetricTrendsSection({
                       })}
                     </div>
 
+                    {m.key === "steps" && range === "D" ? (
+                      // Today view for steps: the classic big ring card — steps,
+                      // number, "Great job! Keep moving.", date. No chart.
+                      <StepsShareCard
+                        steps={windowed.find((p) => p.date === today)?.value ?? 0}
+                        heightCm={heightCm}
+                        weightKg={weightKg}
+                        date={new Date(`${today}T00:00:00`)}
+                      />
+                    ) : (
+                    <>
                     <p className="text-[10px] font-semibold text-muted-foreground mb-2">
                       {range === "D" ? `Today · ${prettyDate(today)}` : `${prettyDate(windowStart)} – ${prettyDate(today)}`}
                     </p>
@@ -382,6 +393,8 @@ export default function MetricTrendsSection({
                         </>
                       );
                     })()}
+                    </>
+                    )}
 
                   </div>
                 </motion.div>

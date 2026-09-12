@@ -16,6 +16,7 @@ import PatientProfileEditor from "@/components/coach/PatientProfileEditor";
 import PatientDietSymptomsSummary from "@/components/coach/PatientDietSymptomsSummary";
 import PatientPlatesLog from "@/components/coach/PatientPlatesLog";
 import PatientActionGrid from "@/components/coach/PatientActionGrid";
+import LogTrendChart from "@/components/log-trends/LogTrendChart";
 import { Input } from "@/components/ui/input";
 import { RiskChip, FilterSelect, StatCard, FlagTag, type RiskMeta } from "@/components/admin/UserFilterUI";
 import AdherencePill from "@/components/admin/AdherencePill";
@@ -318,7 +319,7 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
         .select("logged_at, glucose_morning, glucose_evening, bp_systolic, bp_diastolic, weight_kg, log_type")
         .eq("user_id", patient.user_id)
         .order("logged_at", { ascending: false })
-        .limit(50),
+        .limit(365),
       supabase
         .from("fasting_tracking" as any)
         .select("date, lmod_actual_time, fmod_actual_time, fasting_hours_completed, compliance_status, symptoms_flag, symptoms_notes")
@@ -714,7 +715,11 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
                   return l.log_type === "weight" && l.weight_kg != null;
                 });
                 if (filtered.length === 0) return <p className="text-muted-foreground text-sm text-center py-6">No {logTab} logs yet</p>;
-                return filtered.slice(0, 30).map((log, i) => {
+                return (
+                  <>
+                    {/* Same Week / Fortnight / Month / Quarter trend chart as the member's My Logs */}
+                    <LogTrendChart kind={logTab} logs={patientLogs as any} />
+                    {filtered.slice(0, 30).map((log, i) => {
                   const display = getLogDisplayValue(log)!;
                   return (
                     <div key={i} className="liquid-glass rounded-2xl p-4">
@@ -739,7 +744,9 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
                       )}
                     </div>
                   );
-                });
+                    })}
+                  </>
+                );
               })()}
 
               {/* Fasting tab */}
