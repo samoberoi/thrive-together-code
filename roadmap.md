@@ -1,4 +1,4 @@
 # Roadmap
 
-- [ ] Restore steps ring card on Today view (MetricTrendsSection) — in progress
-- [ ] Coach health log history must match member "My Logs" look & feel, incl. week/fortnight/month/quarter trend charts (glucose, BP, weight, steps)
+- [x] Restore steps ring card on Today view (MetricTrendsSection)
+- [x] Coach health log history matches member "My Logs" look with Week/Fortnight/Month/Quarter trend charts (glucose, BP, weight)
