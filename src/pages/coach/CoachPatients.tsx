@@ -743,7 +743,9 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
                       )}
                     </div>
                   );
-                });
+                    })}
+                  </>
+                );
               })()}
 
               {/* Fasting tab */}
