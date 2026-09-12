@@ -111,12 +111,14 @@ export default function Plans() {
       setScheduledSub(scheduled);
       const expired = !active && isSubscriptionExpired(latestSub) ? latestSub : null;
       setExpiredSub(expired);
-      // Preselect: previously held plan if expired, else popular, else first non-current
+      // Preselect: the plan they are on (so renewing is one tap), else the
+      // previously held plan if expired, else popular, else the first package.
       const previousKey = normalizePlanKey(expired?.plan_id);
       const previous = previousKey ? visible.find((p) => p.plan_key === previousKey) : null;
+      const currentVisible = activeKey ? visible.find((p) => p.plan_key === activeKey) : null;
       const popular = visible.find((p) => p.accent === "popular" && p.plan_key !== activeKey);
       const firstOther = visible.find((p) => p.plan_key !== activeKey);
-      const pick = previous ?? popular ?? firstOther ?? null;
+      const pick = currentVisible ?? previous ?? popular ?? firstOther ?? null;
       if (pick) setSelectedId(pick.id);
       setLoading(false);
     })();
