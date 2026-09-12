@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
     const planName = `${String(notes.name ?? payment.plan_key)} — ${CYCLE_LABEL[cycle] ?? CYCLE_LABEL.monthly}`;
     const paidAmount = Number(payment.amount_paise ?? 0) / 100;
 
-    if (mode === "upgrade" || mode === "downgrade") {
+    if (mode === "upgrade" || mode === "downgrade" || mode === "renewal") {
       const { error } = await asUser.rpc("change_subscription_plan", {
         _plan_id: payment.plan_key,
         _plan_name: planName,
