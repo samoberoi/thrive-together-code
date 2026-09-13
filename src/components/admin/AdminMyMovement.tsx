@@ -6,7 +6,7 @@ import { COACH_MIN_DAILY_STEPS } from "@/lib/movementUserService";
 export default function AdminMyMovement() {
   return (
     <div className="space-y-4">
-      <TodayStepsCard minTargetSteps={COACH_MIN_DAILY_STEPS} />
+      <TodayStepsCard minTargetSteps={COACH_MIN_DAILY_STEPS} allowManualEdit />
       <AppleHealthSnapshotCard />
     </div>
   );

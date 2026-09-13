@@ -204,10 +204,55 @@ export default function TodayStepsCard({ onOpenMovement, minTargetSteps, allowMa
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-muted-foreground">Today's Steps</p>
-          <p className="text-2xl font-black text-foreground leading-tight">
-            {today.toLocaleString("en-IN")}
-            <span className="text-xs text-muted-foreground font-medium"> / {target.toLocaleString("en-IN")}</span>
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-2xl font-black text-foreground leading-tight">
+              {today.toLocaleString("en-IN")}
+              <span className="text-xs text-muted-foreground font-medium"> / {target.toLocaleString("en-IN")}</span>
+            </p>
+            {allowManualEdit && !editingSteps && (
+              <button
+                type="button"
+                aria-label="Edit today's steps"
+                onClick={() => { setStepsDraft(String(today || "")); setEditingSteps(true); }}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border bg-card text-primary"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+          {allowManualEdit && editingSteps && (
+            <div className="mt-1.5 flex items-center gap-1.5">
+              <Input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={60000}
+                value={stepsDraft}
+                onChange={(e) => setStepsDraft(e.target.value)}
+                className="h-9 w-28 rounded-xl"
+                placeholder="e.g. 8000"
+                autoFocus
+              />
+              <button
+                type="button"
+                aria-label="Save steps"
+                onClick={saveManualSteps}
+                disabled={savingSteps}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-60"
+              >
+                {savingSteps ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+              </button>
+              <button
+                type="button"
+                aria-label="Cancel"
+                onClick={() => setEditingSteps(false)}
+                disabled={savingSteps}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-muted-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
           <p className="text-[11px] mt-0.5">
             {hit ? (
               <span className="text-emerald-600 font-bold inline-flex items-center gap-1">

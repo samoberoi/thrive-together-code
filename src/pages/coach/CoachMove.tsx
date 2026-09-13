@@ -228,7 +228,7 @@ export default function CoachMove() {
 
       {view === "mine" ? (
         <div className="space-y-4">
-          <TodayStepsCard minTargetSteps={COACH_MIN_DAILY_STEPS} />
+          <TodayStepsCard minTargetSteps={COACH_MIN_DAILY_STEPS} allowManualEdit />
           <AppleHealthSnapshotCard />
         </div>
       ) : (
