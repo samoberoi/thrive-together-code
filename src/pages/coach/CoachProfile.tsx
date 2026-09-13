@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import CoachReviewsDialog from "@/components/coach/CoachReviewsDialog";
 import CoachCouponsSection from "@/components/coach/CoachCouponsSection";
 import PersonalSettingsSection from "@/components/profile/PersonalSettingsSection";
+import EditProfile from "@/components/EditProfile";
 
 
 
@@ -110,6 +111,7 @@ export default function CoachProfile({ onSignOut, onReplayTour }: { onSignOut: (
   const [panUploading, setPanUploading] = useState(false);
   const [commission, setCommission] = useState<{ name: string; percent: number; payout_frequency: string } | null>(null);
   const [reviewsOpen, setReviewsOpen] = useState(false);
+  const [personalOpen, setPersonalOpen] = useState(false);
 
   const avatarRef = useRef<HTMLInputElement>(null);
 
