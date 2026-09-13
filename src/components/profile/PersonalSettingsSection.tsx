@@ -51,7 +51,13 @@ function Overlay({ title, onBack, children }: { title: string; onBack: () => voi
 }
 
 /** Personal settings shared by members, coaches and super admins. */
-export default function PersonalSettingsSection({ heading = "My Settings" }: { heading?: string }) {
+export default function PersonalSettingsSection({
+  heading = "My Settings",
+  onEditProfile,
+}: {
+  heading?: string;
+  onEditProfile?: () => void;
+}) {
   const { user } = useAuth();
   const { t, lang, setLang } = useLanguage();
   const { languages: enabledLanguages } = useAppLanguages({ onlyEnabled: true });
@@ -393,7 +399,13 @@ export default function PersonalSettingsSection({ heading = "My Settings" }: { h
         {items.map(({ icon: Icon, label, sublabel, page }) => (
           <button
             key={page}
-            onClick={() => setSub(page)}
+            onClick={() => {
+              if (page === "editProfile" && onEditProfile) {
+                onEditProfile();
+                return;
+              }
+              setSub(page);
+            }}
             className="w-full flex items-center gap-3 rounded-2xl p-3 text-left hover:bg-accent/60 transition-colors"
           >
             <div className="w-9 h-9 shrink-0 rounded-xl liquid-glass flex items-center justify-center">

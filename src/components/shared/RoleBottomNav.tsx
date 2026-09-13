@@ -95,14 +95,32 @@ export default function RoleBottomNav<TId extends string>({
         }}
         whileTap={{ scale: 0.97 }}
         transition={{ duration: 0.12, ease: [0.22, 1, 0.36, 1] }}
-        className="no-pill relative flex flex-col items-center justify-center gap-2 rounded-2xl py-4 px-2 border"
+        className="no-pill relative flex flex-col items-center justify-center gap-2 rounded-2xl py-4 px-2 border transition-colors"
         style={
           isActive
-            ? { background: "var(--bbdo-ink)", color: "#fff", borderColor: "var(--bbdo-ink)" }
-            : { background: "#ffffff", color: "var(--bbdo-ink)", borderColor: "var(--bbdo-line)" }
+            ? {
+                background: "var(--bbdo-blue)",
+                color: "hsl(var(--primary-foreground))",
+                borderColor: "var(--bbdo-blue)",
+                boxShadow: "0 10px 22px -14px hsl(var(--primary) / 0.75)",
+              }
+            : {
+                background: "hsl(var(--card))",
+                color: "var(--bbdo-ink)",
+                borderColor: "hsl(var(--border))",
+              }
         }
       >
-        <Icon className="w-5 h-5" strokeWidth={1.7} />
+        <span
+          className="w-11 h-11 rounded-2xl flex items-center justify-center"
+          style={
+            isActive
+              ? { background: "hsl(var(--primary-foreground) / 0.18)", color: "hsl(var(--primary-foreground))" }
+              : { background: "hsl(var(--muted))", color: "var(--bbdo-ink-soft)" }
+          }
+        >
+          <Icon className="w-5 h-5" strokeWidth={1.7} />
+        </span>
         <span className="text-[11px] font-semibold leading-none text-center no-break">{item.label}</span>
         <AttentionBadge count={item.badge ?? 0} className="absolute right-1.5 top-1.5" />
       </motion.button>
@@ -112,14 +130,14 @@ export default function RoleBottomNav<TId extends string>({
   return (
     <>
       <Drawer open={expanded} onOpenChange={setExpanded}>
-        <DrawerContent className="md:hidden max-h-[85vh] flex flex-col">
-          <DrawerHeader className="pb-2 flex-shrink-0">
-            <DrawerTitle className="text-left text-base font-black text-[var(--bbdo-ink)]">
+        <DrawerContent className="md:hidden mx-auto w-full max-w-[430px] max-h-[82dvh] overflow-hidden rounded-t-3xl border-t border-border bg-background">
+          <DrawerHeader className="px-5 pt-1 pb-3">
+            <DrawerTitle className="text-left text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
               All sections
             </DrawerTitle>
           </DrawerHeader>
-          <div className="px-4 pb-[max(1rem,env(safe-area-inset-bottom))] overflow-y-auto flex-1 min-h-0">
-            <div className="grid grid-cols-3 gap-2">{items.map(renderSheetTab)}</div>
+          <div className="overflow-y-auto overscroll-contain px-5 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <div className="grid grid-cols-3 gap-2.5">{items.map(renderSheetTab)}</div>
           </div>
         </DrawerContent>
       </Drawer>

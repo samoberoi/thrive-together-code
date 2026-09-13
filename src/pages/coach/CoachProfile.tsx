@@ -283,7 +283,7 @@ export default function CoachProfile({ onSignOut, onReplayTour }: { onSignOut: (
     ];
 
     return (
-      <div className="flex flex-col gap-5 px-5 pt-14 pb-4">
+      <div className="flex flex-col gap-5 px-5 pt-3 pb-4 min-w-0 overflow-x-hidden">
         {/* Header */}
         <motion.div className="flex items-center justify-between" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
           <div>
@@ -367,7 +367,7 @@ export default function CoachProfile({ onSignOut, onReplayTour }: { onSignOut: (
 
   /* ═══════════════════════  VIEW MODE  ═══════════════════════════════ */
   return (
-    <div className="flex flex-col gap-5 px-5 pt-14 pb-4">
+    <div className="flex flex-col gap-5 px-5 pt-3 pb-4 min-w-0 overflow-x-hidden">
       <motion.div className="flex items-center justify-between" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-foreground">My Profile</h1>
@@ -477,7 +477,7 @@ export default function CoachProfile({ onSignOut, onReplayTour }: { onSignOut: (
 
       {/* Coupons */}
       {/* Personal settings — same tools members get */}
-      <PersonalSettingsSection heading="My Settings" />
+      <PersonalSettingsSection heading="My Settings" onEditProfile={() => setEditing(true)} />
 
       <CoachCouponsSection delay={0.32} />
 
