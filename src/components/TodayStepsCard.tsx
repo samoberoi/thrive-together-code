@@ -25,6 +25,9 @@ export default function TodayStepsCard({ onOpenMovement, minTargetSteps, allowMa
   const [healthSyncError, setHealthSyncError] = useState<string | null>(null);
   const healthStepsAvailable = canUseNativeHealth();
   const [healthConnected, setHealthConnected] = useState(() => isHealthStepsConnected());
+  const [editingSteps, setEditingSteps] = useState(false);
+  const [stepsDraft, setStepsDraft] = useState("");
+  const [savingSteps, setSavingSteps] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -147,6 +150,27 @@ export default function TodayStepsCard({ onOpenMovement, minTargetSteps, allowMa
 
   const handleHealthSync = async () => {
     await syncHealthSteps(true);
+  };
+
+  const saveManualSteps = async () => {
+    if (!user) return;
+    const num = Number(stepsDraft);
+    if (!Number.isFinite(num) || num < 0 || num > 60000) {
+      toast.error("Enter steps between 0 and 60,000");
+      return;
+    }
+    setSavingSteps(true);
+    try {
+      await logTodaySteps(user.id, Math.round(num));
+      window.dispatchEvent(new CustomEvent("health-log-saved"));
+      toast.success(`Today's steps updated to ${Math.round(num).toLocaleString("en-IN")}`);
+      setEditingSteps(false);
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message || "Couldn't update steps");
+    } finally {
+      setSavingSteps(false);
+    }
   };
 
   return (
