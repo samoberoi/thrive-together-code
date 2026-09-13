@@ -819,7 +819,7 @@ export default function AdminDashboard() {
       </aside>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex min-w-0 max-w-full flex-col overflow-hidden">
         <RoleTopBar
           roleLabel="Super Admin"
           avatarInitial={adminInitial}
@@ -828,7 +828,13 @@ export default function AdminDashboard() {
           onProfileClick={() => selectTab("profile")}
           notificationCount={attentionCounts.notifications}
         />
-        <main className="admin-shell flex-1 overflow-y-auto overflow-x-hidden pb-[calc(var(--nav-clear,5rem)+1rem)] md:pb-0">
+        <main
+          className="admin-shell flex-1 min-h-0 w-full max-w-full overflow-y-auto overflow-x-hidden overscroll-none touch-pan-y md:pb-0"
+          style={{
+            paddingBottom: "calc(var(--kb-h, 0px) + var(--nav-clear, calc(env(safe-area-inset-bottom) + 5.25rem)))",
+            WebkitOverflowScrolling: "touch",
+          }}
+        >
           <div className="w-full max-w-5xl mx-auto min-w-0">
 
             <AnimatePresence initial={false}>

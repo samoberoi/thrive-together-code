@@ -95,7 +95,7 @@ export default function RoleBottomNav<TId extends string>({
         }}
         whileTap={{ scale: 0.97 }}
         transition={{ duration: 0.12, ease: [0.22, 1, 0.36, 1] }}
-        className="no-pill relative flex flex-col items-center justify-center gap-2 rounded-2xl py-4 px-2 border transition-colors"
+        className="no-pill relative flex min-h-[88px] min-w-0 flex-col items-center justify-center gap-2 rounded-2xl border px-2 py-3 transition-colors"
         style={
           isActive
             ? {
@@ -121,7 +121,7 @@ export default function RoleBottomNav<TId extends string>({
         >
           <Icon className="w-5 h-5" strokeWidth={1.7} />
         </span>
-        <span className="text-[11px] font-semibold leading-none text-center no-break">{item.label}</span>
+        <span className="w-full truncate text-center text-[11px] font-semibold leading-tight">{item.label}</span>
         <AttentionBadge count={item.badge ?? 0} className="absolute right-1.5 top-1.5" />
       </motion.button>
     );
@@ -130,14 +130,14 @@ export default function RoleBottomNav<TId extends string>({
   return (
     <>
       <Drawer open={expanded} onOpenChange={setExpanded}>
-        <DrawerContent className="md:hidden mx-auto w-full max-w-[430px] max-h-[82dvh] overflow-hidden rounded-t-3xl border-t border-border bg-background">
-          <DrawerHeader className="px-5 pt-1 pb-3">
+        <DrawerContent className="role-nav-drawer md:hidden mx-auto w-full max-w-[430px] max-h-[82dvh] overflow-hidden rounded-t-3xl border-t border-border bg-background">
+          <DrawerHeader className="px-4 pt-1 pb-2">
             <DrawerTitle className="text-left text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
               All sections
             </DrawerTitle>
           </DrawerHeader>
-          <div className="overflow-y-auto overscroll-contain px-5 pb-[max(1rem,env(safe-area-inset-bottom))]">
-            <div className="grid grid-cols-3 gap-2.5">{items.map(renderSheetTab)}</div>
+          <div className="overflow-y-auto overscroll-contain px-4 pb-2">
+            <div className="grid grid-cols-3 gap-2">{items.map(renderSheetTab)}</div>
           </div>
         </DrawerContent>
       </Drawer>

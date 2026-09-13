@@ -38,7 +38,7 @@ export default function RoleTopBar({
   return (
     <div
       className={cn(
-        "md:hidden sticky top-0 z-30 bg-background/85 backdrop-blur-xl flex items-center justify-between px-5 pb-2",
+        "md:hidden z-30 flex items-center justify-between px-5 pb-2",
         className,
       )}
       style={{
