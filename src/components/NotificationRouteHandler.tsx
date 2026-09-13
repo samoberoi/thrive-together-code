@@ -22,23 +22,29 @@ export default function NotificationRouteHandler() {
   const role: NotificationRole = isAdmin ? "admin" : isCoach ? "coach" : isChannelPartner ? "partner" : "user";
 
   useEffect(() => {
+    const ready = !!user && !loading;
+
     const go = (n: RoutableNotification) => {
-      if (!user) return;
       navigate(resolveNotificationRoute(n, role));
     };
 
     const onEvent = (e: Event) => {
       const detail = (e as CustomEvent).detail;
-      if (detail && typeof detail === "object") {
-        // Clear the stashed copy so it is not replayed twice.
-        takePendingNotificationTap();
-        go(detail as RoutableNotification);
+      if (!detail || typeof detail !== "object") return;
+      if (!ready) {
+        // Role is not known yet — keep the tap stashed so a coach/admin is
+        // never routed into the member dashboard by mistake.
+        setPendingNotificationTap(detail as RoutableNotification, { silent: true });
+        return;
       }
+      // Clear the stashed copy so it is not replayed twice.
+      takePendingNotificationTap();
+      go(detail as RoutableNotification);
     };
 
     window.addEventListener("notification:navigate", onEvent as EventListener);
 
-    if (user && !loading) {
+    if (ready) {
       const pending = takePendingNotificationTap();
       if (pending) go(pending);
     }
