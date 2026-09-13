@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { LucideIcon, Settings2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -24,7 +25,10 @@ export default function AdminSelfTabs({
   manage,
   mine,
 }: Props) {
-  const [view, setView] = useState<"manage" | "mine">("manage");
+  const [searchParams] = useSearchParams();
+  const [view, setView] = useState<"manage" | "mine">(
+    searchParams.get("view") === "mine" ? "mine" : "manage",
+  );
 
   const Tab = ({
     id,

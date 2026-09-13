@@ -197,7 +197,7 @@ export default function AdminOverview() {
       <CoachActivityRings />
 
       {/* Admin's own step ring with manual health sync — same card users get. */}
-      <TodayStepsCard />
+      <TodayStepsCard onOpenMovement={() => navigate("/admin-dashboard?tab=movement&view=mine")} />
 
       <CoachSelfCheckins />
 
