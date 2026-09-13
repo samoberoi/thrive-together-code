@@ -4,6 +4,7 @@ import { useRbac } from "@/hooks/useRbac";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   resolveNotificationRoute,
+  setPendingNotificationTap,
   takePendingNotificationTap,
   type NotificationRole,
   type RoutableNotification,

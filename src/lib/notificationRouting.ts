@@ -161,8 +161,12 @@ const PENDING_KEY = "bb_pending_notification_route";
  * navigate (cold start from a native push). The role is unknown at that point,
  * so we keep the raw notification and resolve the route on navigation.
  */
-export function setPendingNotificationTap(n: RoutableNotification) {
+export function setPendingNotificationTap(
+  n: RoutableNotification,
+  opts?: { silent?: boolean },
+) {
   try { sessionStorage.setItem(PENDING_KEY, JSON.stringify(n)); } catch { /* ignore */ }
+  if (opts?.silent) return;
   try {
     window.dispatchEvent(new CustomEvent("notification:navigate", { detail: n }));
   } catch { /* ignore */ }
