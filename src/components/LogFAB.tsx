@@ -218,12 +218,14 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
     };
   }, []);
 
+  // NOTE: the global drawer rule sets `max-height: 85svh !important`, so the
+  // keyboard-aware cap must go through the CSS variable, not a maxHeight style.
   const logDrawerStyle =
     keyboardInset > 0 && activeLog
-      ? {
+      ? ({
           bottom: `${keyboardInset}px`,
-          maxHeight: `${Math.max(320, keyboardViewportHeight - 12)}px`,
-        }
+          "--vaul-max-h": `${Math.max(320, keyboardViewportHeight - 12)}px`,
+        } as React.CSSProperties)
       : undefined;
 
   const keepInputVisible = (event: { currentTarget: HTMLInputElement }) => {
@@ -743,7 +745,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
             <button
               onClick={saveDiabetes}
               disabled={saving}
-              className="w-full h-14 rounded-xl font-bold text-[15px] disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+              className="sticky bottom-0 z-10 w-full h-14 rounded-xl font-bold text-[15px] disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
               style={
                 glucoseValue.trim()
                   ? { background: "var(--ring-diabetes-deep)", color: "var(--pure-white)" }
@@ -807,7 +809,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
             <button
               onClick={saveBP}
               disabled={saving}
-              className="w-full h-14 rounded-xl font-bold text-[15px] disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+              className="sticky bottom-0 z-10 w-full h-14 rounded-xl font-bold text-[15px] disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
               style={
                 bpSys.trim() && bpDia.trim()
                   ? { background: "var(--ring-bp-deep)", color: "var(--pure-white)" }
@@ -864,7 +866,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
             <button
               onClick={saveWeight}
               disabled={saving}
-              className="w-full h-14 rounded-xl font-bold text-[15px] disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+              className="sticky bottom-0 z-10 w-full h-14 rounded-xl font-bold text-[15px] disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
               style={
                 weight.trim()
                   ? { background: "var(--ring-weight-deep)", color: "var(--pure-white)" }
@@ -930,7 +932,7 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
             <button
               onClick={saveWater}
               disabled={saving}
-              className="w-full h-14 rounded-xl font-bold text-[15px] disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+              className="sticky bottom-0 z-10 w-full h-14 rounded-xl font-bold text-[15px] disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
               style={
                 waterGlasses > 0
                   ? { background: "var(--ring-water-deep)", color: "var(--pure-white)" }
