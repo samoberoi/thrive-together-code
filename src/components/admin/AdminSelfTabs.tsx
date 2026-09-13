@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { LucideIcon, Settings2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
