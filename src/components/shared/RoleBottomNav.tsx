@@ -112,14 +112,14 @@ export default function RoleBottomNav<TId extends string>({
   return (
     <>
       <Drawer open={expanded} onOpenChange={setExpanded}>
-        <DrawerContent className="md:hidden max-h-[85vh] flex flex-col">
-          <DrawerHeader className="pb-2 flex-shrink-0">
-            <DrawerTitle className="text-left text-base font-black text-[var(--bbdo-ink)]">
+        <DrawerContent className="md:hidden mx-auto w-full max-w-[430px] max-h-[82dvh] overflow-hidden rounded-t-3xl border-t border-border bg-background">
+          <DrawerHeader className="px-5 pt-1 pb-3">
+            <DrawerTitle className="text-left text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
               All sections
             </DrawerTitle>
           </DrawerHeader>
-          <div className="px-4 pb-[max(1rem,env(safe-area-inset-bottom))] overflow-y-auto flex-1 min-h-0">
-            <div className="grid grid-cols-3 gap-2">{items.map(renderSheetTab)}</div>
+          <div className="overflow-y-auto overscroll-contain px-5 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <div className="grid grid-cols-3 gap-2.5">{items.map(renderSheetTab)}</div>
           </div>
         </DrawerContent>
       </Drawer>

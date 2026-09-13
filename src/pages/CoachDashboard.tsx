@@ -169,7 +169,7 @@ export default function CoachDashboard() {
   const allTabs = Object.keys(tabContent) as CoachTab[];
 
   return (
-    <div className="h-dvh bg-background flex overflow-hidden">
+    <div className="h-dvh w-full max-w-full bg-background flex overflow-hidden overscroll-none">
       {/* Sidebar (tablet + desktop) */}
       <aside className="hidden md:flex flex-col w-64 xl:w-72 shrink-0 bg-muted h-dvh" style={{ boxShadow: "1px 0 0 hsl(var(--border))" }}>
         <div className="flex items-center gap-3 px-6 pt-8 pb-6" style={{ borderBottom: "1px solid hsl(var(--border))" }}>
@@ -240,7 +240,7 @@ export default function CoachDashboard() {
       </aside>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 max-w-full overflow-hidden">
         <RoleTopBar
           roleLabel="Coach Portal"
           avatarUrl={coachMeta?.avatarUrl}
@@ -250,8 +250,14 @@ export default function CoachDashboard() {
           notificationCount={attentionCounts.notifications}
           right={<SoundToggle inline />}
         />
-        <main className="admin-shell flex-1 overflow-y-auto overflow-x-hidden pb-[calc(var(--nav-clear,5rem)+1rem)] md:pb-0">
-          <div className="w-full max-w-3xl xl:max-w-4xl mx-auto">
+        <main
+          className="admin-shell flex-1 min-h-0 w-full max-w-full overflow-y-auto overflow-x-hidden overscroll-none touch-pan-y md:pb-0"
+          style={{
+            paddingBottom: "calc(var(--kb-h, 0px) + var(--nav-clear, calc(env(safe-area-inset-bottom) + 5.25rem)))",
+            WebkitOverflowScrolling: "touch",
+          }}
+        >
+          <div className="w-full max-w-3xl xl:max-w-4xl mx-auto min-w-0 overflow-x-hidden">
             {notificationsOpen ? (
               <NotificationsPanel embedded onClose={() => setNotificationsOpen(false)} />
             ) : (

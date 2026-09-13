@@ -11,7 +11,6 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useAppLanguages } from "@/hooks/useAppLanguages";
 import { LANGUAGE_LABELS, type Language } from "@/lib/i18n";
 import { APP_VERSION } from "@/lib/appVersion";
-import EditProfile from "@/components/EditProfile";
 import RingManagement from "@/components/RingManagement";
 import DietPreferences from "@/components/DietPreferences";
 import PrivacySecurityPage from "@/components/PrivacySecurityPage";
@@ -51,7 +50,13 @@ function Overlay({ title, onBack, children }: { title: string; onBack: () => voi
 }
 
 /** Personal settings shared by members, coaches and super admins. */
-export default function PersonalSettingsSection({ heading = "My Settings" }: { heading?: string }) {
+export default function PersonalSettingsSection({
+  heading = "My Settings",
+  onEditProfile,
+}: {
+  heading?: string;
+  onEditProfile?: () => void;
+}) {
   const { user } = useAuth();
   const { t, lang, setLang } = useLanguage();
   const { languages: enabledLanguages } = useAppLanguages({ onlyEnabled: true });
@@ -159,7 +164,6 @@ export default function PersonalSettingsSection({ heading = "My Settings" }: { h
   };
 
   /* ── Sub screens ──────────────────────────────────────────────────── */
-  if (sub === "editProfile") return <EditProfile onBack={() => setSub(null)} />;
   if (sub === "diet") return <DietPreferences onBack={() => setSub(null)} />;
   if (sub === "privacy") {
     return <PrivacySecurityPage userId={user?.id} userName={user?.email ?? "You"} onBack={() => setSub(null)} />;
@@ -393,7 +397,13 @@ export default function PersonalSettingsSection({ heading = "My Settings" }: { h
         {items.map(({ icon: Icon, label, sublabel, page }) => (
           <button
             key={page}
-            onClick={() => setSub(page)}
+            onClick={() => {
+              if (page === "editProfile" && onEditProfile) {
+                onEditProfile();
+                return;
+              }
+              setSub(page);
+            }}
             className="w-full flex items-center gap-3 rounded-2xl p-3 text-left hover:bg-accent/60 transition-colors"
           >
             <div className="w-9 h-9 shrink-0 rounded-xl liquid-glass flex items-center justify-center">
