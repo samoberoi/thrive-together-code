@@ -466,12 +466,20 @@ async function createOrder(payload: any, userId: string) {
   // PAYMENT-FIRST: we do NOT place the Thyrocare order here. The booking is
   // staged as `awaiting_payment` and only sent to the vendor once money is
   // actually received (see confirmOrder, called after Razorpay verification).
-  let priceInr = totalMrp;
+  let globalPct = 0;
   try {
     const { data: markup } = await sbAdmin.rpc("get_lab_test_markup_pct");
-    const pct = Number(markup) || 0;
-    if (pct > 0) priceInr = Math.round(priceInr * (1 + pct / 100));
-  } catch (_e) { /* fall back to catalog total */ }
+    globalPct = Number(markup);
+    if (!Number.isFinite(globalPct) || globalPct < 0) globalPct = 0;
+  } catch (_e) { globalPct = 0; }
+  // Per-test markup override wins over the global percentage — same rule the
+  // app uses when it renders the price on the test card.
+  const priceInr = (catalog || []).reduce((sum: number, t: any) => {
+    const base = Number(t.offer_rate ?? t.rate ?? 0) || 0;
+    const perTest = t.markup_pct == null ? NaN : Number(t.markup_pct);
+    const pct = Number.isFinite(perTest) && perTest >= 0 ? perTest : globalPct;
+    return sum + Math.round(base * (1 + pct / 100));
+  }, 0) || Math.round(baseTotal);
 
   const { data: row, error } = await sbAdmin
     .from("thyrocare_orders")
