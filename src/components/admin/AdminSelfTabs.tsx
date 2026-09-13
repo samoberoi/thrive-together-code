@@ -25,7 +25,10 @@ export default function AdminSelfTabs({
   manage,
   mine,
 }: Props) {
-  const [view, setView] = useState<"manage" | "mine">("manage");
+  const [searchParams] = useSearchParams();
+  const [view, setView] = useState<"manage" | "mine">(
+    searchParams.get("view") === "mine" ? "mine" : "manage",
+  );
 
   const Tab = ({
     id,
