@@ -13,6 +13,7 @@ import { healthSourceLabel } from "@/lib/platformLabels";
 import {
   fetchMovementOverview,
   logTodaySteps,
+  setOwnStepGoal,
   type MovementOverview,
 } from "@/lib/movementUserService";
 
@@ -25,9 +26,9 @@ export default function TodayStepsCard({ onOpenMovement, minTargetSteps, allowMa
   const [healthSyncError, setHealthSyncError] = useState<string | null>(null);
   const healthStepsAvailable = canUseNativeHealth();
   const [healthConnected, setHealthConnected] = useState(() => isHealthStepsConnected());
-  const [editingSteps, setEditingSteps] = useState(false);
-  const [stepsDraft, setStepsDraft] = useState("");
-  const [savingSteps, setSavingSteps] = useState(false);
+  const [editingTarget, setEditingTarget] = useState(false);
+  const [targetDraft, setTargetDraft] = useState("");
+  const [savingTarget, setSavingTarget] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -152,24 +153,24 @@ export default function TodayStepsCard({ onOpenMovement, minTargetSteps, allowMa
     await syncHealthSteps(true);
   };
 
-  const saveManualSteps = async () => {
+  const saveTargetGoal = async () => {
     if (!user) return;
-    const num = Number(stepsDraft);
-    if (!Number.isFinite(num) || num < 0 || num > 60000) {
-      toast.error("Enter steps between 0 and 60,000");
+    const num = Number(targetDraft);
+    if (!Number.isFinite(num) || num < 500 || num > 60000) {
+      toast.error("Enter a target between 500 and 60,000 steps");
       return;
     }
-    setSavingSteps(true);
+    setSavingTarget(true);
     try {
-      await logTodaySteps(user.id, Math.round(num));
+      await setOwnStepGoal(user.id, Math.round(num));
       window.dispatchEvent(new CustomEvent("health-log-saved"));
-      toast.success(`Today's steps updated to ${Math.round(num).toLocaleString("en-IN")}`);
-      setEditingSteps(false);
+      toast.success(`Daily step target updated to ${Math.round(num).toLocaleString("en-IN")}`);
+      setEditingTarget(false);
       await load();
     } catch (e: any) {
-      toast.error(e?.message || "Couldn't update steps");
+      toast.error(e?.message || "Couldn't update the step target");
     } finally {
-      setSavingSteps(false);
+      setSavingTarget(false);
     }
   };
 
@@ -209,44 +210,44 @@ export default function TodayStepsCard({ onOpenMovement, minTargetSteps, allowMa
               {today.toLocaleString("en-IN")}
               <span className="text-xs text-muted-foreground font-medium"> / {target.toLocaleString("en-IN")}</span>
             </p>
-            {allowManualEdit && !editingSteps && (
+            {allowManualEdit && !editingTarget && (
               <button
                 type="button"
-                aria-label="Edit today's steps"
-                onClick={() => { setStepsDraft(String(today || "")); setEditingSteps(true); }}
+                aria-label="Edit daily step target"
+                onClick={() => { setTargetDraft(String(target || "")); setEditingTarget(true); }}
                 className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border bg-card text-primary"
               >
                 <Pencil className="h-3.5 w-3.5" />
               </button>
             )}
           </div>
-          {allowManualEdit && editingSteps && (
+          {allowManualEdit && editingTarget && (
             <div className="mt-1.5 flex items-center gap-1.5">
               <Input
                 type="number"
                 inputMode="numeric"
-                min={0}
+                min={500}
                 max={60000}
-                value={stepsDraft}
-                onChange={(e) => setStepsDraft(e.target.value)}
+                value={targetDraft}
+                onChange={(e) => setTargetDraft(e.target.value)}
                 className="h-9 w-28 rounded-xl"
-                placeholder="e.g. 8000"
+                placeholder="Target e.g. 9000"
                 autoFocus
               />
               <button
                 type="button"
-                aria-label="Save steps"
-                onClick={saveManualSteps}
-                disabled={savingSteps}
+                aria-label="Save step target"
+                onClick={saveTargetGoal}
+                disabled={savingTarget}
                 className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-60"
               >
-                {savingSteps ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                {savingTarget ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
               </button>
               <button
                 type="button"
                 aria-label="Cancel"
-                onClick={() => setEditingSteps(false)}
-                disabled={savingSteps}
+                onClick={() => setEditingTarget(false)}
+                disabled={savingTarget}
                 className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-muted-foreground"
               >
                 <X className="h-4 w-4" />
