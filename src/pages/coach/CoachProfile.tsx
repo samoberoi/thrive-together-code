@@ -241,6 +241,8 @@ export default function CoachProfile({ onSignOut, onReplayTour }: { onSignOut: (
     }
   };
 
+  if (personalOpen) return <EditProfile onBack={() => setPersonalOpen(false)} />;
+
   if (loading) return <div className="flex items-center justify-center h-[60vh]"><Loader2 className="w-8 h-8 text-primary animate-spin" /></div>;
   if (!coach) return null;
 
