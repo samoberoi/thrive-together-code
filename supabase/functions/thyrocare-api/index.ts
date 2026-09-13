@@ -362,7 +362,7 @@ async function createOrder(payload: any, userId: string) {
   // Look up product details from cached catalog
   const { data: catalog } = await sbAdmin
     .from("thyrocare_tests")
-    .select("product_code, product_name, product_type, rate, offer_rate")
+    .select("product_code, product_name, product_type, rate, offer_rate, markup_pct")
     .in("product_code", payload.productCodes);
   const items = (catalog || []).map((t: any) => ({
     id: t.product_code,
@@ -371,8 +371,11 @@ async function createOrder(payload: any, userId: string) {
     rate: { currency: "INR", mrp: String(t.rate || t.offer_rate || 0) },
     origin: { enteredBy: "BBDOApp", platform: "WEB" },
   }));
-  const totalMrp = (catalog || []).reduce(
-    (s: number, t: any) => s + Number(t.rate || t.offer_rate || 0),
+  // The patient-facing price is ALWAYS the selling (offer) rate, never the MRP.
+  // This must match src/lib/labTestMarkup.ts exactly, otherwise the checkout
+  // amount differs from the price shown on the test card.
+  const baseTotal = (catalog || []).reduce(
+    (s: number, t: any) => s + Number(t.offer_rate ?? t.rate ?? 0),
     0,
   );
 
