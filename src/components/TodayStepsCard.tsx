@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { App as CapApp } from "@capacitor/app";
 import { motion } from "framer-motion";
-import { Footprints, ChevronRight, Flame, RefreshCw, Watch } from "lucide-react";
+import { Footprints, ChevronRight, Flame, RefreshCw, Watch, Pencil, Check, X, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchProfile } from "@/lib/profileService";
@@ -17,7 +18,7 @@ import {
 
 const HEALTH_SYNC_INTERVAL_MS = 2 * 60_000;
 
-export default function TodayStepsCard({ onOpenMovement, minTargetSteps }: { onOpenMovement?: () => void; minTargetSteps?: number }) {
+export default function TodayStepsCard({ onOpenMovement, minTargetSteps, allowManualEdit = false }: { onOpenMovement?: () => void; minTargetSteps?: number; allowManualEdit?: boolean }) {
   const { user } = useAuth();
   const [data, setData] = useState<MovementOverview | null>(null);
   const [syncingHealth, setSyncingHealth] = useState(false);
