@@ -11,6 +11,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useAppLanguages } from "@/hooks/useAppLanguages";
 import { LANGUAGE_LABELS, type Language } from "@/lib/i18n";
 import { APP_VERSION } from "@/lib/appVersion";
+import EditProfile from "@/components/EditProfile";
 import RingManagement from "@/components/RingManagement";
 import DietPreferences from "@/components/DietPreferences";
 import PrivacySecurityPage from "@/components/PrivacySecurityPage";
@@ -164,6 +165,7 @@ export default function PersonalSettingsSection({
   };
 
   /* ── Sub screens ──────────────────────────────────────────────────── */
+  if (sub === "editProfile") return <EditProfile onBack={() => setSub(null)} />;
   if (sub === "diet") return <DietPreferences onBack={() => setSub(null)} />;
   if (sub === "privacy") {
     return <PrivacySecurityPage userId={user?.id} userName={user?.email ?? "You"} onBack={() => setSub(null)} />;

@@ -95,14 +95,32 @@ export default function RoleBottomNav<TId extends string>({
         }}
         whileTap={{ scale: 0.97 }}
         transition={{ duration: 0.12, ease: [0.22, 1, 0.36, 1] }}
-        className="no-pill relative flex flex-col items-center justify-center gap-2 rounded-2xl py-4 px-2 border"
+        className="no-pill relative flex flex-col items-center justify-center gap-2 rounded-2xl py-4 px-2 border transition-colors"
         style={
           isActive
-            ? { background: "var(--bbdo-ink)", color: "#fff", borderColor: "var(--bbdo-ink)" }
-            : { background: "#ffffff", color: "var(--bbdo-ink)", borderColor: "var(--bbdo-line)" }
+            ? {
+                background: "var(--bbdo-blue)",
+                color: "hsl(var(--primary-foreground))",
+                borderColor: "var(--bbdo-blue)",
+                boxShadow: "0 10px 22px -14px hsl(var(--primary) / 0.75)",
+              }
+            : {
+                background: "hsl(var(--card))",
+                color: "var(--bbdo-ink)",
+                borderColor: "hsl(var(--border))",
+              }
         }
       >
-        <Icon className="w-5 h-5" strokeWidth={1.7} />
+        <span
+          className="w-11 h-11 rounded-2xl flex items-center justify-center"
+          style={
+            isActive
+              ? { background: "hsl(var(--primary-foreground) / 0.18)", color: "hsl(var(--primary-foreground))" }
+              : { background: "hsl(var(--muted))", color: "var(--bbdo-ink-soft)" }
+          }
+        >
+          <Icon className="w-5 h-5" strokeWidth={1.7} />
+        </span>
         <span className="text-[11px] font-semibold leading-none text-center no-break">{item.label}</span>
         <AttentionBadge count={item.badge ?? 0} className="absolute right-1.5 top-1.5" />
       </motion.button>
