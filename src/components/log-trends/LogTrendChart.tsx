@@ -17,10 +17,10 @@ type LogKind = "diabetes" | "bp" | "weight";
 type RangeKey = "W" | "F" | "M" | "Q" | "ALL";
 
 const RANGES: { key: RangeKey; label: string; days: number | null }[] = [
-  { key: "W", label: "Week", days: 7 },
-  { key: "F", label: "Fortnight", days: 14 },
-  { key: "M", label: "Month", days: 30 },
-  { key: "Q", label: "Quarter", days: 90 },
+  { key: "W", label: "7 days", days: 7 },
+  { key: "F", label: "14 days", days: 14 },
+  { key: "M", label: "30 days", days: 30 },
+  { key: "Q", label: "90 days", days: 90 },
   { key: "ALL", label: "All", days: null },
 ];
 
@@ -131,7 +131,7 @@ export default function LogTrendChart({ kind, logs }: { kind: LogKind; logs: Hea
 
   return (
     <motion.div
-      className="liquid-glass rounded-2xl p-3.5 mb-4"
+      className="liquid-glass mb-4 min-w-0 overflow-hidden rounded-2xl p-3.5"
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.22 }}
@@ -141,13 +141,15 @@ export default function LogTrendChart({ kind, logs }: { kind: LogKind; logs: Hea
         <span className="shrink-0 text-[10px] font-semibold text-muted-foreground">{cfg.unit}</span>
       </div>
 
-      <div className="flex gap-1 rounded-full bg-muted p-1 mb-3 overflow-x-auto no-scrollbar">
+      <div className="grid grid-cols-5 gap-1 rounded-xl bg-muted p-1 mb-3" role="tablist" aria-label="Trend period">
         {RANGES.map((r) => (
           <button
             key={r.key}
             type="button"
             onClick={() => setRange(r.key)}
-            className={`flex-1 shrink-0 min-w-fit whitespace-nowrap rounded-full px-2.5 py-1.5 text-[11px] font-bold transition-colors ${
+            role="tab"
+            aria-selected={range === r.key}
+            className={`min-w-0 whitespace-nowrap rounded-lg px-1 py-2 text-[10px] font-bold transition-colors ${
               range === r.key ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
             }`}
           >
@@ -159,7 +161,7 @@ export default function LogTrendChart({ kind, logs }: { kind: LogKind; logs: Hea
       <div className="h-48 w-full">
         {windowed.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={windowed} margin={{ top: 8, right: 6, bottom: 0, left: -14 }}>
+            <LineChart data={windowed} margin={{ top: 8, right: 6, bottom: 0, left: 2 }}>
               <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.6} />
               <XAxis
                 dataKey="date"
@@ -174,7 +176,7 @@ export default function LogTrendChart({ kind, logs }: { kind: LogKind; logs: Hea
                 tick={{ fontSize: 10 }}
                 tickLine={false}
                 axisLine={false}
-                width={40}
+                width={44}
                 stroke="hsl(var(--muted-foreground))"
                 domain={["auto", "auto"]}
               />
@@ -206,7 +208,7 @@ export default function LogTrendChart({ kind, logs }: { kind: LogKind; logs: Hea
         )}
       </div>
 
-      <div className="grid grid-cols-2 min-[380px]:grid-cols-4 gap-2 mt-3">
+      <div className="grid grid-cols-2 gap-2 mt-3 min-[380px]:grid-cols-4 keep-mobile-cols">
         {tiles.map((t) => (
           <div key={t.label} className="rounded-2xl border border-border bg-background/60 px-2.5 py-2 min-w-0">
             <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground leading-tight break-words">

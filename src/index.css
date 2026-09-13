@@ -933,6 +933,11 @@
     [data-vaul-drawer] textarea,
     [data-vaul-drawer] button,
     [data-vaul-drawer] .grid { min-width: 0; max-width: 100%; }
+
+    /* Navigation sheets are content-sized; logging sheets retain the larger safe footer. */
+    [data-vaul-drawer].role-nav-drawer {
+      padding-bottom: max(0.375rem, env(safe-area-inset-bottom)) !important;
+    }
   }
 }
 
@@ -1162,9 +1167,6 @@
   .admin-shell h2,
   .admin-shell h3,
   .admin-shell p,
-  .admin-shell span,
-  .admin-shell button,
-  .admin-shell a,
   .admin-shell td,
   .admin-shell th {
     overflow-wrap: anywhere;

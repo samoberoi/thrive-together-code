@@ -436,19 +436,19 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
     const sc = statusColors[patientStatus.status];
 
     return (
-      <div className="flex flex-col gap-5 px-5 pt-14 pb-4">
-        <motion.div className="flex items-center gap-3" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+      <div className="flex min-w-0 flex-col gap-4 overflow-x-hidden px-4 pt-3 pb-4 sm:px-5">
+        <motion.div className="flex min-w-0 items-center gap-2" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
           <button onClick={() => setSelectedPatient(null)} className="liquid-glass rounded-xl p-2">
             <ArrowLeft className="w-5 h-5 text-foreground" strokeWidth={1.8} />
           </button>
-          <div className="flex-1">
-            <h1 className="text-xl font-black text-foreground">{selectedPatient.name ?? "Client"}</h1>
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-xl font-black text-foreground">{selectedPatient.name ?? "Client"}</h1>
             <p className="text-muted-foreground text-xs">Client Details</p>
           </div>
           {/* Health status badge */}
-          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${sc.bg}`}>
+          <div className={`flex shrink-0 items-center gap-1.5 rounded-full px-2 py-1.5 ${sc.bg}`}>
             <div className={`w-2 h-2 rounded-full ${sc.dot} animate-pulse`} />
-            <span className={`text-xs font-bold ${sc.text}`}>{patientStatus.label}</span>
+            <span className={`max-w-[86px] truncate text-[10px] font-bold ${sc.text}`}>{patientStatus.label}</span>
           </div>
           <button
             onClick={() => setEditProfileOpen(true)}
@@ -672,14 +672,14 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
         )}
 
         {/* Health Log History — Tabbed like end-user view */}
-        <motion.div className="liquid-glass rounded-3xl p-5" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+        <motion.section className="min-w-0" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           <div className="flex items-center gap-2 mb-4">
             <FileText className="w-5 h-5 text-primary" strokeWidth={1.8} />
             <span className="text-foreground font-bold">Health Log History</span>
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-1.5 mb-4 overflow-x-auto pb-1 -mx-5 px-5 snap-x scroll-smooth">
+          <div className="mb-4 grid grid-cols-5 gap-1 rounded-xl bg-muted p-1" role="tablist" aria-label="Health log type">
             {([
               { key: "diabetes" as LogTab, label: "Diabetes", icon: <Droplets className="w-3.5 h-3.5" /> },
               { key: "bp" as LogTab, label: "BP", icon: <Heart className="w-3.5 h-3.5" /> },
@@ -690,7 +690,9 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
               <button
                 key={tab.key}
                 onClick={() => setLogTab(tab.key)}
-                className={`flex-none snap-start no-break flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
+                role="tab"
+                aria-selected={logTab === tab.key}
+                className={`flex min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 py-2 text-[10px] font-bold leading-tight transition-colors ${
                   logTab === tab.key
                     ? "bg-primary text-primary-foreground"
                     : "bg-muted/50 text-muted-foreground hover:bg-muted"
@@ -706,7 +708,7 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
               <Loader2 className="w-5 h-5 text-primary animate-spin" />
             </div>
           ) : (
-            <div className="flex flex-col gap-2.5 max-h-[400px] overflow-y-auto">
+            <div className="flex min-w-0 flex-col gap-2.5">
               {/* Diabetes / BP / Weight tabs */}
               {(logTab === "diabetes" || logTab === "bp" || logTab === "weight") && (() => {
                 const filtered = patientLogs.filter(l => {
@@ -732,11 +734,11 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
                         <div className="grid grid-cols-2 gap-3">
                           <div className="bg-muted/40 rounded-xl p-3">
                             <p className="text-muted-foreground text-[10px]">Morning</p>
-                            <p className="text-foreground font-bold text-sm">{log.glucose_morning != null ? `${log.glucose_morning} mg/dL` : "—"}</p>
+                            <p className="break-words text-sm font-bold text-foreground">{log.glucose_morning != null ? `${log.glucose_morning} mg/dL` : "—"}</p>
                           </div>
                           <div className="bg-muted/40 rounded-xl p-3">
                             <p className="text-muted-foreground text-[10px]">Evening</p>
-                            <p className="text-foreground font-bold text-sm">{log.glucose_evening != null ? `${log.glucose_evening} mg/dL` : "—"}</p>
+                            <p className="break-words text-sm font-bold text-foreground">{log.glucose_evening != null ? `${log.glucose_evening} mg/dL` : "—"}</p>
                           </div>
                         </div>
                       ) : (
@@ -825,7 +827,7 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
               })()}
             </div>
           )}
-        </motion.div>
+        </motion.section>
       </div>
     );
   }
@@ -1220,7 +1222,7 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
                 transition={{ delay: Math.min(0.03 * i, 0.3) }}
               >
 
-                {/* Row 1: avatar + name + status + actions — always single line */}
+                {/* Row 1: avatar, identity and actions. Status sits below to protect long names. */}
                 <div className="flex items-center gap-2 mb-2 min-w-0">
                   <div className="relative w-10 h-10 flex-shrink-0">
                     <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center overflow-hidden">
@@ -1239,18 +1241,8 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
                     <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
                       {p.age && <span className="text-muted-foreground text-[11px] shrink-0">{p.age}y</span>}
                       {p.gender && <span className="text-muted-foreground text-[11px] shrink-0">· {p.gender}</span>}
-                      {p.plan_name && (
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-primary/10 text-primary truncate">
-                          {p.plan_name}
-                        </span>
-                      )}
                     </div>
                   </div>
-                  {ps && (
-                    <span className={`text-[10px] font-bold px-2 py-1 rounded-full shrink-0 whitespace-nowrap ${sc.bg} ${sc.text}`}>
-                      {ps.label}
-                    </span>
-                  )}
                   {onChatWithPatient && (
                     <button
                       onClick={(e) => { e.stopPropagation(); onChatWithPatient(p.user_id); }}
@@ -1261,6 +1253,19 @@ export default function CoachPatients({ onChatWithPatient }: CoachPatientsProps 
                     </button>
                   )}
                   <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                </div>
+
+                <div className="mb-2 flex min-w-0 flex-wrap items-center gap-1.5">
+                  {ps && (
+                    <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-bold ${sc.bg} ${sc.text}`}>
+                      {ps.label}
+                    </span>
+                  )}
+                  {p.plan_name && (
+                    <span className="min-w-0 max-w-full truncate rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">
+                      {p.plan_name}
+                    </span>
+                  )}
                 </div>
 
                 {/* Row 2: expiry (if any) */}
