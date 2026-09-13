@@ -218,12 +218,14 @@ export default function LogFAB(props: { packageKey?: string | null; exercisePath
     };
   }, []);
 
+  // NOTE: the global drawer rule sets `max-height: 85svh !important`, so the
+  // keyboard-aware cap must go through the CSS variable, not a maxHeight style.
   const logDrawerStyle =
     keyboardInset > 0 && activeLog
-      ? {
+      ? ({
           bottom: `${keyboardInset}px`,
-          maxHeight: `${Math.max(320, keyboardViewportHeight - 12)}px`,
-        }
+          "--vaul-max-h": `${Math.max(320, keyboardViewportHeight - 12)}px`,
+        } as React.CSSProperties)
       : undefined;
 
   const keepInputVisible = (event: { currentTarget: HTMLInputElement }) => {

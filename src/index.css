@@ -922,7 +922,7 @@
       max-width: 430px !important;
       margin-left: auto !important;
       margin-right: auto !important;
-      max-height: 85svh !important;
+      max-height: var(--vaul-max-h, 85svh) !important;
       padding-bottom: calc(1.5rem + env(safe-area-inset-bottom)) !important;
       display: flex !important;
       flex-direction: column !important;
