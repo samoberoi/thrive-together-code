@@ -88,8 +88,24 @@ export async function ensureUserProgress(
   const levelTarget = level?.target_daily_steps ?? (cfg?.base_daily_steps ?? 5000);
   const autoTarget = Math.max(500, Math.min(levelTarget, recommended));
   const base = coachOverride && coachOverride > 0 ? coachOverride : autoTarget;
-  const targetSteps = Math.max(base, opts?.minTargetSteps ?? 0);
+  // A goal the user set for themselves wins outright — the coach/admin floor
+  // (minTargetSteps) only applies to auto-computed or coach-assigned targets.
+  const selfSet = coachOverride != null && coachOverride > 0 && progress?.custom_goal_set_by === userId;
+  const targetSteps = selfSet ? base : Math.max(base, opts?.minTargetSteps ?? 0);
   return { progress: progress!, level, targetSteps };
+}
+
+/** Set (or clear with null) the user's own daily step target. */
+export async function setOwnStepGoal(userId: string, steps: number | null) {
+  const { error } = await supabase
+    .from("user_movement_progress" as any)
+    .update({
+      custom_daily_step_goal: steps,
+      custom_goal_set_by: steps != null ? userId : null,
+      custom_goal_updated_at: new Date().toISOString(),
+    } as any)
+    .eq("user_id", userId);
+  if (error) throw error;
 }
 
 export async function fetchUserBadges(userId: string): Promise<UserMovementBadge[]> {
