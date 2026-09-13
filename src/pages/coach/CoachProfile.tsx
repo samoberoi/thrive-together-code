@@ -500,6 +500,24 @@ export default function CoachProfile({ onSignOut, onReplayTour }: { onSignOut: (
 
       {/* Coupons */}
       {/* Personal settings — same tools members get */}
+      <motion.button
+        type="button"
+        onClick={() => setPersonalOpen(true)}
+        className="liquid-glass rounded-3xl p-5 flex items-center gap-3 text-left w-full"
+        initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.31 }}
+        whileTap={{ scale: 0.99 }}
+      >
+        <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+          <Heart className="w-5 h-5 text-primary" strokeWidth={1.8} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-foreground font-bold text-sm">Personal & Health Profile</p>
+          <p className="text-muted-foreground text-xs leading-snug break-words">
+            Body stats, medical history, food preferences & allergies
+          </p>
+        </div>
+      </motion.button>
+
       <PersonalSettingsSection heading="My Settings" onEditProfile={() => setEditing(true)} />
 
       <CoachCouponsSection delay={0.32} />
