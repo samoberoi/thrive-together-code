@@ -13,6 +13,7 @@ import { healthSourceLabel } from "@/lib/platformLabels";
 import {
   fetchMovementOverview,
   logTodaySteps,
+  setOwnStepGoal,
   type MovementOverview,
 } from "@/lib/movementUserService";
 
@@ -25,9 +26,9 @@ export default function TodayStepsCard({ onOpenMovement, minTargetSteps, allowMa
   const [healthSyncError, setHealthSyncError] = useState<string | null>(null);
   const healthStepsAvailable = canUseNativeHealth();
   const [healthConnected, setHealthConnected] = useState(() => isHealthStepsConnected());
-  const [editingSteps, setEditingSteps] = useState(false);
-  const [stepsDraft, setStepsDraft] = useState("");
-  const [savingSteps, setSavingSteps] = useState(false);
+  const [editingTarget, setEditingTarget] = useState(false);
+  const [targetDraft, setTargetDraft] = useState("");
+  const [savingTarget, setSavingTarget] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) return;
