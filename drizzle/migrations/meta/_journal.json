@@ -8,6 +8,13 @@
       "when": 1789358526173,
       "tag": "0000_allow_admin_coach_reassign",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789359827508,
+      "tag": "0001_drop_and_recreate_admin_coach_reassignment",
+      "breakpoints": true
     }
   ]
 }
