@@ -73,39 +73,13 @@ export default function ReassignCoachDialog({ open, onOpenChange, userId, userNa
     if (!selected || selected === currentCoachId) return;
     setSaving(true);
     try {
-      // Only one active assignment per user — deactivate existing first.
-      const { error: deErr } = await supabase
-        .from("coach_assignments")
-        .update({ is_active: false } as any)
-        .eq("user_id", userId)
-        .eq("is_active", true);
-      if (deErr) throw deErr;
-
-      // Re-use an existing row for this coach if there is one, otherwise insert.
-      const { data: existing } = await supabase
-        .from("coach_assignments")
-        .select("id")
-        .eq("user_id", userId)
-        .eq("coach_id", selected)
-        .maybeSingle();
-
-      if ((existing as any)?.id) {
-        const { error } = await supabase
-          .from("coach_assignments")
-          .update({ is_active: true, assigned_at: new Date().toISOString() } as any)
-          .eq("id", (existing as any).id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from("coach_assignments")
-          .insert({ user_id: userId, coach_id: selected, is_active: true } as any);
-        if (error) throw error;
-      }
-
-      await supabase
-        .from("profiles")
-        .update({ coach_name: selectedCoach?.name ?? null } as any)
-        .eq("user_id", userId);
+      // Single source of truth: the backend swaps the member's one assignment row
+      // and keeps the profile's coach name in sync.
+      const { error } = await supabase.rpc("admin_reassign_coach" as any, {
+        _user_id: userId,
+        _coach_id: selected,
+      } as any);
+      if (error) throw error;
 
       logAudit({
         module: "Assignments",

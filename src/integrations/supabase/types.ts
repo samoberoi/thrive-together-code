@@ -5812,6 +5812,10 @@ export type Database = {
         Args: { _user_id?: string }
         Returns: undefined
       }
+      admin_reassign_coach: {
+        Args: { _coach_id: string; _user_id: string }
+        Returns: string
+      }
       apply_referral_code: { Args: { _code: string }; Returns: string }
       approve_custom_slot_request: {
         Args: {
