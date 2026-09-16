@@ -113,6 +113,10 @@ export default function AdminExercises2() {
   const [editing, setEditing] = useState<Exercise2 | null>(null);
   const [form, setForm] = useState<Exercise2Input | null>(null);
   const [saving, setSaving] = useState(false);
+  const [thumbFile, setThumbFile] = useState<File | null>(null);
+  const [thumbPreview, setThumbPreview] = useState<string | null>(null);
+  const [thumbUploading, setThumbUploading] = useState(false);
+  const thumbInputRef = useRef<HTMLInputElement>(null);
 
   const load = async () => {
     setLoading(true);
