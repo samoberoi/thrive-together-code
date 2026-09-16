@@ -94,17 +94,24 @@ export function estimateCaloriesLocal(
   activity: OutdoorActivity,
   weightKg: number,
   minutes: number,
-  distanceKm?: number | null
+  distanceKm?: number | null,
+  config?: CalorieConfig
 ): CalorieEstimate {
-  const w = Math.max(weightKg || 70, 25);
+  const c = config ?? DEFAULT_CALORIE_CONFIG;
+  const w = Math.max(weightKg || c.default_weight_kg, c.min_weight_kg);
   const m = Math.max(minutes || 0, 0);
   let met = Number(activity.met);
   let dist = distanceKm ?? null;
 
   if (activity.distance_based && activity.avg_speed_kmh) {
     if (dist && dist > 0 && m > 0) {
-      const speed = dist / (m / 60);
-      met = Math.min(Math.max(met * (speed / Number(activity.avg_speed_kmh)), 1.5), Number(activity.met) * 2);
+      if (c.pace_scaling_enabled) {
+        const speed = dist / (m / 60);
+        met = Math.min(
+          Math.max(met * (speed / Number(activity.avg_speed_kmh)), c.met_floor),
+          Number(activity.met) * c.met_ceiling_multiplier
+        );
+      }
     } else if (dist == null) {
       dist = +(Number(activity.avg_speed_kmh) * (m / 60)).toFixed(2);
     }
@@ -118,6 +125,47 @@ export function estimateCaloriesLocal(
     met: +met.toFixed(2),
     distance_km: dist == null ? null : +dist.toFixed(2),
     pace_kmh: dist == null || m === 0 ? null : +(dist / (m / 60)).toFixed(2),
-    calories: Math.round((met * 3.5 * w) / 200 * m),
+    calories: Math.round(((met * c.oxygen_ml_per_kg_min * w) / c.kcal_divisor) * m),
   };
+}
+
+/* ---------------- Calorie formula configuration (super-admin editable) --------------- */
+
+export interface CalorieConfig {
+  oxygen_ml_per_kg_min: number;
+  kcal_divisor: number;
+  pace_scaling_enabled: boolean;
+  met_floor: number;
+  met_ceiling_multiplier: number;
+  default_weight_kg: number;
+  min_weight_kg: number;
+  notes: string;
+}
+
+export const DEFAULT_CALORIE_CONFIG: CalorieConfig = {
+  oxygen_ml_per_kg_min: 3.5,
+  kcal_divisor: 200,
+  pace_scaling_enabled: true,
+  met_floor: 1.5,
+  met_ceiling_multiplier: 2,
+  default_weight_kg: 70,
+  min_weight_kg: 25,
+  notes: "",
+};
+
+export async function getCalorieConfig(): Promise<CalorieConfig> {
+  const { data, error } = await db
+    .from("outdoor_activity_calorie_config")
+    .select("*")
+    .maybeSingle();
+  if (error) throw error;
+  return { ...DEFAULT_CALORIE_CONFIG, ...(data ?? {}) } as CalorieConfig;
+}
+
+export async function updateCalorieConfig(patch: Partial<CalorieConfig>): Promise<void> {
+  const { error } = await db
+    .from("outdoor_activity_calorie_config")
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq("id", true);
+  if (error) throw error;
 }

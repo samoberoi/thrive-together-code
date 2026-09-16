@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Loader2, Calculator } from "lucide-react";
+import { Plus, Trash2, Loader2, Calculator, Info, Save } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -12,7 +12,11 @@ import {
   updateOutdoorActivity,
   deleteOutdoorActivity,
   estimateCaloriesLocal,
+  getCalorieConfig,
+  updateCalorieConfig,
+  DEFAULT_CALORIE_CONFIG,
   type OutdoorActivity,
+  type CalorieConfig,
 } from "@/lib/outdoorActivityService";
 
 const blank = {
@@ -31,11 +35,15 @@ export default function OutdoorActivityManager() {
   const [busy, setBusy] = useState(false);
   const [testWeight, setTestWeight] = useState(70);
   const [testMinutes, setTestMinutes] = useState(30);
+  const [config, setConfig] = useState<CalorieConfig>(DEFAULT_CALORIE_CONFIG);
+  const [savingConfig, setSavingConfig] = useState(false);
 
   const load = async () => {
     setLoading(true);
     try {
-      setItems(await listOutdoorActivities());
+      const [list, cfg] = await Promise.all([listOutdoorActivities(), getCalorieConfig()]);
+      setItems(list);
+      setConfig(cfg);
     } catch (e: any) {
       toast({ title: "Could not load activities", description: e.message, variant: "destructive" });
     } finally {
@@ -76,6 +84,28 @@ export default function OutdoorActivityManager() {
       void load();
     }
   };
+
+  const saveConfig = async () => {
+    setSavingConfig(true);
+    try {
+      await updateCalorieConfig(config);
+      toast({ title: "Calorie formula saved" });
+    } catch (e: any) {
+      toast({ title: "Could not save formula", description: e.message, variant: "destructive" });
+    } finally {
+      setSavingConfig(false);
+    }
+  };
+
+  const num = (k: keyof CalorieConfig) => (
+    <Input
+      type="number"
+      step="0.1"
+      className="h-9"
+      value={String(config[k] ?? "")}
+      onChange={(e) => setConfig({ ...config, [k]: Number(e.target.value) } as CalorieConfig)}
+    />
+  );
 
   const remove = async (item: OutdoorActivity) => {
     const ok = await confirm({
@@ -142,6 +172,78 @@ export default function OutdoorActivityManager() {
         </Button>
       </div>
 
+      <div className="rounded-lg border border-border bg-card p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <Info className="w-4 h-4 text-muted-foreground" />
+          <h3 className="font-bold text-foreground">How the calorie number is worked out</h3>
+        </div>
+        <div className="text-xs text-muted-foreground space-y-2 leading-relaxed">
+          <p>
+            <strong className="text-foreground">MET</strong> (Metabolic Equivalent of Task) is how hard
+            an activity is compared with sitting still. Sitting = 1 MET, brisk walking ≈ 4, cycling ≈ 7.5,
+            running ≈ 9.8, swimming ≈ 8. It is not minutes — it is intensity.
+          </p>
+          <p>
+            <strong className="text-foreground">Calories = MET × 3.5 × body weight (kg) × minutes ÷ 200.</strong>{" "}
+            3.5 is the millilitres of oxygen a person uses per kilogram of body weight each minute at rest,
+            and dividing by 200 turns that oxygen use into kilocalories.
+          </p>
+          <p>
+            If the member logs an actual distance, their real pace is compared with the activity's typical
+            speed and the MET is scaled up or down in proportion — never below the floor, never above
+            MET × the ceiling multiplier. If they log only time, distance is projected from the typical speed.
+          </p>
+          <p>
+            Example: 78 kg member running 4 km in 30 minutes → pace 8 km/h against a typical 9.7 km/h, so
+            MET ≈ 8.1 → about 331 kcal.
+          </p>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-3 pt-1">
+          <div>
+            <Label className="text-xs">Oxygen constant</Label>
+            {num("oxygen_ml_per_kg_min")}
+          </div>
+          <div>
+            <Label className="text-xs">Divisor</Label>
+            {num("kcal_divisor")}
+          </div>
+          <div>
+            <Label className="text-xs">Lowest allowed MET</Label>
+            {num("met_floor")}
+          </div>
+          <div>
+            <Label className="text-xs">Highest MET multiplier</Label>
+            {num("met_ceiling_multiplier")}
+          </div>
+          <div>
+            <Label className="text-xs">Default weight (kg)</Label>
+            {num("default_weight_kg")}
+          </div>
+          <div>
+            <Label className="text-xs">Minimum weight (kg)</Label>
+            {num("min_weight_kg")}
+          </div>
+        </div>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={config.pace_scaling_enabled}
+              onCheckedChange={(v) => setConfig({ ...config, pace_scaling_enabled: v })}
+            />
+            <Label className="text-xs">Adjust effort to the member's actual pace</Label>
+          </div>
+          <Button size="sm" onClick={saveConfig} disabled={savingConfig}>
+            {savingConfig ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4 mr-1" />
+            )}
+            Save formula
+          </Button>
+        </div>
+      </div>
+
       <div className="rounded-lg border border-border bg-card p-4 space-y-2">
         <div className="flex items-center gap-2">
           <Calculator className="w-4 h-4 text-muted-foreground" />
@@ -168,8 +270,7 @@ export default function OutdoorActivityManager() {
           </div>
         </div>
         <p className="text-xs text-muted-foreground">
-          Calories = effort (MET) x 3.5 x body weight x minutes / 200. When a member enters their own
-          distance, the effort is adjusted to their actual pace.
+          Every row below shows the result of the settings above for this weight and duration.
         </p>
       </div>
 
@@ -180,7 +281,7 @@ export default function OutdoorActivityManager() {
       ) : (
         <div className="rounded-lg border border-border bg-card divide-y divide-border">
           {items.map((item) => {
-            const est = estimateCaloriesLocal(item, testWeight, testMinutes);
+            const est = estimateCaloriesLocal(item, testWeight, testMinutes, null, config);
             return (
               <div key={item.id} className="p-3 flex flex-wrap items-center gap-3">
                 <span className="text-lg w-6 text-center">{item.icon}</span>
