@@ -92,6 +92,7 @@ const AdminChannelPartners = lazy(() => import("./admin/AdminChannelPartners"));
 const AdminExercises = lazy(() => import("./admin/AdminExercises"));
 const AdminExercises2 = lazy(() => import("./admin/AdminExercises2"));
 import TaxonomyManager from "@/components/admin/TaxonomyManager";
+import OutdoorActivityManager from "@/components/admin/OutdoorActivityManager";
 import { TAXONOMY_TABLES } from "@/lib/exercise2Service";
 const AdminGlobalStreak = lazy(() => import("./admin/AdminGlobalStreak"));
 const AdminPnl = lazy(() => import("./admin/AdminPnl"));
@@ -133,6 +134,7 @@ export type AdminTab =
   | "exercises"
   | "exercises2"
   | "exercise_manager"
+  | "outdoor_activities"
   | "rbac"
   | "subscriptions"
   | "packages"
@@ -216,6 +218,7 @@ const navItems: NavItem[] = [
       { id: "onboarding_grades", icon: Gauge, label: "Onboarding Grading" },
       { id: "coupons", icon: Ticket, label: "Coupon Manager" },
       { id: "exercise_manager", icon: Dumbbell, label: "Exercise Manager" },
+      { id: "outdoor_activities", icon: Footprints, label: "Active Life Manager" },
     ],
   },
 ];
@@ -263,6 +266,18 @@ const tabContentMap: Record<AdminTab, React.ReactNode> = {
       </div>
     </div>
   ),
+  outdoor_activities: (
+    <div className="p-4 sm:p-6 space-y-4 max-w-6xl mx-auto">
+      <div>
+        <h1 className="text-xl sm:text-2xl font-black text-foreground">Active Life Manager</h1>
+        <p className="text-muted-foreground text-sm mt-1">
+          Outdoor and sport activities members can log, with the effort value used to work out
+          calories burned and distance covered.
+        </p>
+      </div>
+      <OutdoorActivityManager />
+    </div>
+  ),
   exercises: (
     <AdminSelfTabs manageLabel="Library" mineLabel="My Exercise" mineIcon={Dumbbell} manage={<AdminExercises />} mine={<UserExercise packageKey="intensive" />} />
   ),
@@ -305,6 +320,7 @@ const adminTabs = new Set<AdminTab>([
   "exercises",
   "exercises2",
   "exercise_manager",
+  "outdoor_activities",
   "rbac",
   "subscriptions",
   "packages",
