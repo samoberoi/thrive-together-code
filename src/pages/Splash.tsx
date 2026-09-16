@@ -32,8 +32,10 @@ export default function Splash() {
     } catch {
       /* ignore */
     }
-    const tExit = window.setTimeout(() => setGone(true), 900);
-    const tReady = window.setTimeout(() => setMinimumSplashDone(true), 1100);
+    // index.html already paints a branded boot screen before any JavaScript runs,
+    // so this in-app splash no longer needs its own long minimum dwell.
+    const tExit = window.setTimeout(() => setGone(true), 320);
+    const tReady = window.setTimeout(() => setMinimumSplashDone(true), 360);
 
     return () => {
       window.clearTimeout(tExit);
