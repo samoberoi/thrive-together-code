@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { normalizePlanKey } from "@/lib/subscriptionService";
-import { Search, ChevronRight, ArrowLeft, CreditCard, Sparkles, AlertCircle, Phone, Mail, Calendar, IndianRupee, Activity, MessageCircle } from "lucide-react";
+import { Search, ChevronRight, ArrowLeft, Phone, Mail, MessageCircle } from "lucide-react";
 import { whatsappCallUrl } from "@/lib/coachAvailability";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
@@ -94,8 +94,10 @@ export default function AdminSubscriptions() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeSubs, setActiveSubs] = useState<Sub[]>([]);
   const [rangeSubs, setRangeSubs] = useState<Sub[]>([]);
+  const [allSubs, setAllSubs] = useState<Sub[]>([]);
   const [yogaActiveSubs, setYogaActiveSubs] = useState<YogaSub[]>([]);
   const [yogaRangeSubs, setYogaRangeSubs] = useState<YogaSub[]>([]);
+  const [yogaAllSubs, setYogaAllSubs] = useState<YogaSub[]>([]);
   const [packages, setPackages] = useState<PackageRow[]>([]);
   const [yogaPackages, setYogaPackages] = useState<YogaPackageRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -192,17 +194,19 @@ export default function AdminSubscriptions() {
     const toIso = range.to.toISOString();
     const fxMap = await fetchRegionFxMap();
     setRegionFx(fxMap);
-    const [{ data: activeSubData }, { data: rangeSubData }, { data: yogaActiveData }, { data: yogaRangeData }, { data: pkgs }, { data: ypkgs }] = await Promise.all([
+    const [{ data: activeSubData }, { data: rangeSubData }, { data: allSubData }, { data: yogaActiveData }, { data: yogaRangeData }, { data: yogaAllData }, { data: pkgs }, { data: ypkgs }] = await Promise.all([
       supabase.from("subscriptions").select("*").eq("status", "active").order("expires_at", { ascending: true }),
       supabase.from("subscriptions").select("*").gte("started_at", fromIso).lte("started_at", toIso).order("started_at", { ascending: false }),
+      supabase.from("subscriptions").select("*").order("started_at", { ascending: false }),
       (supabase as any).from("yoga_bookings").select("*").eq("status", "scheduled").eq("payment_status", "paid").order("expires_on", { ascending: true }),
       (supabase as any).from("yoga_bookings").select("*").eq("payment_status", "paid").gte("created_at", fromIso).lte("created_at", toIso).order("created_at", { ascending: false }),
+      (supabase as any).from("yoga_bookings").select("*").eq("payment_status", "paid").order("created_at", { ascending: false }),
       (supabase as any).from("packages").select("plan_key, name, tagline, sort_order").order("sort_order", { ascending: true }),
       (supabase as any).from("channel_partner_packages").select("id, name, partner_id, package_type, classes_per_month").eq("is_active", true),
     ]);
 
-    const subRows = [...((activeSubData || []) as any[]), ...((rangeSubData || []) as any[])];
-    const yogaRows = [...((yogaActiveData || []) as any[]), ...((yogaRangeData || []) as any[])];
+    const subRows = [...((activeSubData || []) as any[]), ...((rangeSubData || []) as any[]), ...((allSubData || []) as any[])];
+    const yogaRows = [...((yogaActiveData || []) as any[]), ...((yogaRangeData || []) as any[]), ...((yogaAllData || []) as any[])];
     const userIds = [...new Set([...subRows.map((s) => s.user_id), ...yogaRows.map((y) => y.user_id)].filter(Boolean))];
     const partnerIds = [...new Set(yogaRows.map((y) => y.partner_id).filter(Boolean))];
 
@@ -235,8 +239,10 @@ export default function AdminSubscriptions() {
 
     setActiveSubs(((activeSubData || []) as any[]).map(enrichSub));
     setRangeSubs(((rangeSubData || []) as any[]).map(enrichSub));
+    setAllSubs(((allSubData || []) as any[]).map(enrichSub));
     setYogaActiveSubs(((yogaActiveData || []) as any[]).map(enrichYoga).filter(isYogaActive));
     setYogaRangeSubs(((yogaRangeData || []) as any[]).map(enrichYoga).filter(isYogaPaid));
+    setYogaAllSubs(((yogaAllData || []) as any[]).map(enrichYoga).filter(isYogaPaid));
     setPackages(((pkgs as any[]) || []) as PackageRow[]);
     setYogaPackages(((ypkgs as any[]) || []) as YogaPackageRow[]);
     setLoading(false);
@@ -261,10 +267,10 @@ export default function AdminSubscriptions() {
     return map;
   }, [yogaActiveSubs]);
 
-  const bbdoActiveRevenue = activeSubs.reduce((s, x) => s + asInr(x.plan_price || 0, x.regionCode), 0);
   const bbdoRangeRevenue = rangeSubs.reduce((s, x) => s + asInr(x.plan_price || 0, x.regionCode), 0);
-  const yogaActiveRevenue = yogaActiveSubs.reduce((s, y) => s + (y.price_inr || 0), 0);
   const yogaRangeRevenue = yogaRangeSubs.reduce((s, y) => s + (y.price_inr || 0), 0);
+  const totalRevenue = allSubs.reduce((s, x) => s + asInr(x.plan_price || 0, x.regionCode), 0)
+    + yogaAllSubs.reduce((s, y) => s + (y.price_inr || 0), 0);
   const bbdoRenewals = activeSubs.filter((s) => {
     const days = differenceInDays(new Date(s.expires_at), new Date());
     return days >= 0 && days <= 30;
@@ -294,17 +300,15 @@ export default function AdminSubscriptions() {
     }).length;
 
     return (
-      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+      <div className="p-3 sm:p-6 space-y-4 sm:space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-          <HeaderBack onBack={backToHub} title={`${planNumber(view.planKey)} · ${view.planName}`} subtitle={`${list.length} active subscriber${list.length === 1 ? "" : "s"} · ${inr(totalRev)} active revenue · ${detailRange.label}`} />
+          <HeaderBack onBack={backToHub} title={view.planName} subtitle={planNumber(view.planKey)} />
           <DateRangeFilter value={detailRange} onChange={setDetailRange} className="self-start shrink-0" />
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <StatCard label="Total Users" value={list.length} tone="primary" />
-          <StatCard label="With Coach" value={withCoach} tone="emerald" />
-          <StatCard label="Off track today" value={list.filter((s) => adherence.get(s.user_id) && !adherence.get(s.user_id)!.onTrack).length} tone="amber" />
-          <StatCard label="Active Revenue" value={inr(totalRev)} tone="purple" />
+        <div className="grid grid-cols-2 gap-2 sm:gap-3">
+          <CompactMetric label="Active members" value={String(list.length)} detail={view.planKey === "foundation" ? "Self-guided" : `${withCoach} with coach`} />
+          <CompactMetric label={`${detailRange.label} value`} value={inr(totalRev)} detail={renewingSoon ? `${renewingSoon} renew soon` : "No renewals due"} />
         </div>
 
         <SearchExport search={search} setSearch={setSearch} placeholder="Search user, phone, coach..." filename={`${view.planKey}-subscribers`} rows={list as any} />
@@ -344,13 +348,12 @@ export default function AdminSubscriptions() {
     return (
       <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-          <HeaderBack onBack={backToHub} title={view.packageName} subtitle={`${list.length} active yoga subscriber${list.length === 1 ? "" : "s"} · ${inr(totalRev)} active revenue · ${detailRange.label}`} />
+          <HeaderBack onBack={backToHub} title={view.packageName} subtitle="Yoga package" />
           <DateRangeFilter value={detailRange} onChange={setDetailRange} className="self-start shrink-0" />
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          <StatCard label="Active" value={list.length} tone="primary" />
-          <StatCard label="Renewing ≤15d" value={renewingSoon} tone="amber" />
-          <StatCard label="Active Revenue" value={inr(totalRev)} tone="purple" />
+        <div className="grid grid-cols-2 gap-2 sm:gap-3">
+          <CompactMetric label="Active members" value={String(list.length)} detail={renewingSoon ? `${renewingSoon} renew soon` : "No renewals due"} />
+          <CompactMetric label={`${detailRange.label} value`} value={inr(totalRev)} detail={`${list.length} subscriptions`} />
         </div>
         <SearchExport search={search} setSearch={setSearch} placeholder="Search user, phone, instructor..." filename={`yoga-${view.packageId}-subscribers`} rows={list as any} />
         <div className="space-y-3">
@@ -375,10 +378,9 @@ export default function AdminSubscriptions() {
           <HeaderBack onBack={backToHub} title={view.title} subtitle={`${list.length} record${list.length === 1 ? "" : "s"} · ${inr(total)}`} />
           <DateRangeFilter value={range} onChange={setRange} className="self-start shrink-0" />
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          <StatCard label="Records" value={list.length} tone="primary" />
-          <StatCard label="BBDO" value={list.filter((r) => r.type === "BBDO").length} tone="emerald" />
-          <StatCard label="Value" value={inr(total)} tone="purple" />
+        <div className="grid grid-cols-2 gap-2 sm:gap-3">
+          <CompactMetric label="Records" value={String(list.length)} detail={`${list.filter((r) => r.type === "BBDO").length} BBDO`} />
+          <CompactMetric label="Value" value={inr(total)} detail={view.title} />
         </div>
         <SearchExport search={search} setSearch={setSearch} placeholder="Search user, phone, coach, instructor, package..." filename={view.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")} rows={list as any} />
         <div className="space-y-3">
@@ -404,28 +406,15 @@ export default function AdminSubscriptions() {
 
 
   return (
-    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black">Subscriptions</h1>
-          <p className="text-muted-foreground text-sm">
-            {activeSubs.length + yogaActiveSubs.length} total active · {inr(bbdoActiveRevenue + yogaActiveRevenue)} active revenue (INR equiv.) · {range.label} sales: {inr(bbdoRangeRevenue + yogaRangeRevenue)}
-          </p>
-        </div>
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-5">
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-xl sm:text-2xl font-semibold">Subscriptions</h1>
         <DateRangeFilter value={range} onChange={setRange} />
       </div>
 
-      <div className="grid grid-cols-1 min-[430px]:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
-        <StatCard label="BBDO Active" value={activeSubs.length} tone="primary" onClick={() => setRoute({ subscriptionTab: "bbdo" })} />
-        <StatCard label="Yoga Active" value={yogaActiveSubs.length} tone="emerald" onClick={() => setRoute({ subscriptionTab: "yoga" })} />
-        <StatCard label="Renewals Due" value={bbdoRenewals.length + yogaRenewals.length} tone="amber" onClick={() => setRoute({ metric: "renewals" })} />
-        <StatCard label="Active Revenue (INR)" value={inr(bbdoActiveRevenue + yogaActiveRevenue)} tone="purple" onClick={() => setRoute({ metric: "active_revenue" })} />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-3">
-        <MetricButton icon={IndianRupee} label="Range Revenue" value={inr(bbdoRangeRevenue + yogaRangeRevenue)} sub={`${rangeSubs.length + yogaRangeSubs.length} paid sale${rangeSubs.length + yogaRangeSubs.length === 1 ? "" : "s"}`} onClick={() => setRoute({ metric: "range_revenue" })} />
-        <MetricButton icon={Activity} label="BBDO Active Revenue" value={inr(bbdoActiveRevenue)} sub={`${activeSubs.length} active BBDO subscription${activeSubs.length === 1 ? "" : "s"}`} onClick={() => setRoute({ metric: "active_revenue", subscriptionTab: "bbdo" })} />
-        <MetricButton icon={Sparkles} label="Yoga Active Revenue" value={inr(yogaActiveRevenue)} sub={`${yogaActiveSubs.length} active yoga subscription${yogaActiveSubs.length === 1 ? "" : "s"}`} onClick={() => setRoute({ metric: "active_revenue", subscriptionTab: "yoga" })} />
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
+        <CompactMetric label="Total revenue" value={inr(totalRevenue)} detail="Till date" />
+        <CompactMetric label={`${range.label} revenue`} value={inr(bbdoRangeRevenue + yogaRangeRevenue)} detail={`${rangeSubs.length + yogaRangeSubs.length} payments`} onClick={() => setRoute({ metric: "range_revenue" })} />
       </div>
 
       <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
@@ -444,7 +433,7 @@ export default function AdminSubscriptions() {
       </div>
 
       {tab === "bbdo" && (
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 min-[560px]:grid-cols-2 gap-2 sm:gap-3">
           {packages.map((pkg, i) => {
             const list = perPlan.get(pkg.plan_key) || [];
             const hasCoach = pkg.plan_key !== "foundation";
@@ -453,34 +442,29 @@ export default function AdminSubscriptions() {
               const days = differenceInDays(new Date(s.expires_at), new Date());
               return days >= 0 && days <= 30;
             }).length;
-            const rev = list.reduce((s, x) => s + x.plan_price, 0);
+            const rev = list.reduce((s, x) => s + asInr(x.plan_price || 0, x.regionCode), 0);
             return (
               <motion.button
                 key={pkg.plan_key}
                 onClick={() => setRoute({ subscriptionTab: "bbdo", view: "bbdo-plan", plan: pkg.plan_key })}
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                className="w-full liquid-glass rounded-xl sm:rounded-2xl p-4 sm:p-5 text-left hover:bg-accent/40 hover:-translate-y-px transition-all"
+                className="w-full bbdo-surface-card p-4 text-left hover:bg-accent/40 transition-colors"
               >
-                <div className="flex items-start gap-3 sm:gap-4 min-w-0">
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                    <CreditCard className="w-6 h-6 text-primary" strokeWidth={1.5} />
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] font-semibold text-primary">{planNumber(pkg.plan_key)}</p>
+                    <p className="font-semibold text-foreground leading-snug mt-0.5">{pkg.name}</p>
                   </div>
-                  <div className="min-w-0">
-                    <p className="font-black text-foreground leading-tight">{planNumber(pkg.plan_key)} · {pkg.name}</p>
-                    <p className="text-xs text-muted-foreground mt-1 leading-snug">{pkg.tagline || (hasCoach ? "Coach-supported plan" : "Self-guided plan · no coach")}</p>
-                    <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                      <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">{list.length} users</span>
-                      <span className={`px-2 py-0.5 rounded-full font-medium ${hasCoach ? "bg-emerald-500/10 text-emerald-600" : "bg-muted text-muted-foreground"}`}>{hasCoach ? `${withCoach} with coach` : "No coach"}</span>
-                      {renewing > 0 && <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 font-medium">{renewing} renewing</span>}
-                    </div>
-                  </div>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0 mt-1" />
                 </div>
-                <div className="flex items-center justify-between gap-3 mt-3 pt-3 border-t border-border">
-                  <div className="text-left">
-                    <p className="font-bold">{inr(rev)}</p>
-                    <p className="text-xs text-muted-foreground">active revenue</p>
+                <div className="grid grid-cols-2 gap-x-3 gap-y-3 mt-4 pt-3 border-t border-border">
+                  <div><p className="text-lg font-semibold tabular text-foreground">{list.length}</p><p className="text-[11px] text-muted-foreground">Active</p></div>
+                  <div><p className="text-lg font-semibold tabular text-foreground">{inr(rev)}</p><p className="text-[11px] text-muted-foreground">Current value</p></div>
+                  <div><p className="text-sm font-semibold text-foreground">{hasCoach ? withCoach : "—"}</p><p className="text-[11px] text-muted-foreground">{hasCoach ? "With coach" : "Self-guided"}</p></div>
+                  <div>
+                    <p className={`text-sm font-semibold ${renewing > 0 ? "text-destructive" : "text-foreground"}`}>{renewing}</p>
+                    <p className="text-[11px] text-muted-foreground">Renew in 30d</p>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
                 </div>
               </motion.button>
             );
@@ -490,7 +474,7 @@ export default function AdminSubscriptions() {
       )}
 
       {tab === "yoga" && (
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 min-[560px]:grid-cols-2 gap-2 sm:gap-3">
           {yogaPackages.map((pkg, i) => {
             const list = perYogaPkg.get(pkg.id) || [];
             const rev = list.reduce((s, y) => s + (y.price_inr || 0), 0);
@@ -503,27 +487,19 @@ export default function AdminSubscriptions() {
                 key={pkg.id}
                 onClick={() => setRoute({ subscriptionTab: "yoga", view: "yoga-package", package: pkg.id })}
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                className="w-full liquid-glass rounded-xl sm:rounded-2xl p-4 sm:p-5 text-left hover:bg-accent/40 hover:-translate-y-px transition-all"
+                className="w-full bbdo-surface-card p-4 text-left hover:bg-accent/40 transition-colors"
               >
-                <div className="flex items-start gap-3 sm:gap-4 min-w-0">
-                  <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
-                    <Sparkles className="w-6 h-6 text-emerald-500" strokeWidth={1.5} />
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold leading-snug">{pkg.name}</p>
+                    <p className="text-[11px] text-muted-foreground mt-1">{pkg.package_type} · {pkg.classes_per_month ?? 8} classes/month</p>
                   </div>
-                  <div className="min-w-0">
-                    <p className="font-black leading-tight">{pkg.name}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{pkg.package_type} · {pkg.classes_per_month ?? 8} classes/mo</p>
-                    <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                      <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">{list.length} subscribers</span>
-                      {renewing > 0 && <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 font-medium">{renewing} renewing</span>}
-                    </div>
-                  </div>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0 mt-1" />
                 </div>
-                <div className="flex items-center justify-between gap-3 mt-3 pt-3 border-t border-border">
-                  <div className="text-left">
-                    <p className="font-bold">{inr(rev)}</p>
-                    <p className="text-xs text-muted-foreground">active revenue</p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                <div className="grid grid-cols-3 gap-3 mt-4 pt-3 border-t border-border">
+                  <div><p className="text-lg font-semibold tabular">{list.length}</p><p className="text-[11px] text-muted-foreground">Active</p></div>
+                  <div><p className="text-lg font-semibold tabular">{inr(rev)}</p><p className="text-[11px] text-muted-foreground">Current value</p></div>
+                  <div><p className={`text-lg font-semibold tabular ${renewing > 0 ? "text-destructive" : "text-foreground"}`}>{renewing}</p><p className="text-[11px] text-muted-foreground">Renew in 15d</p></div>
                 </div>
               </motion.button>
             );
@@ -547,6 +523,18 @@ function HeaderBack({ onBack, title, subtitle }: { onBack: () => void; title: st
       </div>
     </div>
   );
+}
+
+function CompactMetric({ label, value, detail, onClick }: { label: string; value: string; detail: string; onClick?: () => void }) {
+  const content = (
+    <>
+      <p className="text-[11px] font-semibold text-muted-foreground leading-tight">{label}</p>
+      <p className="text-[clamp(17px,5vw,26px)] leading-tight font-semibold tabular text-foreground mt-2 break-words">{value}</p>
+      <p className="text-[11px] text-muted-foreground mt-1">{detail}</p>
+    </>
+  );
+  const className = `bbdo-surface-card min-w-0 p-3 sm:p-4 text-left ${onClick ? "hover:bg-accent/40 transition-colors" : ""}`;
+  return onClick ? <button onClick={onClick} className={className}>{content}</button> : <div className={className}>{content}</div>;
 }
 
 function SearchExport({ search, setSearch, placeholder, filename, rows }: { search: string; setSearch: (v: string) => void; placeholder: string; filename: string; rows: any[] }) {
@@ -635,15 +623,11 @@ function YogaRow({ sub, index, onOpenProfile }: { sub: YogaSub; index: number; o
 
 function RenewalBlock({ expiresAt, daysLeft, renewSoon }: { expiresAt: string; daysLeft: number; renewSoon: boolean }) {
   return (
-    <div className="flex items-end justify-between gap-3 sm:block sm:text-right shrink-0">
-      <div>
-      <p className={`text-xs flex items-center gap-1 justify-end ${renewSoon ? "text-destructive font-bold" : "text-muted-foreground"}`}>
-        <Calendar className="w-3 h-3" />{daysLeft > 0 ? `${daysLeft}d left` : daysLeft === 0 ? "today" : "expired"}
+    <div className="grid items-center gap-y-0.5 sm:min-w-[120px] shrink-0 sm:text-right">
+      <p className={`text-xs font-semibold leading-tight ${renewSoon ? "text-critical" : "text-foreground"}`}>
+        {daysLeft > 0 ? `${daysLeft} days left` : daysLeft === 0 ? "Expires today" : "Expired"}
       </p>
-      <p className="text-xs text-muted-foreground mt-0.5">exp {fmtDate(expiresAt)}</p>
-      </div>{renewSoon && (
-        <span className="inline-flex items-center gap-1 text-[10px] mt-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 font-bold"><AlertCircle className="w-3 h-3" />Renewal due</span>
-      )}
+      <p className="text-[11px] text-muted-foreground leading-tight">{fmtDate(expiresAt)}</p>
     </div>
   );
 }
@@ -738,38 +722,7 @@ function ListRow({ row, index, onOpenProfile, adherence, adherenceLoading, onNud
   );
 }
 
-function MetricButton({ icon: Icon, label, value, sub, onClick }: { icon: React.ElementType; label: string; value: string; sub: string; onClick: () => void }) {
-  return (
-    <button onClick={onClick} className="liquid-glass rounded-2xl p-4 text-left hover:bg-accent/40 hover:-translate-y-px transition-all flex items-center justify-between gap-4">
-      <div>
-        <p className="text-xs font-bold text-muted-foreground">{label}</p>
-        <p className="text-xl font-black text-foreground mt-1">{value}</p>
-        <p className="text-[11px] text-muted-foreground mt-0.5">{sub}</p>
-      </div>
-      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-        <Icon className="w-5 h-5 text-primary" strokeWidth={1.8} />
-      </div>
-    </button>
-  );
-}
-
 function EmptyState({ label }: { label: string }) {
   return <div className="text-center py-12 text-muted-foreground liquid-glass rounded-2xl">{label}</div>;
 }
 
-function StatCard({ label, value, tone, onClick }: { label: string; value: number | string; tone: "primary" | "emerald" | "amber" | "purple"; onClick?: () => void }) {
-  const toneClass = {
-    primary: "text-primary",
-    emerald: "text-emerald-500",
-    amber: "text-amber-500",
-    purple: "text-purple-500",
-  }[tone];
-  const className = `liquid-glass rounded-xl sm:rounded-2xl p-2.5 sm:p-4 text-left min-w-0 ${onClick ? "hover:bg-accent/40 hover:-translate-y-px transition-all" : ""}`;
-  const content = (
-    <>
-      <p className={`text-[17px] sm:text-2xl font-black truncate ${toneClass}`}>{value}</p>
-      <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 truncate">{label}</p>
-    </>
-  );
-  return onClick ? <button onClick={onClick} className={className}>{content}</button> : <div className={className}>{content}</div>;
-}
