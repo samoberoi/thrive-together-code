@@ -32,6 +32,10 @@ export default function Splash() {
     } catch {
       /* ignore */
     }
+    // Warm the code for the screen we are about to route to, so the lazy chunk is
+    // already parsed by the time the splash exits.
+    void import("@/pages/Dashboard").catch(() => undefined);
+
     // index.html already paints a branded boot screen before any JavaScript runs,
     // so this in-app splash no longer needs its own long minimum dwell.
     const tExit = window.setTimeout(() => setGone(true), 320);
