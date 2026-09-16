@@ -267,9 +267,7 @@ export default function AdminSubscriptions() {
     return map;
   }, [yogaActiveSubs]);
 
-  const bbdoActiveRevenue = activeSubs.reduce((s, x) => s + asInr(x.plan_price || 0, x.regionCode), 0);
   const bbdoRangeRevenue = rangeSubs.reduce((s, x) => s + asInr(x.plan_price || 0, x.regionCode), 0);
-  const yogaActiveRevenue = yogaActiveSubs.reduce((s, y) => s + (y.price_inr || 0), 0);
   const yogaRangeRevenue = yogaRangeSubs.reduce((s, y) => s + (y.price_inr || 0), 0);
   const totalRevenue = allSubs.reduce((s, x) => s + asInr(x.plan_price || 0, x.regionCode), 0)
     + yogaAllSubs.reduce((s, y) => s + (y.price_inr || 0), 0);
@@ -350,13 +348,12 @@ export default function AdminSubscriptions() {
     return (
       <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-          <HeaderBack onBack={backToHub} title={view.packageName} subtitle={`${list.length} active yoga subscriber${list.length === 1 ? "" : "s"} · ${inr(totalRev)} active revenue · ${detailRange.label}`} />
+          <HeaderBack onBack={backToHub} title={view.packageName} subtitle="Yoga package" />
           <DateRangeFilter value={detailRange} onChange={setDetailRange} className="self-start shrink-0" />
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          <StatCard label="Active" value={list.length} tone="primary" />
-          <StatCard label="Renewing ≤15d" value={renewingSoon} tone="amber" />
-          <StatCard label="Active Revenue" value={inr(totalRev)} tone="purple" />
+        <div className="grid grid-cols-2 gap-2 sm:gap-3">
+          <CompactMetric label="Active members" value={String(list.length)} detail={renewingSoon ? `${renewingSoon} renew soon` : "No renewals due"} />
+          <CompactMetric label={`${detailRange.label} value`} value={inr(totalRev)} detail={`${list.length} subscriptions`} />
         </div>
         <SearchExport search={search} setSearch={setSearch} placeholder="Search user, phone, instructor..." filename={`yoga-${view.packageId}-subscribers`} rows={list as any} />
         <div className="space-y-3">
@@ -381,10 +378,9 @@ export default function AdminSubscriptions() {
           <HeaderBack onBack={backToHub} title={view.title} subtitle={`${list.length} record${list.length === 1 ? "" : "s"} · ${inr(total)}`} />
           <DateRangeFilter value={range} onChange={setRange} className="self-start shrink-0" />
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          <StatCard label="Records" value={list.length} tone="primary" />
-          <StatCard label="BBDO" value={list.filter((r) => r.type === "BBDO").length} tone="emerald" />
-          <StatCard label="Value" value={inr(total)} tone="purple" />
+        <div className="grid grid-cols-2 gap-2 sm:gap-3">
+          <CompactMetric label="Records" value={String(list.length)} detail={`${list.filter((r) => r.type === "BBDO").length} BBDO`} />
+          <CompactMetric label="Value" value={inr(total)} detail={view.title} />
         </div>
         <SearchExport search={search} setSearch={setSearch} placeholder="Search user, phone, coach, instructor, package..." filename={view.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")} rows={list as any} />
         <div className="space-y-3">
@@ -446,7 +442,7 @@ export default function AdminSubscriptions() {
               const days = differenceInDays(new Date(s.expires_at), new Date());
               return days >= 0 && days <= 30;
             }).length;
-            const rev = list.reduce((s, x) => s + x.plan_price, 0);
+            const rev = list.reduce((s, x) => s + asInr(x.plan_price || 0, x.regionCode), 0);
             return (
               <motion.button
                 key={pkg.plan_key}
@@ -491,24 +487,19 @@ export default function AdminSubscriptions() {
                 key={pkg.id}
                 onClick={() => setRoute({ subscriptionTab: "yoga", view: "yoga-package", package: pkg.id })}
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                className="w-full liquid-glass rounded-xl sm:rounded-2xl p-4 sm:p-5 text-left hover:bg-accent/40 hover:-translate-y-px transition-all"
+                className="w-full bbdo-surface-card p-4 text-left hover:bg-accent/40 transition-colors"
               >
-                <div className="flex items-start gap-3 sm:gap-4 min-w-0">
-                  <div className="min-w-0">
-                    <p className="font-black leading-tight">{pkg.name}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{pkg.package_type} · {pkg.classes_per_month ?? 8} classes/mo</p>
-                    <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                      <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">{list.length} subscribers</span>
-                      {renewing > 0 && <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 font-medium">{renewing} renewing</span>}
-                    </div>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold leading-snug">{pkg.name}</p>
+                    <p className="text-[11px] text-muted-foreground mt-1">{pkg.package_type} · {pkg.classes_per_month ?? 8} classes/month</p>
                   </div>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0 mt-1" />
                 </div>
-                <div className="flex items-center justify-between gap-3 mt-3 pt-3 border-t border-border">
-                  <div className="text-left">
-                    <p className="font-bold">{inr(rev)}</p>
-                    <p className="text-xs text-muted-foreground">active revenue</p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                <div className="grid grid-cols-3 gap-3 mt-4 pt-3 border-t border-border">
+                  <div><p className="text-lg font-semibold tabular">{list.length}</p><p className="text-[11px] text-muted-foreground">Active</p></div>
+                  <div><p className="text-lg font-semibold tabular">{inr(rev)}</p><p className="text-[11px] text-muted-foreground">Current value</p></div>
+                  <div><p className={`text-lg font-semibold tabular ${renewing > 0 ? "text-destructive" : "text-foreground"}`}>{renewing}</p><p className="text-[11px] text-muted-foreground">Renew in 15d</p></div>
                 </div>
               </motion.button>
             );
@@ -632,10 +623,7 @@ function YogaRow({ sub, index, onOpenProfile }: { sub: YogaSub; index: number; o
 
 function RenewalBlock({ expiresAt, daysLeft, renewSoon }: { expiresAt: string; daysLeft: number; renewSoon: boolean }) {
   return (
-    <div className="grid grid-cols-[auto_1fr] items-center gap-x-2 gap-y-0.5 sm:min-w-[150px] shrink-0">
-      <div className={`row-span-2 w-9 h-9 rounded-lg flex items-center justify-center ${renewSoon ? "bg-critical-soft text-critical" : "bg-secondary text-primary"}`}>
-        {renewSoon ? <AlertCircle className="w-4 h-4" /> : <Calendar className="w-4 h-4" />}
-      </div>
+    <div className="grid items-center gap-y-0.5 sm:min-w-[120px] shrink-0 sm:text-right">
       <p className={`text-xs font-semibold leading-tight ${renewSoon ? "text-critical" : "text-foreground"}`}>
         {daysLeft > 0 ? `${daysLeft} days left` : daysLeft === 0 ? "Expires today" : "Expired"}
       </p>
@@ -738,19 +726,3 @@ function EmptyState({ label }: { label: string }) {
   return <div className="text-center py-12 text-muted-foreground liquid-glass rounded-2xl">{label}</div>;
 }
 
-function StatCard({ label, value, tone, onClick }: { label: string; value: number | string; tone: "primary" | "emerald" | "amber" | "purple"; onClick?: () => void }) {
-  const toneClass = {
-    primary: "text-primary",
-    emerald: "text-emerald-500",
-    amber: "text-amber-500",
-    purple: "text-purple-500",
-  }[tone];
-  const className = `liquid-glass rounded-xl sm:rounded-2xl p-2.5 sm:p-4 text-left min-w-0 ${onClick ? "hover:bg-accent/40 hover:-translate-y-px transition-all" : ""}`;
-  const content = (
-    <>
-      <p className={`text-[17px] sm:text-2xl font-black truncate ${toneClass}`}>{value}</p>
-      <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 truncate">{label}</p>
-    </>
-  );
-  return onClick ? <button onClick={onClick} className={className}>{content}</button> : <div className={className}>{content}</div>;
-}
