@@ -10,6 +10,7 @@ import {
   createTaxonomyItem,
   updateTaxonomyItem,
   deleteTaxonomyItem,
+  countTaxonomyUsage,
   TAXONOMY_LABEL,
   type TaxonomyItem,
   type TaxonomyTable,
@@ -18,6 +19,7 @@ import {
 export default function TaxonomyManager({ table }: { table: TaxonomyTable }) {
   const confirm = useConfirm();
   const [items, setItems] = useState<TaxonomyItem[]>([]);
+  const [usage, setUsage] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [newName, setNewName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -27,7 +29,9 @@ export default function TaxonomyManager({ table }: { table: TaxonomyTable }) {
   const load = async () => {
     setLoading(true);
     try {
-      setItems(await listTaxonomy(table));
+      const [list, counts] = await Promise.all([listTaxonomy(table), countTaxonomyUsage(table)]);
+      setItems(list);
+      setUsage(counts);
     } catch (e: any) {
       toast({ title: "Could not load list", description: e.message, variant: "destructive" });
     } finally {
@@ -82,9 +86,18 @@ export default function TaxonomyManager({ table }: { table: TaxonomyTable }) {
   };
 
   const remove = async (item: TaxonomyItem) => {
+    const used = usage[item.id] ?? 0;
+    if (used > 0) {
+      toast({
+        title: `"${item.name}" is in use`,
+        description: `${used} exercise${used === 1 ? "" : "s"} use this option. Rename it or switch it off instead of deleting.`,
+        variant: "destructive",
+      });
+      return;
+    }
     const ok = await confirm({
       title: `Delete "${item.name}"?`,
-      description: "It will be removed from the dropdown and from any exercise using it.",
+      description: "Nothing is using this option, so it is safe to remove.",
       confirmText: "Delete",
       destructive: true,
     });
@@ -162,6 +175,11 @@ export default function TaxonomyManager({ table }: { table: TaxonomyTable }) {
               ) : (
                 <>
                   <span className="flex-1 text-sm text-foreground truncate">{item.name}</span>
+                  {(usage[item.id] ?? 0) > 0 && (
+                    <span className="shrink-0 px-1.5 py-0.5 rounded bg-muted text-[10px] font-semibold text-muted-foreground">
+                      in use · {usage[item.id]}
+                    </span>
+                  )}
                   <Switch
                     checked={item.enabled}
                     onCheckedChange={async (v) => {
@@ -180,7 +198,14 @@ export default function TaxonomyManager({ table }: { table: TaxonomyTable }) {
                   >
                     <Pencil className="w-4 h-4" />
                   </Button>
-                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => remove(item)}>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8"
+                    onClick={() => remove(item)}
+                    disabled={(usage[item.id] ?? 0) > 0}
+                    title={(usage[item.id] ?? 0) > 0 ? "In use by an exercise" : "Delete"}
+                  >
                     <Trash2 className="w-4 h-4 text-destructive" />
                   </Button>
                 </>
