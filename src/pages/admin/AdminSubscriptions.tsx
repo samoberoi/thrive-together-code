@@ -300,7 +300,7 @@ export default function AdminSubscriptions() {
     }).length;
 
     return (
-      <div className="p-3 sm:p-6 space-y-4 sm:space-y-5">
+      <div className="w-full max-w-6xl mx-auto p-4 sm:p-6 space-y-4 sm:space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <HeaderBack onBack={backToHub} title={view.planName} subtitle={planNumber(view.planKey)} />
           <DateRangeFilter value={detailRange} onChange={setDetailRange} className="self-start shrink-0" />
@@ -346,7 +346,7 @@ export default function AdminSubscriptions() {
     }).length;
 
     return (
-      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+      <div className="w-full max-w-6xl mx-auto p-4 sm:p-6 space-y-4 sm:space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <HeaderBack onBack={backToHub} title={view.packageName} subtitle="Yoga package" />
           <DateRangeFilter value={detailRange} onChange={setDetailRange} className="self-start shrink-0" />
@@ -373,7 +373,7 @@ export default function AdminSubscriptions() {
     });
     const total = list.reduce((sum, row) => sum + asInr(row.amount, row.regionCode), 0);
     return (
-      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+      <div className="w-full max-w-6xl mx-auto p-4 sm:p-6 space-y-4 sm:space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <HeaderBack onBack={backToHub} title={view.title} subtitle={`${list.length} record${list.length === 1 ? "" : "s"} · ${inr(total)}`} />
           <DateRangeFilter value={range} onChange={setRange} className="self-start shrink-0" />
@@ -517,11 +517,11 @@ export default function AdminSubscriptions() {
 function HeaderBack({ onBack, title, subtitle }: { onBack: () => void; title: string; subtitle: string }) {
   return (
     <div className="flex items-start gap-3 min-w-0">
-      <button onClick={onBack} className="w-9 h-9 rounded-full liquid-glass flex items-center justify-center hover:bg-accent transition-colors" aria-label="Back to subscriptions">
+      <button onClick={onBack} className="w-9 h-9 rounded-md border border-border bg-card flex items-center justify-center hover:bg-accent transition-colors" aria-label="Back to subscriptions">
         <ArrowLeft className="w-4 h-4" />
       </button>
       <div className="min-w-0">
-        <h1 className="text-xl sm:text-2xl font-black leading-tight break-words">{title}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold leading-tight break-words">{title}</h1>
         <p className="text-muted-foreground text-xs sm:text-sm mt-1 leading-snug">{subtitle}</p>
       </div>
     </div>
@@ -562,7 +562,7 @@ function BBDORow({ sub, index, onOpenProfile, adherence, adherenceLoading, onNud
       tabIndex={onOpenProfile ? 0 : undefined}
       onClick={() => onOpenProfile?.(sub.user_id)}
       onKeyDown={(e) => { if (onOpenProfile && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onOpenProfile(sub.user_id); } }}
-      initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.02 }} className={`liquid-glass rounded-xl sm:rounded-2xl p-4 ${onOpenProfile ? "cursor-pointer hover:bg-accent/30 transition-colors" : ""}`}>
+      initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.02 }} className={`rounded-lg border border-border bg-card p-4 shadow-sm ${onOpenProfile ? "cursor-pointer hover:border-primary/30 hover:bg-accent/20 transition-colors" : ""}`}>
       <div className="grid grid-cols-1 sm:flex sm:items-start sm:justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 min-w-0">
@@ -610,7 +610,7 @@ function YogaRow({ sub, index, onOpenProfile }: { sub: YogaSub; index: number; o
       tabIndex={onOpenProfile ? 0 : undefined}
       onClick={() => onOpenProfile?.(sub.user_id)}
       onKeyDown={(e) => { if (onOpenProfile && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onOpenProfile(sub.user_id); } }}
-      initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.02 }} className={`liquid-glass rounded-2xl p-4 flex items-start justify-between gap-3 ${onOpenProfile ? "cursor-pointer hover:bg-accent/30 transition-colors" : ""}`}>
+      initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.02 }} className={`rounded-lg border border-border bg-card p-4 shadow-sm flex items-start justify-between gap-3 ${onOpenProfile ? "cursor-pointer hover:border-primary/30 hover:bg-accent/20 transition-colors" : ""}`}>
       <div className="min-w-0 flex-1">
         <p className="font-bold truncate">{sub.userName}</p>
         {sub.userPhone && <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1"><Phone className="w-3 h-3" />{sub.userPhone}</p>}
@@ -704,7 +704,7 @@ function ListRow({ row, index, onOpenProfile, adherence, adherenceLoading, onNud
       tabIndex={onOpenProfile ? 0 : undefined}
       onClick={() => row.userId && onOpenProfile?.(row.userId)}
       onKeyDown={(e) => { if (onOpenProfile && row.userId && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onOpenProfile(row.userId); } }}
-      initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.02 }} className={`liquid-glass rounded-2xl p-4 flex items-start justify-between gap-3 ${onOpenProfile ? "cursor-pointer hover:bg-accent/30 transition-colors" : ""}`}>
+      initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.02 }} className={`rounded-lg border border-border bg-card p-4 shadow-sm flex items-start justify-between gap-3 ${onOpenProfile ? "cursor-pointer hover:border-primary/30 hover:bg-accent/20 transition-colors" : ""}`}>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 flex-wrap">
           <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${row.type === "BBDO" ? "bg-primary/10 text-primary" : "bg-emerald-500/10 text-emerald-600"}`}>{row.type}</span>
@@ -726,6 +726,6 @@ function ListRow({ row, index, onOpenProfile, adherence, adherenceLoading, onNud
 }
 
 function EmptyState({ label }: { label: string }) {
-  return <div className="text-center py-12 text-muted-foreground liquid-glass rounded-2xl">{label}</div>;
+  return <div className="text-center py-12 text-muted-foreground rounded-lg border border-border bg-card">{label}</div>;
 }
 
