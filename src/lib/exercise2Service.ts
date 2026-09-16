@@ -218,5 +218,8 @@ export function emptyExercise2(): Exercise2Input {
     knee_pain_substitute: "",
     sort_order: 0,
     enabled: true,
+    age_group_ids: [],
+    equipment_ids: [],
+    muscle_group_ids: [],
   };
 }
