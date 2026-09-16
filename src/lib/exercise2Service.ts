@@ -80,8 +80,35 @@ export async function updateTaxonomyItem(
 }
 
 export async function deleteTaxonomyItem(table: TaxonomyTable, id: string): Promise<void> {
+  const inUse = await countTaxonomyUsage(table);
+  if ((inUse[id] ?? 0) > 0) {
+    throw new Error("This option is being used by an exercise, so it cannot be deleted.");
+  }
   const { error } = await db.from(table).delete().eq("id", id);
   if (error) throw error;
+}
+
+/** Where each dropdown is referenced: either a column on exercises_v2 or a link table. */
+const USAGE_SOURCE: Record<TaxonomyTable, { table: string; col: string }> = {
+  workout_types: { table: "exercises_v2", col: "workout_type_id" },
+  exercise_experience_levels: { table: "exercises_v2", col: "experience_level_id" },
+  exercise_target_audiences: { table: "exercises_v2", col: "target_audience_id" },
+  exercise_age_groups: { table: "exercises_v2_age_groups", col: "age_group_id" },
+  exercise_equipment: { table: "exercises_v2_equipment", col: "equipment_id" },
+  exercise_muscle_groups: { table: "exercises_v2_muscle_groups", col: "muscle_group_id" },
+};
+
+/** Map of taxonomy item id -> number of exercises using it. */
+export async function countTaxonomyUsage(table: TaxonomyTable): Promise<Record<string, number>> {
+  const src = USAGE_SOURCE[table];
+  const { data, error } = await db.from(src.table).select(src.col).not(src.col, "is", null);
+  if (error) throw error;
+  const counts: Record<string, number> = {};
+  for (const row of (data ?? []) as any[]) {
+    const id = row[src.col] as string | null;
+    if (id) counts[id] = (counts[id] ?? 0) + 1;
+  }
+  return counts;
 }
 
 export interface Exercise2 {
