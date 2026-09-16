@@ -373,6 +373,23 @@ export default function AdminExercises2() {
                 {filtered.map((r) => (
                   <div key={r.id} className="rounded-lg border border-border bg-card shadow-sm p-3">
                     <div className="flex items-start gap-3">
+                      <div
+                        className="relative w-24 shrink-0 rounded-md overflow-hidden bg-muted border border-border"
+                        style={{ aspectRatio: "16 / 9" }}
+                      >
+                        {r.image_url || youtubeThumbnail(r.youtube_url) ? (
+                          <img
+                            src={r.image_url || (youtubeThumbnail(r.youtube_url) as string)}
+                            alt={r.name}
+                            loading="lazy"
+                            className="absolute inset-0 w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                            <ImageIcon className="w-4 h-4" />
+                          </div>
+                        )}
+                      </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-bold text-foreground truncate">
                           {r.icon} {r.name}
