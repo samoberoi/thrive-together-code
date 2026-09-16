@@ -1,5 +1,22 @@
-import { useEffect, useMemo, useState } from "react";
-import { Dumbbell, Plus, Pencil, Trash2, Loader2, Play, Search } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Dumbbell,
+  Plus,
+  Pencil,
+  Trash2,
+  Loader2,
+  Play,
+  Search,
+  Image as ImageIcon,
+  Upload,
+  X,
+} from "lucide-react";
+import {
+  uploadExercise2Thumbnail,
+  fileToDataUrl,
+  youtubeThumbnail,
+  extractYoutubeId,
+} from "@/lib/exercise2ThumbnailService";
 import { toast } from "@/hooks/use-toast";
 import { useConfirm } from "@/components/ConfirmProvider";
 import { Input } from "@/components/ui/input";
