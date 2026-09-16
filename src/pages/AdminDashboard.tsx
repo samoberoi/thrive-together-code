@@ -91,6 +91,8 @@ const AdminNotificationManager = lazy(() => import("./admin/AdminNotificationMan
 const AdminChannelPartners = lazy(() => import("./admin/AdminChannelPartners"));
 const AdminExercises = lazy(() => import("./admin/AdminExercises"));
 const AdminExercises2 = lazy(() => import("./admin/AdminExercises2"));
+import TaxonomyManager from "@/components/admin/TaxonomyManager";
+import { TAXONOMY_TABLES } from "@/lib/exercise2Service";
 const AdminGlobalStreak = lazy(() => import("./admin/AdminGlobalStreak"));
 const AdminPnl = lazy(() => import("./admin/AdminPnl"));
 const AdminDietTypes = lazy(() => import("./admin/AdminDietTypes"));
@@ -130,6 +132,7 @@ export type AdminTab =
   | "videos"
   | "exercises"
   | "exercises2"
+  | "exercise_manager"
   | "rbac"
   | "subscriptions"
   | "packages"
@@ -212,6 +215,7 @@ const navItems: NavItem[] = [
       { id: "bmi", icon: Scale, label: "BMI Categories" },
       { id: "onboarding_grades", icon: Gauge, label: "Onboarding Grading" },
       { id: "coupons", icon: Ticket, label: "Coupon Manager" },
+      { id: "exercise_manager", icon: Dumbbell, label: "Exercise Manager" },
     ],
   },
 ];
@@ -244,6 +248,21 @@ const tabContentMap: Record<AdminTab, React.ReactNode> = {
     <AdminSelfTabs manageLabel="Library" mineLabel="My Yoga & Stress" mineIcon={Video} manage={<AdminVideos />} mine={<UserVideos packageKey="intensive" />} />
   ),
   exercises2: <AdminExercises2 />,
+  exercise_manager: (
+    <div className="p-4 sm:p-6 space-y-4 max-w-6xl mx-auto">
+      <div>
+        <h1 className="text-xl sm:text-2xl font-black text-foreground">Exercise Manager</h1>
+        <p className="text-muted-foreground text-sm mt-1">
+          Dropdown options used across Exercise 2.0. Options already used by an exercise cannot be deleted.
+        </p>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        {TAXONOMY_TABLES.map((t) => (
+          <TaxonomyManager key={t} table={t} />
+        ))}
+      </div>
+    </div>
+  ),
   exercises: (
     <AdminSelfTabs manageLabel="Library" mineLabel="My Exercise" mineIcon={Dumbbell} manage={<AdminExercises />} mine={<UserExercise packageKey="intensive" />} />
   ),
@@ -285,6 +304,7 @@ const adminTabs = new Set<AdminTab>([
   "videos",
   "exercises",
   "exercises2",
+  "exercise_manager",
   "rbac",
   "subscriptions",
   "packages",
