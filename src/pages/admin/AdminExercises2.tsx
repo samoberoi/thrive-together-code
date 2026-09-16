@@ -200,8 +200,19 @@ export default function AdminExercises2() {
     }
     setSaving(true);
     try {
-      if (editing) await updateExercise2(editing.id, form);
-      else await createExercise2(form);
+      let payload = form;
+      if (thumbFile) {
+        setThumbUploading(true);
+        try {
+          const url = await uploadExercise2Thumbnail(editing?.id ?? "new", thumbFile);
+          payload = { ...form, image_url: url };
+        } finally {
+          setThumbUploading(false);
+        }
+      }
+      if (editing) await updateExercise2(editing.id, payload);
+      else await createExercise2(payload);
+      resetThumbState();
       setForm(null);
       setEditing(null);
       await load();
