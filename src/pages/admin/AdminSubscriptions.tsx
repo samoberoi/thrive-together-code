@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { normalizePlanKey } from "@/lib/subscriptionService";
-import { Search, ChevronRight, ArrowLeft, AlertCircle, Phone, Mail, Calendar, MessageCircle } from "lucide-react";
+import { Search, ChevronRight, ArrowLeft, Phone, Mail, MessageCircle } from "lucide-react";
 import { whatsappCallUrl } from "@/lib/coachAvailability";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
