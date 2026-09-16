@@ -90,6 +90,7 @@ const AdminColorGauges = lazy(() => import("./admin/AdminColorGauges"));
 const AdminNotificationManager = lazy(() => import("./admin/AdminNotificationManager"));
 const AdminChannelPartners = lazy(() => import("./admin/AdminChannelPartners"));
 const AdminExercises = lazy(() => import("./admin/AdminExercises"));
+const AdminExercises2 = lazy(() => import("./admin/AdminExercises2"));
 const AdminGlobalStreak = lazy(() => import("./admin/AdminGlobalStreak"));
 const AdminPnl = lazy(() => import("./admin/AdminPnl"));
 const AdminDietTypes = lazy(() => import("./admin/AdminDietTypes"));
@@ -128,6 +129,7 @@ export type AdminTab =
   | "labtests"
   | "videos"
   | "exercises"
+  | "exercises2"
   | "rbac"
   | "subscriptions"
   | "packages"
@@ -181,6 +183,7 @@ const navItems: NavItem[] = [
   { kind: "leaf", id: "labtests", icon: FlaskConical, label: "Lab Tests" },
   { kind: "leaf", id: "videos", icon: Video, label: "Stress & Yoga" },
   { kind: "leaf", id: "exercises", icon: Dumbbell, label: "Exercise" },
+  { kind: "leaf", id: "exercises2", icon: Dumbbell, label: "Exercise 2.0" },
   { kind: "leaf", id: "community", icon: MessageSquare, label: "Community" },
   
   {
@@ -240,6 +243,7 @@ const tabContentMap: Record<AdminTab, React.ReactNode> = {
   videos: (
     <AdminSelfTabs manageLabel="Library" mineLabel="My Yoga & Stress" mineIcon={Video} manage={<AdminVideos />} mine={<UserVideos packageKey="intensive" />} />
   ),
+  exercises2: <AdminExercises2 />,
   exercises: (
     <AdminSelfTabs manageLabel="Library" mineLabel="My Exercise" mineIcon={Dumbbell} manage={<AdminExercises />} mine={<UserExercise packageKey="intensive" />} />
   ),
@@ -280,6 +284,7 @@ const adminTabs = new Set<AdminTab>([
   "labtests",
   "videos",
   "exercises",
+  "exercises2",
   "rbac",
   "subscriptions",
   "packages",
@@ -933,6 +938,7 @@ export default function AdminDashboard() {
             { id: "labtests", icon: FlaskConical, label: "Labs" },
             { id: "videos", icon: Video, label: "Videos" },
             { id: "exercises", icon: Dumbbell, label: "Exercise" },
+            { id: "exercises2", icon: Dumbbell, label: "Exercise 2.0" },
             { id: "community", icon: MessageSquare, label: "Community" },
             { id: "profile", icon: UserCog, label: "Profile" },
           ]}
