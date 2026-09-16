@@ -309,7 +309,7 @@ export default function AdminSubscriptions() {
         </div>
 
         <div className="grid grid-cols-2 gap-2 sm:gap-3">
-          <CompactMetric label="Active members" value={String(list.length)} detail={`${withCoach} with coach`} />
+          <CompactMetric label="Active members" value={String(list.length)} detail={view.planKey === "foundation" ? "Self-guided" : `${withCoach} with coach`} />
           <CompactMetric label={`${detailRange.label} value`} value={inr(totalRev)} detail={renewingSoon ? `${renewingSoon} renew soon` : "No renewals due"} />
         </div>
 
@@ -466,7 +466,7 @@ export default function AdminSubscriptions() {
                   <div><p className="text-lg font-semibold tabular text-foreground">{inr(rev)}</p><p className="text-[11px] text-muted-foreground">Current value</p></div>
                   <div><p className="text-sm font-semibold text-foreground">{hasCoach ? withCoach : "—"}</p><p className="text-[11px] text-muted-foreground">{hasCoach ? "With coach" : "Self-guided"}</p></div>
                   <div>
-                    <p className={cn("text-sm font-semibold", renewing > 0 ? "text-destructive" : "text-foreground")}>{renewing}</p>
+                    <p className={`text-sm font-semibold ${renewing > 0 ? "text-destructive" : "text-foreground"}`}>{renewing}</p>
                     <p className="text-[11px] text-muted-foreground">Renew in 30d</p>
                   </div>
                 </div>
@@ -532,6 +532,18 @@ function HeaderBack({ onBack, title, subtitle }: { onBack: () => void; title: st
       </div>
     </div>
   );
+}
+
+function CompactMetric({ label, value, detail, onClick }: { label: string; value: string; detail: string; onClick?: () => void }) {
+  const content = (
+    <>
+      <p className="text-[11px] font-semibold text-muted-foreground leading-tight">{label}</p>
+      <p className="text-[clamp(17px,5vw,26px)] leading-tight font-semibold tabular text-foreground mt-2 break-words">{value}</p>
+      <p className="text-[11px] text-muted-foreground mt-1">{detail}</p>
+    </>
+  );
+  const className = `bbdo-surface-card min-w-0 p-3 sm:p-4 text-left ${onClick ? "hover:bg-accent/40 transition-colors" : ""}`;
+  return onClick ? <button onClick={onClick} className={className}>{content}</button> : <div className={className}>{content}</div>;
 }
 
 function SearchExport({ search, setSearch, placeholder, filename, rows }: { search: string; setSearch: (v: string) => void; placeholder: string; filename: string; rows: any[] }) {
@@ -620,15 +632,14 @@ function YogaRow({ sub, index, onOpenProfile }: { sub: YogaSub; index: number; o
 
 function RenewalBlock({ expiresAt, daysLeft, renewSoon }: { expiresAt: string; daysLeft: number; renewSoon: boolean }) {
   return (
-    <div className="flex items-end justify-between gap-3 sm:block sm:text-right shrink-0">
-      <div>
-      <p className={`text-xs flex items-center gap-1 justify-end ${renewSoon ? "text-destructive font-bold" : "text-muted-foreground"}`}>
-        <Calendar className="w-3 h-3" />{daysLeft > 0 ? `${daysLeft}d left` : daysLeft === 0 ? "today" : "expired"}
+    <div className="grid grid-cols-[auto_1fr] items-center gap-x-2 gap-y-0.5 sm:min-w-[150px] shrink-0">
+      <div className={`row-span-2 w-9 h-9 rounded-lg flex items-center justify-center ${renewSoon ? "bg-critical-soft text-critical" : "bg-secondary text-primary"}`}>
+        {renewSoon ? <AlertCircle className="w-4 h-4" /> : <Calendar className="w-4 h-4" />}
+      </div>
+      <p className={`text-xs font-semibold leading-tight ${renewSoon ? "text-critical" : "text-foreground"}`}>
+        {daysLeft > 0 ? `${daysLeft} days left` : daysLeft === 0 ? "Expires today" : "Expired"}
       </p>
-      <p className="text-xs text-muted-foreground mt-0.5">exp {fmtDate(expiresAt)}</p>
-      </div>{renewSoon && (
-        <span className="inline-flex items-center gap-1 text-[10px] mt-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 font-bold"><AlertCircle className="w-3 h-3" />Renewal due</span>
-      )}
+      <p className="text-[11px] text-muted-foreground leading-tight">{fmtDate(expiresAt)}</p>
     </div>
   );
 }
@@ -720,21 +731,6 @@ function ListRow({ row, index, onOpenProfile, adherence, adherenceLoading, onNud
       </div>
       <RenewalBlock expiresAt={row.expiresAt} daysLeft={daysLeft} renewSoon={renewSoon} />
     </motion.div>
-  );
-}
-
-function MetricButton({ icon: Icon, label, value, sub, onClick }: { icon: React.ElementType; label: string; value: string; sub: string; onClick: () => void }) {
-  return (
-    <button onClick={onClick} className="liquid-glass rounded-2xl p-4 text-left hover:bg-accent/40 hover:-translate-y-px transition-all flex items-center justify-between gap-4">
-      <div>
-        <p className="text-xs font-bold text-muted-foreground">{label}</p>
-        <p className="text-xl font-black text-foreground mt-1">{value}</p>
-        <p className="text-[11px] text-muted-foreground mt-0.5">{sub}</p>
-      </div>
-      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-        <Icon className="w-5 h-5 text-primary" strokeWidth={1.8} />
-      </div>
-    </button>
   );
 }
 
