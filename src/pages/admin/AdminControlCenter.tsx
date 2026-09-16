@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Shield, CreditCard, Link2, Palette, Bell, Flame, TrendingUp, Salad, Music4, Scale, Ticket } from "lucide-react";
+import { Shield, CreditCard, Link2, Palette, Bell, Flame, TrendingUp, Salad, Music4, Scale, Ticket, Dumbbell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import AdminRBAC from "./AdminRBAC";
 import AdminSubscriptions from "./AdminSubscriptions";
@@ -13,9 +13,11 @@ import AdminDietTypes from "./AdminDietTypes";
 import AdminBmiCategories from "./AdminBmiCategories";
 import AdminCoupons from "./AdminCoupons";
 import SoundManagerCard from "@/components/admin/SoundManagerCard";
+import TaxonomyManager from "@/components/admin/TaxonomyManager";
+import { TAXONOMY_TABLES } from "@/lib/exercise2Service";
 
 import CsvToolbar from "@/components/admin/CsvToolbar";
-type Tab = "rbac" | "subscriptions" | "assignments" | "color_gauges" | "notifications" | "global_streak" | "pnl" | "diet_types" | "sound" | "bmi" | "coupons";
+type Tab = "rbac" | "subscriptions" | "assignments" | "color_gauges" | "notifications" | "global_streak" | "pnl" | "diet_types" | "sound" | "bmi" | "coupons" | "workout_types";
 
 const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: "rbac", label: "Role-Based Access", icon: Shield },
@@ -29,6 +31,7 @@ const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: "global_streak", label: "Global Streak", icon: Flame },
   { id: "pnl", label: "P&L Manager", icon: TrendingUp },
   { id: "diet_types", label: "Diet Types", icon: Salad },
+  { id: "workout_types", label: "Workout Type & Exercise 2.0 Lists", icon: Dumbbell },
 ];
 
 export default function AdminControlCenter({ initialTab = "rbac" }: { initialTab?: Tab }) {
@@ -84,6 +87,13 @@ export default function AdminControlCenter({ initialTab = "rbac" }: { initialTab
           {tab === "diet_types" && <AdminDietTypes />}
           {tab === "bmi" && <AdminBmiCategories />}
           {tab === "coupons" && <AdminCoupons />}
+          {tab === "workout_types" && (
+            <div className="px-4 sm:px-6 grid gap-4 md:grid-cols-2">
+              {TAXONOMY_TABLES.map((t) => (
+                <TaxonomyManager key={t} table={t} />
+              ))}
+            </div>
+          )}
           {tab === "sound" && <div className="px-4 sm:px-6"><SoundManagerCard /></div>}
         </motion.div>
       </AnimatePresence>
