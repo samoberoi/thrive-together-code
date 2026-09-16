@@ -73,9 +73,7 @@ function withVersion(url: string, ver: string) {
 }
 
 async function signPath(path: string, ver: string): Promise<string | null> {
-  const { data } = await supabase.storage.from(BUCKET).createSignedUrl(path, TTL_SECONDS, {
-    transform: { width: SIZE, height: SIZE, resize: "cover", quality: QUALITY },
-  });
+  const { data } = await supabase.storage.from(BUCKET).createSignedUrl(path, TTL_SECONDS);
   return data?.signedUrl ? withVersion(data.signedUrl, ver) : null;
 }
 
