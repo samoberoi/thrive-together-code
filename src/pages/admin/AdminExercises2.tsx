@@ -157,15 +157,35 @@ export default function AdminExercises2() {
     });
   }, [rows, search, fWorkout, fLevel, fAudience, fAge, fEquip, fMuscle]);
 
+  const resetThumbState = () => {
+    setThumbFile(null);
+    setThumbPreview(null);
+  };
+
   const openNew = () => {
+    resetThumbState();
     setEditing(null);
     setForm(emptyExercise2());
   };
 
   const openEdit = (r: Exercise2) => {
+    resetThumbState();
     setEditing(r);
     const { id, source_exercise_id, ...rest } = r;
     setForm({ ...rest });
+  };
+
+  const onSelectThumbFile = async (f: File) => {
+    if (!f.type.startsWith("image/")) {
+      toast({ title: "Invalid file", description: "Please upload an image.", variant: "destructive" });
+      return;
+    }
+    if (f.size > 5 * 1024 * 1024) {
+      toast({ title: "Image too large", description: "Please keep it under 5MB.", variant: "destructive" });
+      return;
+    }
+    setThumbFile(f);
+    setThumbPreview(await fileToDataUrl(f));
   };
 
   const save = async () => {
