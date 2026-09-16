@@ -1,8 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
 
 // Fast food image loader.
-// - Signs storage URLs directly with built-in image transforms so the CDN
-//   serves an optimized thumbnail, not the full-res original.
+// - Signs plain storage URLs. Food images are already compressed to <=800px
+//   JPEG on upload, so we intentionally do NOT use storage image transforms —
+//   each transform counts against the monthly image-transformation quota.
 // - Persists signed URLs to localStorage so repeat visits are instant.
 // - Cache entries are versioned by the row's storage path + updated_at, so a
 //   re-uploaded image (same path) invalidates the cached/signed URL instead of
@@ -10,9 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const BUCKET = "food-images";
 const TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
-const CACHE_KEY = "food-img-cache-v4";
-const SIZE = 240; // px — list thumbs (88px @ 3x) + detail hero
-const QUALITY = 70;
+const CACHE_KEY = "food-img-cache-v5";
 const CONCURRENCY = 24;
 
 type Entry = { url: string; expires: number; ver: string };
@@ -74,9 +73,7 @@ function withVersion(url: string, ver: string) {
 }
 
 async function signPath(path: string, ver: string): Promise<string | null> {
-  const { data } = await supabase.storage.from(BUCKET).createSignedUrl(path, TTL_SECONDS, {
-    transform: { width: SIZE, height: SIZE, resize: "cover", quality: QUALITY },
-  });
+  const { data } = await supabase.storage.from(BUCKET).createSignedUrl(path, TTL_SECONDS);
   return data?.signedUrl ? withVersion(data.signedUrl, ver) : null;
 }
 
