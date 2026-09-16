@@ -31,7 +31,7 @@ const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: "global_streak", label: "Global Streak", icon: Flame },
   { id: "pnl", label: "P&L Manager", icon: TrendingUp },
   { id: "diet_types", label: "Diet Types", icon: Salad },
-  { id: "workout_types", label: "Workout Type & Exercise 2.0 Lists", icon: Dumbbell },
+  { id: "workout_types", label: "Exercise Manager", icon: Dumbbell },
 ];
 
 export default function AdminControlCenter({ initialTab = "rbac" }: { initialTab?: Tab }) {
