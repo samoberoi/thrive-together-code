@@ -249,7 +249,7 @@ export function generateWorkout(
 }
 
 export function planDurationSeconds(items: WorkoutPlanItem[]): number {
-  return items.reduce((s, i) => s + i.work_seconds + i.rest_seconds, 0);
+  return items.reduce((s, i) => s + itemWorkSeconds(i) + i.rest_seconds, 0);
 }
 
 export function attachExercises(items: WorkoutPlanItem[], pool: Exercise2[]): PlayableItem[] {
@@ -347,6 +347,8 @@ export async function savePlan(
         exercise_id: i.exercise_id,
         position: idx,
         work_seconds: i.work_seconds,
+        mode: i.mode ?? "time",
+        reps: i.reps ?? 0,
         rest_seconds: i.rest_seconds,
         phase: i.phase,
       }))
