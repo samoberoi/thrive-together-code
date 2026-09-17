@@ -548,43 +548,89 @@ export default function Exercise2({ packageKey }: Props) {
         { id: "build" as const, label: "Build a session" },
       ];
 
+  const ownPlans = myPlans.filter((p) => p.plan_kind === "user");
+
+  const thumbsFor = (planId: string) =>
+    (planPreview[planId] ?? [])
+      .map((it) => {
+        const ex = pool.find((e) => e.id === it.exercise_id);
+        return ex ? ex.image_url || youtubeThumbnail(ex.youtube_url) : null;
+      })
+      .filter(Boolean)
+      .slice(0, 4) as string[];
+
   const savedList = (
-    <div className="space-y-3">
-      {myPlans
-        .filter((p) => p.plan_kind === "user")
-        .map((p) => (
-          <PlanCard
-            key={p.id}
-            plan={p}
-            days={daysForPlan(p.id)}
-            onPlay={() => openSavedPlan(p)}
-            onEdit={() => openEditBuilder(p)}
-            onDelete={() => removePlan(p)}
-          />
-        ))}
+    <div className="grid gap-3 sm:grid-cols-2">
+      {ownPlans.map((p) => (
+        <PlanCard
+          key={p.id}
+          plan={p}
+          days={daysForPlan(p.id)}
+          drills={(planPreview[p.id] ?? []).length}
+          thumbs={thumbsFor(p.id)}
+          onPlay={() => openSavedPlan(p)}
+          onEdit={() => openEditBuilder(p)}
+          onDelete={() => removePlan(p)}
+        />
+      ))}
     </div>
   );
 
-  const hasOwnPlans = myPlans.some((p) => p.plan_kind === "user");
+  const hasOwnPlans = ownPlans.length > 0;
+  const totalMinutes = ownPlans.reduce((s, p) => s + (p.duration_minutes || 0), 0);
+  const daysPlanned = new Set(
+    schedule.filter((s) => s.plan_id && !s.is_rest_day).map((s) => s.weekday)
+  ).size;
 
   return (
-    <div className="p-4 sm:p-6 space-y-4 max-w-4xl mx-auto pb-24">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-black text-foreground flex items-center gap-2">
-            <Dumbbell className="w-5 h-5 text-[var(--bbdo-blue)]" />
-            My Workouts
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Press play once and the whole session runs itself.
-          </p>
+    <div className="p-4 sm:p-6 space-y-5 max-w-4xl mx-auto pb-24">
+      {isFoundation ? (
+        <section className="relative overflow-hidden rounded-3xl border border-border bg-card p-5 sm:p-7 shadow-sm">
+          <div className="pointer-events-none absolute -top-20 -right-12 w-56 h-56 rounded-full bg-[var(--bbdo-blue)]/10 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-24 -left-16 w-56 h-56 rounded-full bg-[var(--bbdo-blue)]/[0.06] blur-3xl" />
+          <div className="relative flex flex-col sm:flex-row sm:items-end gap-5">
+            <div className="flex-1 min-w-0">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--bbdo-blue)]/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-[var(--bbdo-blue)]">
+                <Dumbbell className="w-3 h-3" /> Your training
+              </span>
+              <h1 className="text-2xl sm:text-3xl font-black text-foreground mt-3 tracking-tight">
+                My Workouts
+              </h1>
+              <p className="text-muted-foreground text-sm mt-1.5 max-w-md">
+                Press play once — warm-up, main set and cool-down run themselves.
+              </p>
+              {hasOwnPlans && (
+                <div className="flex flex-wrap items-center gap-2 mt-4">
+                  <Stat value={String(ownPlans.length)} label={ownPlans.length === 1 ? "workout" : "workouts"} />
+                  <Stat value={String(totalMinutes)} label="minutes built" />
+                  <Stat value={String(daysPlanned)} label="days planned" />
+                </div>
+              )}
+            </div>
+            <Button
+              size="lg"
+              onClick={openNewBuilder}
+              className="rounded-xl font-bold shadow-sm shrink-0 w-full sm:w-auto"
+            >
+              {hasOwnPlans ? <Plus className="w-4 h-4 mr-1.5" /> : <Sparkles className="w-4 h-4 mr-1.5" />}
+              {hasOwnPlans ? "New workout" : "Build my workout"}
+            </Button>
+          </div>
+        </section>
+      ) : (
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-black text-foreground flex items-center gap-2">
+              <Dumbbell className="w-5 h-5 text-[var(--bbdo-blue)]" />
+              My Workouts
+            </h1>
+            <p className="text-muted-foreground text-sm mt-1">
+              Press play once and the whole session runs itself.
+            </p>
+          </div>
         </div>
-        {isFoundation && hasOwnPlans && (
-          <Button size="sm" onClick={openNewBuilder}>
-            <Plus className="w-4 h-4 mr-1" /> New
-          </Button>
-        )}
-      </div>
+      )}
+
 
       {tabs.length > 0 && (
         <div className="flex gap-2 border-b overflow-x-auto">
@@ -609,18 +655,36 @@ export default function Exercise2({ packageKey }: Props) {
       {tab === "build" && (
         <div className="space-y-4">
           {!hasOwnPlans ? (
-            <div className="rounded-2xl border border-dashed border-border bg-card p-8 text-center">
-              <div className="w-12 h-12 rounded-2xl bg-[var(--bbdo-blue)]/10 flex items-center justify-center mx-auto">
-                <Sparkles className="w-6 h-6 text-[var(--bbdo-blue)]" />
+            <div className="relative overflow-hidden rounded-3xl border border-dashed border-border bg-card p-8 sm:p-10 text-center">
+              <div className="pointer-events-none absolute inset-x-0 -top-24 h-48 bg-[var(--bbdo-blue)]/[0.07] blur-3xl" />
+              <div className="relative">
+                <div className="w-14 h-14 rounded-2xl bg-[var(--bbdo-blue)]/10 flex items-center justify-center mx-auto ring-8 ring-[var(--bbdo-blue)]/[0.04]">
+                  <Sparkles className="w-7 h-7 text-[var(--bbdo-blue)]" />
+                </div>
+                <p className="font-black text-lg text-foreground mt-4">No workouts yet</p>
+                <p className="text-sm text-muted-foreground mt-1.5 max-w-sm mx-auto">
+                  Tell us how long you have and what you want to train. We line up the drills and
+                  play them back to back.
+                </p>
+                <div className="flex flex-wrap justify-center gap-2 mt-5">
+                  {DURATION_OPTIONS.map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => {
+                        setDuration(d);
+                        openNewBuilder();
+                      }}
+                      className="px-4 h-10 rounded-xl border border-border bg-background text-sm font-bold text-foreground hover:border-[var(--bbdo-blue)] hover:text-[var(--bbdo-blue)] transition-colors"
+                    >
+                      {d} min
+                    </button>
+                  ))}
+                </div>
+                <Button size="lg" className="mt-5 rounded-xl font-bold" onClick={openNewBuilder}>
+                  <Sparkles className="w-4 h-4 mr-1.5" /> Build my workout
+                </Button>
               </div>
-              <p className="font-black text-foreground mt-3">No workouts yet</p>
-              <p className="text-sm text-muted-foreground mt-1 max-w-sm mx-auto">
-                Tell us how long you have and what you want to train. We line up the drills and play
-                them back to back.
-              </p>
-              <Button className="mt-4" onClick={openNewBuilder}>
-                <Sparkles className="w-4 h-4 mr-1" /> Build my workout
-              </Button>
             </div>
           ) : (
             savedList
