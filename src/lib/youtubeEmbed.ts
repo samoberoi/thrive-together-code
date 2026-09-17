@@ -8,6 +8,10 @@ export type YouTubePlayerMessage = {
   code?: number;
 };
 
+export type YouTubePlayerCommand =
+  | { source: "bbdo-workout"; type: "play" | "pause" | "mute" | "unmute" }
+  | { source: "bbdo-workout"; type: "seek"; seconds: number };
+
 export function youtubePlayerProxyUrl(
   videoId: string,
   options: { autoplay?: boolean; start?: number; controls?: boolean; simple?: boolean } = {},
