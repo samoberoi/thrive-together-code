@@ -110,7 +110,19 @@ export default function MetricTrendsSection({
       if (cancelled) return;
       const next = { health: [], weight: [], glucose: [], steps: [] } as Record<TrendMetric, TrendPoint[]>;
       METRICS.forEach((m, i) => { next[m.key] = results[i]; });
+      // Safety net: make sure today's steps always match the ring, even if the
+      // series query missed the row that was just written.
+      try {
+        const live = await fetchTodaySteps(userId);
+        if (!cancelled && live > 0) {
+          const existing = next.steps.find((p) => p.date === today);
+          if (existing) existing.value = live;
+          else next.steps = [...next.steps, { date: today, value: live }];
+        }
+      } catch { /* ignore */ }
+      if (cancelled) return;
       setFull(next);
+
     })();
     return () => { cancelled = true; };
   }, [userId, today, reloadTick]);
