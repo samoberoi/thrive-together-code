@@ -18,6 +18,7 @@ import HomeTab from "./tabs/Home";
 // Other tabs load on demand; prefetched below when the Dashboard mounts.
 const Movement = lazy(() => import("./tabs/Movement"));
 const ExerciseTab = lazy(() => import("./tabs/Exercise"));
+const Exercise2Tab = lazy(() => import("./tabs/Exercise2"));
 const Videos = lazy(() => import("./tabs/Videos"));
 const Community = lazy(() => import("./tabs/Community"));
 const Profile = lazy(() => import("./tabs/Profile"));
@@ -45,9 +46,9 @@ import { useAttentionCounts } from "@/hooks/useAttentionCounts";
 import AttentionBadge from "@/components/attention/AttentionBadge";
 
 
-export type Tab = "home" | "habits" | "exercise" | "fasting" | "supplements" | "videos" | "community" | "consult" | "labs" | "diet" | "messages";
+export type Tab = "home" | "habits" | "exercise" | "exercise2" | "fasting" | "supplements" | "videos" | "community" | "consult" | "labs" | "diet" | "messages";
 
-const VALID_TABS: Tab[] = ["home", "habits", "exercise", "fasting", "supplements", "videos", "community", "consult", "labs", "diet", "messages"];
+const VALID_TABS: Tab[] = ["home", "habits", "exercise", "exercise2", "fasting", "supplements", "videos", "community", "consult", "labs", "diet", "messages"];
 
 function isTab(value: string | null): value is Tab {
   return value != null && VALID_TABS.includes(value as Tab);
@@ -57,6 +58,7 @@ const navIcons: Record<Tab, React.ElementType> = {
   home: Home,
   habits: Footprints,
   exercise: Dumbbell,
+  exercise2: Zap,
   fasting: Timer,
   supplements: Pill,
   videos: Play,
@@ -72,6 +74,7 @@ const navLabelOverrides: Partial<Record<Tab, string>> = {
   diet: "Food",
   habits: "Movement",
   exercise: "Exercise",
+  exercise2: "Exercise 2.0",
   supplements: "Supplements",
   videos: "Stress and Yoga",
   labs: "Lab Tests",
