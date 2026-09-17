@@ -186,6 +186,10 @@ export default function Auth() {
   const FIXED_OTP_ACCOUNTS = {
     "8373914073": { code: "2503", destination: "/admin-dashboard" },
     "9000000001": { code: "1111", destination: null },
+    // Internal test members, one per plan. No SMS, no coach, no notifications.
+    "9000002301": { code: "2305", destination: null },
+    "9000002302": { code: "2305", destination: null },
+    "9000002303": { code: "2305", destination: null },
   } as const;
   const fixedOtpPhone = phone.replace(/\D/g, "").slice(-10) as keyof typeof FIXED_OTP_ACCOUNTS;
   const fixedOtpAccount = isEmailMode ? undefined : FIXED_OTP_ACCOUNTS[fixedOtpPhone];
