@@ -247,9 +247,18 @@ export default function TodayStepsCard({ onOpenMovement, minTargetSteps, allowMa
           <div className="flex items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-2">
               <Watch className="h-4 w-4 shrink-0 text-primary" />
-              <p className="truncate text-[12px] font-semibold text-muted-foreground">
-                {healthSourceLabel()} steps sync automatically
-              </p>
+              <div className="min-w-0">
+                <p className="truncate text-[12px] font-semibold text-muted-foreground">
+                  {healthSourceLabel()} steps · {STEPS_SYNC_LABEL}
+                </p>
+                <p className="truncate text-[10px] font-medium text-muted-foreground/80">
+                  {storeSyncing || syncingHealth
+                    ? "Syncing now…"
+                    : syncedLabel
+                      ? `Last synced ${syncedLabel}`
+                      : "Waiting for first sync"}
+                </p>
+              </div>
             </div>
             <button
               type="button"
@@ -258,7 +267,7 @@ export default function TodayStepsCard({ onOpenMovement, minTargetSteps, allowMa
               aria-label={`Sync ${healthSourceLabel()} steps`}
               className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-card text-primary disabled:opacity-60"
             >
-              <RefreshCw className={`h-4 w-4 ${syncingHealth ? "animate-spin" : ""}`} />
+              <RefreshCw className={`h-4 w-4 ${syncingHealth || storeSyncing ? "animate-spin" : ""}`} />
             </button>
           </div>
           {healthSyncError && (
