@@ -221,18 +221,23 @@ export function generateWorkout(
     if (!list.length) return;
     let spent = 0;
     let i = 0;
-    while (spent + work <= seconds) {
+    while (i < 200) {
       const ex = list[i % list.length];
+      // Use the clip's own length when it has one, so the maths matches the videos.
+      const clip = (ex as any).duration_seconds as number | undefined;
+      const workSeconds = clip && clip > 0 ? Math.min(90, Math.max(15, clip)) : work;
+      if (spent + workSeconds > seconds) break;
       items.push({
         exercise_id: ex.id,
         position: position++,
-        work_seconds: work,
+        work_seconds: workSeconds,
         rest_seconds: rest,
         phase,
+        mode: "time",
+        reps: 0,
       });
-      spent += work + rest;
+      spent += workSeconds + rest;
       i++;
-      if (i > 200) break;
     }
   };
 
