@@ -291,6 +291,10 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
       "user_breath_sessions",
       "user_supplement_plans",
       "user_protocols",
+      // A client moved to another coach (or a meeting booked elsewhere) must leave this
+      // coach's screen immediately instead of lingering until a manual reload.
+      "coach_assignments",
+      "coach_meetings",
     ]) {
       channel.on("postgres_changes", { event: "*", schema: "public", table }, refreshSoon);
     }
@@ -298,11 +302,16 @@ export default function CoachHome({ onViewPatient, onViewMessages, onViewLabTest
     channel.subscribe();
 
     const onFocus = () => refreshSoon();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refreshSoon();
+    };
     window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisible);
 
     return () => {
       if (timer) clearTimeout(timer);
       window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisible);
       supabase.removeChannel(channel);
     };
   }, [user?.id]);
