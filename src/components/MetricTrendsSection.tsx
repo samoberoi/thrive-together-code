@@ -95,6 +95,8 @@ export default function MetricTrendsSection({
     health: [], weight: [], glucose: [], steps: [],
   });
 
+  const [reloadTick, setReloadTick] = useState(0);
+
   useEffect(() => {
     if (!userId) return;
     let cancelled = false;
@@ -111,7 +113,22 @@ export default function MetricTrendsSection({
       setFull(next);
     })();
     return () => { cancelled = true; };
-  }, [userId, today]);
+  }, [userId, today, reloadTick]);
+
+  // The step/health sync finishes AFTER this section has already loaded, so
+  // without this the charts keep showing the pre-sync state (today = 0) even
+  // though the ring above already shows the synced steps.
+  useEffect(() => {
+    const bump = () => setReloadTick((n) => n + 1);
+    const onVisible = () => { if (document.visibilityState === "visible") bump(); };
+    window.addEventListener("health-log-saved", bump);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("health-log-saved", bump);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, []);
+
 
   const days = RANGES.find((r) => r.key === range)!.days;
   // Always a fixed rolling window ending today: 7 / 14 / 30 / 90 days back.
