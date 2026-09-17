@@ -34,6 +34,11 @@ export interface WorkoutPlan {
   created_at: string;
 }
 
+export type WorkoutItemMode = "time" | "reps";
+
+/** Rough seconds a single rep takes, used to price a reps-based drill into the plan length. */
+export const SECONDS_PER_REP = 4;
+
 export interface WorkoutPlanItem {
   id?: string;
   plan_id?: string;
@@ -42,6 +47,14 @@ export interface WorkoutPlanItem {
   work_seconds: number;
   rest_seconds: number;
   phase: WorkoutPhase;
+  mode?: WorkoutItemMode;
+  reps?: number;
+}
+
+/** Seconds a drill occupies, whether it is timed or rep-counted. */
+export function itemWorkSeconds(i: WorkoutPlanItem): number {
+  if (i.mode === "reps") return Math.max(SECONDS_PER_REP, (i.reps || 1) * SECONDS_PER_REP);
+  return i.work_seconds;
 }
 
 /** A plan item joined with the exercise it plays. */
