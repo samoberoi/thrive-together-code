@@ -139,9 +139,11 @@ export default function Dashboard() {
   };
 
   const showMessagesTab = packageKey === "foundation" && hasYogaBooking;
-  const ALL_TABS: Tab[] = ["home", "diet", "fasting", "habits", "exercise", "supplements", "videos", "labs", "community", "consult", "messages"];
+  const ALL_TABS: Tab[] = ["home", "diet", "fasting", "habits", "exercise", "exercise2", "supplements", "videos", "labs", "community", "consult", "messages"];
   const tabs: Tab[] = ALL_TABS.filter((t) => {
     if (t === "messages") return showMessagesTab;
+    // Exercise 2.0 is a web-only preview for now — it never shows inside the phone apps.
+    if (t === "exercise2") return !Capacitor.isNativePlatform() && canSeeTab("exercise");
     return canSeeTab(t);
   });
   const tabAttentionCounts: Partial<Record<Tab, number>> = {
