@@ -90,6 +90,18 @@
           window.location.reload();
         });
 
+        window.addEventListener("message", function (event) {
+          var command = event && event.data;
+          if (!command || command.source !== "bbdo-workout" || !player) return;
+          try {
+            if (command.type === "play") player.playVideo();
+            if (command.type === "pause") player.pauseVideo();
+            if (command.type === "mute") player.mute();
+            if (command.type === "unmute") player.unMute();
+            if (command.type === "seek") player.seekTo(Math.max(0, Number(command.seconds) || 0), true);
+          } catch (_) {}
+        });
+
         if (!validVideoId) {
           showFallback(2);
           return;

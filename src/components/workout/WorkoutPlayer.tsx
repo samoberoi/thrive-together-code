@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { extractYoutubeId } from "@/lib/exercise2ThumbnailService";
 import { PHASE_LABEL, itemWorkSeconds, type PlayableItem } from "@/lib/workoutService";
+import { isYoutubePlayerMessage, youtubePlayerProxyUrl, type YouTubePlayerCommand } from "@/lib/youtubeEmbed";
 
 interface Props {
   title: string;
@@ -52,11 +53,18 @@ export default function WorkoutPlayer({
   const [paused, setPaused] = useState(false);
   const [muted, setMuted] = useState(true);
   const [done, setDone] = useState(false);
+  const [completedReps, setCompletedReps] = useState(0);
+  const [videoReady, setVideoReady] = useState(false);
   const doneRef = useRef(false);
+  const frameRef = useRef<HTMLIFrameElement>(null);
 
   const item = items[index];
   const next = items[index + 1];
   const videoId = item ? extractYoutubeId(item.exercise.youtube_url) : null;
+
+  const sendPlayerCommand = useCallback((command: YouTubePlayerCommand) => {
+    frameRef.current?.contentWindow?.postMessage(command, window.location.origin);
+  }, []);
 
   const totalSeconds = useMemo(
     () => items.reduce((s, i) => s + itemWorkSeconds(i) + i.rest_seconds, 0),
@@ -90,25 +98,36 @@ export default function WorkoutPlayer({
       }
       setIndex(i);
       setResting(phase === "rest");
+      setCompletedReps(0);
+      setVideoReady(false);
       setRemaining(phase === "rest" ? items[i].rest_seconds : itemWorkSeconds(items[i]));
       onPosition?.(i);
     },
     [items, onFinish, onPosition]
   );
 
-  // Countdown.
+  const completeWork = useCallback(() => {
+    if (!item || resting) return;
+    onExerciseDone?.(item);
+    sendPlayerCommand({ source: "bbdo-workout", type: "pause" });
+    if (item.rest_seconds > 0 && index < items.length - 1) {
+      setResting(true);
+      setRemaining(item.rest_seconds);
+      return;
+    }
+    window.setTimeout(() => goTo(index + 1), 0);
+  }, [goTo, index, item, items.length, onExerciseDone, resting, sendPlayerCommand]);
+
+  // Timed drills and rest periods use the session clock. Rep drills advance only
+  // after YouTube confirms that each complete video play has ended.
   useEffect(() => {
     if (paused || done || !item) return;
+    if (!resting && item.mode === "reps") return;
     const t = window.setInterval(() => {
       setRemaining((r) => {
         if (r > 1) return r - 1;
         if (!resting) {
-          onExerciseDone?.(item);
-          if (item.rest_seconds > 0 && index < items.length - 1) {
-            setResting(true);
-            return item.rest_seconds;
-          }
-          window.setTimeout(() => goTo(index + 1), 0);
+          window.setTimeout(completeWork, 0);
           return 0;
         }
         window.setTimeout(() => goTo(index + 1), 0);
@@ -116,7 +135,53 @@ export default function WorkoutPlayer({
       });
     }, 1000);
     return () => window.clearInterval(t);
-  }, [paused, done, resting, index, item, items.length, goTo, onExerciseDone]);
+  }, [paused, done, resting, index, item, goTo, completeWork]);
+
+  useEffect(() => {
+    if (!videoId || !item) return;
+    const onMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin || !isYoutubePlayerMessage(event.data, videoId)) return;
+      const message = event.data;
+      if (message.type === "ready") {
+        setVideoReady(true);
+        sendPlayerCommand({ source: "bbdo-workout", type: muted ? "mute" : "unmute" });
+        if (!paused && !resting) sendPlayerCommand({ source: "bbdo-workout", type: "play" });
+      }
+      if (message.type === "progress" && item.mode === "reps" && !resting) {
+        const clipLength = Math.max(1, Math.round(message.duration || item.exercise.duration_seconds || item.work_seconds));
+        const played = completedReps * clipLength + Math.min(clipLength, Math.round(message.currentTime || 0));
+        setRemaining(Math.max(0, itemWorkSeconds({ ...item, work_seconds: clipLength }) - played));
+      }
+      if (message.type === "state" && message.state === 0 && !resting) {
+        if (item.mode === "reps") {
+          const nextCompleted = completedReps + 1;
+          if (nextCompleted < Math.max(1, item.reps || 1)) {
+            setCompletedReps(nextCompleted);
+            sendPlayerCommand({ source: "bbdo-workout", type: "seek", seconds: 0 });
+            sendPlayerCommand({ source: "bbdo-workout", type: "play" });
+          } else {
+            setCompletedReps(nextCompleted);
+            completeWork();
+          }
+        } else if (remaining > 0) {
+          sendPlayerCommand({ source: "bbdo-workout", type: "seek", seconds: 0 });
+          sendPlayerCommand({ source: "bbdo-workout", type: "play" });
+        }
+      }
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [completedReps, completeWork, item, muted, paused, remaining, resting, sendPlayerCommand, videoId]);
+
+  useEffect(() => {
+    if (!videoReady) return;
+    sendPlayerCommand({ source: "bbdo-workout", type: resting || paused ? "pause" : "play" });
+  }, [paused, resting, sendPlayerCommand, videoReady]);
+
+  useEffect(() => {
+    if (!videoReady) return;
+    sendPlayerCommand({ source: "bbdo-workout", type: muted ? "mute" : "unmute" });
+  }, [muted, sendPlayerCommand, videoReady]);
 
   // Keyboard shortcuts on web.
   useEffect(() => {
@@ -133,9 +198,7 @@ export default function WorkoutPlayer({
     return () => window.removeEventListener("keydown", onKey);
   }, [index, goTo, onClose]);
 
-  const embed = videoId
-    ? `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=${muted ? 1 : 0}&controls=0&rel=0&loop=1&playlist=${videoId}&playsinline=1&modestbranding=1`
-    : null;
+  const embed = videoId ? youtubePlayerProxyUrl(videoId, { autoplay: true, controls: false }) : null;
 
   return createPortal(
     <div className="fixed inset-0 z-[120] bg-[#0B1220] text-white flex flex-col">
@@ -184,7 +247,8 @@ export default function WorkoutPlayer({
           <div className="relative flex-1 min-h-0 bg-black">
             {embed ? (
               <iframe
-                key={`${item?.exercise.id}-${muted}`}
+                ref={frameRef}
+                key={item?.exercise.id}
                 src={embed}
                 title={item?.exercise.name}
                 allow="autoplay; encrypted-media; picture-in-picture"
@@ -227,7 +291,7 @@ export default function WorkoutPlayer({
                 <p className="text-lg font-black truncate">{item?.exercise.name}</p>
                 {item?.mode === "reps" ? (
                   <p className="text-xs text-white/60 truncate">
-                    As many reps as possible · target {item.reps} reps
+                    Full video · rep {Math.min(completedReps + 1, Math.max(1, item.reps || 1))} of {Math.max(1, item.reps || 1)}
                   </p>
                 ) : (
                   item?.exercise.reps_duration && (
@@ -235,7 +299,12 @@ export default function WorkoutPlayer({
                   )
                 )}
               </div>
-              <p className="text-4xl font-black tabular-nums shrink-0">{remaining}</p>
+              <div className="text-right shrink-0">
+                {item?.mode === "reps" && !resting && (
+                  <p className="text-sm font-black">Rep {Math.min(completedReps + 1, Math.max(1, item.reps || 1))}/{Math.max(1, item.reps || 1)}</p>
+                )}
+                <p className="text-3xl font-black tabular-nums">{mmss(Math.max(0, remaining))}</p>
+              </div>
             </div>
 
             <div className="flex items-center justify-center gap-2">

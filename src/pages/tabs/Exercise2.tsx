@@ -47,7 +47,6 @@ import {
   startSession,
   updateSession,
   logExerciseCompletion,
-  SECONDS_PER_REP,
   DURATION_OPTIONS,
   WEEKDAY_LABEL,
   PHASE_LABEL,
@@ -280,7 +279,24 @@ export default function Exercise2({ packageKey }: Props) {
     });
 
   const setMode = (index: number, mode: "time" | "reps") =>
-    updateItem(index, { mode, reps: mode === "reps" ? Math.max(8, draft?.[index].reps ?? 0) : 0 });
+    setDraft((current) => {
+      if (!current) return current;
+      const item = current[index];
+      const exercise = pool.find((entry) => entry.id === item.exercise_id);
+      return current.map((entry, itemIndex) =>
+        itemIndex === index
+          ? {
+              ...entry,
+              mode,
+              reps: mode === "reps" ? Math.max(1, entry.reps || 1) : 0,
+              work_seconds:
+                mode === "reps" && exercise?.duration_seconds
+                  ? exercise.duration_seconds
+                  : entry.work_seconds,
+            }
+          : entry
+      );
+    });
 
   /* ───────────── play / logging ───────────── */
 
@@ -895,7 +911,7 @@ export default function Exercise2({ packageKey }: Props) {
                                 <Plus className="w-3 h-3" />
                               </Button>
                               <span className="text-[11px] text-muted-foreground ml-1">
-                                ≈ {itemWorkSeconds(it)}s ({SECONDS_PER_REP}s a rep)
+                                {it.reps} full video {it.reps === 1 ? "play" : "plays"} · ≈ {itemWorkSeconds(it)}s
                               </span>
                             </div>
                           )}
@@ -1035,7 +1051,7 @@ function PlanCard({
   onDelete: () => void;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+    <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <p className="font-black text-foreground truncate">{plan.name}</p>
@@ -1058,22 +1074,22 @@ function PlanCard({
             </div>
           )}
         </div>
-        <Button size="sm" onClick={onPlay}>
-          <Play className="w-4 h-4 mr-1" /> Play
-        </Button>
       </div>
-      <div className="flex items-center gap-1 mt-3 pt-3 border-t border-border">
-        <Button size="sm" variant="ghost" className="text-xs" onClick={onEdit}>
-          <Pencil className="w-3.5 h-3.5 mr-1" /> Edit workout
+      <div className="flex items-center gap-2 mt-4">
+        <Button size="sm" className="font-bold" onClick={onPlay}>
+          <Play className="w-4 h-4 mr-1.5" /> Play
+        </Button>
+        <Button size="sm" variant="outline" className="text-xs" onClick={onEdit}>
+          <Pencil className="w-3.5 h-3.5 mr-1.5" /> Edit
         </Button>
         <Button
           size="icon"
           variant="ghost"
-          className="h-8 w-8 ml-auto"
+          className="h-9 w-9 ml-auto text-muted-foreground hover:text-destructive hover:bg-destructive/10"
           onClick={onDelete}
           aria-label="Delete workout"
         >
-          <Trash2 className="w-4 h-4 text-destructive" />
+          <Trash2 className="w-4 h-4" />
         </Button>
       </div>
     </div>

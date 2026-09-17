@@ -36,9 +36,6 @@ export interface WorkoutPlan {
 
 export type WorkoutItemMode = "time" | "reps";
 
-/** Rough seconds a single rep takes, used to price a reps-based drill into the plan length. */
-export const SECONDS_PER_REP = 4;
-
 export interface WorkoutPlanItem {
   id?: string;
   plan_id?: string;
@@ -53,7 +50,8 @@ export interface WorkoutPlanItem {
 
 /** Seconds a drill occupies, whether it is timed or rep-counted. */
 export function itemWorkSeconds(i: WorkoutPlanItem): number {
-  if (i.mode === "reps") return Math.max(SECONDS_PER_REP, (i.reps || 1) * SECONDS_PER_REP);
+  // For video-led reps, one rep is one complete play of the exercise clip.
+  if (i.mode === "reps") return Math.max(1, i.work_seconds) * Math.max(1, i.reps || 1);
   return i.work_seconds;
 }
 
@@ -255,8 +253,20 @@ export function planDurationSeconds(items: WorkoutPlanItem[]): number {
 export function attachExercises(items: WorkoutPlanItem[], pool: Exercise2[]): PlayableItem[] {
   const byId = new Map(pool.map((e) => [e.id, e]));
   return items
-    .map((i) => ({ ...i, exercise: byId.get(i.exercise_id)! }))
-    .filter((i) => !!i.exercise)
+    .map((i) => {
+      const exercise = byId.get(i.exercise_id);
+      if (!exercise) return null;
+      return {
+        ...i,
+        // Correct previously saved rep workouts at playback time as catalogue timings improve.
+        work_seconds:
+          i.mode === "reps" && exercise.duration_seconds > 0
+            ? exercise.duration_seconds
+            : i.work_seconds,
+        exercise,
+      };
+    })
+    .filter((i): i is PlayableItem => i !== null)
     .sort((a, b) => a.position - b.position);
 }
 
@@ -355,7 +365,8 @@ export async function savePlan(
     );
     if (error) throw error;
   }
-  return planId!;
+  if (!planId) throw new Error("Workout could not be saved");
+  return planId;
 }
 
 export async function deletePlan(id: string): Promise<void> {
