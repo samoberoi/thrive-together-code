@@ -129,6 +129,10 @@ export interface Exercise2 {
   benefits: string | null;
   cautions: string | null;
   knee_pain_substitute: string | null;
+  /** Length of the clip in seconds — entered manually by the admin. */
+  duration_seconds: number;
+  /** Where this drill belongs in a session: warm_up | main | cool_down. */
+  phase: "warm_up" | "main" | "cool_down";
   sort_order: number;
   enabled: boolean;
   source_exercise_id: string | null;
@@ -243,6 +247,8 @@ export function emptyExercise2(): Exercise2Input {
     benefits: "",
     cautions: "",
     knee_pain_substitute: "",
+    duration_seconds: 0,
+    phase: "main",
     sort_order: 0,
     enabled: true,
     age_group_ids: [],

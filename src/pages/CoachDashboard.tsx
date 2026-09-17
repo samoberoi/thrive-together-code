@@ -21,6 +21,7 @@ const CoachLabTests = lazy(() => import("./coach/CoachLabTests"));
 const CoachMeetings = lazy(() => import("./coach/CoachMeetings"));
 const CoachMove = lazy(() => import("./coach/CoachMove"));
 const CoachFood = lazy(() => import("./coach/CoachFood"));
+const CoachWorkouts = lazy(() => import("./coach/CoachWorkouts"));
 const ExerciseTab = lazy(() => import("./tabs/Exercise"));
 const Videos = lazy(() => import("./tabs/Videos"));
 const CoachConsultationRequests = lazy(() => import("./coach/CoachConsultationRequests"));
@@ -34,7 +35,7 @@ import AttentionBadge from "@/components/attention/AttentionBadge";
 
 import { RoleBottomNav, RoleTopBar, type RoleNavItem } from "@/components/shared";
 
-export type CoachTab = "home" | "patients" | "meetings" | "requests" | "messages" | "community" | "fasting" | "food" | "supplements" | "move" | "train" | "yoga" | "labtests" | "profile";
+export type CoachTab = "home" | "patients" | "meetings" | "requests" | "messages" | "community" | "fasting" | "food" | "supplements" | "move" | "train" | "workouts" | "yoga" | "labtests" | "profile";
 
 const navItems: { id: CoachTab; icon: React.ElementType; label: string }[] = [
   { id: "home", icon: Home, label: "Home" },
@@ -47,6 +48,7 @@ const navItems: { id: CoachTab; icon: React.ElementType; label: string }[] = [
   { id: "supplements", icon: Pill, label: "Supplements" },
   { id: "move", icon: Activity, label: "Move" },
   { id: "train", icon: Dumbbell, label: "Train" },
+  { id: "workouts", icon: Dumbbell, label: "Workout Plans" },
   { id: "yoga", icon: Flower2, label: "Yoga" },
   { id: "labtests", icon: FlaskConical, label: "Lab Tests" },
 ];
@@ -162,6 +164,7 @@ export default function CoachDashboard() {
     supplements: <CoachSupplements />,
     move: <CoachMove />,
     train: <ExerciseTab packageKey="intensive" />,
+    workouts: <CoachWorkouts coachId={coachMeta?.id ?? null} />,
     yoga: <Videos packageKey="intensive" />,
     labtests: <CoachLabTests />,
     profile: <CoachProfile onSignOut={handleSignOut} onReplayTour={handleReplayTour} />,
