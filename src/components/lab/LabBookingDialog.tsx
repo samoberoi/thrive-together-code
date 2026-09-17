@@ -183,6 +183,7 @@ export default function LabBookingDialog({ open, onClose, productCodes, recommen
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent
         onOpenAutoFocus={(e) => e.preventDefault()}
+        onEscapeKeyDown={() => onClose()}
         onPointerDownOutside={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}
         className="!fixed !left-0 !right-0 !top-0 !bottom-0 !flex !h-[100dvh] !max-h-[100dvh] !w-screen !max-w-[100vw] !translate-x-0 !translate-y-0 flex-col gap-0 overflow-hidden overscroll-none rounded-none border-0 p-0 touch-pan-y sm:!left-[50%] sm:!right-auto sm:!top-[50%] sm:!bottom-auto sm:!h-auto sm:!max-h-[90vh] sm:!w-full sm:!max-w-md sm:!translate-x-[-50%] sm:!translate-y-[-50%] sm:rounded-2xl sm:border sm:p-0 [&>button.absolute]:hidden"
@@ -195,7 +196,7 @@ export default function LabBookingDialog({ open, onClose, productCodes, recommen
             size="icon"
             onClick={onClose}
             aria-label="Close lab booking"
-            className="absolute right-3 top-[calc(env(safe-area-inset-top)+0.5rem)] z-20 h-11 w-11 shrink-0 text-foreground hover:bg-muted sm:top-3"
+            className="absolute right-3 top-[calc(env(safe-area-inset-top)+0.5rem)] z-20 h-11 w-11 shrink-0 border border-border bg-background text-foreground shadow-sm hover:bg-muted sm:top-3"
           >
             <X className="h-5 w-5" />
           </Button>

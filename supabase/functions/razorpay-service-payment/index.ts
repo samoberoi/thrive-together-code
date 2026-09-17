@@ -74,19 +74,29 @@ async function loadBillable(kind: Kind, refId: string): Promise<Billable | null>
     .maybeSingle();
   if (!data) return null;
 
-  let amount = Number(data.amount) || 0;
-  if (!amount) {
-    const codes: string[] = Array.isArray(data.product_codes) ? data.product_codes : [];
-    if (codes.length) {
-      const { data: tests } = await admin
+  // Never trust the amount staged by an older app/function deployment. Resolve
+  // every lab checkout from the same offer-rate + markup rule shown on screen.
+  const codes: string[] = Array.isArray(data.product_codes) ? data.product_codes : [];
+  let amount = 0;
+  if (codes.length) {
+    const [{ data: tests }, { data: markup }] = await Promise.all([
+      admin
         .from("thyrocare_tests")
-        .select("product_code, rate, offer_rate")
-        .in("product_code", codes);
-      amount = (tests || []).reduce((s: number, t: any) => s + Number(t.offer_rate || t.rate || 0), 0);
-      const { data: markup } = await admin.rpc("get_lab_test_markup_pct");
-      const pct = Number(markup) || 0;
-      if (pct > 0) amount = Math.round(amount * (1 + pct / 100));
-    }
+        .select("product_code, rate, offer_rate, markup_pct")
+        .in("product_code", codes),
+      admin.rpc("get_lab_test_markup_pct"),
+    ]);
+    const globalPct = Math.max(0, Number(markup) || 0);
+    amount = (tests || []).reduce((sum: number, test: any) => {
+      const base = Number(test.offer_rate ?? test.rate ?? 0) || 0;
+      const override = test.markup_pct == null ? NaN : Number(test.markup_pct);
+      const pct = Number.isFinite(override) && override >= 0 ? override : globalPct;
+      return sum + Math.round(base * (1 + pct / 100));
+    }, 0);
+  }
+  amount = Math.round(amount);
+  if (amount > 0 && amount !== Math.round(Number(data.amount) || 0)) {
+    await admin.from("thyrocare_orders").update({ amount }).eq("id", data.id);
   }
   return {
     kind,
@@ -111,7 +121,7 @@ async function contactFor(userId: string) {
 async function existingPayment(kind: Kind, refId: string) {
   const { data } = await admin
     .from("razorpay_payments")
-    .select("id, order_id, status, notes")
+    .select("id, order_id, amount_paise, status, notes")
     .eq("plan_key", `svc_${kind}`)
     .contains("notes", { ref_id: refId })
     .order("created_at", { ascending: false })
@@ -128,8 +138,21 @@ async function createLink(kind: Kind, refId: string) {
   if (billable.amountInr <= 0) return json({ ok: false, error: "No price configured for this booking" }, 200);
 
   const prior = await existingPayment(kind, refId);
-  if (prior?.notes?.short_url && prior.status !== "paid") {
+  const correctPaise = billable.amountInr * 100;
+  if (prior?.notes?.short_url && prior.status !== "paid" && Number(prior.amount_paise) === correctPaise) {
     return json({ ok: true, short_url: prior.notes.short_url, reused: true });
+  }
+  if (prior?.notes?.short_url && prior.status !== "paid" && Number(prior.amount_paise) !== correctPaise) {
+    const cancel = await fetch(`https://api.razorpay.com/v1/payment_links/${encodeURIComponent(prior.order_id)}/cancel`, {
+      method: "POST",
+      headers: { Authorization: rzpAuth() },
+    });
+    if (!cancel.ok) {
+      const detail = await cancel.text();
+      console.error("incorrect payment link cancellation failed", cancel.status, detail);
+      return json({ ok: false, error: "The old incorrect payment link could not be disabled. No new payment was created." }, 409);
+    }
+    await admin.from("razorpay_payments").update({ status: "cancelled" }).eq("id", prior.id);
   }
 
   const { name, phone } = await contactFor(billable.userId);
@@ -137,7 +160,7 @@ async function createLink(kind: Kind, refId: string) {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: rzpAuth() },
     body: JSON.stringify({
-      amount: Math.max(100, billable.amountInr * 100),
+      amount: Math.max(100, correctPaise),
       currency: "INR",
       description: billable.description,
       customer: { name, contact: phone ? `+91${phone}` : undefined },
@@ -266,18 +289,46 @@ async function verify(body: any, userId: string | null) {
 
   const { data: row } = await admin
     .from("razorpay_payments")
-    .select("id, user_id, notes")
+    .select("id, user_id, plan_key, amount_paise, notes")
     .eq("order_id", orderId)
     .maybeSingle();
   if (!row) return json({ verified: false, error: "Unknown order" }, 404);
   if (userId && row.user_id !== userId) return json({ verified: false, error: "Forbidden" }, 403);
+
+  const notes = (row.notes || {}) as any;
+  const paymentKind: Kind | null = notes.kind === "lab" || notes.kind === "yoga" ? notes.kind : null;
+  if (paymentKind && notes.ref_id) {
+    const current = await loadBillable(paymentKind, String(notes.ref_id));
+    const expectedPaise = current ? current.amountInr * 100 : 0;
+    if (!current || expectedPaise <= 0 || Number(row.amount_paise) !== expectedPaise) {
+      const refund = await fetch(`https://api.razorpay.com/v1/payments/${encodeURIComponent(paymentId)}/refund`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: rzpAuth() },
+        body: JSON.stringify({ notes: { reason: "BBDO checkout price changed before payment verification" } }),
+      });
+      const refundBody = await refund.text();
+      await admin.from("razorpay_payments").update({
+        status: refund.ok ? "refunded" : "refund_pending",
+        payment_id: paymentId,
+        signature,
+        signature_verified: true,
+        notes: { ...notes, price_mismatch: true, expected_paise: expectedPaise, refund_response: refundBody.slice(0, 500) },
+      }).eq("id", row.id);
+      console.error("stale-price payment blocked", { orderId, paymentId, charged: row.amount_paise, expectedPaise, refundOk: refund.ok });
+      return json({
+        verified: false,
+        error: refund.ok
+          ? "This checkout used an old incorrect price. The payment was automatically refunded; please reopen the test to pay the correct amount."
+          : "This checkout used an old incorrect price. The booking was blocked and support has been alerted to refund the payment.",
+      }, 409);
+    }
+  }
 
   await admin
     .from("razorpay_payments")
     .update({ status: "paid", payment_id: paymentId, signature, signature_verified: true })
     .eq("id", row.id);
 
-  const notes = (row.notes || {}) as any;
   if (notes.kind && notes.ref_id) await settle(notes.kind, notes.ref_id, paymentId);
 
   return json({ verified: true });

@@ -83,7 +83,12 @@ export async function payForService(kind: ServiceKind, refId: string): Promise<b
           reject(e);
         }
       },
-      modal: { ondismiss: () => reject(new Error("Payment cancelled.")) },
+      modal: {
+        escape: true,
+        backdropclose: true,
+        confirm_close: false,
+        ondismiss: () => reject(new Error("Payment cancelled.")),
+      },
     });
     rzp.on("payment.failed", (resp: any) => reject(new Error(resp?.error?.description || "Payment failed.")));
     rzp.open();
