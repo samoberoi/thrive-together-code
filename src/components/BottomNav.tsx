@@ -14,6 +14,7 @@ const ICON_FOR: Record<Tab, AppIconName> = {
   diet: "utensils",
   habits: "walk",
   exercise: "dumbbell",
+  exercise2: "bolt",
   fasting: "clock",
   supplements: "pill",
   labs: "chart",

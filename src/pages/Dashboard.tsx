@@ -396,6 +396,7 @@ export default function Dashboard() {
     home: <HomeTab onProfileOpen={() => setProfileOpen(true)} packageKey={packageKey} />,
     habits: <Movement />,
     exercise: <ExerciseTab packageKey={packageKey} />,
+    exercise2: <Exercise2Tab packageKey={packageKey} />,
     fasting: <UserFasting packageKey={packageKey} />,
     supplements: <UserSupplements simpleMode={packageKey === "foundation"} />,
     videos: <Videos packageKey={packageKey} />,
