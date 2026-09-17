@@ -122,6 +122,7 @@ export default function WorkoutPlayer({
   // after YouTube confirms that each complete video play has ended.
   useEffect(() => {
     if (paused || done || !item) return;
+    if (videoId && !videoReady && !resting) return;
     if (!resting && item.mode === "reps") return;
     const t = window.setInterval(() => {
       setRemaining((r) => {
@@ -135,7 +136,7 @@ export default function WorkoutPlayer({
       });
     }, 1000);
     return () => window.clearInterval(t);
-  }, [paused, done, resting, index, item, goTo, completeWork]);
+  }, [paused, done, resting, index, item, goTo, completeWork, videoId, videoReady]);
 
   useEffect(() => {
     if (!videoId || !item) return;
