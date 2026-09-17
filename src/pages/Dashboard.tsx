@@ -74,7 +74,7 @@ const navLabelOverrides: Partial<Record<Tab, string>> = {
   diet: "Food",
   habits: "Movement",
   exercise: "Exercise",
-  exercise2: "Exercise 2.0",
+  exercise2: "Workouts",
   supplements: "Supplements",
   videos: "Stress and Yoga",
   labs: "Lab Tests",
