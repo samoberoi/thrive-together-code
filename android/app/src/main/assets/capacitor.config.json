@@ -48,7 +48,8 @@
 			"@capacitor/push-notifications",
 			"@capacitor/share",
 			"@capawesome/capacitor-badge",
-			"@capgo/capacitor-health"
+			"@capgo/capacitor-health",
+			"capacitor-razorpay"
 		]
 	}
 }
