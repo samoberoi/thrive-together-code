@@ -643,6 +643,7 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
             weightKg: (p as any)?.weight ?? null,
             heightCm: (p as any)?.height ?? null,
           });
+          setMovementTarget(ov.targetSteps || 0);
           setMovementDone(ov.targetSteps > 0 && ov.todaySteps >= ov.targetSteps);
           const ratio = ov.targetSteps > 0 ? Math.min(1, ov.todaySteps / ov.targetSteps) : 0;
           setMovementRatio(ratio);
