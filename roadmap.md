@@ -9,4 +9,4 @@
 - [x] Remove excess space from staff More sheets and stabilize the center plus spacing
 - [x] Make staff health-log tabs, charts, and client cards readable on mobile
 - [x] Match coach and admin top branding treatment to the member header
-- [ ] Correct live lab checkout prices, invalidate inflated payment links, and restore reliable close controls
+- [x] Correct live lab checkout prices, invalidate inflated payment links, and restore reliable close controls

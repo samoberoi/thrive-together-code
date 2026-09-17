@@ -289,18 +289,46 @@ async function verify(body: any, userId: string | null) {
 
   const { data: row } = await admin
     .from("razorpay_payments")
-    .select("id, user_id, notes")
+    .select("id, user_id, plan_key, amount_paise, notes")
     .eq("order_id", orderId)
     .maybeSingle();
   if (!row) return json({ verified: false, error: "Unknown order" }, 404);
   if (userId && row.user_id !== userId) return json({ verified: false, error: "Forbidden" }, 403);
+
+  const notes = (row.notes || {}) as any;
+  const paymentKind: Kind | null = notes.kind === "lab" || notes.kind === "yoga" ? notes.kind : null;
+  if (paymentKind && notes.ref_id) {
+    const current = await loadBillable(paymentKind, String(notes.ref_id));
+    const expectedPaise = current ? current.amountInr * 100 : 0;
+    if (!current || expectedPaise <= 0 || Number(row.amount_paise) !== expectedPaise) {
+      const refund = await fetch(`https://api.razorpay.com/v1/payments/${encodeURIComponent(paymentId)}/refund`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: rzpAuth() },
+        body: JSON.stringify({ notes: { reason: "BBDO checkout price changed before payment verification" } }),
+      });
+      const refundBody = await refund.text();
+      await admin.from("razorpay_payments").update({
+        status: refund.ok ? "refunded" : "refund_pending",
+        payment_id: paymentId,
+        signature,
+        signature_verified: true,
+        notes: { ...notes, price_mismatch: true, expected_paise: expectedPaise, refund_response: refundBody.slice(0, 500) },
+      }).eq("id", row.id);
+      console.error("stale-price payment blocked", { orderId, paymentId, charged: row.amount_paise, expectedPaise, refundOk: refund.ok });
+      return json({
+        verified: false,
+        error: refund.ok
+          ? "This checkout used an old incorrect price. The payment was automatically refunded; please reopen the test to pay the correct amount."
+          : "This checkout used an old incorrect price. The booking was blocked and support has been alerted to refund the payment.",
+      }, 409);
+    }
+  }
 
   await admin
     .from("razorpay_payments")
     .update({ status: "paid", payment_id: paymentId, signature, signature_verified: true })
     .eq("id", row.id);
 
-  const notes = (row.notes || {}) as any;
   if (notes.kind && notes.ref_id) await settle(notes.kind, notes.ref_id, paymentId);
 
   return json({ verified: true });
