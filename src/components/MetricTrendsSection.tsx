@@ -149,10 +149,22 @@ export default function MetricTrendsSection({
   // Always a fixed rolling window ending today: 7 / 14 / 30 / 90 days back.
   const windowStart = useMemo(() => shiftDays(today, days - 1), [today, days]);
 
+  // Today's steps come from the SAME shared store the ring above uses, so the
+  // two can never show different numbers.
+  const { steps: liveTodaySteps } = useTodaySteps(userId);
+  const series = useMemo(() => {
+    const steps = [...full.steps];
+    const value = Math.max(liveTodaySteps || 0, steps.find((p) => p.date === today)?.value ?? 0);
+    const i = steps.findIndex((p) => p.date === today);
+    if (i >= 0) steps[i] = { ...steps[i], value };
+    else if (value > 0) steps.push({ date: today, value });
+    return { ...full, steps };
+  }, [full, liveTodaySteps, today]);
+
   return (
     <div className="space-y-2.5">
       {METRICS.map((m, idx) => {
-        const all = full[m.key];
+        const all = series[m.key];
         const isOpen = open === m.key;
         const windowed = all.filter((p) => p.date >= windowStart && p.date <= today);
         const data = isOpen ? windowed : all.slice(-14);
