@@ -316,6 +316,23 @@ export async function loadPlanItems(planId: string): Promise<WorkoutPlanItem[]> 
   return (data ?? []) as WorkoutPlanItem[];
 }
 
+/** Items for many plans at once, keyed by plan id (used for card previews). */
+export async function loadItemsForPlans(planIds: string[]): Promise<Record<string, WorkoutPlanItem[]>> {
+  if (!planIds.length) return {};
+  const { data, error } = await db
+    .from("workout_plan_items")
+    .select("*")
+    .in("plan_id", planIds)
+    .order("position");
+  if (error) throw error;
+  const out: Record<string, WorkoutPlanItem[]> = {};
+  (data ?? []).forEach((row: any) => {
+    const key = row.plan_id as string;
+    (out[key] ||= []).push(row as WorkoutPlanItem);
+  });
+  return out;
+}
+
 export async function savePlan(
   plan: Partial<WorkoutPlan> & { name: string },
   items: WorkoutPlanItem[],
