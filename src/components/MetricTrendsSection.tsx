@@ -13,6 +13,8 @@ import {
   YAxis,
 } from "recharts";
 import { fetchJoinDate, fetchTrendSeries, todayKey, type TrendMetric, type TrendPoint } from "@/lib/trendsService";
+import { fetchTodaySteps } from "@/lib/movementUserService";
+
 import StepsShareCard from "@/components/StepsShareCard";
 import MetricTrendShareCard from "@/components/MetricTrendShareCard";
 
@@ -61,8 +63,14 @@ function axisTick(v: any) {
 function shiftDays(dateKeyStr: string, days: number) {
   const d = new Date(`${dateKeyStr}T00:00:00`);
   d.setDate(d.getDate() - days);
-  return d.toISOString().slice(0, 10);
+  // Format in LOCAL time — toISOString() would roll back a day in IST and
+  // silently move the window boundary off by one.
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
+
 
 function prettyDate(d: string) {
   return new Date(`${d}T00:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
@@ -89,6 +97,8 @@ export default function MetricTrendsSection({
     health: [], weight: [], glucose: [], steps: [],
   });
 
+  const [reloadTick, setReloadTick] = useState(0);
+
   useEffect(() => {
     if (!userId) return;
     let cancelled = false;
@@ -102,10 +112,37 @@ export default function MetricTrendsSection({
       if (cancelled) return;
       const next = { health: [], weight: [], glucose: [], steps: [] } as Record<TrendMetric, TrendPoint[]>;
       METRICS.forEach((m, i) => { next[m.key] = results[i]; });
+      // Safety net: make sure today's steps always match the ring, even if the
+      // series query missed the row that was just written.
+      try {
+        const live = await fetchTodaySteps(userId);
+        if (!cancelled && live > 0) {
+          const existing = next.steps.find((p) => p.date === today);
+          if (existing) existing.value = live;
+          else next.steps = [...next.steps, { date: today, value: live }];
+        }
+      } catch { /* ignore */ }
+      if (cancelled) return;
       setFull(next);
+
     })();
     return () => { cancelled = true; };
-  }, [userId, today]);
+  }, [userId, today, reloadTick]);
+
+  // The step/health sync finishes AFTER this section has already loaded, so
+  // without this the charts keep showing the pre-sync state (today = 0) even
+  // though the ring above already shows the synced steps.
+  useEffect(() => {
+    const bump = () => setReloadTick((n) => n + 1);
+    const onVisible = () => { if (document.visibilityState === "visible") bump(); };
+    window.addEventListener("health-log-saved", bump);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("health-log-saved", bump);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, []);
+
 
   const days = RANGES.find((r) => r.key === range)!.days;
   // Always a fixed rolling window ending today: 7 / 14 / 30 / 90 days back.
