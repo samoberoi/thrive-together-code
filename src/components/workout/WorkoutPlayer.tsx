@@ -14,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { extractYoutubeId } from "@/lib/exercise2ThumbnailService";
-import { PHASE_LABEL, type PlayableItem } from "@/lib/workoutService";
+import { PHASE_LABEL, itemWorkSeconds, type PlayableItem } from "@/lib/workoutService";
 
 interface Props {
   title: string;
@@ -48,7 +48,7 @@ export default function WorkoutPlayer({
 }: Props) {
   const [index, setIndex] = useState(Math.min(startIndex, Math.max(0, items.length - 1)));
   const [resting, setResting] = useState(false);
-  const [remaining, setRemaining] = useState(items[startIndex]?.work_seconds ?? 30);
+  const [remaining, setRemaining] = useState(items[startIndex] ? itemWorkSeconds(items[startIndex]) : 30);
   const [paused, setPaused] = useState(false);
   const [muted, setMuted] = useState(true);
   const [done, setDone] = useState(false);
@@ -59,15 +59,16 @@ export default function WorkoutPlayer({
   const videoId = item ? extractYoutubeId(item.exercise.youtube_url) : null;
 
   const totalSeconds = useMemo(
-    () => items.reduce((s, i) => s + i.work_seconds + i.rest_seconds, 0),
+    () => items.reduce((s, i) => s + itemWorkSeconds(i) + i.rest_seconds, 0),
     [items]
   );
   const elapsedBefore = useMemo(
-    () => items.slice(0, index).reduce((s, i) => s + i.work_seconds + i.rest_seconds, 0),
+    () => items.slice(0, index).reduce((s, i) => s + itemWorkSeconds(i) + i.rest_seconds, 0),
     [items, index]
   );
-  const elapsed = elapsedBefore + (resting ? item?.work_seconds ?? 0 : 0) +
-    ((resting ? item?.rest_seconds ?? 0 : item?.work_seconds ?? 0) - remaining);
+  const itemWork = item ? itemWorkSeconds(item) : 0;
+  const elapsed = elapsedBefore + (resting ? itemWork : 0) +
+    ((resting ? item?.rest_seconds ?? 0 : itemWork) - remaining);
   const progressPct = totalSeconds ? Math.min(100, Math.round((elapsed / totalSeconds) * 100)) : 0;
 
   // Lock the page behind the player.
@@ -89,7 +90,7 @@ export default function WorkoutPlayer({
       }
       setIndex(i);
       setResting(phase === "rest");
-      setRemaining(phase === "rest" ? items[i].rest_seconds : items[i].work_seconds);
+      setRemaining(phase === "rest" ? items[i].rest_seconds : itemWorkSeconds(items[i]));
       onPosition?.(i);
     },
     [items, onFinish, onPosition]
@@ -224,8 +225,14 @@ export default function WorkoutPlayer({
                   {PHASE_LABEL[item?.phase ?? "main"]}
                 </span>
                 <p className="text-lg font-black truncate">{item?.exercise.name}</p>
-                {item?.exercise.reps_duration && (
-                  <p className="text-xs text-white/60 truncate">{item.exercise.reps_duration}</p>
+                {item?.mode === "reps" ? (
+                  <p className="text-xs text-white/60 truncate">
+                    As many reps as possible · target {item.reps} reps
+                  </p>
+                ) : (
+                  item?.exercise.reps_duration && (
+                    <p className="text-xs text-white/60 truncate">{item.exercise.reps_duration}</p>
+                  )
                 )}
               </div>
               <p className="text-4xl font-black tabular-nums shrink-0">{remaining}</p>

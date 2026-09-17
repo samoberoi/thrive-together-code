@@ -34,6 +34,11 @@ export interface WorkoutPlan {
   created_at: string;
 }
 
+export type WorkoutItemMode = "time" | "reps";
+
+/** Rough seconds a single rep takes, used to price a reps-based drill into the plan length. */
+export const SECONDS_PER_REP = 4;
+
 export interface WorkoutPlanItem {
   id?: string;
   plan_id?: string;
@@ -42,6 +47,14 @@ export interface WorkoutPlanItem {
   work_seconds: number;
   rest_seconds: number;
   phase: WorkoutPhase;
+  mode?: WorkoutItemMode;
+  reps?: number;
+}
+
+/** Seconds a drill occupies, whether it is timed or rep-counted. */
+export function itemWorkSeconds(i: WorkoutPlanItem): number {
+  if (i.mode === "reps") return Math.max(SECONDS_PER_REP, (i.reps || 1) * SECONDS_PER_REP);
+  return i.work_seconds;
 }
 
 /** A plan item joined with the exercise it plays. */
@@ -208,18 +221,23 @@ export function generateWorkout(
     if (!list.length) return;
     let spent = 0;
     let i = 0;
-    while (spent + work <= seconds) {
+    while (i < 200) {
       const ex = list[i % list.length];
+      // Use the clip's own length when it has one, so the maths matches the videos.
+      const clip = (ex as any).duration_seconds as number | undefined;
+      const workSeconds = clip && clip > 0 ? Math.min(90, Math.max(15, clip)) : work;
+      if (spent + workSeconds > seconds) break;
       items.push({
         exercise_id: ex.id,
         position: position++,
-        work_seconds: work,
+        work_seconds: workSeconds,
         rest_seconds: rest,
         phase,
+        mode: "time",
+        reps: 0,
       });
-      spent += work + rest;
+      spent += workSeconds + rest;
       i++;
-      if (i > 200) break;
     }
   };
 
@@ -231,7 +249,7 @@ export function generateWorkout(
 }
 
 export function planDurationSeconds(items: WorkoutPlanItem[]): number {
-  return items.reduce((s, i) => s + i.work_seconds + i.rest_seconds, 0);
+  return items.reduce((s, i) => s + itemWorkSeconds(i) + i.rest_seconds, 0);
 }
 
 export function attachExercises(items: WorkoutPlanItem[], pool: Exercise2[]): PlayableItem[] {
@@ -329,6 +347,8 @@ export async function savePlan(
         exercise_id: i.exercise_id,
         position: idx,
         work_seconds: i.work_seconds,
+        mode: i.mode ?? "time",
+        reps: i.reps ?? 0,
         rest_seconds: i.rest_seconds,
         phase: i.phase,
       }))
