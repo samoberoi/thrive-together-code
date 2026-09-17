@@ -512,6 +512,38 @@ export default function AdminExercises2() {
                   <Label>Sets</Label>
                   <Input value={form.sets} onChange={(e) => setForm({ ...form, sets: e.target.value })} />
                 </div>
+                <div className="space-y-1.5">
+                  <Label>Video duration (seconds)</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={form.duration_seconds ?? 0}
+                    onChange={(e) =>
+                      setForm({ ...form, duration_seconds: Math.max(0, parseInt(e.target.value, 10) || 0) })
+                    }
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    {form.duration_seconds
+                      ? `${Math.floor(form.duration_seconds / 60)}m ${form.duration_seconds % 60}s`
+                      : "Enter the clip length manually."}
+                  </p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Session phase</Label>
+                  <Select
+                    value={form.phase ?? "main"}
+                    onValueChange={(v) => setForm({ ...form, phase: v as Exercise2Input["phase"] })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="warm_up">Warm-up</SelectItem>
+                      <SelectItem value="main">Main workout</SelectItem>
+                      <SelectItem value="cool_down">Cool-down</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="space-y-1.5 sm:col-span-2">
                   <Label>YouTube link</Label>
                   <Input
