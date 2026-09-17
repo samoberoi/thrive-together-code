@@ -1,8 +1,8 @@
 import { Capacitor } from "@capacitor/core";
 
 /** Keep in sync with package.json / android versionName / iOS CFBundleShortVersionString. */
-export const APP_VERSION = "1.1.6";
-export const APP_BUILD = "17";
+export const APP_VERSION = "1.1.7";
+export const APP_BUILD = "18";
 
 export function appVersionLabel(): string {
   const platform = Capacitor.isNativePlatform() ? Capacitor.getPlatform() : "web";
