@@ -7,15 +7,23 @@ import {
   CalendarDays,
   Trash2,
   Shuffle,
-  Save,
   Clock,
   UserRound,
+  Pencil,
+  Plus,
+  Minus,
+  ArrowUp,
+  ArrowDown,
+  X,
+  Timer,
+  Repeat,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -28,6 +36,7 @@ import {
   generateWorkout,
   attachExercises,
   planDurationSeconds,
+  itemWorkSeconds,
   savePlan,
   listMyPlans,
   listCoachPlans,
@@ -38,6 +47,7 @@ import {
   startSession,
   updateSession,
   logExerciseCompletion,
+  SECONDS_PER_REP,
   DURATION_OPTIONS,
   WEEKDAY_LABEL,
   PHASE_LABEL,
@@ -113,6 +123,9 @@ export default function Exercise2({ packageKey }: Props) {
   const [equipIds, setEquipIds] = useState<string[]>([]);
   const [draft, setDraft] = useState<WorkoutPlanItem[] | null>(null);
   const [planName, setPlanName] = useState("");
+  const [planDescription, setPlanDescription] = useState("");
+  const [planDays, setPlanDays] = useState<number[]>([]);
+  const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   // Player state
@@ -183,7 +196,7 @@ export default function Exercise2({ packageKey }: Props) {
         setLevelId(lvl.find((l) => l.slug === slug)?.id ?? lvl[0].id);
       }
     } catch (e: any) {
-      toast.error(e.message ?? "Could not load Exercise 2.0");
+      toast.error(e.message ?? "Could not load your workouts");
     } finally {
       setLoading(false);
     }
@@ -209,15 +222,65 @@ export default function Exercise2({ packageKey }: Props) {
   const generate = () => {
     const items = generateWorkout(pool, buildOptions(), levelSlugById);
     if (!items.length) {
-      toast.error("No exercises match those choices yet. Try fewer filters.");
+      toast.error("Nothing matches those choices yet. Try fewer filters.");
       return;
     }
     setDraft(items);
-    const type = lists.workout_types.find((w) => w.id === workoutTypeId)?.name;
-    setPlanName(`${duration} min ${type ?? "Full body"}`);
+    if (!planName.trim()) {
+      const type = lists.workout_types.find((w) => w.id === workoutTypeId)?.name;
+      const focus = lists.exercise_muscle_groups.find((m) => muscleIds.includes(m.id))?.name;
+      setPlanName(`${duration} min ${focus ?? type ?? "Full body"}`);
+    }
   };
 
   const draftPlayable = useMemo(() => (draft ? attachExercises(draft, pool) : []), [draft, pool]);
+  const draftSeconds = draft ? planDurationSeconds(draft) : 0;
+
+  /* ───────────── draft editing ───────────── */
+
+  const updateItem = (index: number, patch: Partial<WorkoutPlanItem>) =>
+    setDraft((d) => (d ? d.map((it, i) => (i === index ? { ...it, ...patch } : it)) : d));
+
+  const removeItem = (index: number) =>
+    setDraft((d) => (d ? d.filter((_, i) => i !== index).map((it, i) => ({ ...it, position: i })) : d));
+
+  const moveItem = (index: number, dir: -1 | 1) =>
+    setDraft((d) => {
+      if (!d) return d;
+      const to = index + dir;
+      if (to < 0 || to >= d.length) return d;
+      const next = [...d];
+      [next[index], next[to]] = [next[to], next[index]];
+      return next.map((it, i) => ({ ...it, position: i }));
+    });
+
+  const swapItem = (index: number) =>
+    setDraft((d) => {
+      if (!d) return d;
+      const current = d[index];
+      const used = new Set(d.map((i) => i.exercise_id));
+      const currentEx = pool.find((e) => e.id === current.exercise_id);
+      const options = pool.filter(
+        (e) =>
+          !used.has(e.id) &&
+          ((e as any).phase ?? "main") === current.phase &&
+          (!muscleIds.length || e.muscle_group_ids.some((m) => muscleIds.includes(m))) &&
+          (!currentEx?.muscle_group_ids.length ||
+            e.muscle_group_ids.some((m) => currentEx.muscle_group_ids.includes(m)))
+      );
+      const pick = options[Math.floor(Math.random() * options.length)];
+      if (!pick) {
+        toast.error("No other drill fits that slot yet.");
+        return d;
+      }
+      const next = [...d];
+      next[index] = { ...current, exercise_id: pick.id };
+      toast.success(`Swapped in ${pick.name}`);
+      return next;
+    });
+
+  const setMode = (index: number, mode: "time" | "reps") =>
+    updateItem(index, { mode, reps: mode === "reps" ? Math.max(8, draft?.[index].reps ?? 0) : 0 });
 
   /* ───────────── play / logging ───────────── */
 
@@ -270,30 +333,75 @@ export default function Exercise2({ packageKey }: Props) {
     });
   };
 
-  /* ───────────── saving ───────────── */
+  /* ───────────── builder open / save ───────────── */
 
-  const saveDraft = async () => {
-    if (!user || !draft) return;
+  const openNewBuilder = () => {
+    setEditingPlanId(null);
+    setDraft(null);
+    setPlanName("");
+    setPlanDescription("");
+    setPlanDays([]);
+    setBuilderOpen(true);
+  };
+
+  const openEditBuilder = async (plan: WorkoutPlan) => {
+    try {
+      const items = await loadPlanItems(plan.id);
+      setEditingPlanId(plan.id);
+      setDraft(items);
+      setPlanName(plan.name);
+      setPlanDescription(plan.description ?? "");
+      setPlanDays(schedule.filter((s) => s.plan_id === plan.id && !s.is_rest_day).map((s) => s.weekday));
+      setDuration(plan.duration_minutes);
+      setWorkoutTypeId(plan.workout_type_id ?? ANY);
+      setLevelId(plan.experience_level_id ?? ANY);
+      setMuscleIds(plan.muscle_group_ids ?? []);
+      setEquipIds(plan.equipment_ids ?? []);
+      setBuilderOpen(true);
+    } catch (e: any) {
+      toast.error(e.message ?? "Could not open that workout");
+    }
+  };
+
+  const persistDraft = async (): Promise<string | null> => {
+    if (!user || !draft?.length) return null;
+    const planId = await savePlan(
+      {
+        id: editingPlanId ?? undefined,
+        name: planName.trim() || `${Math.round(draftSeconds / 60)} min workout`,
+        description: planDescription.trim() || null,
+        plan_kind: "user",
+        owner_id: user.id,
+        duration_minutes: Math.max(1, Math.round(draftSeconds / 60)),
+        workout_type_id: workoutTypeId === ANY ? null : workoutTypeId,
+        experience_level_id: levelId === ANY ? null : levelId,
+        muscle_group_ids: muscleIds,
+        equipment_ids: equipIds,
+      },
+      draft,
+      user.id
+    );
+    // Day assignments: claim the chosen days, release days this plan no longer owns.
+    const previous = schedule.filter((s) => s.plan_id === planId).map((s) => s.weekday);
+    for (const day of planDays) await saveScheduleDay(user.id, { weekday: day, plan_id: planId, is_rest_day: false });
+    for (const day of previous.filter((d) => !planDays.includes(d)))
+      await saveScheduleDay(user.id, { weekday: day, plan_id: null, is_rest_day: false });
+    setSchedule(await loadSchedule(user.id));
+    setMyPlans(await listMyPlans(user.id));
+    return planId;
+  };
+
+  const saveDraft = async (thenPlay: boolean) => {
+    if (!user || !draft?.length) return;
     setSaving(true);
     try {
-      await savePlan(
-        {
-          name: planName.trim() || `${duration} min workout`,
-          plan_kind: "user",
-          owner_id: user.id,
-          duration_minutes: duration,
-          workout_type_id: workoutTypeId === ANY ? null : workoutTypeId,
-          experience_level_id: levelId === ANY ? null : levelId,
-          muscle_group_ids: muscleIds,
-          equipment_ids: equipIds,
-        },
-        draft,
-        user.id
-      );
-      toast.success("Workout saved");
+      await persistDraft();
+      toast.success(editingPlanId ? "Workout updated" : "Workout saved");
       setBuilderOpen(false);
+      const items = draftPlayable;
       setDraft(null);
-      setMyPlans(await listMyPlans(user.id));
+      setEditingPlanId(null);
+      if (thenPlay) void play(planName || "My workout", items);
     } catch (e: any) {
       toast.error(e.message ?? "Could not save the workout");
     } finally {
@@ -313,9 +421,10 @@ export default function Exercise2({ packageKey }: Props) {
   const removePlan = async (plan: WorkoutPlan) => {
     await deletePlan(plan.id);
     setMyPlans((p) => p.filter((x) => x.id !== plan.id));
+    setSchedule(await loadSchedule(user!.id));
   };
 
-  /* ───────────── weekly plan ───────────── */
+  /* ───────────── weekly plan (paid packages) ───────────── */
 
   const buildWeek = async () => {
     if (!user) return;
@@ -325,7 +434,7 @@ export default function Exercise2({ packageKey }: Props) {
       const focusOrder = lists.exercise_muscle_groups;
       const used: string[] = [];
       for (let day = 0; day < 7; day++) {
-        const rest = day === 0 || day === 6; // Sunday & Saturday off by default
+        const rest = day === 0 || day === 6;
         if (rest) {
           await saveScheduleDay(user.id, { weekday: day, plan_id: null, is_rest_day: true });
           continue;
@@ -334,9 +443,7 @@ export default function Exercise2({ packageKey }: Props) {
         const type = types.length ? types[(day - 1) % types.length].id : null;
         const items = generateWorkout(
           pool,
-          {
-            ...buildOptions({ muscleGroupIds: focus, workoutTypeId: type, avoidIds: used }),
-          },
+          { ...buildOptions({ muscleGroupIds: focus, workoutTypeId: type, avoidIds: used }) },
           levelSlugById
         );
         if (!items.length) continue;
@@ -373,6 +480,15 @@ export default function Exercise2({ packageKey }: Props) {
     return m;
   }, [myPlans, coachPlans]);
 
+  const daysForPlan = useCallback(
+    (planId: string) =>
+      schedule
+        .filter((s) => s.plan_id === planId && !s.is_rest_day)
+        .map((s) => s.weekday)
+        .sort((a, b) => a - b),
+    [schedule]
+  );
+
   const toggleRest = async (weekday: number, rest: boolean) => {
     if (!user) return;
     const day = schedule.find((s) => s.weekday === weekday);
@@ -390,76 +506,90 @@ export default function Exercise2({ packageKey }: Props) {
     );
   }
 
-  const tabs: { id: typeof tab; label: string }[] = [
-    ...(isFoundation ? [] : [{ id: "week" as const, label: "My Week" }]),
-    ...(isIntensive ? [{ id: "coach" as const, label: "Coach Workouts" }] : []),
-    { id: "build" as const, label: isFoundation ? "Build My Workout" : "Build a session" },
-  ];
+  const tabs: { id: typeof tab; label: string }[] = isFoundation
+    ? []
+    : [
+        { id: "week" as const, label: "My Week" },
+        ...(isIntensive ? [{ id: "coach" as const, label: "Coach Workouts" }] : []),
+        { id: "build" as const, label: "Build a session" },
+      ];
+
+  const savedList = (
+    <div className="space-y-3">
+      {myPlans
+        .filter((p) => p.plan_kind === "user")
+        .map((p) => (
+          <PlanCard
+            key={p.id}
+            plan={p}
+            days={daysForPlan(p.id)}
+            onPlay={() => openSavedPlan(p)}
+            onEdit={() => openEditBuilder(p)}
+            onDelete={() => removePlan(p)}
+          />
+        ))}
+    </div>
+  );
+
+  const hasOwnPlans = myPlans.some((p) => p.plan_kind === "user");
 
   return (
     <div className="p-4 sm:p-6 space-y-4 max-w-4xl mx-auto pb-24">
-      <div>
-        <h1 className="text-xl sm:text-2xl font-black text-foreground flex items-center gap-2">
-          <Dumbbell className="w-5 h-5 text-[var(--bbdo-blue)]" />
-          Exercise 2.0
-        </h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Pick a length, press play once, and the whole session runs itself.
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-black text-foreground flex items-center gap-2">
+            <Dumbbell className="w-5 h-5 text-[var(--bbdo-blue)]" />
+            My Workouts
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Press play once and the whole session runs itself.
+          </p>
+        </div>
+        {isFoundation && hasOwnPlans && (
+          <Button size="sm" onClick={openNewBuilder}>
+            <Plus className="w-4 h-4 mr-1" /> New
+          </Button>
+        )}
       </div>
 
-      <div className="flex gap-2 border-b overflow-x-auto">
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={cn(
-              "h-10 px-4 -mb-px border-b-2 text-sm font-semibold whitespace-nowrap transition-colors",
-              tab === t.id
-                ? "border-[var(--bbdo-blue)] text-[var(--bbdo-blue)]"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      {tabs.length > 0 && (
+        <div className="flex gap-2 border-b overflow-x-auto">
+          {tabs.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={cn(
+                "h-10 px-4 -mb-px border-b-2 text-sm font-semibold whitespace-nowrap transition-colors",
+                tab === t.id
+                  ? "border-[var(--bbdo-blue)] text-[var(--bbdo-blue)]"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
 
-      {/* ── Build ── */}
+      {/* ── Build / saved workouts ── */}
       {tab === "build" && (
         <div className="space-y-4">
-          <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[var(--bbdo-blue)]/10 flex items-center justify-center shrink-0">
-                <Sparkles className="w-5 h-5 text-[var(--bbdo-blue)]" />
+          {!hasOwnPlans ? (
+            <div className="rounded-2xl border border-dashed border-border bg-card p-8 text-center">
+              <div className="w-12 h-12 rounded-2xl bg-[var(--bbdo-blue)]/10 flex items-center justify-center mx-auto">
+                <Sparkles className="w-6 h-6 text-[var(--bbdo-blue)]" />
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-black text-foreground">Build my workout</p>
-                <p className="text-sm text-muted-foreground mt-0.5">
-                  Choose how long you have and what you want to train. We line up the drills,
-                  warm-up to cool-down, and play them back to back.
-                </p>
-                <Button className="mt-3" onClick={() => setBuilderOpen(true)}>
-                  <Sparkles className="w-4 h-4 mr-1" /> Start building
-                </Button>
-              </div>
+              <p className="font-black text-foreground mt-3">No workouts yet</p>
+              <p className="text-sm text-muted-foreground mt-1 max-w-sm mx-auto">
+                Tell us how long you have and what you want to train. We line up the drills and play
+                them back to back.
+              </p>
+              <Button className="mt-4" onClick={openNewBuilder}>
+                <Sparkles className="w-4 h-4 mr-1" /> Build my workout
+              </Button>
             </div>
-          </div>
-
-          {myPlans.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-sm font-black text-foreground">Saved workouts</p>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {myPlans.map((p) => (
-                  <PlanRow
-                    key={p.id}
-                    plan={p}
-                    onPlay={() => openSavedPlan(p)}
-                    onDelete={() => removePlan(p)}
-                  />
-                ))}
-              </div>
-            </div>
+          ) : (
+            savedList
           )}
         </div>
       )}
@@ -485,12 +615,6 @@ export default function Exercise2({ packageKey }: Props) {
               {schedule.length ? "Rebuild my week" : "Build my week"}
             </Button>
           </div>
-
-          {!schedule.length && (
-            <p className="text-sm text-muted-foreground">
-              We know your age, level and goals — build a week and each day gets its own focus.
-            </p>
-          )}
 
           <div className="space-y-2">
             {WEEKDAY_LABEL.map((label, day) => {
@@ -577,12 +701,15 @@ export default function Exercise2({ packageKey }: Props) {
         open={builderOpen}
         onOpenChange={(o) => {
           setBuilderOpen(o);
-          if (!o) setDraft(null);
+          if (!o) {
+            setDraft(null);
+            setEditingPlanId(null);
+          }
         }}
       >
-        <DialogContent className="max-w-lg max-h-[85svh] overflow-y-auto">
+        <DialogContent className="max-w-lg max-h-[88svh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Build my workout</DialogTitle>
+            <DialogTitle>{editingPlanId ? "Edit my workout" : "Build my workout"}</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -637,7 +764,7 @@ export default function Exercise2({ packageKey }: Props) {
             </div>
 
             <div className="space-y-1.5">
-              <Label>Target a muscle group (optional)</Label>
+              <Label>Body part / focus (optional)</Label>
               <ChipRow
                 options={lists.exercise_muscle_groups}
                 selected={muscleIds}
@@ -662,40 +789,172 @@ export default function Exercise2({ packageKey }: Props) {
             </Button>
 
             {draft && (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-black text-foreground">
-                    {draftPlayable.length} drills · {fmtMins(planDurationSeconds(draft))}
+                    {draft.length} drills · {fmtMins(draftSeconds)}
                   </p>
+                  <p className="text-[11px] text-muted-foreground">Tap a drill to change it</p>
                 </div>
-                <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
-                  {draftPlayable.map((it, i) => (
-                    <div key={`${it.exercise_id}-${i}`} className="flex items-center gap-2">
-                      <div
-                        className="w-14 shrink-0 rounded-md overflow-hidden bg-muted border border-border relative"
-                        style={{ aspectRatio: "16 / 9" }}
-                      >
-                        {(it.exercise.image_url || youtubeThumbnail(it.exercise.youtube_url)) && (
-                          <img
-                            src={it.exercise.image_url || (youtubeThumbnail(it.exercise.youtube_url) as string)}
-                            alt=""
-                            loading="lazy"
-                            className="absolute inset-0 w-full h-full object-cover"
-                          />
-                        )}
+
+                <div className="space-y-2 max-h-[48vh] overflow-y-auto pr-1">
+                  {draft.map((it, i) => {
+                    const ex = pool.find((e) => e.id === it.exercise_id);
+                    if (!ex) return null;
+                    const thumb = ex.image_url || youtubeThumbnail(ex.youtube_url);
+                    const reps = it.mode === "reps";
+                    return (
+                      <div key={`${it.exercise_id}-${i}`} className="rounded-xl border border-border bg-card p-2">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-16 shrink-0 rounded-md overflow-hidden bg-muted border border-border relative"
+                            style={{ aspectRatio: "16 / 9" }}
+                          >
+                            {thumb && (
+                              <img
+                                src={thumb as string}
+                                alt=""
+                                loading="lazy"
+                                className="absolute inset-0 w-full h-full object-cover"
+                              />
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold text-foreground truncate">{ex.name}</p>
+                            <p className="text-[11px] text-muted-foreground">
+                              {PHASE_LABEL[it.phase]} ·{" "}
+                              {reps ? `${it.reps} reps` : `${it.work_seconds}s`} · {it.rest_seconds}s rest
+                            </p>
+                          </div>
+                          <div className="flex flex-col">
+                            <button
+                              className="p-1 text-muted-foreground hover:text-foreground"
+                              onClick={() => moveItem(i, -1)}
+                              aria-label="Move up"
+                            >
+                              <ArrowUp className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              className="p-1 text-muted-foreground hover:text-foreground"
+                              onClick={() => moveItem(i, 1)}
+                              aria-label="Move down"
+                            >
+                              <ArrowDown className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                          <button
+                            className="p-1.5 text-muted-foreground hover:text-destructive"
+                            onClick={() => removeItem(i)}
+                            aria-label="Remove drill"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        <div className="flex items-center gap-2 mt-2 flex-wrap">
+                          <div className="flex rounded-md border border-border overflow-hidden">
+                            <button
+                              onClick={() => setMode(i, "time")}
+                              className={cn(
+                                "px-2 h-7 text-[11px] font-semibold flex items-center gap-1",
+                                !reps ? "bg-[var(--bbdo-blue)]/10 text-[var(--bbdo-blue)]" : "text-muted-foreground"
+                              )}
+                            >
+                              <Timer className="w-3 h-3" /> Timed
+                            </button>
+                            <button
+                              onClick={() => setMode(i, "reps")}
+                              className={cn(
+                                "px-2 h-7 text-[11px] font-semibold flex items-center gap-1 border-l border-border",
+                                reps ? "bg-[var(--bbdo-blue)]/10 text-[var(--bbdo-blue)]" : "text-muted-foreground"
+                              )}
+                            >
+                              <Repeat className="w-3 h-3" /> Reps
+                            </button>
+                          </div>
+
+                          {reps && (
+                            <div className="flex items-center gap-1">
+                              <Button
+                                size="icon"
+                                variant="outline"
+                                className="h-7 w-7"
+                                onClick={() => updateItem(i, { reps: Math.max(1, (it.reps ?? 1) - 1) })}
+                                aria-label="Fewer reps"
+                              >
+                                <Minus className="w-3 h-3" />
+                              </Button>
+                              <span className="w-10 text-center text-sm font-black tabular-nums">{it.reps}</span>
+                              <Button
+                                size="icon"
+                                variant="outline"
+                                className="h-7 w-7"
+                                onClick={() => updateItem(i, { reps: Math.min(100, (it.reps ?? 0) + 1) })}
+                                aria-label="More reps"
+                              >
+                                <Plus className="w-3 h-3" />
+                              </Button>
+                              <span className="text-[11px] text-muted-foreground ml-1">
+                                ≈ {itemWorkSeconds(it)}s ({SECONDS_PER_REP}s a rep)
+                              </span>
+                            </div>
+                          )}
+
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 text-[11px] ml-auto"
+                            onClick={() => swapItem(i)}
+                          >
+                            <Shuffle className="w-3 h-3 mr-1" /> Swap
+                          </Button>
+                        </div>
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-foreground truncate">{it.exercise.name}</p>
-                        <p className="text-[11px] text-muted-foreground">
-                          {PHASE_LABEL[it.phase]} · {it.work_seconds}s work / {it.rest_seconds}s rest
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Workout name</Label>
+                  <Input
+                    value={planName}
+                    onChange={(e) => setPlanName(e.target.value)}
+                    placeholder="Monday chest"
+                  />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Name this workout</Label>
-                  <Input value={planName} onChange={(e) => setPlanName(e.target.value)} />
+                  <Label>Description (optional)</Label>
+                  <Textarea
+                    value={planDescription}
+                    onChange={(e) => setPlanDescription(e.target.value)}
+                    placeholder="Push day — chest and shoulders, light on the knees."
+                    rows={2}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Do this on (optional)</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {WEEKDAY_LABEL.map((label, day) => {
+                      const on = planDays.includes(day);
+                      return (
+                        <button
+                          key={label}
+                          type="button"
+                          onClick={() =>
+                            setPlanDays((d) => (d.includes(day) ? d.filter((x) => x !== day) : [...d, day]))
+                          }
+                          className={cn(
+                            "px-3 h-8 rounded-md border text-xs font-semibold transition-colors",
+                            on
+                              ? "border-[var(--bbdo-blue)] bg-[var(--bbdo-blue)]/10 text-[var(--bbdo-blue)]"
+                              : "border-border text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          {label.slice(0, 3)}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             )}
@@ -703,18 +962,12 @@ export default function Exercise2({ packageKey }: Props) {
 
           <DialogFooter className="gap-2">
             {draft && (
-              <Button variant="outline" onClick={saveDraft} disabled={saving}>
-                <Save className="w-4 h-4 mr-1" /> Save
+              <Button variant="outline" onClick={() => void saveDraft(false)} disabled={saving}>
+                {saving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : null} Save
               </Button>
             )}
-            <Button
-              disabled={!draft}
-              onClick={() => {
-                setBuilderOpen(false);
-                void play(planName || "My workout", draftPlayable);
-              }}
-            >
-              <Play className="w-4 h-4 mr-1" /> Start workout
+            <Button disabled={!draft || saving} onClick={() => void saveDraft(true)}>
+              <Play className="w-4 h-4 mr-1" /> Save &amp; start
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -768,27 +1021,61 @@ function ChipRow({
   );
 }
 
-function PlanRow({
+function PlanCard({
   plan,
+  days,
   onPlay,
+  onEdit,
   onDelete,
 }: {
   plan: WorkoutPlan;
+  days: number[];
   onPlay: () => void;
+  onEdit: () => void;
   onDelete: () => void;
 }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-3 flex items-center gap-3">
-      <div className="min-w-0 flex-1">
-        <p className="font-semibold text-foreground truncate">{plan.name}</p>
-        <p className="text-[11px] text-muted-foreground">{plan.duration_minutes} min</p>
+    <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+      <div className="flex items-start gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="font-black text-foreground truncate">{plan.name}</p>
+          <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
+            <Clock className="w-3 h-3" /> {plan.duration_minutes} min
+          </p>
+          {plan.description && (
+            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{plan.description}</p>
+          )}
+          {days.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {days.map((d) => (
+                <span
+                  key={d}
+                  className="px-2 py-0.5 rounded bg-[var(--bbdo-blue)]/10 text-[var(--bbdo-blue)] text-[10px] font-black uppercase"
+                >
+                  {WEEKDAY_LABEL[d].slice(0, 3)}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+        <Button size="sm" onClick={onPlay}>
+          <Play className="w-4 h-4 mr-1" /> Play
+        </Button>
       </div>
-      <Button size="sm" onClick={onPlay}>
-        <Play className="w-4 h-4 mr-1" /> Play
-      </Button>
-      <Button size="icon" variant="ghost" className="h-8 w-8" onClick={onDelete} aria-label="Delete workout">
-        <Trash2 className="w-4 h-4 text-destructive" />
-      </Button>
+      <div className="flex items-center gap-1 mt-3 pt-3 border-t border-border">
+        <Button size="sm" variant="ghost" className="text-xs" onClick={onEdit}>
+          <Pencil className="w-3.5 h-3.5 mr-1" /> Edit workout
+        </Button>
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-8 w-8 ml-auto"
+          onClick={onDelete}
+          aria-label="Delete workout"
+        >
+          <Trash2 className="w-4 h-4 text-destructive" />
+        </Button>
+      </div>
     </div>
   );
 }
