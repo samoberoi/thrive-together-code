@@ -36,6 +36,7 @@ import {
 } from "@/lib/supplementService";
 import { calculateSupplementStreak, checkAndAwardSupplementBadges } from "@/lib/supplementBadgeService";
 import TodayStepsCard from "@/components/TodayStepsCard";
+import { useTodaySteps } from "@/lib/todayStepsStore";
 import StepsShareCard from "@/components/StepsShareCard";
 import MinutesShareCard from "@/components/MinutesShareCard";
 import AppleHealthSnapshotCard from "@/components/AppleHealthSnapshotCard";
@@ -421,6 +422,7 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
    const [movementRatio, setMovementRatio] = useState(0);
    const [movementHint, setMovementHint] = useState<string>("");
   const [movementSteps, setMovementSteps] = useState(0);
+   const [movementTarget, setMovementTarget] = useState(0);
    const [weightData, setWeightData] = useState<{ v: number }[]>([]);
    const [bpData, setBpData] = useState<{ v: number }[]>([]);
   const [progressSummaries, setProgressSummaries] = useState<ProgressSummary[]>([]);
@@ -463,6 +465,22 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
 
   const { user: authUser } = useAuth();
   const user = useUserStore();
+
+  // Shared today's-steps store (synced every 5 minutes). The movement ring, the
+  // Today's Steps card and the Steps chart all read this one number.
+  const { steps: liveTodaySteps } = useTodaySteps(authUser?.id);
+  useEffect(() => {
+    if (!liveTodaySteps || liveTodaySteps <= movementSteps) return;
+    setMovementSteps(liveTodaySteps);
+    if (movementTarget > 0) {
+      setMovementRatio(Math.min(1, liveTodaySteps / movementTarget));
+      setMovementDone(liveTodaySteps >= movementTarget);
+      setMovementHint(
+        `${liveTodaySteps.toLocaleString("en-IN")} / ${movementTarget.toLocaleString("en-IN")} steps`,
+      );
+    }
+  }, [liveTodaySteps, movementSteps, movementTarget]);
+
 
   // Fire the one-time welcome notification only when the user lands on the
   // Home dashboard (not on OTP / SIGNED_IN). Server-side is idempotent, so
@@ -642,6 +660,7 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
             weightKg: (p as any)?.weight ?? null,
             heightCm: (p as any)?.height ?? null,
           });
+          setMovementTarget(ov.targetSteps || 0);
           setMovementDone(ov.targetSteps > 0 && ov.todaySteps >= ov.targetSteps);
           const ratio = ov.targetSteps > 0 ? Math.min(1, ov.todaySteps / ov.targetSteps) : 0;
           setMovementRatio(ratio);

@@ -17,7 +17,12 @@ import {
   type MovementOverview,
 } from "@/lib/movementUserService";
 
-const HEALTH_SYNC_INTERVAL_MS = 2 * 60_000;
+import {
+  formatSyncedAt,
+  refreshTodaySteps,
+  STEPS_SYNC_LABEL,
+  useTodaySteps,
+} from "@/lib/todayStepsStore";
 
 export default function TodayStepsCard({ onOpenMovement, minTargetSteps, allowManualEdit = false }: { onOpenMovement?: () => void; minTargetSteps?: number; allowManualEdit?: boolean }) {
   const { user } = useAuth();
@@ -47,21 +52,27 @@ export default function TodayStepsCard({ onOpenMovement, minTargetSteps, allowMa
 
   useEffect(() => { load(); }, [load]);
 
+  // Today's count comes from ONE shared store, synced every 5 minutes, so the
+  // ring here and the Steps chart below can never disagree.
+  const { steps: liveSteps, lastSyncedAt, syncing: storeSyncing } = useTodaySteps(user?.id);
+
   const syncHealthSteps = useCallback(async (showToast = false) => {
     if (!user) return;
     setSyncingHealth(true);
     setHealthSyncError(null);
     try {
-      const steps = await syncTodaySteps({ allowPrompt: showToast });
-      if (steps == null) {
-        setHealthConnected(false);
-        const message = `${healthSourceLabel()} is not available on this device`;
-        setHealthSyncError(message);
-        if (showToast) toast.error(message);
-        return;
+      if (showToast && healthStepsAvailable) {
+        const probe = await syncTodaySteps({ allowPrompt: true });
+        if (probe == null) {
+          setHealthConnected(false);
+          const message = `${healthSourceLabel()} is not available on this device`;
+          setHealthSyncError(message);
+          toast.error(message);
+          return;
+        }
+        setHealthConnected(true);
       }
-      setHealthConnected(true);
-      await logTodaySteps(user.id, steps);
+      const steps = await refreshTodaySteps(user.id);
       if (showToast) {
         if (steps > 0) {
           toast.success(`Synced ${steps.toLocaleString("en-IN")} ${healthSourceLabel()} steps`);
@@ -74,12 +85,8 @@ export default function TodayStepsCard({ onOpenMovement, minTargetSteps, allowMa
           });
         }
       }
-
-      window.dispatchEvent(new CustomEvent("health-log-saved"));
       await load();
     } catch (error: any) {
-      // Health Connect read-quota throttling is not a user problem — stay quiet
-      // and keep showing the last synced number.
       if (isHealthRateLimited(error)) {
         console.warn("health steps sync throttled by Health Connect", error);
         return;
@@ -88,53 +95,19 @@ export default function TodayStepsCard({ onOpenMovement, minTargetSteps, allowMa
       const message = error?.message || `Couldn't sync ${healthSourceLabel()} steps`;
       setHealthSyncError(message);
       if (showToast) toast.error(message);
-      console.warn(`${healthSourceLabel()} steps sync failed`, error);
     } finally {
       setSyncingHealth(false);
     }
+  }, [healthStepsAvailable, load, user]);
 
-  }, [load, user]);
-
+  // Native resume: nudge the shared store (it throttles internally).
   useEffect(() => {
-    if (!user || !healthStepsAvailable) return;
-    const sync = async () => {
-      await syncHealthSteps(false);
-    };
-    void sync();
-  }, [healthStepsAvailable, syncHealthSteps, user]);
-
-  useEffect(() => {
-    if (!user || !healthStepsAvailable) return;
-    let lastSyncAt = 0;
-    const syncIfStale = () => {
-      const now = Date.now();
-      if (now - lastSyncAt < 30_000) return;
-      lastSyncAt = now;
-      void syncHealthSteps(false);
-    };
+    if (!user) return;
     const sub = CapApp.addListener("appStateChange", ({ isActive }) => {
-      if (isActive) syncIfStale();
+      if (isActive) void refreshTodaySteps(user.id).catch(() => {});
     });
-    const onVisibilityChange = () => {
-      if (document.visibilityState === "visible") syncIfStale();
-    };
-    document.addEventListener("visibilitychange", onVisibilityChange);
-    return () => {
-      document.removeEventListener("visibilitychange", onVisibilityChange);
-      void sub.then((s) => s.remove());
-    };
-  }, [healthStepsAvailable, syncHealthSteps, user]);
-
-  // Keep step counts fresh while the app is open (every 5 minutes) so users
-  // walking with the app in the foreground see their steps move.
-  useEffect(() => {
-    if (!user || !healthStepsAvailable) return;
-    const id = window.setInterval(() => {
-      if (document.visibilityState !== "visible") return;
-      void syncHealthSteps(false);
-    }, HEALTH_SYNC_INTERVAL_MS);
-    return () => window.clearInterval(id);
-  }, [healthStepsAvailable, syncHealthSteps, user]);
+    return () => { void sub.then((s) => s.remove()); };
+  }, [user]);
 
   useEffect(() => {
     const handler = () => load();
@@ -145,9 +118,10 @@ export default function TodayStepsCard({ onOpenMovement, minTargetSteps, allowMa
   if (!user) return null;
 
   const target = data?.targetSteps || 6000;
-  const today = data?.todaySteps || 0;
+  const today = Math.max(liveSteps || 0, data?.todaySteps || 0);
   const ratio = Math.min(1, target ? today / target : 0);
   const hit = today >= target;
+  const syncedLabel = formatSyncedAt(lastSyncedAt);
 
   const handleHealthSync = async () => {
     await syncHealthSteps(true);
@@ -273,9 +247,18 @@ export default function TodayStepsCard({ onOpenMovement, minTargetSteps, allowMa
           <div className="flex items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-2">
               <Watch className="h-4 w-4 shrink-0 text-primary" />
-              <p className="truncate text-[12px] font-semibold text-muted-foreground">
-                {healthSourceLabel()} steps sync automatically
-              </p>
+              <div className="min-w-0">
+                <p className="truncate text-[12px] font-semibold text-muted-foreground">
+                  {healthSourceLabel()} steps · {STEPS_SYNC_LABEL}
+                </p>
+                <p className="truncate text-[10px] font-medium text-muted-foreground/80">
+                  {storeSyncing || syncingHealth
+                    ? "Syncing now…"
+                    : syncedLabel
+                      ? `Last synced ${syncedLabel}`
+                      : "Waiting for first sync"}
+                </p>
+              </div>
             </div>
             <button
               type="button"
@@ -284,7 +267,7 @@ export default function TodayStepsCard({ onOpenMovement, minTargetSteps, allowMa
               aria-label={`Sync ${healthSourceLabel()} steps`}
               className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-card text-primary disabled:opacity-60"
             >
-              <RefreshCw className={`h-4 w-4 ${syncingHealth ? "animate-spin" : ""}`} />
+              <RefreshCw className={`h-4 w-4 ${syncingHealth || storeSyncing ? "animate-spin" : ""}`} />
             </button>
           </div>
           {healthSyncError && (
