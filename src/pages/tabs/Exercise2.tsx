@@ -41,6 +41,7 @@ import {
   listMyPlans,
   listCoachPlans,
   loadPlanItems,
+  loadItemsForPlans,
   deletePlan,
   loadSchedule,
   saveScheduleDay,
@@ -103,6 +104,7 @@ export default function Exercise2({ packageKey }: Props) {
   const [pool, setPool] = useState<Exercise2[]>([]);
   const [lists, setLists] = useState<Lists>(EMPTY_LISTS);
   const [myPlans, setMyPlans] = useState<WorkoutPlan[]>([]);
+  const [planPreview, setPlanPreview] = useState<Record<string, WorkoutPlanItem[]>>({});
   const [coachPlans, setCoachPlans] = useState<WorkoutPlan[]>([]);
   const [coachNames, setCoachNames] = useState<Record<string, string>>({});
   const [schedule, setSchedule] = useState<ScheduleDay[]>([]);
@@ -204,6 +206,22 @@ export default function Exercise2({ packageKey }: Props) {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Card previews: the drills inside each saved workout, for thumbnails and counts.
+  useEffect(() => {
+    const ids = myPlans.map((p) => p.id);
+    if (!ids.length) {
+      setPlanPreview({});
+      return;
+    }
+    let alive = true;
+    loadItemsForPlans(ids)
+      .then((m) => alive && setPlanPreview(m))
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [myPlans]);
 
   const buildOptions = (extra?: Partial<Parameters<typeof generateWorkout>[1]>) => ({
     durationMinutes: duration,
