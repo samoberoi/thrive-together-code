@@ -170,7 +170,12 @@ export function startTodayStepsAutoSync(userId: string): () => void {
 export function useTodaySteps(userId?: string) {
   const [snapshot, setSnapshot] = useState<TodayStepsState>(state);
 
-  useEffect(() => subscribeTodaySteps(setSnapshot), []);
+  useEffect(() => {
+    const unsub = subscribeTodaySteps(setSnapshot);
+    return () => {
+      unsub();
+    };
+  }, []);
 
   useEffect(() => {
     if (!userId) return;
