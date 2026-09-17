@@ -17,7 +17,12 @@ import {
   type MovementOverview,
 } from "@/lib/movementUserService";
 
-const HEALTH_SYNC_INTERVAL_MS = 2 * 60_000;
+import {
+  formatSyncedAt,
+  refreshTodaySteps,
+  STEPS_SYNC_LABEL,
+  useTodaySteps,
+} from "@/lib/todayStepsStore";
 
 export default function TodayStepsCard({ onOpenMovement, minTargetSteps, allowManualEdit = false }: { onOpenMovement?: () => void; minTargetSteps?: number; allowManualEdit?: boolean }) {
   const { user } = useAuth();
