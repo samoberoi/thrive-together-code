@@ -421,6 +421,7 @@ export default function Home({ onProfileOpen, packageKey }: { onProfileOpen?: ()
    const [movementRatio, setMovementRatio] = useState(0);
    const [movementHint, setMovementHint] = useState<string>("");
   const [movementSteps, setMovementSteps] = useState(0);
+   const [movementTarget, setMovementTarget] = useState(0);
    const [weightData, setWeightData] = useState<{ v: number }[]>([]);
    const [bpData, setBpData] = useState<{ v: number }[]>([]);
   const [progressSummaries, setProgressSummaries] = useState<ProgressSummary[]>([]);
