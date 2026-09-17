@@ -51,7 +51,7 @@ export default function WorkoutPlayer({
   const [resting, setResting] = useState(false);
   const [remaining, setRemaining] = useState(items[startIndex] ? itemWorkSeconds(items[startIndex]) : 30);
   const [paused, setPaused] = useState(false);
-  const [muted, setMuted] = useState(true);
+  const [muted, setMuted] = useState(false);
   const [done, setDone] = useState(false);
   const [completedReps, setCompletedReps] = useState(0);
   const [videoReady, setVideoReady] = useState(false);
