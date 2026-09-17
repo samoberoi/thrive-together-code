@@ -61,8 +61,14 @@ function axisTick(v: any) {
 function shiftDays(dateKeyStr: string, days: number) {
   const d = new Date(`${dateKeyStr}T00:00:00`);
   d.setDate(d.getDate() - days);
-  return d.toISOString().slice(0, 10);
+  // Format in LOCAL time — toISOString() would roll back a day in IST and
+  // silently move the window boundary off by one.
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
+
 
 function prettyDate(d: string) {
   return new Date(`${d}T00:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
