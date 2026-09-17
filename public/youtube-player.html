@@ -147,6 +147,7 @@
               onReady: function () {
                 var frame = document.querySelector("iframe");
                 if (frame) frame.setAttribute("referrerpolicy", "strict-origin-when-cross-origin");
+                try { player.unMute(); player.setVolume(100); } catch (_) {}
                 try { player.unloadModule && player.unloadModule("captions"); } catch (_) {}
                 try { player.unloadModule && player.unloadModule("cc"); } catch (_) {}
                 try { player.setOption && player.setOption("captions", "track", {}); } catch (_) {}
