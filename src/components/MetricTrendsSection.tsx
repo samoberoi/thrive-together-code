@@ -13,6 +13,8 @@ import {
   YAxis,
 } from "recharts";
 import { fetchJoinDate, fetchTrendSeries, todayKey, type TrendMetric, type TrendPoint } from "@/lib/trendsService";
+import { fetchTodaySteps } from "@/lib/movementUserService";
+
 import StepsShareCard from "@/components/StepsShareCard";
 import MetricTrendShareCard from "@/components/MetricTrendShareCard";
 
