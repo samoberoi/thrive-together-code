@@ -191,12 +191,33 @@ function startOfToday() { return startOfLocalDay(); }
 function endOfToday()   { return new Date(); }
 function daysAgo(n: number) { const d = new Date(); d.setDate(d.getDate() - n); return d; }
 
+/**
+ * Health Connect rejects any read whose window is not strictly increasing with
+ * "startTime must be before endTime". That happens whenever the device clock
+ * makes `now` land on (or behind) the window start — e.g. a timezone/DST shift
+ * or a clock correction right after the app resumes. Always hand the native
+ * layer a guaranteed-valid window instead of raw wall-clock values.
+ */
+function safeWindow(start: Date, end: Date): { startDate: string; endDate: string } {
+  let s = start.getTime();
+  let e = end.getTime();
+  if (!Number.isFinite(s)) s = Date.now() - 86_400_000;
+  if (!Number.isFinite(e)) e = Date.now();
+  // Pad the end so a same-millisecond window can never be sent.
+  e = Math.max(e, Date.now()) + 60_000;
+  if (s >= e) s = e - 86_400_000;
+  return { startDate: new Date(s).toISOString(), endDate: new Date(e).toISOString() };
+}
+
+function isInvalidRangeError(e: any): boolean {
+  return /before endtime|greater than or equal to startdate/i.test(String(e?.message ?? e ?? ""));
+}
+
 async function aggregate(type: HealthDataType, start: Date, end: Date): Promise<HealthSample[] | null> {
   try {
     const res = await Health.readSamples({
       dataType: type,
-      startDate: start.toISOString(),
-      endDate: end.toISOString(),
+      ...safeWindow(start, end),
       limit: 5000,
       ascending: true,
     });
@@ -208,44 +229,25 @@ async function aggregate(type: HealthDataType, start: Date, end: Date): Promise<
 }
 
 
-
-function last<T = any>(records: any[] | null): T | undefined {
-  if (!records || records.length === 0) return undefined;
-  return records[records.length - 1] as T;
-}
-
-/** Read Steps only — never blocked by other data types being un-granted. */
-async function ensureStepsPermission(allowPrompt = true): Promise<void> {
-  if (permissionTransitionActive) throw new Error("Health Connect permission is still being applied.");
-  const status = await Health.isAvailable();
-  const availability = mapAvailability(status.available, status.reason);
-  if (availability === "NotSupported") {
-    throw new Error("Health Connect is not supported on this Android device.");
-  }
-  if (availability === "NotInstalled") {
-    throw new Error("Install or update Health Connect, then allow step permissions.");
-  }
-  const perms = await Health.checkAuthorization(STEPS_READ_OPTIONS);
-  if (isReadAuthorized(perms.readAuthorized, "steps")) return;
-  if (!allowPrompt) {
-    // Never open the system permission screen from a background/auto sync —
-    // it steals window focus and causes the status bar to flicker in a loop.
-    throw new Error("Allow the Steps permission in Health Connect to sync your steps.");
-  }
-  const requested = await requestHealthConnectAuthorization();
-  if (!requested.authorized) {
-    throw new Error("Allow the Steps permission in Health Connect to sync your steps.");
-  }
-}
-
 async function readAllSteps(start: Date, end: Date): Promise<any[]> {
-  const result = await Health.readSamples({
-    dataType: "steps",
-    startDate: start.toISOString(),
-    endDate: end.toISOString(),
-    limit: 10000,
-    ascending: true,
-  });
+  const read = async (from: Date, to: Date) =>
+    Health.readSamples({
+      dataType: "steps",
+      ...safeWindow(from, to),
+      limit: 10000,
+      ascending: true,
+    });
+
+  let result;
+  try {
+    result = await read(start, end);
+  } catch (e) {
+    if (!isInvalidRangeError(e)) throw e;
+    // Last-resort window: a fixed 7-day span anchored on the device clock.
+    const now = Date.now();
+    result = await read(new Date(now - 7 * 86_400_000), new Date(now + 5 * 60_000));
+  }
+
   return (result.samples ?? []).map((sample) => ({
     count: sample.value,
     startTime: sample.startDate,
