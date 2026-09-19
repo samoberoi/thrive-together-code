@@ -264,6 +264,34 @@ export default function AdminUserProfileSheet({ userId, onOpenChange }: Props) {
               <p className="text-sm">{coachName || profile.coach_name || "Unassigned"}</p>
             </Section>
 
+            <Section icon={Building2} title="Organisation">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <p className="text-[11px] text-muted-foreground">Zone <span className="opacity-60">(optional)</span></p>
+                  <Input
+                    value={zone}
+                    onChange={(e) => setZone(e.target.value)}
+                    placeholder="e.g. North"
+                    className="h-9 text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[11px] text-muted-foreground">Branch SAP Code <span className="opacity-60">(optional)</span></p>
+                  <Input
+                    value={branchSapCode}
+                    onChange={(e) => setBranchSapCode(e.target.value)}
+                    placeholder="e.g. BR-1042"
+                    className="h-9 text-sm"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end pt-1">
+                <Button size="sm" onClick={saveOrgFields} disabled={savingOrg}>
+                  {savingOrg ? "Saving…" : "Save"}
+                </Button>
+              </div>
+            </Section>
+
             <Section icon={Activity} title="Health snapshot">
               <div className="grid grid-cols-2 gap-2">
                 <Cell label="Age" value={profile.age ? `${profile.age} yrs` : "—"} />
