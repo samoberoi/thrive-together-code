@@ -116,6 +116,8 @@ export default function AdminUsers() {
   const [search, setSearch] = useState("");
   const [packageFilter, setPackageFilter] = useState<string>("all");
   const [countryFilter, setCountryFilter] = useState<string>("all");
+  const [stateFilter, setStateFilter] = useState<string>("all");
+  const [cityFilter, setCityFilter] = useState<string>("all");
   const [riskFilter, setRiskFilter] = useState<RiskKey>("all");
   const [genderFilter, setGenderFilter] = useState<GenderFilter>("all");
   const [conditionFilter, setConditionFilter] = useState<ConditionFilter>("all");
@@ -201,6 +203,8 @@ export default function AdminUsers() {
     () =>
       inRangeUsers.filter((u) => {
         if (countryFilter !== "all" && regionOf(u) !== countryFilter) return false;
+        if (stateFilter !== "all" && (u.state || "") !== stateFilter) return false;
+        if (cityFilter !== "all" && (u.city || "") !== cityFilter) return false;
         if (!matchesAttributes(u, { gender: genderFilter, condition: conditionFilter, age: ageFilter, bmi: bmiFilter }))
           return false;
         return true;
