@@ -1,13 +1,10 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { toast } from "@/hooks/use-toast";
 import { whatsappCallUrl } from "@/lib/coachAvailability";
 import {
   Phone, Mail, MessageCircle, MapPin, Activity, CreditCard, UserCheck,
-  HeartPulse, Droplets, Scale, Footprints, ClipboardList, AlertTriangle, Building2,
+  HeartPulse, Droplets, Scale, Footprints, ClipboardList, AlertTriangle,
 } from "lucide-react";
 import {
   isSevereBp, isSevereSugar, isHighBp, isHighSugar, type RiskSnapshot,
@@ -78,9 +75,6 @@ export default function AdminUserProfileSheet({ userId, onOpenChange }: Props) {
   const [coachName, setCoachName] = useState<string | null>(null);
   const [logs, setLogs] = useState<LogRow[]>([]);
   const [diet, setDiet] = useState<any>(null);
-  const [zone, setZone] = useState("");
-  const [branchSapCode, setBranchSapCode] = useState("");
-  const [savingOrg, setSavingOrg] = useState(false);
 
   useEffect(() => {
     if (!userId) {
@@ -121,8 +115,6 @@ export default function AdminUserProfileSheet({ userId, onOpenChange }: Props) {
       setCoachName((a as any)?.coaches?.name ?? null);
       setLogs(((l as any[]) ?? []) as LogRow[]);
       setDiet(d ?? null);
-      setZone((p as any)?.zone ?? "");
-      setBranchSapCode((p as any)?.branch_sap_code ?? "");
       setLoading(false);
     })();
     return () => {
@@ -131,22 +123,6 @@ export default function AdminUserProfileSheet({ userId, onOpenChange }: Props) {
   }, [userId]);
 
   const active = subs.find((s) => s.status === "active");
-
-  const saveOrgFields = async () => {
-    if (!userId) return;
-    setSavingOrg(true);
-    const { error } = await (supabase as any)
-      .from("profiles")
-      .update({ zone: zone.trim() || null, branch_sap_code: branchSapCode.trim() || null })
-      .eq("user_id", userId);
-    setSavingOrg(false);
-    if (error) {
-      toast({ title: "Could not save", description: error.message, variant: "destructive" });
-      return;
-    }
-    setProfile((prev: any) => ({ ...prev, zone: zone.trim() || null, branch_sap_code: branchSapCode.trim() || null }));
-    toast({ title: "Saved", description: "Zone and Branch SAP Code updated." });
-  };
 
   // 7-day risk picture derived from the same logs we already fetched.
   const cutoff = Date.now() - 7 * 24 * 3600 * 1000;
@@ -262,34 +238,6 @@ export default function AdminUserProfileSheet({ userId, onOpenChange }: Props) {
 
             <Section icon={UserCheck} title="Coach">
               <p className="text-sm">{coachName || profile.coach_name || "Unassigned"}</p>
-            </Section>
-
-            <Section icon={Building2} title="Organisation">
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <p className="text-[11px] text-muted-foreground">Zone <span className="opacity-60">(optional)</span></p>
-                  <Input
-                    value={zone}
-                    onChange={(e) => setZone(e.target.value)}
-                    placeholder="e.g. North"
-                    className="h-9 text-sm"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[11px] text-muted-foreground">Branch SAP Code <span className="opacity-60">(optional)</span></p>
-                  <Input
-                    value={branchSapCode}
-                    onChange={(e) => setBranchSapCode(e.target.value)}
-                    placeholder="e.g. BR-1042"
-                    className="h-9 text-sm"
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end pt-1">
-                <Button size="sm" onClick={saveOrgFields} disabled={savingOrg}>
-                  {savingOrg ? "Saving…" : "Save"}
-                </Button>
-              </div>
             </Section>
 
             <Section icon={Activity} title="Health snapshot">
