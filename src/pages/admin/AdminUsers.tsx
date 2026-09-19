@@ -16,6 +16,7 @@ import {
   CalendarClock,
   UserPlus,
   ArrowUpDown,
+  MapPin,
   X,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -629,6 +630,10 @@ export default function AdminUsers() {
                     <div className="min-w-0">
                       <p className="text-foreground font-semibold text-sm truncate">{user.name || "Unnamed"}</p>
                       <p className="text-muted-foreground text-xs truncate">{user.phone || "No phone"}</p>
+                      <p className="text-muted-foreground text-xs truncate flex items-center gap-1">
+                        <MapPin className="w-3 h-3 shrink-0" />
+                        {[user.city, user.state].filter(Boolean).join(", ") || "—"}
+                      </p>
                       <div className="mt-1 flex flex-wrap items-center gap-1.5">
                         <AdherencePill
                           summary={adherence.get(user.user_id)}
