@@ -299,6 +299,35 @@ export default function AdminUsers() {
     ];
   }, [inRangeUsers, regionNames]);
 
+  const stateOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const u of inRangeUsers) {
+      const s = (u.state || "").trim();
+      if (s) counts.set(s, (counts.get(s) ?? 0) + 1);
+    }
+    return [
+      { value: "all", label: "All states" },
+      ...Array.from(counts.entries())
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([s, n]) => ({ value: s, label: `${s} (${n})` })),
+    ];
+  }, [inRangeUsers]);
+
+  const cityOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const u of inRangeUsers) {
+      if (stateFilter !== "all" && (u.state || "") !== stateFilter) continue;
+      const c = (u.city || "").trim();
+      if (c) counts.set(c, (counts.get(c) ?? 0) + 1);
+    }
+    return [
+      { value: "all", label: stateFilter === "all" ? "All cities" : "All cities in state" },
+      ...Array.from(counts.entries())
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([c, n]) => ({ value: c, label: `${c} (${n})` })),
+    ];
+  }, [inRangeUsers, stateFilter]);
+
   const filtered = useMemo(() => {
     const rows = riskScoped.filter(
       (u) => packageFilter === "all" || userCategory(u.user_id) === packageFilter
@@ -327,6 +356,8 @@ export default function AdminUsers() {
       ? { label: packageOptions.find((o) => o.value === packageFilter)?.label ?? "", clear: () => setPackageFilter("all") }
       : null,
     countryFilter !== "all" ? { label: regionLabel(countryFilter), clear: () => setCountryFilter("all") } : null,
+    stateFilter !== "all" ? { label: `State: ${stateFilter}`, clear: () => setStateFilter("all") } : null,
+    cityFilter !== "all" ? { label: `City: ${cityFilter}`, clear: () => setCityFilter("all") } : null,
     riskFilter !== "all"
       ? { label: RISK_META[riskFilter as Exclude<RiskKey, "all">].label, clear: () => setRiskFilter("all") }
       : null,
