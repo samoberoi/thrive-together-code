@@ -735,6 +735,11 @@ export default function AdminUsers() {
                 <div className="xl:hidden px-3 sm:px-4 pb-3 grid grid-cols-1 min-[430px]:grid-cols-2 gap-1.5">
                   <Pill icon={<PackageIcon className="w-3 h-3" />} label={pkg} tone="blue" />
                   <Pill icon={<Globe className="w-3 h-3" />} label={regionLabel(regionOf(user))} tone="muted" />
+                  <Pill
+                    icon={<MapPin className="w-3 h-3" />}
+                    label={[user.city, user.state].filter(Boolean).join(", ") || "No city/state"}
+                    tone="muted"
+                  />
                   <Pill label={`${fmtDate(sub?.started_at)} → ${fmtDate(sub?.expires_at)}`} tone="muted" />
                   {userCategory(user.user_id) === "active" || userCategory(user.user_id) === "intensive" ? (
                     <button
