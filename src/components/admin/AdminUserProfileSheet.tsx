@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
 import { whatsappCallUrl } from "@/lib/coachAvailability";
 import {
   Phone, Mail, MessageCircle, MapPin, Activity, CreditCard, UserCheck,
-  HeartPulse, Droplets, Scale, Footprints, ClipboardList, AlertTriangle,
+  HeartPulse, Droplets, Scale, Footprints, ClipboardList, AlertTriangle, Building2,
 } from "lucide-react";
 import {
   isSevereBp, isSevereSugar, isHighBp, isHighSugar, type RiskSnapshot,
