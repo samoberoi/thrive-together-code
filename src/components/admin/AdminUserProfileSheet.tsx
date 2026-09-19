@@ -132,6 +132,22 @@ export default function AdminUserProfileSheet({ userId, onOpenChange }: Props) {
 
   const active = subs.find((s) => s.status === "active");
 
+  const saveOrgFields = async () => {
+    if (!userId) return;
+    setSavingOrg(true);
+    const { error } = await (supabase as any)
+      .from("profiles")
+      .update({ zone: zone.trim() || null, branch_sap_code: branchSapCode.trim() || null })
+      .eq("user_id", userId);
+    setSavingOrg(false);
+    if (error) {
+      toast({ title: "Could not save", description: error.message, variant: "destructive" });
+      return;
+    }
+    setProfile((prev: any) => ({ ...prev, zone: zone.trim() || null, branch_sap_code: branchSapCode.trim() || null }));
+    toast({ title: "Saved", description: "Zone and Branch SAP Code updated." });
+  };
+
   // 7-day risk picture derived from the same logs we already fetched.
   const cutoff = Date.now() - 7 * 24 * 3600 * 1000;
   const recent = logs.filter((l) => new Date(l.logged_at).getTime() >= cutoff);
