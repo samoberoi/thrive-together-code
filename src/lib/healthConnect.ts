@@ -228,6 +228,33 @@ async function aggregate(type: HealthDataType, start: Date, end: Date): Promise<
   }
 }
 
+function last<T = any>(records: any[] | null): T | undefined {
+  if (!records || records.length === 0) return undefined;
+  return records[records.length - 1] as T;
+}
+
+/** Read Steps only — never blocked by other data types being un-granted. */
+async function ensureStepsPermission(allowPrompt = true): Promise<void> {
+  if (permissionTransitionActive) throw new Error("Health Connect permission is still being applied.");
+  const status = await Health.isAvailable();
+  const availability = mapAvailability(status.available, status.reason);
+  if (availability === "NotSupported") {
+    throw new Error("Health Connect is not supported on this Android device.");
+  }
+  if (availability === "NotInstalled") {
+    throw new Error("Install or update Health Connect, then allow step permissions.");
+  }
+  const perms = await Health.checkAuthorization(STEPS_READ_OPTIONS);
+  if (isReadAuthorized(perms.readAuthorized, "steps")) return;
+  if (!allowPrompt) {
+    throw new Error("Allow the Steps permission in Health Connect to sync your steps.");
+  }
+  const requested = await requestHealthConnectAuthorization();
+  if (!requested.authorized) {
+    throw new Error("Allow the Steps permission in Health Connect to sync your steps.");
+  }
+}
+
 
 async function readAllSteps(start: Date, end: Date): Promise<any[]> {
   const read = async (from: Date, to: Date) =>
