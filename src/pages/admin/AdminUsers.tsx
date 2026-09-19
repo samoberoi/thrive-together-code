@@ -404,7 +404,7 @@ export default function AdminUsers() {
 
       {/* Filter bar */}
       <div className="liquid-glass rounded-2xl p-3 space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
           <div className="relative lg:col-span-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
@@ -414,6 +414,25 @@ export default function AdminUsers() {
               className="pl-9"
             />
           </div>
+
+          <FilterSelect
+            icon={<MapPin className="w-4 h-4 text-muted-foreground shrink-0" />}
+            value={stateFilter}
+            onChange={(v) => {
+              setStateFilter(v);
+              setCityFilter("all");
+            }}
+            options={stateOptions}
+            placeholder="All states"
+          />
+
+          <FilterSelect
+            icon={<MapPin className="w-4 h-4 text-muted-foreground shrink-0" />}
+            value={cityFilter}
+            onChange={setCityFilter}
+            options={cityOptions}
+            placeholder="All cities"
+          />
 
           <FilterSelect
             icon={<Globe className="w-4 h-4 text-muted-foreground shrink-0" />}
@@ -510,6 +529,8 @@ export default function AdminUsers() {
               onClick={() => {
                 setPackageFilter("all");
                 setCountryFilter("all");
+                setStateFilter("all");
+                setCityFilter("all");
                 setRiskFilter("all");
                 setSearch("");
               }}
