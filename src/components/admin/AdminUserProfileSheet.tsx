@@ -78,6 +78,9 @@ export default function AdminUserProfileSheet({ userId, onOpenChange }: Props) {
   const [coachName, setCoachName] = useState<string | null>(null);
   const [logs, setLogs] = useState<LogRow[]>([]);
   const [diet, setDiet] = useState<any>(null);
+  const [zone, setZone] = useState("");
+  const [branchSapCode, setBranchSapCode] = useState("");
+  const [savingOrg, setSavingOrg] = useState(false);
 
   useEffect(() => {
     if (!userId) {
@@ -118,6 +121,8 @@ export default function AdminUserProfileSheet({ userId, onOpenChange }: Props) {
       setCoachName((a as any)?.coaches?.name ?? null);
       setLogs(((l as any[]) ?? []) as LogRow[]);
       setDiet(d ?? null);
+      setZone((p as any)?.zone ?? "");
+      setBranchSapCode((p as any)?.branch_sap_code ?? "");
       setLoading(false);
     })();
     return () => {
