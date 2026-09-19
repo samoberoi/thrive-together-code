@@ -209,7 +209,7 @@ export default function AdminUsers() {
           return false;
         return true;
       }),
-    [inRangeUsers, countryFilter, genderFilter, conditionFilter, ageFilter, bmiFilter]
+    [inRangeUsers, countryFilter, stateFilter, cityFilter, genderFilter, conditionFilter, ageFilter, bmiFilter]
   );
 
   /** PMOS/PCOS only applies to women, so hide it when the list is men-only. */
