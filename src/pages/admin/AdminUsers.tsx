@@ -16,6 +16,7 @@ import {
   CalendarClock,
   UserPlus,
   ArrowUpDown,
+  MapPin,
   X,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -116,6 +117,8 @@ export default function AdminUsers() {
   const [search, setSearch] = useState("");
   const [packageFilter, setPackageFilter] = useState<string>("all");
   const [countryFilter, setCountryFilter] = useState<string>("all");
+  const [stateFilter, setStateFilter] = useState<string>("all");
+  const [cityFilter, setCityFilter] = useState<string>("all");
   const [riskFilter, setRiskFilter] = useState<RiskKey>("all");
   const [genderFilter, setGenderFilter] = useState<GenderFilter>("all");
   const [conditionFilter, setConditionFilter] = useState<ConditionFilter>("all");
@@ -201,11 +204,13 @@ export default function AdminUsers() {
     () =>
       inRangeUsers.filter((u) => {
         if (countryFilter !== "all" && regionOf(u) !== countryFilter) return false;
+        if (stateFilter !== "all" && (u.state || "") !== stateFilter) return false;
+        if (cityFilter !== "all" && (u.city || "") !== cityFilter) return false;
         if (!matchesAttributes(u, { gender: genderFilter, condition: conditionFilter, age: ageFilter, bmi: bmiFilter }))
           return false;
         return true;
       }),
-    [inRangeUsers, countryFilter, genderFilter, conditionFilter, ageFilter, bmiFilter]
+    [inRangeUsers, countryFilter, stateFilter, cityFilter, genderFilter, conditionFilter, ageFilter, bmiFilter]
   );
 
   /** PMOS/PCOS only applies to women, so hide it when the list is men-only. */
@@ -295,6 +300,35 @@ export default function AdminUsers() {
     ];
   }, [inRangeUsers, regionNames]);
 
+  const stateOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const u of inRangeUsers) {
+      const s = (u.state || "").trim();
+      if (s) counts.set(s, (counts.get(s) ?? 0) + 1);
+    }
+    return [
+      { value: "all", label: "All states" },
+      ...Array.from(counts.entries())
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([s, n]) => ({ value: s, label: `${s} (${n})` })),
+    ];
+  }, [inRangeUsers]);
+
+  const cityOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const u of inRangeUsers) {
+      if (stateFilter !== "all" && (u.state || "") !== stateFilter) continue;
+      const c = (u.city || "").trim();
+      if (c) counts.set(c, (counts.get(c) ?? 0) + 1);
+    }
+    return [
+      { value: "all", label: stateFilter === "all" ? "All cities" : "All cities in state" },
+      ...Array.from(counts.entries())
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([c, n]) => ({ value: c, label: `${c} (${n})` })),
+    ];
+  }, [inRangeUsers, stateFilter]);
+
   const filtered = useMemo(() => {
     const rows = riskScoped.filter(
       (u) => packageFilter === "all" || userCategory(u.user_id) === packageFilter
@@ -323,6 +357,8 @@ export default function AdminUsers() {
       ? { label: packageOptions.find((o) => o.value === packageFilter)?.label ?? "", clear: () => setPackageFilter("all") }
       : null,
     countryFilter !== "all" ? { label: regionLabel(countryFilter), clear: () => setCountryFilter("all") } : null,
+    stateFilter !== "all" ? { label: `State: ${stateFilter}`, clear: () => setStateFilter("all") } : null,
+    cityFilter !== "all" ? { label: `City: ${cityFilter}`, clear: () => setCityFilter("all") } : null,
     riskFilter !== "all"
       ? { label: RISK_META[riskFilter as Exclude<RiskKey, "all">].label, clear: () => setRiskFilter("all") }
       : null,
@@ -369,7 +405,7 @@ export default function AdminUsers() {
 
       {/* Filter bar */}
       <div className="liquid-glass rounded-2xl p-3 space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
           <div className="relative lg:col-span-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
@@ -379,6 +415,25 @@ export default function AdminUsers() {
               className="pl-9"
             />
           </div>
+
+          <FilterSelect
+            icon={<MapPin className="w-4 h-4 text-muted-foreground shrink-0" />}
+            value={stateFilter}
+            onChange={(v) => {
+              setStateFilter(v);
+              setCityFilter("all");
+            }}
+            options={stateOptions}
+            placeholder="All states"
+          />
+
+          <FilterSelect
+            icon={<MapPin className="w-4 h-4 text-muted-foreground shrink-0" />}
+            value={cityFilter}
+            onChange={setCityFilter}
+            options={cityOptions}
+            placeholder="All cities"
+          />
 
           <FilterSelect
             icon={<Globe className="w-4 h-4 text-muted-foreground shrink-0" />}
@@ -475,6 +530,8 @@ export default function AdminUsers() {
               onClick={() => {
                 setPackageFilter("all");
                 setCountryFilter("all");
+                setStateFilter("all");
+                setCityFilter("all");
                 setRiskFilter("all");
                 setSearch("");
               }}
@@ -573,6 +630,10 @@ export default function AdminUsers() {
                     <div className="min-w-0">
                       <p className="text-foreground font-semibold text-sm truncate">{user.name || "Unnamed"}</p>
                       <p className="text-muted-foreground text-xs truncate">{user.phone || "No phone"}</p>
+                      <p className="text-muted-foreground text-xs truncate flex items-center gap-1">
+                        <MapPin className="w-3 h-3 shrink-0" />
+                        {[user.city, user.state].filter(Boolean).join(", ") || "—"}
+                      </p>
                       <div className="mt-1 flex flex-wrap items-center gap-1.5">
                         <AdherencePill
                           summary={adherence.get(user.user_id)}
@@ -674,6 +735,11 @@ export default function AdminUsers() {
                 <div className="xl:hidden px-3 sm:px-4 pb-3 grid grid-cols-1 min-[430px]:grid-cols-2 gap-1.5">
                   <Pill icon={<PackageIcon className="w-3 h-3" />} label={pkg} tone="blue" />
                   <Pill icon={<Globe className="w-3 h-3" />} label={regionLabel(regionOf(user))} tone="muted" />
+                  <Pill
+                    icon={<MapPin className="w-3 h-3" />}
+                    label={[user.city, user.state].filter(Boolean).join(", ") || "No city/state"}
+                    tone="muted"
+                  />
                   <Pill label={`${fmtDate(sub?.started_at)} → ${fmtDate(sub?.expires_at)}`} tone="muted" />
                   {userCategory(user.user_id) === "active" || userCategory(user.user_id) === "intensive" ? (
                     <button
