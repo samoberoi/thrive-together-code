@@ -12,6 +12,8 @@ import {
   fetchMovementOverview,
   type MovementOverview,
 } from "@/lib/movementUserService";
+import { useTodaySteps } from "@/lib/todayStepsStore";
+
 
 function fmtSteps(n: number) {
   return n.toLocaleString("en-IN");
