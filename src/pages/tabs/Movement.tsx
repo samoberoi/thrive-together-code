@@ -56,21 +56,33 @@ export default function MovementTab() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Today's steps come from the SAME shared store the home ring and the
+  // "Today's steps" card use, so all three surfaces can never disagree.
+  const { steps: liveSteps, day: liveDay } = useTodaySteps(user?.id);
+
+  const todaySteps = useMemo(
+    () => Math.max(data?.todaySteps ?? 0, liveSteps || 0),
+    [data?.todaySteps, liveSteps],
+  );
+
   const ratio = useMemo(() => {
     if (!data || !data.targetSteps) return 0;
-    return Math.min(1, data.todaySteps / data.targetSteps);
-  }, [data]);
+    return Math.min(1, todaySteps / data.targetSteps);
+  }, [data, todaySteps]);
 
   if (loading || !data) {
     return <div className="p-6 text-sm text-muted-foreground">Loading movement…</div>;
   }
 
-  const { progress, level, targetSteps, todaySteps, history: rawHistory, badgesEarned, allBadges, personalLevels, nextLevelTarget } = data;
+  const { progress, level, targetSteps, history: rawHistory, badgesEarned, allBadges, personalLevels, nextLevelTarget } = data;
   // Only show history from the user's contract/program start date onwards.
-  const history = startDate ? rawHistory.filter((h) => h.date >= startDate) : rawHistory;
+  const history = (startDate ? rawHistory.filter((h) => h.date >= startDate) : rawHistory).map((h) =>
+    h.date === liveDay ? { ...h, steps: Math.max(h.steps, liveSteps || 0) } : h,
+  );
   const historyLabel = history.length <= 1 ? "Since day one" : `Last ${history.length} days`;
   const remaining = Math.max(0, targetSteps - todaySteps);
   const maxBar = Math.max(targetSteps, ...history.map((h) => h.steps), 1);
+
   const earnedCodes = new Set(badgesEarned.map((b) => b.badge_code));
   const nextLevel = personalLevels.find((l) => l.level_number === (level?.level_number ?? 0) + 1) ?? null;
   // When the phone/watch is actively delivering steps, manual entry is hidden so it can't be overridden.
