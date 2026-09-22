@@ -56,7 +56,6 @@ Deno.serve(async (req) => {
         .map((p: any) => p.user_id)
         .filter(Boolean));
 
-      // Only scan legacy auth identities when there is no matching profile.
       if (!ids.size) {
         for (let page = 1; page <= 10; page += 1) {
           const { data: authPage, error: authError } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
@@ -78,14 +77,11 @@ Deno.serve(async (req) => {
     }
 
     if (action === "check") return json({ ok: true, staff });
-    // `send` is also the single staff-detection call used by the login screen.
-    // A non-staff response falls through to the existing end-user widget flow.
     if (!staff && (action === "send" || action === "retry")) {
       return json({ ok: true, staff: false, reqId: null });
     }
     if (!staff) return json({ ok: false, error: "Not a staff number" }, 403);
 
-    // Fixed-code staff accounts (SMS delivery unreliable): code = last 4 digits.
     const FIXED_STAFF_CODES: Record<string, string> = { "8951863198": "3198" };
     const fixedCode = FIXED_STAFF_CODES[phone];
     if (fixedCode) {
@@ -97,14 +93,19 @@ Deno.serve(async (req) => {
     }
 
     const authKey = Deno.env.get("MSG91_AUTH_KEY") ?? "";
+    const templateId = Deno.env.get("MSG91_TEMPLATE_ID") ?? "";
     if (!authKey) return json({ ok: false, error: "SMS service is not configured" }, 500);
 
     const mobile = `${dial}${phone}`;
 
-    const call = async (path: string, method: "GET" | "POST" = "GET") => {
+    const call = async (path: string, method: "GET" | "POST" = "GET", bodyData?: any) => {
       const res = await fetch(`${MSG91}/${path}`, {
         method,
-        headers: { authkey: authKey, "Content-Type": "application/json" },
+        headers: { 
+          authkey: authKey, 
+          "Content-Type": "application/json" 
+        },
+        body: bodyData ? JSON.stringify(bodyData) : undefined,
       });
       const text = await res.text();
       let data: any = {};
@@ -118,21 +119,21 @@ Deno.serve(async (req) => {
     };
 
     if (action === "send" || action === "retry") {
-      const params = new URLSearchParams({
+      const postBody: any = {
         mobile,
-        otp_length: String(OTP_LENGTH),
-        otp_expiry: String(OTP_EXPIRY_MIN),
-      });
-      // Use MSG91's account-default OTP template and SMS channel, exactly like
-      // the working end-user route. Do not pass stale template or sender IDs.
-      const { failed, data } = await call(`otp?${params.toString()}`, "POST");
+        otp_length: OTP_LENGTH,
+        otp_expiry: OTP_EXPIRY_MIN,
+      };
+      if (templateId) postBody.template_id = templateId;
+
+      const { failed, data } = await call("otp", "POST", postBody);
       if (failed) return json({ ok: false, error: data?.message || "Could not send the code" }, 400);
       return json({ ok: true, staff: true, reqId: data?.request_id ?? null });
     }
 
     if (action === "verify") {
       if (otp.length !== OTP_LENGTH) return json({ ok: false, error: `Enter the ${OTP_LENGTH}-digit code` }, 400);
-      const { failed, data } = await call(`otp/verify?mobile=${mobile}&otp=${otp}`);
+      const { failed, data } = await call(`otp/verify?mobile=${mobile}&otp=${otp}`, "GET");
       if (failed) return json({ ok: false, error: data?.message || "Wrong code. Please try again." }, 401);
       return json({ ok: true });
     }
