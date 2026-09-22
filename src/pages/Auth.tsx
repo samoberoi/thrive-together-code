@@ -22,7 +22,7 @@ import AuthHeroCarousel from "@/components/AuthHeroCarousel";
 import { toast } from "sonner";
 import { persistSupabaseSessionToNative } from "@/lib/nativePersistence";
 import { resolvePostAuthRoute } from "@/lib/accessControl";
-import { msg91SendOtp, msg91VerifyOtp } from "@/lib/msg91";
+import { msg91RetryOtp, msg91SendOtp, msg91VerifyOtp } from "@/lib/msg91";
 
 
 function withTimeout<T>(promise: Promise<T>, fallback: T, ms = 2500): Promise<T> {
@@ -77,6 +77,7 @@ export default function Auth() {
   });
   const [regionOpen, setRegionOpen] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
+  const [msg91ReqId, setMsg91ReqId] = useState<string | null>(null);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const rawNext = searchParams.get("next");
@@ -242,7 +243,8 @@ export default function Auth() {
       // OTP delivery flow. No staff pre-check here: a slow or failing check
       // used to block the code from ever being sent.
 
-      await msg91SendOtp(identifier);
+      const reqId = await msg91SendOtp(identifier);
+      setMsg91ReqId(reqId);
       setStep("otp");
       setOtp("");
       setResendCooldown(30);
@@ -268,7 +270,7 @@ export default function Auth() {
       if (isEmailMode) {
         await sendEmailCode();
       } else {
-        await msg91SendOtp(identifier);
+        await msg91RetryOtp(msg91ReqId);
       }
       setOtp("");
       setResendCooldown(30);
@@ -315,7 +317,13 @@ export default function Auth() {
       }
     } else {
     try {
-      await msg91VerifyOtp(identifier, submitted);
+      const accessToken = await msg91VerifyOtp(submitted, msg91ReqId);
+      const { data, error } = await supabase.functions.invoke("msg91-verify-otp", {
+        body: { phone, otp: submitted, accessToken },
+      });
+      if (error || !data?.ok) {
+        throw new Error(data?.error || "Verification failed. Please request a new code.");
+      }
     } catch (error) {
       setOtpError((error as Error).message || "Wrong code. Please try again.");
       setOtp("");
