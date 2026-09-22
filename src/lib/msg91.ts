@@ -1,6 +1,6 @@
-// MSG91 OTP Widget bridge. The configured widget owns sending, retrying and
-// verifying, so delivery uses the exact channels/default template configured
-// in the MSG91 dashboard.
+// MSG91 OTP bridge. Ordinary Indian users use the server-side OTP endpoint so
+// delivery does not depend on the browser widget loading or completing its
+// encrypted request. The endpoint uses MSG91's configured default template.
 
 export const OTP_LENGTH = 4;
 
@@ -12,69 +12,42 @@ declare global {
   }
 }
 
-type WidgetData = { message?: string; request_id?: string; reqId?: string; "access-token"?: string; accessToken?: string };
-type WidgetError = { message?: string };
+type OtpResponse = { ok?: boolean; error?: string; reqId?: string | null };
 
-async function waitForWidget(timeoutMs = 10000): Promise<void> {
-  const started = Date.now();
-  while (Date.now() - started < timeoutMs) {
-    if (typeof window.sendOtp === "function") return;
-    await new Promise((resolve) => setTimeout(resolve, 100));
+async function callOtpFunction(action: "send" | "retry" | "verify", payload: Record<string, unknown>): Promise<OtpResponse> {
+  const backendUrl = import.meta.env.VITE_SUPABASE_URL;
+  const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  const response = await fetch(`${backendUrl}/functions/v1/msg91-otp`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: publishableKey,
+      Authorization: `Bearer ${publishableKey}`,
+    },
+    body: JSON.stringify({ action, ...payload }),
+  });
+  const data = (await response.json().catch(() => null)) as OtpResponse | null;
+  if (!response.ok || !data?.ok) {
+    throw new Error(data?.error || "SMS service is unavailable. Please try again.");
   }
-  throw new Error("SMS service is still loading. Please try again.");
-}
-
-function widgetMessage(error: unknown, fallback: string): string {
-  return (error as WidgetError | undefined)?.message || fallback;
+  return data;
 }
 
 /** Sends an OTP over SMS. `identifier` must be country code + number, digits only. */
 export async function msg91SendOtp(identifier: string): Promise<string | null> {
-  await waitForWidget();
-  if (!window.sendOtp) throw new Error("SMS service is unavailable. Please try again.");
-  return new Promise((resolve, reject) => {
-    window.sendOtp?.(
-      identifier,
-      (value) => {
-        const data = value as WidgetData;
-        resolve(data.request_id ?? data.reqId ?? data.message ?? null);
-      },
-      (error) => reject(new Error(widgetMessage(error, "Could not send the code. Please try again."))),
-    );
-  });
+  const data = await callOtpFunction("send", { identifier });
+  return data.reqId ?? null;
 }
 
 /** Resends the OTP over SMS. */
-export async function msg91RetryOtp(reqId?: string | null): Promise<void> {
-  await waitForWidget();
-  if (!window.retryOtp) throw new Error("SMS service is unavailable. Please try again.");
-  return new Promise((resolve, reject) => {
-    window.retryOtp?.(
-      "11",
-      () => resolve(),
-      (error) => reject(new Error(widgetMessage(error, "Could not resend the code."))),
-      reqId ?? undefined,
-    );
-  });
+export async function msg91RetryOtp(identifier: string): Promise<string | null> {
+  const data = await callOtpFunction("retry", { identifier });
+  return data.reqId ?? null;
 }
 
-/** Verifies the OTP in the widget and returns its short-lived access token. */
-export async function msg91VerifyOtp(otp: string, reqId?: string | null): Promise<string> {
-  await waitForWidget();
-  if (!window.verifyOtp) throw new Error("SMS service is unavailable. Please try again.");
-  return new Promise((resolve, reject) => {
-    window.verifyOtp?.(
-      otp,
-      (value) => {
-        const data = value as WidgetData;
-        const token = data["access-token"] ?? data.accessToken ?? data.message;
-        if (token) resolve(token);
-        else reject(new Error("Verification failed. Please request a new code."));
-      },
-      (error) => reject(new Error(widgetMessage(error, "Wrong code. Please try again."))),
-      reqId ?? undefined,
-    );
-  });
+/** Verifies an OTP against the same server-side transaction used to send it. */
+export async function msg91VerifyOtp(identifier: string, otp: string): Promise<void> {
+  await callOtpFunction("verify", { identifier, otp });
 }
 
 // ---------------------------------------------------------------------------

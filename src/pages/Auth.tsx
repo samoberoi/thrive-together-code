@@ -333,13 +333,7 @@ export default function Auth() {
       }
     } else {
     try {
-      const accessToken = await msg91VerifyOtp(submitted, msg91ReqId);
-      const { data, error } = await supabase.functions.invoke("msg91-verify-otp", {
-        body: { phone: identifier, otp: submitted, accessToken },
-      });
-      if (error || !data?.ok) {
-        throw new Error(data?.error || "Verification failed. Please try again.");
-      }
+      await msg91VerifyOtp(identifier, submitted);
     } catch (error) {
       setOtpError((error as Error).message || "Wrong code. Please try again.");
       setOtp("");
