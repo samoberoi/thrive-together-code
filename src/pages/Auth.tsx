@@ -22,7 +22,7 @@ import AuthHeroCarousel from "@/components/AuthHeroCarousel";
 import { toast } from "sonner";
 import { persistSupabaseSessionToNative } from "@/lib/nativePersistence";
 import { resolvePostAuthRoute } from "@/lib/accessControl";
-import { msg91SendOtp, msg91VerifyOtp, startStaffOtp, verifyStaffOtp } from "@/lib/msg91";
+import { msg91SendOtp, msg91VerifyOtp, verifyStaffOtp } from "@/lib/msg91";
 
 
 function withTimeout<T>(promise: Promise<T>, fallback: T, ms = 2500): Promise<T> {
