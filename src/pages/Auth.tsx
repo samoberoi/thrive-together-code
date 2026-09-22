@@ -190,6 +190,8 @@ export default function Auth() {
     "9000002301": { code: "2305", destination: null },
     "9000002302": { code: "2305", destination: null },
     "9000002303": { code: "2305", destination: null },
+    // Coach with unreliable SMS delivery: fixed code = last 4 digits.
+    "8951863198": { code: "3198", destination: null },
   } as const;
   const fixedOtpPhone = phone.replace(/\D/g, "").slice(-10) as keyof typeof FIXED_OTP_ACCOUNTS;
   const fixedOtpAccount = isEmailMode ? undefined : FIXED_OTP_ACCOUNTS[fixedOtpPhone];
