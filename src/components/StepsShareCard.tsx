@@ -66,7 +66,10 @@ export default function StepsShareCard({
     try {
       const blob = await captureCard();
       if (!blob) throw new Error("Could not build the image");
-      const fileName = `bbdo-steps-${day.toISOString().slice(0, 10)}.png`;
+      // Unique every time: Android's share sheet caches its preview thumbnail
+      // per file URI, so reusing one name per day made it show an OLD card
+      // (yesterday's / an earlier sync's step count) next to the new share.
+      const fileName = `bbdo-steps-${day.toISOString().slice(0, 10)}-${steps}-${Date.now()}.png`;
 
       if (isNative()) {
         const b64 = await new Promise<string>((resolve, reject) => {
