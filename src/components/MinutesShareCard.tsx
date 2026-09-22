@@ -101,7 +101,9 @@ export default function MinutesShareCard({
     try {
       const blob = await captureCard();
       if (!blob) throw new Error("Could not build the image");
-      const fileName = `bbdo-${kind}-${day.toISOString().slice(0, 10)}.png`;
+      // Unique name per capture — the share sheet caches preview thumbnails by
+      // file URI and would otherwise show a stale, older card.
+      const fileName = `bbdo-${kind}-${day.toISOString().slice(0, 10)}-${Date.now()}.png`;
 
       if (isNative()) {
         const b64 = await new Promise<string>((resolve, reject) => {
