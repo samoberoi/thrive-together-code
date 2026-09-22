@@ -22,7 +22,7 @@ import AuthHeroCarousel from "@/components/AuthHeroCarousel";
 import { toast } from "sonner";
 import { persistSupabaseSessionToNative } from "@/lib/nativePersistence";
 import { resolvePostAuthRoute } from "@/lib/accessControl";
-import { msg91SendOtp, msg91VerifyOtp, startStaffOtp } from "@/lib/msg91";
+import { msg91SendOtp, msg91VerifyOtp, startStaffOtp, verifyStaffOtp } from "@/lib/msg91";
 
 
 function withTimeout<T>(promise: Promise<T>, fallback: T, ms = 2500): Promise<T> {
@@ -245,8 +245,16 @@ export default function Auth() {
         return;
       }
       const staffResult = await startStaffOtp(phone, country.dial);
+      if (staffResult.staff) {
+        setStaffOtp(true);
+        setMsg91ReqId(staffResult.reqId);
+        setStep("otp");
+        setOtp("");
+        setResendCooldown(30);
+        return;
+      }
       const reqId = await msg91SendOtp(identifier);
-      setStaffOtp(staffResult.staff);
+      setStaffOtp(false);
       setMsg91ReqId(reqId);
       setStep("otp");
       setOtp("");
@@ -295,6 +303,15 @@ export default function Auth() {
     if (isFixedOtpPhone) {
       if (submitted !== fixedOtpAccount?.code) {
         setOtpError("Wrong code. Please try again.");
+        setOtp("");
+        setLoading(false);
+        return;
+      }
+    } else if (staffOtp) {
+      try {
+        await verifyStaffOtp(phone, country.dial, submitted);
+      } catch (error) {
+        setOtpError((error as Error).message || "Wrong code. Please try again.");
         setOtp("");
         setLoading(false);
         return;

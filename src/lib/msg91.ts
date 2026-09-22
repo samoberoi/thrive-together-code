@@ -101,6 +101,10 @@ async function callStaffOtpFunction(action: "check" | "send" | "retry" | "verify
 }
 
 export async function startStaffOtp(phone: string, dial: string): Promise<{ staff: boolean; reqId: string | null }> {
-  const data = await callStaffOtpFunction("check", { phone, dial });
-  return { staff: data.staff === true, reqId: null };
+  const data = await callStaffOtpFunction("send", { phone, dial });
+  return { staff: data.staff === true, reqId: data.reqId ?? null };
+}
+
+export async function verifyStaffOtp(phone: string, dial: string, otp: string): Promise<void> {
+  await callStaffOtpFunction("verify", { phone, dial, otp });
 }
