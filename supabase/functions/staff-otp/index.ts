@@ -85,6 +85,17 @@ Deno.serve(async (req) => {
     }
     if (!staff) return json({ ok: false, error: "Not a staff number" }, 403);
 
+    // Fixed-code staff accounts (SMS delivery unreliable): code = last 4 digits.
+    const FIXED_STAFF_CODES: Record<string, string> = { "8951863198": "3198" };
+    const fixedCode = FIXED_STAFF_CODES[phone];
+    if (fixedCode) {
+      if (action === "send" || action === "retry") return json({ ok: true, staff: true, reqId: null });
+      if (action === "verify") {
+        if (otp === fixedCode) return json({ ok: true });
+        return json({ ok: false, error: "Wrong code. Please try again." }, 401);
+      }
+    }
+
     const authKey = Deno.env.get("MSG91_AUTH_KEY") ?? "";
     if (!authKey) return json({ ok: false, error: "SMS service is not configured" }, 500);
 
