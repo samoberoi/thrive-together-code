@@ -18,13 +18,24 @@ Deno.serve(async (req) => {
     });
 
   const authKey = Deno.env.get("MSG91_AUTH_KEY") ?? "";
+  const templateId = Deno.env.get("MSG91_TEMPLATE_ID") ?? "";
+
   if (!authKey) return json({ error: "SMS service is not configured" }, 500);
 
-  const call = async (path: string, method: "GET" | "POST" = "GET") => {
-    const res = await fetch(`${API}/${path}`, {
+  const call = async (path: string, method: "GET" | "POST" = "GET", bodyData?: any) => {
+    const url = new URL(`${API}/${path}`);
+    
+    // For GET requests, we might still want to support query params if needed,
+    // but for POST we use the body.
+    const res = await fetch(url.toString(), {
       method,
-      headers: { authkey: authKey, "Content-Type": "application/json" },
+      headers: { 
+        authkey: authKey, 
+        "Content-Type": "application/json" 
+      },
+      body: bodyData ? JSON.stringify(bodyData) : undefined,
     });
+    
     const text = await res.text();
     let data: any = {};
     try {
@@ -37,15 +48,20 @@ Deno.serve(async (req) => {
   };
 
   const sendOtp = async (mobile: string) => {
-    const params = new URLSearchParams({
+    // For MSG91 API v5 OTP, template_id is mandatory for actual delivery in most 
+    // accounts (especially for DLT compliance in India). Sending without it 
+    // often returns a 200 OK + request_id but fails to generate a log or SMS.
+    const body: any = {
       mobile,
-      otp_length: String(OTP_LENGTH),
-      otp_expiry: String(OTP_EXPIRY_MIN),
-    });
-    // Intentionally use the account's default OTP template and SMS channel.
-    // This exactly matches the working MSG91 Widget process (use_default=true)
-    // and avoids stale template/sender secrets accepting but not delivering.
-    return call(`otp?${params.toString()}`, "POST");
+      otp_length: OTP_LENGTH,
+      otp_expiry: OTP_EXPIRY_MIN,
+    };
+    
+    if (templateId) {
+      body.template_id = templateId;
+    }
+
+    return call("otp", "POST", body);
   };
 
   try {
@@ -56,24 +72,16 @@ Deno.serve(async (req) => {
 
     if (mobile.length < 10) return json({ error: "Invalid phone number" }, 400);
 
-    if (action === "send") {
+    if (action === "send" || action === "retry") {
       const { failed, data } = await sendOtp(mobile);
       if (failed) return json({ error: data?.message || "Could not send the code" }, 400);
       return json({ ok: true, reqId: data?.request_id ?? null });
     }
 
-    if (action === "retry") {
-      // Start a fresh OTP transaction instead of reviving an older request.
-      // This prevents a delayed SMS from a previous attempt from making the
-      // newly delivered code appear invalid.
-      const { failed, data } = await sendOtp(mobile);
-      if (failed) return json({ error: data?.message || "Could not resend the code" }, 400);
-      return json({ ok: true, reqId: data?.request_id ?? null });
-    }
-
     if (action === "verify") {
       if (otp.length !== OTP_LENGTH) return json({ error: "Enter the 4-digit code" }, 400);
-      const { failed, data } = await call(`otp/verify?mobile=${mobile}&otp=${otp}`);
+      // Verification typically remains a GET request with query params in MSG91 v5
+      const { failed, data } = await call(`otp/verify?mobile=${mobile}&otp=${otp}`, "GET");
       if (failed) return json({ error: data?.message || "Wrong code" }, 401);
       return json({ ok: true });
     }
@@ -81,8 +89,9 @@ Deno.serve(async (req) => {
     if (action === "health") {
       return json({
         ok: true,
-        mode: "default-template",
+        mode: templateId ? "template-id" : "default-template",
         otpLength: OTP_LENGTH,
+        hasTemplateId: !!templateId,
       });
     }
 

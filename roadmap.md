@@ -10,3 +10,4 @@
 - [x] Make staff health-log tabs, charts, and client cards readable on mobile
 - [x] Match coach and admin top branding treatment to the member header
 - [x] Correct live lab checkout prices, invalidate inflated payment links, and restore reliable close controls
+- [x] Restore ordinary-user OTP to the configured MSG91 widget for send, resend, and verification
