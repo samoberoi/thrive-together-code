@@ -244,15 +244,10 @@ export default function Auth() {
         setResendCooldown(30);
         return;
       }
-      const staffResult = await startStaffOtp(phone, country.dial);
-      if (staffResult.staff) {
-        setStaffOtp(true);
-        setMsg91ReqId(staffResult.reqId);
-        setStep("otp");
-        setOtp("");
-        setResendCooldown(30);
-        return;
-      }
+      // Everyone else (clients and coaches alike) uses the original, proven
+      // OTP delivery flow. No staff pre-check here: a slow or failing check
+      // used to block the code from ever being sent.
+
       const reqId = await msg91SendOtp(identifier);
       setStaffOtp(false);
       setMsg91ReqId(reqId);
