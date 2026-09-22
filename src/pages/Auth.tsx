@@ -22,7 +22,7 @@ import AuthHeroCarousel from "@/components/AuthHeroCarousel";
 import { toast } from "sonner";
 import { persistSupabaseSessionToNative } from "@/lib/nativePersistence";
 import { resolvePostAuthRoute } from "@/lib/accessControl";
-import { msg91SendOtp, msg91VerifyOtp, verifyStaffOtp } from "@/lib/msg91";
+import { msg91SendOtp, msg91VerifyOtp } from "@/lib/msg91";
 
 
 function withTimeout<T>(promise: Promise<T>, fallback: T, ms = 2500): Promise<T> {
@@ -60,8 +60,6 @@ export default function Auth() {
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [otpError, setOtpError] = useState("");
-  const [msg91ReqId, setMsg91ReqId] = useState<string | null>(null);
-  const [staffOtp, setStaffOtp] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [name, setName] = useState("");
   const [emailInput, setEmailInput] = useState("");
@@ -227,8 +225,6 @@ export default function Auth() {
         setStoredRegionCode(region.code, region);
         saveUser({ profile: { email: normalizedLoginEmail, country: region.name } as any });
         await sendEmailCode();
-        setStaffOtp(false);
-        setMsg91ReqId(null);
         setStep("otp");
         setOtp("");
         setResendCooldown(30);
@@ -237,8 +233,6 @@ export default function Auth() {
       setStoredRegionCode(INDIA_REGION.code, INDIA_REGION);
       saveUser({ profile: { phone, country: country.name, country_code: country.dial } as any });
       if (isFixedOtpPhone) {
-        setStaffOtp(true);
-        setMsg91ReqId(null);
         setStep("otp");
         setOtp("");
         setResendCooldown(30);
@@ -248,9 +242,7 @@ export default function Auth() {
       // OTP delivery flow. No staff pre-check here: a slow or failing check
       // used to block the code from ever being sent.
 
-      const reqId = await msg91SendOtp(identifier);
-      setStaffOtp(false);
-      setMsg91ReqId(reqId);
+      await msg91SendOtp(identifier);
       setStep("otp");
       setOtp("");
       setResendCooldown(30);
@@ -276,8 +268,7 @@ export default function Auth() {
       if (isEmailMode) {
         await sendEmailCode();
       } else {
-        const reqId = await msg91SendOtp(identifier);
-        setMsg91ReqId(reqId);
+        await msg91SendOtp(identifier);
       }
       setOtp("");
       setResendCooldown(30);
@@ -298,15 +289,6 @@ export default function Auth() {
     if (isFixedOtpPhone) {
       if (submitted !== fixedOtpAccount?.code) {
         setOtpError("Wrong code. Please try again.");
-        setOtp("");
-        setLoading(false);
-        return;
-      }
-    } else if (staffOtp) {
-      try {
-        await verifyStaffOtp(phone, country.dial, submitted);
-      } catch (error) {
-        setOtpError((error as Error).message || "Wrong code. Please try again.");
         setOtp("");
         setLoading(false);
         return;
@@ -333,13 +315,7 @@ export default function Auth() {
       }
     } else {
     try {
-      const accessToken = await msg91VerifyOtp(submitted, msg91ReqId);
-      const { data, error } = await supabase.functions.invoke("msg91-verify-otp", {
-        body: { phone: identifier, otp: submitted, accessToken },
-      });
-      if (error || !data?.ok) {
-        throw new Error(data?.error || "Verification failed. Please try again.");
-      }
+      await msg91VerifyOtp(identifier, submitted);
     } catch (error) {
       setOtpError((error as Error).message || "Wrong code. Please try again.");
       setOtp("");
